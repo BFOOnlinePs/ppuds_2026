@@ -1,0 +1,22 @@
+{
+    "Marketing": "التسويق",
+
+    "loyalty rules": "قواعد الولاء",
+    "Loyalty Rule": "قاعدة الولاء",
+    "Loyalty Rules": "قواعد الولاء",
+    "No loyalty rules found": "لم يتم العثور على قواعد ولاء",
+    "Create a new loyalty rule by clicking the button below": "أنشئ قاعدة ولاء جديدة بالضغط على الزر أدناه",
+    "Loyalty Rules List": "قائمة قواعد الولاء",
+    "Add Loyalty Rule": "إضافة قاعدة ولاء",
+    "Edit Loyalty Rule": "تعديل قاعدة الولاء",
+    "Loyalty Rule created successfully": "تم إنشاء قاعدة الولاء بنجاح",
+    "Loyalty Rule updated successfully": "تم تحديث قاعدة الولاء بنجاح",
+    "Loyalty Rule deleted successfully": "تم حذف قاعدة الولاء بنجاح",
+    "Points Rate": "معدل النقاط (أو سعر النقاط)",
+    "Fixed Points": "نقاط ثابتة",
+    "Min Amount": "المبلغ الأدنى (أو الحد الأدنى للمبلغ)",
+    "Rule Type ": "نوع القاعدة",
+    "Minimum Amount ": "المبلغ الأدنى",
+    "Starts At ": "يبدأ في",
+    "Ends At ": "ينتهي في"
+}

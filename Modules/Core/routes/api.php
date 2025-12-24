@@ -1,0 +1,36 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use Modules\Core\Http\Controllers\Api\V1\Auth\LoginController;
+use Modules\Core\Http\Controllers\Api\V1\Auth\RegisterController;
+use Modules\Core\Http\Controllers\Api\V1\SyncController;
+use Modules\Core\Http\Controllers\Api\V1\UserController;
+use Modules\Core\Http\Controllers\CoreController;
+
+Route::prefix('v1')->as('api.v1.')->group(function () {
+
+    Route::prefix('auth')->as('auth.')->group(function () {
+        Route::post('login', [LoginController::class, 'login'])->name('login');
+        Route::post('register', [RegisterController::class, 'register'])->name('register');
+    });
+
+    Route::middleware('auth:sanctum')->group(function () {
+
+        Route::prefix('auth')->as('auth.')->group(function () {
+            Route::post('logout', [LoginController::class, 'logout'])->name('logout');
+        });
+
+        Route::controller(UserController::class)->prefix('users')->as('user.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/{user}', 'show')->name('show');
+            Route::put('/{user}', 'update')->name('update');
+            Route::delete('/{user}', 'destroy')->name('delete');
+        });
+
+        Route::controller(SyncController::class)->prefix('sync')->as('sync.')->group(function () {
+            Route::get('/users', 'syncUsers')->name('users');
+            Route::get('/roles', 'syncRoles')->name('roles');
+        });
+    });
+
+});

@@ -1,0 +1,15 @@
+{
+    "branch": "فرع",
+    "Branch": "فرع",
+    "Branches": "الافرع",
+    "No branches found": "لا توجد افرع",
+    "Create a new branch by clicking the button below": "أنشئ فرعا جديدًا بالضغط على الزر أدناه",
+    "Branches List": "قائمة الافرع",
+    "Add Branch": "إضافة فرع",
+    "Edit Branch": "تعديل بيانات الفرع",
+    "Branch created successfully": "تم تسجيل الفرع بنجاح",
+    "Branch updated successfully": "تم تحديث بيانات الفرع بنجاح",
+    "Branch deleted successfully": "تم حذف الفرع بنجاح",
+    "Opening Time": "وقت الافتتاح",
+    "Closing Time": "وقت الاغلاق"
+}

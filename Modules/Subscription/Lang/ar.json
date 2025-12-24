@@ -1,0 +1,13 @@
+{
+    "subscription": "اشتراك",
+    "Subscription": "اشتراك",
+    "Subscriptions": "الاشتراكات",
+    "No subscriptions found": "لا يوجد اشتراكات",
+    "Create a new subscription by clicking the button below": "أنشئ اشتراكًا جديدًا بالضغط على الزر أدناه",
+    "Subscriptions List": "قائمة الاشتراكات",
+    "Add Subscription": "إضافة اشتراك",
+    "Edit Subscription": "تعديل اشتراك",
+    "Subscription created successfully": "تم إنشاء الاشتراك بنجاح",
+    "Subscription updated successfully": "تم تحديث الاشتراك بنجاح",
+    "Subscription deleted successfully": "تم حذف الاشتراك بنجاح"
+}

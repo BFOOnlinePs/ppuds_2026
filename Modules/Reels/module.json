@@ -1,0 +1,11 @@
+{
+    "name": "Reels",
+    "alias": "reels",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Reels\\Providers\\ReelsServiceProvider"
+    ],
+    "files": []
+}

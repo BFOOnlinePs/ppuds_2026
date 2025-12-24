@@ -1,0 +1,17 @@
+{
+  "resources/css/dashboard/admin-theme/app.css": {
+    "file": "assets/app-DH_zdTWy.css",
+    "src": "resources/css/dashboard/admin-theme/app.css",
+    "isEntry": true
+  },
+  "resources/css/dashboard/admin-theme/fonts/tajawal/Tajawal-Regular.ttf": {
+    "file": "assets/Tajawal-Regular-BF6-vjr0.ttf",
+    "src": "resources/css/dashboard/admin-theme/fonts/tajawal/Tajawal-Regular.ttf"
+  },
+  "resources/js/dashboard/admin-theme/app.js": {
+    "file": "assets/app-CnWBfuLg.js",
+    "name": "app",
+    "src": "resources/js/dashboard/admin-theme/app.js",
+    "isEntry": true
+  }
+}

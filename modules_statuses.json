@@ -1,0 +1,15 @@
+{
+    "Core": true,
+    "Items": false,
+    "GeoLocation": true,
+    "Customer": false,
+    "Subscription": false,
+    "Clinic": false,
+    "Branch": true,
+    "Content": true,
+    "Marketing": false,
+    "Delivery": false,
+    "Reels": true,
+    "Coupon": false,
+    "PPUDS": true
+}

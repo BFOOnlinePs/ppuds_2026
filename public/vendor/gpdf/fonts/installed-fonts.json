@@ -1,0 +1,117 @@
+{
+    "sans-serif": {
+        "normal": "Helvetica",
+        "bold": "Helvetica-Bold",
+        "italic": "Helvetica-Oblique",
+        "bold_italic": "Helvetica-BoldOblique"
+    },
+    "times": {
+        "normal": "Times-Roman",
+        "bold": "Times-Bold",
+        "italic": "Times-Italic",
+        "bold_italic": "Times-BoldItalic"
+    },
+    "times-roman": {
+        "normal": "Times-Roman",
+        "bold": "Times-Bold",
+        "italic": "Times-Italic",
+        "bold_italic": "Times-BoldItalic"
+    },
+    "courier": {
+        "normal": "Courier",
+        "bold": "Courier-Bold",
+        "italic": "Courier-Oblique",
+        "bold_italic": "Courier-BoldOblique"
+    },
+    "helvetica": {
+        "normal": "Helvetica",
+        "bold": "Helvetica-Bold",
+        "italic": "Helvetica-Oblique",
+        "bold_italic": "Helvetica-BoldOblique"
+    },
+    "zapfdingbats": {
+        "normal": "ZapfDingbats",
+        "bold": "ZapfDingbats",
+        "italic": "ZapfDingbats",
+        "bold_italic": "ZapfDingbats"
+    },
+    "symbol": {
+        "normal": "Symbol",
+        "bold": "Symbol",
+        "italic": "Symbol",
+        "bold_italic": "Symbol"
+    },
+    "serif": {
+        "normal": "Times-Roman",
+        "bold": "Times-Bold",
+        "italic": "Times-Italic",
+        "bold_italic": "Times-BoldItalic"
+    },
+    "monospace": {
+        "normal": "Courier",
+        "bold": "Courier-Bold",
+        "italic": "Courier-Oblique",
+        "bold_italic": "Courier-BoldOblique"
+    },
+    "fixed": {
+        "normal": "Courier",
+        "bold": "Courier-Bold",
+        "italic": "Courier-Oblique",
+        "bold_italic": "Courier-BoldOblique"
+    },
+    "dejavu sans": {
+        "bold": "DejaVuSans-Bold",
+        "bold_italic": "DejaVuSans-BoldOblique",
+        "italic": "DejaVuSans-Oblique",
+        "normal": "DejaVuSans"
+    },
+    "dejavu sans mono": {
+        "bold": "DejaVuSansMono-Bold",
+        "bold_italic": "DejaVuSansMono-BoldOblique",
+        "italic": "DejaVuSansMono-Oblique",
+        "normal": "DejaVuSansMono"
+    },
+    "dejavu serif": {
+        "bold": "DejaVuSerif-Bold",
+        "bold_italic": "DejaVuSerif-BoldItalic",
+        "italic": "DejaVuSerif-Italic",
+        "normal": "DejaVuSerif"
+    },
+    "almarai": {
+        "normal": "Almarai-Normal",
+        "bold": "Almarai-Bold",
+        "italic": "Almarai-Italic",
+        "bold_italic": "Almarai-BoldItalic"
+    },
+    "cairo": {
+        "normal": "Cairo-Normal",
+        "bold": "Cairo-Bold",
+        "italic": "Cairo-Italic",
+        "bold_italic": "Cairo-BoldItalic"
+    },
+    "noto naskh arabic": {
+        "normal": "NotoNaskhArabic-Normal",
+        "bold": "NotoNaskhArabic-Bold",
+        "italic": "NotoNaskhArabic-Italic",
+        "bold_italic": "NotoNaskhArabic-BoldItalic"
+    },
+    "markazi text": {
+        "normal": "MarkaziText-Normal",
+        "bold": "MarkaziText-Bold",
+        "italic": "MarkaziText-Italic",
+        "bold_italic": "MarkaziText-BoldItalic"
+    },
+    "tajawal": {
+        "normal": "Tajawal-Normal",
+        "bold": "Tajawal-Bold",
+        "italic": "Tajawal-Italic",
+        "bold_italic": "Tajawal-BoldItalic"
+    },
+    "noto sans arabic": {
+        "300": "\/Applications\/XAMPP\/xamppfiles\/htdocs\/BFound\/eccomerce\/eccomerce\/public\/vendor\/gpdf\/fonts\/noto_sans_arabic_300_8aa25603e85a6c0295fc917bb19e13e9",
+        "normal": "\/Applications\/XAMPP\/xamppfiles\/htdocs\/BFound\/eccomerce\/eccomerce\/public\/vendor\/gpdf\/fonts\/noto_sans_arabic_normal_b6a4a316339d91d4ab29bfc99a5e9c82",
+        "500": "\/Applications\/XAMPP\/xamppfiles\/htdocs\/BFound\/eccomerce\/eccomerce\/public\/vendor\/gpdf\/fonts\/noto_sans_arabic_500_b046bdfdd4bf2d67715d25437391acb0",
+        "600": "\/Applications\/XAMPP\/xamppfiles\/htdocs\/BFound\/eccomerce\/eccomerce\/public\/vendor\/gpdf\/fonts\/noto_sans_arabic_600_88d99f1ce590b77fd8aa04f5e7f20eb5",
+        "bold": "noto_sans_arabic_bold_c01da44e6f2069b975f8226eeb3c6ca5"
+    }
+}

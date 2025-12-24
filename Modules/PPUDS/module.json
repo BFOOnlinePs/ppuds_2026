@@ -1,0 +1,11 @@
+{
+    "name": "PPUDS",
+    "alias": "ppuds",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\PPUDS\\Providers\\PPUDSServiceProvider"
+    ],
+    "files": []
+}

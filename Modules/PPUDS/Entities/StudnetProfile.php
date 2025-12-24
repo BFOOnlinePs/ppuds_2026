@@ -1,0 +1,101 @@
+<?php
+
+namespace Modules\PPUDS\Entities;
+
+use Astrotomic\Translatable\Translatable;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Modules\Core\Entities\User;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+
+class StudnetProfile extends Model implements HasMedia
+{
+    use InteractsWithMedia;
+    use SoftDeletes;
+    use LogsActivity;
+
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+
+        $this->setTable(config('ppuds.table_prefix') . 'student_profiles');
+    }
+
+    /**
+     * The attributes that are mass assignable.
+     */
+    protected $fillable = [
+        'dob','gender','cv_status','tawjihi_gpa'
+    ];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly($this->getFillable())
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->setDescriptionForEvent(fn(string $eventName) => "This model has been {$eventName} and value ")
+            ->useLogName(class_basename($this));
+    }
+
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('cv')
+            ->singleFile()
+            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
+    }
+
+    public function addImage($file)
+    {
+        if (is_array($file)) {
+            $file = reset($file);
+        }
+
+        // التحقق من نوع الملف
+        if (
+            !$file instanceof \Illuminate\Http\UploadedFile &&
+            !($file instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile)
+        ) {
+            return null;
+        }
+
+        // مسح الصورة السابقة
+        $this->clearMediaCollection('category');
+
+        try {
+            $originalName = $file->getClientOriginalName();
+            $extension = $file->getClientOriginalExtension();
+            $fileName = time() . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $extension;
+
+            $media = $this
+                ->addMedia($file)
+                ->usingFileName($fileName)
+                ->toMediaCollection('category', 'items');
+
+            $size = ImageSize::MEDIUM;
+
+            ImageService::optimize($media->getPath(), ImageQuality::HIGH->value);
+            ImageService::resize($media->getPath(), $size->width(), $size->height());
+
+            return $media;
+        } catch (\Exception $e) {
+            \Log::error('Error uploading category image: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+}

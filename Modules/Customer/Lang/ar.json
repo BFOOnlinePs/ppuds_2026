@@ -1,0 +1,30 @@
+{
+    "customer": "عميل",
+    "Customer": "عميل",
+    "Customers": "عملاء",
+    "No customers found": "لا يوجد عملاء",
+    "Create a new customer by clicking the button below": "أنشئ عميلاً جديدًا بالضغط على الزر أدناه",
+    "Customers List": "قائمة العملاء",
+    "Add Customer": "إضافة عميل",
+    "Edit Customer": "تعديل عميل",
+    "Customer created successfully": "تم إنشاء العميل بنجاح",
+    "Customer updated successfully": "تم تحديث العميل بنجاح",
+    "Customer deleted successfully": "تم حذف العميل بنجاح",
+    "First Name": "الاسم الاول",
+    "Last Name": "الاسم الاخير",
+    "Date of Birth": "تاريخ الميلاد",
+    "Gender": "الجنس",
+    "Notes": "الملاحظات",
+    "Language": "اللغة",
+
+    "Male": "ذكر",
+    "Female": "انثى",
+    "Arabic": "العربية",
+
+    "Customer Details": "تفاصيل العميل",
+    "Customer Readings": "قراءات العميل",
+    "Customer Debts": "ديون العميل",
+    "Customer Subscriptions": "اشتراكات العميل",
+    "Customer Programs": "برامج العميل",
+    "Customer Surveys": "استبيانات العميل"
+}
