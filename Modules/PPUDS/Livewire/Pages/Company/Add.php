@@ -145,7 +145,7 @@ class Add extends Component implements HasForms
 
                                                         return City::whereHas('governorate', function (Builder $query) use ($countryId) {
                                                             $query->where('country_id', $countryId);
-                                                        })->pluck('name', 'id');
+                                                        })->get()->pluck('name', 'id');
                                                     })
                                                     ->searchable()
                                                     ->required(),
