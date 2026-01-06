@@ -5,12 +5,17 @@ namespace Modules\PPUDS\Entities;
 use Astrotomic\Translatable\Translatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
+use Modules\Branch\Entities\Branch;
 use Modules\Core\Entities\User;
 use Modules\Core\Enums\ImageQuality;
 use Modules\Core\Enums\ImageSize;
 use Modules\Core\Services\ImageService;
+use Modules\GeoLocation\Entities\City;
+use Modules\GeoLocation\Entities\Country;
 use Modules\PPUDS\Enums\CompanyStatus;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -140,5 +145,12 @@ class Company extends Model implements TranslatableContract, HasMedia
     public function category(): BelongsTo
     {
         return $this->belongsTo(CompanyCategory::class, 'company_category_id');
+    }
+
+    public function branches(): BelongsToMany
+    {
+        return $this->belongsToMany(Branch::class, 'ppu_ds_branch_company')
+            ->withPivot('is_main')
+            ->withTimestamps();
     }
 }
