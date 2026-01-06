@@ -311,8 +311,7 @@ class Product extends Model implements TranslatableContract, HasMedia, Discounta
                 'id',
                 'price',
                 'is_default',
-            ])
-            ;
+            ]);
     }
 
     public function branches(): BelongsToMany
