@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\PPUDS\Database\Seeders;
+namespace Modules\PPUDS\database\seeders;
 
 use Illuminate\Database\Seeder;
 
