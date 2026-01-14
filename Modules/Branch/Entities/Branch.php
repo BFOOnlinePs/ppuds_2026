@@ -25,6 +25,7 @@ use Modules\GeoLocation\Entities\City;
 use Modules\GeoLocation\Entities\Country;
 use Modules\Items\Enums\AttributeType;
 use Modules\PPUDS\Entities\Company;
+use Modules\PPUDS\Entities\CompanyDepartment;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -116,5 +117,10 @@ class Branch extends Model implements TranslatableContract
         return $this->belongsToMany(Company::class, 'ppu_ds_branch_company')
             ->withPivot('is_main')
             ->withTimestamps();
+    }
+
+    public function departments(): HasMany
+    {
+        return $this->hasMany(CompanyDepartment::class);
     }
 }
