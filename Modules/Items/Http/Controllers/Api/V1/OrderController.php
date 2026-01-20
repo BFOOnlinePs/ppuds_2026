@@ -19,6 +19,7 @@ use Modules\Items\Entities\AddonOption;
 use Modules\Items\Entities\Order;
 use Modules\Items\Entities\Product;
 use Modules\Items\Enums\OrderStatus;
+use Modules\Items\Enums\PaymentMethod;
 use Modules\Items\Enums\PaymentStatus;
 use Modules\Items\Http\Requests\OrderRequest;
 use Modules\Items\Http\Requests\UpdateOrderStatusRequest;
@@ -147,6 +148,10 @@ class OrderController extends Controller
             ->allowedFilters(OrderResource::allowedFilters())
             ->allowedSorts(OrderResource::allowedSorts())
             ->allowedIncludes(OrderResource::allowedIncludes())
+            ->where(function ($query) {
+                $query->where('payment_method', PaymentMethod::CREDIT_CARD->value)
+                    ->where('payment_status', PaymentStatus::PAID->value);
+            })
             ->paginate($perPage)
             ->appends(request()->query());
 
