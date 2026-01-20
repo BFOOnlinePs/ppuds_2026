@@ -37,5 +37,27 @@
     "Company department created successfully": "تم إنشاء قسم الشركة بنجاح",
     "Company department updated successfully": "تم تحديث قسم الشركة بنجاح",
     "Company department deleted successfully": "تم حذف قسم الشركة بنجاح",
-    "Company Department Information": "معلومات قسم الشركة"
+    "Company Department Information": "معلومات قسم الشركة",
+
+    "Students": "الطلاب",
+    "Add Student": "إضافة طالب",
+    "Students List": "قائمة الطلاب",
+
+    "Specialties": "التخصصات",
+    "Add Specialties": "إضافة تخصص",
+    "Specialties List": "قائمة التخصصات",
+
+    "Registration": "التسجيل",
+    "Add Registration": "اضافة تسجيل",
+    "Registration List": "قائمة التسجيل",
+
+    "Students of the current semester": "طلاب الفصل الدراسي الحالي",
+    "Add Students of the current semester": "إضافة طالب للفصل الحالي",
+    "Students of the current semester List": "قائمة طلاب الفصل الحالي",
+
+    "Attendance and departure log": "سجل الحضور والمغادرة",
+
+    "Follow-up file": "ملف المتابعة",
+
+    "Ratings": "التقييمات"
 }
