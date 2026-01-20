@@ -7,7 +7,7 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Infolists\Components\Actions;
 use Filament\Infolists\Components\Actions\Action;
-use Filament\Infolists\Components\Grid; // لا تنس استدعاء Grid
+use Filament\Infolists\Components\Grid;
 use Filament\Infolists\Components\Livewire;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Concerns\InteractsWithInfolists;
@@ -25,9 +25,11 @@ class Index extends Component implements HasForms, HasInfolists
 
     public function mount()
     {
-        // ...
+        // تم حذف dd('asd') ليعمل الكود
     }
 
+    // هذه الدالة موجودة لكنك لا تستخدمها في الـ View حالياً لأنك قمت بتعليق {{ $this->infolist }}
+    // سأبقيها كما هي في حال أردت استخدامها لاحقاً
     public function infolist($infolist): Infolist
     {
         return $infolist
@@ -47,7 +49,6 @@ class Index extends Component implements HasForms, HasInfolists
                                             Action::make('list_customers')
                                                 ->label('قائمة العملاء')
                                                 ->icon('heroicon-m-list-bullet')
-                                                // نتحقق أولاً هل الراوت موجود أم لا لتجنب الخطأ
                                                 ->url(fn () => Route::has('customers.index') ? route('customers.index') : '#')
                                                 ->color('primary'),
 
@@ -69,7 +70,6 @@ class Index extends Component implements HasForms, HasInfolists
                                             Action::make('list_appointments')
                                                 ->label('قائمة المواعيد')
                                                 ->icon('heroicon-m-list-bullet')
-                                                // هنا كان سبب الخطأ الرئيسي
                                                 ->url(fn () => Route::has('appointments.index') ? route('appointments.index') : '#')
                                                 ->color('primary'),
                                         ])->fullWidth(),
@@ -97,19 +97,64 @@ class Index extends Component implements HasForms, HasInfolists
                                     ])
                                     ->columnSpan(1),
 
-                                // تنبيه: تأكد أن كلاس AppointmentIndex موجود أيضاً وإلا سيظهر خطأ آخر
-                                // يفضل إخفاؤه أو التحقق من وجوده إذا كان تابعاً للموديول
                                 Livewire::make(AppointmentIndex::class)
                                     ->columnSpanFull()
                                     ->visible(fn () => Module::has('Clinic') && Module::isEnabled('Clinic')),
                             ]),
                     ])
-                    // الشرط الرئيسي لظهور السكشن بالكامل
-                    ->visible(fn () => Module::has('Clinic') && Module::isEnabled('Clinic')),            ]);
+                    ->visible(fn () => Module::has('Clinic') && Module::isEnabled('Clinic')),
+            ]);
     }
 
     public function render()
     {
-        return view('core::livewire.pages.home.index')->layout(AppLayout::class);
+        $sections = [
+            [
+                'title' => 'Users',
+                'icon'  => 'solar-users-group-rounded-bold-duotone',
+                'items' => [
+                    [
+                        'label' => 'User List',
+                        'route' => 'users.index',
+                        'icon'  => 'solar-users-group-rounded-bold-duotone',
+                        'desc'  => 'View and manage all users'
+                    ],
+                    [
+                        'label' => 'Add User',
+                        'route' => 'users.add',
+                        'icon'  => 'solar-user-plus-bold-duotone',
+                        'desc'  => 'Register a new user in the system'
+                    ],
+                ]
+            ],
+            [
+                'title' => 'Settings',
+                'icon'  => 'solar-settings-bold-duotone',
+                'items' => [
+                    [
+                        'label' => 'System Settings',
+                        'route' => 'settings',
+                        'icon'  => 'solar-settings-bold-duotone',
+                        'desc'  => 'Control general site settings'
+                    ],
+                    [
+                        'label' => 'Roles & Permissions',
+                        'route' => 'roles.index',
+                        'icon'  => 'solar-lock-bold-duotone',
+                        'desc'  => 'Manage user roles and permissions'
+                    ],
+                    [
+                        'label' => 'Currencies',
+                        'route' => 'currencies.index',
+                        'icon'  => 'solar-wallet-money-bold-duotone',
+                        'desc'  => 'Manage exchange rates and currencies'
+                    ],
+                ]
+            ]
+        ];
+
+        // تم إصلاح تمرير المصفوفة هنا
+        return view('core::livewire.pages.home.index', ['sections' => $sections])
+            ->layout(AppLayout::class);
     }
 }
