@@ -5,11 +5,6 @@ use Modules\GeoLocation\Http\Controllers\Api\V1\CityController;
 use Modules\GeoLocation\Http\Controllers\Api\V1\CountryController;
 use Modules\GeoLocation\Http\Controllers\Api\V1\DistrictController;
 use Modules\GeoLocation\Http\Controllers\Api\V1\GovernorateController;
-use Modules\Items\Http\Controllers\Api\V1\AttributeController;
-use Modules\Items\Http\Controllers\Api\V1\CategoryController;
-use Modules\Items\Http\Controllers\Api\V1\OfferController;
-use Modules\Items\Http\Controllers\Api\V1\OrderController;
-use Modules\Items\Http\Controllers\Api\V1\ProductController;
 
 /*
 |--------------------------------------------------------------------------

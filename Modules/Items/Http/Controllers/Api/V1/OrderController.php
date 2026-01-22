@@ -148,10 +148,6 @@ class OrderController extends Controller
             ->allowedFilters(OrderResource::allowedFilters())
             ->allowedSorts(OrderResource::allowedSorts())
             ->allowedIncludes(OrderResource::allowedIncludes())
-            ->where(function ($query) {
-                $query->where('payment_method', PaymentMethod::CREDIT_CARD->value)
-                    ->where('payment_status', PaymentStatus::PAID->value);
-            })
             ->paginate($perPage)
             ->appends(request()->query());
 

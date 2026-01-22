@@ -1,15 +1,13 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Modules\Core\Http\Controllers\Api\V1\Auth\LoginController;
-use Modules\Core\Http\Controllers\Api\V1\Auth\RegisterController;
-use Modules\Items\Http\Controllers\Api\V1\AddonController;
-use Modules\Items\Http\Controllers\Api\V1\AttributeController;
-use Modules\Items\Http\Controllers\Api\V1\CategoryController;
-use Modules\Items\Http\Controllers\Api\V1\OfferController;
-use Modules\Items\Http\Controllers\Api\V1\OrderController;
-use Modules\Items\Http\Controllers\Api\V1\ProductController;
-use Modules\Items\Http\Controllers\Api\V1\SyncController;
+use Modules\Items\Http\Controllers\Api\V1\Api\V1\AddonController;
+use Modules\Items\Http\Controllers\Api\V1\Api\V1\AttributeController;
+use Modules\Items\Http\Controllers\Api\V1\Api\V1\CategoryController;
+use Modules\Items\Http\Controllers\Api\V1\Api\V1\OfferController;
+use Modules\Items\Http\Controllers\Api\V1\Api\V1\OrderController;
+use Modules\Items\Http\Controllers\Api\V1\Api\V1\ProductController;
+use Modules\Items\Http\Controllers\Api\V1\Api\V1\SyncController;
 
 /*
 |--------------------------------------------------------------------------
