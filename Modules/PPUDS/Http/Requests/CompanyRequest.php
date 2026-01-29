@@ -17,7 +17,7 @@ class CompanyRequest extends FormRequest
             'website'             => ['nullable', 'url', 'max:255'],
             'description'         => ['nullable', 'string'],
             'company_category_id' => ['required', 'integer', 'exists:ppu_ds_company_categories,id'],
-            'status'              => ['required', 'string', 'in:' . implode(',', CompanyStatus::options())],
+            'status' => ['required', 'integer', 'in:' . implode(',', array_column(CompanyStatus::cases(), 'value'))],
             'logo'                => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048'],
 
             'branches'                => ['required', 'array', 'min:1'],
