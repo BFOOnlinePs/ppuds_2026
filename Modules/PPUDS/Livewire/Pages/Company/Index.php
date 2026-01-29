@@ -66,9 +66,9 @@ class Index extends Component implements HasTable, HasForms
             )
             ->headerActions([
                 CreateAction::make('create')
-                    ->label(__('Add User'))
-                    ->url(route('users.add'))
-                    ->visible(fn() => auth()->user()->can('User Create'))
+                    ->label(__('Add Company'))
+                    ->url(route('companies.add'))
+                    ->visible(fn() => auth()->user()->can('Company Create'))
             ])
             ->bulkActions($this->getTableBulkAction());
     }

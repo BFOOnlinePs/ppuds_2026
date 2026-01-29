@@ -18,6 +18,7 @@ use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Hash;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Arr;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Branch\Entities\Branch;
@@ -98,43 +99,59 @@ class Add extends Component implements HasForms
                                 ]),
                         ]),
 
-                    Wizard\Step::make(__('Branches Management'))
+                    Wizard\Step::make(__('Branches & Departments'))
                         ->icon('heroicon-m-building-storefront')
                         ->schema([
-                            Repeater::make('branches') // هذا المفتاح سنستخدمه في الحفظ
-                            ->label(__('Branches'))
-                                ->relationship('branches') // إذا كانت العلاقة معرفة في الموديل، وإلا سنحفظ يدوياً
-                                ->minItems(1) // إجباري فرع واحد على الأقل
-                                ->defaultItems(1) // يفتح وبداخله فرع واحد جاهز للتعبئة
-                                ->collapsible() // قابل للطي لترتيب الشاشة
-                                ->itemLabel(fn (array $state): ?string => $state['name'] ?? __('New Branch')) // يظهر اسم الفرع كعنوان للصندوق
-                                ->cloneable() // زر لنسخ الفرع (مفيد إذا كانت الفروع في نفس المدينة وبنفس الدوام)
+                            Repeater::make('branches')
+                                ->label(__('Branches'))
+                                ->relationship('branches')
+                                ->minItems(1)
+                                ->defaultItems(1)
+                                ->collapsible()
+                                ->itemLabel(fn (array $state): ?string => $state['name'] ?? __('New Branch'))
+                                ->cloneable()
                                 ->schema([
-                                    // === بيانات الفرع الأساسية ===
+                                    // 1. بيانات الفرع
                                     Section::make(__('Branch Details'))
                                         ->schema([
                                             TextInput::make('name')
                                                 ->label(__('Branch Name'))
                                                 ->required()
-                                                ->default(__('Main Branch')) // افتراضياً اسمه الفرع الرئيسي
-                                                ->placeholder(__('e.g. Main Branch, Downtown Branch')),
-
+                                                ->default(__('Main Branch')),
                                             Grid::make(2)->schema([
                                                 TextInput::make('email')->label(__('Email'))->email(),
                                                 TextInput::make('phone')->label(__('Phone'))->tel(),
                                             ]),
                                         ])->compact(),
 
-                                    // === بيانات الموقع (نفس الكود السابق مع إصلاح Cities) ===
+                                    // 2. إدارة الأقسام (تم إضافتها هنا لربطها بالفرع مباشرة)
+                                    Section::make(__('Departments'))
+                                        ->description(__('Define departments for this specific branch.'))
+                                        ->schema([
+                                            Repeater::make('departments') // تأكد أن العلاقة departments موجودة في موديل Branch
+                                            ->label(__('Departments List'))
+                                                ->relationship('departments')
+                                                ->schema([
+                                                    TextInput::make('name')
+                                                        ->label(__('Department Name'))
+                                                        ->required()
+                                                        ->placeholder('e.g. Sales, HR, Kitchen'),
+                                                    // يمكنك إضافة حقول أخرى للقسم هنا
+                                                ])
+                                                ->grid(2) // عرض الأقسام بجانب بعضها
+                                                ->defaultItems(0)
+                                                ->collapsible(),
+                                        ])
+                                        ->collapsed(false), // يظهر مفتوحاً افتراضياً
+
+                                    // 3. الموقع
                                     Section::make(__('Location'))
                                         ->schema([
                                             Grid::make(2)->schema([
                                                 Select::make('country_id')
                                                     ->label(__('Country'))
                                                     ->options(Country::all()->pluck('name', 'id'))
-                                                    ->searchable()
-                                                    ->required()
-                                                    ->live()
+                                                    ->searchable()->required()->live()
                                                     ->afterStateUpdated(fn (Set $set) => $set('city_id', null)),
 
                                                 Select::make('city_id')
@@ -142,23 +159,18 @@ class Add extends Component implements HasForms
                                                     ->options(function (Get $get) {
                                                         $countryId = $get('country_id');
                                                         if (! $countryId) return [];
-
                                                         return City::whereHas('governorate', function (Builder $query) use ($countryId) {
                                                             $query->where('country_id', $countryId);
-                                                        })->get()
-                                                            ->pluck('name', 'id');
-                                                    })
-                                                    ->searchable()
-                                                    ->required(),
+                                                        })->get()->pluck('name', 'id');
+                                                    })->searchable()->required(),
                                             ]),
-
                                             Grid::make(2)->schema([
                                                 TextInput::make('latitude')->numeric()->required(),
                                                 TextInput::make('longitude')->numeric()->required(),
                                             ]),
                                         ])->compact(),
 
-                                    // === أوقات العمل ===
+                                    // 4. أوقات العمل
                                     Section::make(__('Working Hours'))
                                         ->schema([
                                             Grid::make(2)->schema([
@@ -167,17 +179,7 @@ class Add extends Component implements HasForms
                                             ]),
                                         ])->compact(),
                                 ])
-                                ->grid(1) // عرض الفروع تحت بعضها (أو 2 لعرضها كشبكة)
-                        ]),
-
-                    Wizard\Step::make('Delivery')
-                        ->schema([
-
-                        ]),
-
-                    Wizard\Step::make('Billing')
-                        ->schema([
-
+                                ->grid(1)
                         ]),
                 ])
                     ->columnSpan('full')
@@ -189,16 +191,44 @@ class Add extends Component implements HasForms
     {
         $this->validate();
 
-        $this->data['created_by'] = auth()->id();
+        // 1. إنشاء الشركة
+        $companyData = \Illuminate\Support\Arr::except($this->data, ['branches', 'logo']);
+        $companyData['created_by'] = auth()->id();
 
-        $company = Company::create($this->data);
+        $company = Company::create($companyData);
 
         if (isset($this->data['logo'])) {
             $company->addImage($this->data['logo']);
         }
 
-        Toaster::success(__('Company created successfully'));
+        // 2. إنشاء الفروع والأقسام
+        if (!empty($this->data['branches'])) {
 
+            foreach ($this->data['branches'] as $branchData) {
+
+                $departmentsData = $branchData['departments'] ?? [];
+                $branchCleanData = \Illuminate\Support\Arr::except($branchData, ['departments']);
+
+                // === الحل هنا: إضافة created_by للفرع ===
+                $branchCleanData['created_by'] = auth()->id();
+
+                // الآن يتم الإنشاء
+                $branch = Branch::create($branchCleanData);
+
+                // ربط الفرع بالشركة
+                $company->branches()->attach($branch->id, ['is_main' => false]);
+
+                // إنشاء الأقسام
+                foreach ($departmentsData as $deptData) {
+                    $branch->departments()->create([
+                        'name' => $deptData['name'],
+                        'created_by' => auth()->id(),
+                    ]);
+                }
+            }
+        }
+
+        Toaster::success(__('Created successfully'));
         $this->redirect(route('companies.index'));
     }
 
