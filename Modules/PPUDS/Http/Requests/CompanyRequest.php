@@ -13,12 +13,12 @@ class CompanyRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'                => ['required', 'string', 'max:255'],
-            'website'             => ['nullable', 'url', 'max:255'],
-            'description'         => ['nullable', 'string'],
-            'company_category_id' => ['required', 'integer', 'exists:ppu_ds_company_categories,id'],
-            'status' => ['required', 'integer', 'in:' . implode(',', array_column(CompanyStatus::cases(), 'value'))],
-            'logo'                => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048'],
+            'name'                  => ['required', 'string', 'max:255'],
+            'website'               => ['nullable', 'url', 'max:255'],
+            'description'           => ['nullable', 'string'],
+            'company_category_id'   => ['required', 'integer', 'exists:ppu_ds_company_categories,id'],
+            'status'                => ['required', 'integer', 'in:' . implode(',', array_column(CompanyStatus::cases(), 'value'))],
+            'logo'                  => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048'],
 
             'branches'                => ['required', 'array', 'min:1'],
             'branches.*.name'         => ['required', 'string', 'max:255'],

@@ -27,7 +27,6 @@ use Modules\GeoLocation\Entities\Country;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\CompanyCategory;
 use Modules\PPUDS\Entities\CompanyDepartment;
-use Modules\PPUDS\Entities\Department;
 use Modules\PPUDS\Enums\CompanyStatus;
 
 class Edit extends Component implements HasForms
@@ -41,12 +40,29 @@ class Edit extends Component implements HasForms
     {
         $this->company = $company;
 
-        // 1. تحميل العلاقات (الفروع والأقسام) ليتم عرضها داخل الـ Repeaters
-        $this->company->load(['branches.departments', 'media']);
-
-        // 2. تعبئة الفورم بالبيانات الحالية
-        // toArray() سيقوم تلقائياً بوضع مفتاح 'branches' ومفتاح 'departments' داخله
-        $this->form->fill($this->company->toArray());
+        // تعبئة البيانات الموجودة مسبقاً بما في ذلك الفروع والأقسام
+        $this->form->fill([
+            ...$company->toArray(),
+            'branches' => $company->branches->map(function ($branch) {
+                return [
+                    'id' => $branch->id,
+                    'name' => $branch->name,
+                    'email' => $branch->email,
+                    'phone' => $branch->phone,
+                    'country_id' => $branch->country_id,
+                    'city_id' => $branch->city_id,
+                    'latitude' => $branch->latitude,
+                    'longitude' => $branch->longitude,
+                    'opening_time' => $branch->opening_time,
+                    'closing_time' => $branch->closing_time,
+                    // تحميل الأقسام
+                    'departments' => $branch->departments->map(fn($dept) => [
+                        'id' => $dept->id,
+                        'name' => $dept->name,
+                    ])->toArray(),
+                ];
+            })->toArray(),
+        ]);
     }
 
     public function form(Form $form): Form
@@ -97,62 +113,91 @@ class Edit extends Component implements HasForms
                         ->schema([
                             Repeater::make('branches')
                                 ->label(__('Branches'))
-                                // ملاحظة: لا نستخدم relationship() هنا لأننا نتحكم بالحفظ يدوياً للعلاقات المعقدة
-                                ->itemLabel(fn (array $state): ?string => $state['name'] ?? __('Branch'))
+                                ->itemLabel(fn (array $state): ?string => $state['name'] ?? __('New Branch'))
+                                ->extraAttributes([
+                                    'style' => 'background-color: #f3f4f6; border-radius: 0.5rem; padding: 1rem;'
+                                ])
+                                ->collapsible()
+                                ->cloneable()
                                 ->schema([
-                                    // Hidden ID to identify updates vs creates
                                     TextInput::make('id')->hidden(),
 
-                                    // بيانات الفرع
-                                    Section::make(__('Branch Details'))->schema([
-                                        TextInput::make('name')->required()->label(__('Name')),
-                                        Grid::make(2)->schema([
-                                            TextInput::make('email')->email(),
-                                            TextInput::make('phone')->tel(),
-                                        ]),
-                                    ])->compact(),
+                                    // 1. بيانات الفرع
+                                    Section::make(__('Branch Details'))
+                                        ->aside()
+                                        ->icon('solar-buildings-2-bold')
+                                        ->schema([
+                                            TextInput::make('name')->required()->label(__('Branch Name')),
+                                            Grid::make(2)->schema([
+                                                TextInput::make('email')->label(__('Email'))->email(),
+                                                TextInput::make('phone')->label(__('Phone'))->tel(),
+                                            ]),
+                                        ])->compact(),
 
-                                    // الأقسام داخل الفرع
+                                    // 2. إدارة الأقسام
                                     Section::make(__('Departments'))
+                                        ->description(__('Define departments for this specific branch.'))
+                                        ->aside()
+                                        ->extraAttributes([
+                                            'style' => 'background-color: #f3f4f6; border-radius: 0.5rem; padding: 1rem;'
+                                        ])
                                         ->schema([
                                             Repeater::make('departments')
                                                 ->label(__('Departments List'))
                                                 ->schema([
-                                                    TextInput::make('id')->hidden(), // لتمييز التعديل
-                                                    TextInput::make('name')->required()->label(__('Name')),
+                                                    TextInput::make('id')->hidden(),
+                                                    TextInput::make('name')
+                                                        ->label(__('Department Name'))
+                                                        ->required()
+                                                        ->placeholder('e.g. Sales, HR')
+                                                        ->datalist(function (){
+                                                            // جلب الأسماء بشكل آمن مع الترجمة
+                                                            return CompanyDepartment::get()
+                                                                ->pluck('name')
+                                                                ->unique() // إزالة التكرار
+                                                                ->toArray();
+                                                        })
+                                                        ->autocomplete('off'),
                                                 ])
                                                 ->grid(2)
-                                                ->collapsible(),
+                                                ->defaultItems(0)
+                                                ->collapsible()
+                                                ->addActionLabel(__('Add New Department'))
+                                                ->itemLabel(fn (array $state): ?string => $state['name'] ?? null),
                                         ]),
 
-                                    // الموقع
-                                    Section::make(__('Location'))->schema([
-                                        Grid::make(2)->schema([
-                                            Select::make('country_id')
-                                                ->options(Country::get()->pluck('name', 'id'))
-                                                ->live()
-                                                ->required()
-                                                ->afterStateUpdated(fn (Set $set) => $set('city_id', null)),
-                                            Select::make('city_id')
-                                                ->options(fn (Get $get) => City::get()->pluck('name', 'id'))
-                                                ->required(),
-                                        ]),
-                                        Grid::make(2)->schema([
-                                            TextInput::make('latitude')->numeric()->required()->minValue(-90)->maxValue(90),
-                                            TextInput::make('longitude')->numeric()->required()->minValue(-180)->maxValue(180),
-                                        ]),
-                                    ])->compact(),
+                                    // 3. الموقع
+                                    Section::make(__('Location'))
+                                        ->schema([
+                                            Grid::make(2)->schema([
+                                                Select::make('country_id')
+                                                    ->label(__('Country'))
+                                                    ->options(Country::get()->pluck('name', 'id'))
+                                                    ->live()
+                                                    ->required()
+                                                    ->searchable()
+                                                    ->afterStateUpdated(fn (Set $set) => $set('city_id', null)),
+                                                Select::make('city_id')
+                                                    ->label(__('City'))
+                                                    ->options(fn (Get $get) => City::whereHas('governorate', fn($q) => $q->where('country_id', $get('country_id')))->get()->pluck('name', 'id'))
+                                                    ->required()
+                                                    ->searchable(),
+                                            ]),
+                                            Grid::make(2)->schema([
+                                                TextInput::make('latitude')->numeric()->required(),
+                                                TextInput::make('longitude')->numeric()->required(),
+                                            ]),
+                                        ])->compact(),
 
-                                    // أوقات العمل
-                                    Section::make(__('Working Hours'))->schema([
-                                        Grid::make(2)->schema([
-                                            TimePicker::make('opening_time')->seconds(false)->required(),
-                                            TimePicker::make('closing_time')->seconds(false)->required(),
-                                        ]),
-                                    ])->compact(),
+                                    // 4. أوقات العمل
+                                    Section::make(__('Working Hours'))
+                                        ->schema([
+                                            Grid::make(2)->schema([
+                                                TimePicker::make('opening_time')->label(__('Opening'))->seconds(false)->required(),
+                                                TimePicker::make('closing_time')->label(__('Closing'))->seconds(false)->required(),
+                                            ]),
+                                        ])->compact(),
                                 ])
-                                ->collapsible()
-                                ->cloneable()
                         ]),
                 ])->columnSpan('full')
             ])
@@ -163,14 +208,14 @@ class Edit extends Component implements HasForms
     {
         $this->validate();
 
-        // 1. تحديث بيانات الشركة الأساسية
-        $companyAttributes = Arr::except($this->data, ['branches', 'logo']);
-        $this->company->update($companyAttributes);
+        // 1. تحديث بيانات الشركة
+        $companyData = Arr::except($this->data, ['branches', 'logo']);
+        $this->company->update($companyData);
 
-        // 2. تحديث الشعار (يتم تلقائياً عبر Filament model binding لكن للتأكيد)
-        $this->form->model($this->company)->saveRelationships();
+        if (isset($this->data['logo'])) {
+            // منطق الصورة
+        }
 
-        // 3. معالجة الفروع والأقسام (تحديث، إنشاء، حذف)
         $this->saveBranchesAndDepartments();
 
         Toaster::success(__('Company updated successfully'));
@@ -181,7 +226,6 @@ class Edit extends Component implements HasForms
     {
         $formBranches = $this->data['branches'] ?? [];
 
-        // جلب أرقام الفروع الحالية الموجودة في قاعدة البيانات لهذا الشركة
         $existingBranchIds = $this->company->branches()->pluck('branch_branches.id')->toArray();
         $submittedBranchIds = [];
 
@@ -189,39 +233,31 @@ class Edit extends Component implements HasForms
             $branchId = $branchData['id'] ?? null;
             $departmentsData = $branchData['departments'] ?? [];
 
-            // تنظيف البيانات
             $branchAttributes = Arr::except($branchData, ['departments', 'id']);
-            $branchAttributes['created_by'] = auth()->id();
 
             if ($branchId) {
-                // === تحديث فرع موجود ===
                 $branch = Branch::find($branchId);
                 if ($branch) {
                     $branch->update($branchAttributes);
                     $submittedBranchIds[] = $branchId;
                 }
             } else {
-                // === إنشاء فرع جديد ===
+                $branchAttributes['created_by'] = auth()->id();
                 $branch = Branch::create($branchAttributes);
                 $this->company->branches()->attach($branch->id, ['is_main' => false]);
-                $branchId = $branch->id; // نحتاجه للأقسام
+                $submittedBranchIds[] = $branch->id;
             }
 
-            // === معالجة الأقسام لهذا الفرع ===
-            if ($branch) {
+            // معالجة الأقسام (سواء للفرع الجديد أو القديم)
+            if (isset($branch)) {
                 $this->syncDepartments($branch, $departmentsData);
             }
         }
 
-        // === حذف الفروع التي قام المستخدم بإزالتها من الـ Repeater ===
-        // الفرق بين الموجود سابقاً والمقدم حالياً
+        // حذف الفروع المحذوفة
         $branchesToDelete = array_diff($existingBranchIds, $submittedBranchIds);
         if (!empty($branchesToDelete)) {
-            // فك الارتباط (Detach)
             $this->company->branches()->detach($branchesToDelete);
-
-            // اختياري: إذا كنت تريد حذف الفرع نهائياً من السيستم
-            Branch::destroy($branchesToDelete);
         }
     }
 
@@ -232,26 +268,26 @@ class Edit extends Component implements HasForms
 
         foreach ($departmentsData as $deptData) {
             $deptId = $deptData['id'] ?? null;
-            $name = $deptData['name']; // الاسم الذي نريد حفظه
+            $deptName = $deptData['name'];
 
             if ($deptId) {
-                $department = CompanyDepartment::find($deptId);
+                $department = $branch->departments()->find($deptId);
                 if ($department) {
-                    $department->update(['name' => $name]);
+                    $department->update(['name' => $deptName]);
                     $submittedDeptIds[] = $deptId;
                 }
             } else {
-                $branch->departments()->create([
-                    'name' => $name,
+                $newDept = $branch->departments()->create([
+                    'name' => $deptName,
                     'created_by' => auth()->id()
                 ]);
+                $submittedDeptIds[] = $newDept->id;
             }
         }
 
-        // حذف الأقسام التي تم إزالتها من الفورم
         $deptsToDelete = array_diff($existingDeptIds, $submittedDeptIds);
         if (!empty($deptsToDelete)) {
-            CompanyDepartment::destroy($deptsToDelete);
+            $branch->departments()->whereIn('id', $deptsToDelete)->delete();
         }
     }
 

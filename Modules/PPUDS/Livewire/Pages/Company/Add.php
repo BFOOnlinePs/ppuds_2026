@@ -28,6 +28,7 @@ use Modules\GeoLocation\Entities\City;
 use Modules\GeoLocation\Entities\Country;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\CompanyCategory;
+use Modules\PPUDS\Entities\CompanyDepartment;
 use Modules\PPUDS\Enums\CompanyStatus;
 use Nwidart\Modules\Facades\Module;
 use Spatie\Permission\Models\Role;
@@ -80,7 +81,7 @@ class Add extends Component implements HasForms
                                             Section::make()
                                                 ->schema([
                                                     Select::make('company_category_id')
-                                                        ->label(__('Company'))
+                                                        ->label(__('Company Category'))
                                                         ->required()
                                                         ->options(CompanyCategory::get()->pluck('name', 'id'))
                                                         ->searchable()
@@ -89,7 +90,7 @@ class Add extends Component implements HasForms
                                             Section::make()
                                                 ->schema([
                                                     Select::make('status')
-                                                        ->label(__('Status'))
+                                                        ->label(__('Company Status'))
                                                         ->required()
                                                         ->default(CompanyStatus::ACTIVE->value)
                                                         ->options(CompanyStatus::options())
@@ -105,14 +106,20 @@ class Add extends Component implements HasForms
                             Repeater::make('branches')
                                 ->label(__('Branches'))
                                 ->relationship('branches')
+                                ->extraAttributes([
+                                    'style' => 'background-color: #f3f4f6; border-radius: 0.5rem; padding: 1rem;'
+                                ])
                                 ->minItems(1)
                                 ->defaultItems(1)
                                 ->collapsible()
+                                ->collapsed()
                                 ->itemLabel(fn (array $state): ?string => $state['name'] ?? __('New Branch'))
                                 ->cloneable()
                                 ->schema([
                                     // 1. بيانات الفرع
                                     Section::make(__('Branch Details'))
+                                        ->aside()
+                                        ->icon('solar-buildings-2-bold')
                                         ->schema([
                                             TextInput::make('name')
                                                 ->label(__('Branch Name'))
@@ -127,22 +134,31 @@ class Add extends Component implements HasForms
                                     // 2. إدارة الأقسام (تم إضافتها هنا لربطها بالفرع مباشرة)
                                     Section::make(__('Departments'))
                                         ->description(__('Define departments for this specific branch.'))
+                                        ->aside() // لجعل العنوان جانبيًا مما يقلل الزحمة الرأسية
+                                        ->extraAttributes([
+                                            'style' => 'background-color: #f3f4f6; border-radius: 0.5rem; padding: 1rem;'
+                                        ])
                                         ->schema([
-                                            Repeater::make('departments') // تأكد أن العلاقة departments موجودة في موديل Branch
-                                            ->label(__('Departments List'))
+                                            Repeater::make('departments')
+                                                ->label(__('Departments List'))
                                                 ->relationship('departments')
                                                 ->schema([
                                                     TextInput::make('name')
                                                         ->label(__('Department Name'))
                                                         ->required()
-                                                        ->placeholder('e.g. Sales, HR, Kitchen'),
-                                                    // يمكنك إضافة حقول أخرى للقسم هنا
+                                                        ->placeholder('e.g. Sales, HR')
+                                                        ->datalist(function (){
+                                                            return CompanyDepartment::all()->pluck('name', 'id');
+                                                        })
+                                                        ->autocomplete(false),
                                                 ])
-                                                ->grid(2) // عرض الأقسام بجانب بعضها
+                                                ->grid(2)
                                                 ->defaultItems(0)
-                                                ->collapsible(),
-                                        ])
-                                        ->collapsed(false), // يظهر مفتوحاً افتراضياً
+                                                ->collapsible()
+                                                ->itemLabel(fn (array $state): ?string => $state['name'] ?? null)
+                                                // تمييز زر الإضافة
+                                                ->addActionLabel(__('Add New Department'))
+                                        ]),
 
                                     // 3. الموقع
                                     Section::make(__('Location'))
@@ -151,7 +167,10 @@ class Add extends Component implements HasForms
                                                 Select::make('country_id')
                                                     ->label(__('Country'))
                                                     ->options(Country::all()->pluck('name', 'id'))
-                                                    ->searchable()->required()->live()
+                                                    ->default(fn () => Country::whereTranslation('name', 'فلسطين')->orWhereTranslation('name', 'Palestine')->first()?->id)
+                                                    ->searchable()
+                                                    ->required()
+                                                    ->live()
                                                     ->afterStateUpdated(fn (Set $set) => $set('city_id', null)),
 
                                                 Select::make('city_id')
@@ -162,11 +181,14 @@ class Add extends Component implements HasForms
                                                         return City::whereHas('governorate', function (Builder $query) use ($countryId) {
                                                             $query->where('country_id', $countryId);
                                                         })->get()->pluck('name', 'id');
-                                                    })->searchable()->required(),
+                                                    })
+                                                    ->default(fn () => City::whereTranslation('name', 'الخليل')->orWhereTranslation('name', 'Hebron')->first()?->id)
+                                                    ->searchable()
+                                                    ->required(),
                                             ]),
                                             Grid::make(2)->schema([
-                                                TextInput::make('latitude')->numeric()->required(),
-                                                TextInput::make('longitude')->numeric()->required(),
+                                                TextInput::make('latitude')->numeric(),
+                                                TextInput::make('longitude')->numeric(),
                                             ]),
                                         ])->compact(),
 
@@ -174,8 +196,8 @@ class Add extends Component implements HasForms
                                     Section::make(__('Working Hours'))
                                         ->schema([
                                             Grid::make(2)->schema([
-                                                TimePicker::make('opening_time')->label(__('Opening'))->seconds(false)->required(),
-                                                TimePicker::make('closing_time')->label(__('Closing'))->seconds(false)->required(),
+                                                TimePicker::make('opening_time')->label(__('Opening'))->seconds(false)->required()->default('08:00'),
+                                                TimePicker::make('closing_time')->label(__('Closing'))->seconds(false)->required()->default('16:00'),
                                             ]),
                                         ])->compact(),
                                 ])
@@ -220,6 +242,15 @@ class Add extends Component implements HasForms
 
                 // إنشاء الأقسام
                 foreach ($departmentsData as $deptData) {
+
+                    $deptName = $deptData['name'];
+
+                    CompanyDepartment::firstOrCreate([
+                        'name' => $deptName,
+                    ],[
+                        'created_by' => auth()->id()
+                    ]);
+
                     $branch->departments()->create([
                         'name' => $deptData['name'],
                         'created_by' => auth()->id(),

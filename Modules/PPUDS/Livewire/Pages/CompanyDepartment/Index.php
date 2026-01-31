@@ -9,6 +9,7 @@ use Filament\Forms\Components\Grid;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Set;
 use Filament\Support\Enums\MaxWidth;
+use Filament\Tables\Actions\DeleteBulkAction;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -78,7 +79,10 @@ class Index extends Component implements HasTable, HasForms
                     })
                     ->visible(fn() => auth()->user()->can('Company Department Create')),
             ])
-            ->bulkActions([]);
+            ->bulkActions([
+                DeleteBulkAction::make()
+                    ->visible(fn() => auth()->user()->can('Company Department Delete')),
+            ]);
     }
 
     protected function getTableFilters(): array

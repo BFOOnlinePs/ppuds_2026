@@ -56,8 +56,42 @@
     "Students of the current semester List": "قائمة طلاب الفصل الحالي",
 
     "Attendance and departure log": "سجل الحضور والمغادرة",
-
     "Follow-up file": "ملف المتابعة",
+    "Ratings": "التقييمات",
 
-    "Ratings": "التقييمات"
+    "General Info": "معلومات عامة",
+    "Name": "الاسم",
+    "Description": "الوصف",
+    "Logo": "الشعار",
+    "Status": "الحالة",
+    "Category": "التصنيف",
+    "Company Status": "حالة الشركة",
+
+    "Branches & Departments": "الفروع والأقسام",
+    "Branches": "الفروع",
+    "Branch Details": "تفاصيل الفرع",
+    "New Branch": "فرع جديد",
+    "Branch Name": "اسم الفرع",
+    "Main Branch": "الفرع الرئيسي",
+    "Email": "البريد الإلكتروني",
+    "Phone": "الهاتف",
+
+    "Departments": "الأقسام",
+    "Define departments for this specific branch.": "تحديد الأقسام الخاصة بهذا الفرع.",
+    "Departments List": "قائمة الأقسام",
+    "Department Name": "اسم القسم",
+    "Add New Department": "إضافة قسم جديد",
+    "Add Department": "إضافة قسم",
+
+    "Location": "الموقع",
+    "Country": "الدولة",
+    "City": "المدينة",
+
+    "Working Hours": "ساعات العمل",
+    "Opening": "بداية العمل",
+    "Closing": "نهاية العمل",
+
+    "Created successfully": "تم الإنشاء بنجاح",
+    "Updated successfully": "تم التحديث بنجاح",
+    "Home": "الرئيسية"
 }

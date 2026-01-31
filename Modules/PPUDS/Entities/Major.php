@@ -1,74 +1,55 @@
 <?php
 
-namespace Modules\Branch\Entities;
+namespace Modules\PPUDS\Entities;
 
-use ArPHP\I18N\Arabic;
 use Astrotomic\Translatable\Translatable;
-use Astrotomic\Translatable\Contracts\Translatable as TranslatableContract;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
-use Intervention\Image\Encoders\PngEncoder;
-use Laravolt\Avatar\Avatar;
-use Modules\Branch\Enums\BranchStatus;
-use Modules\Clinic\Enums\RoomStatus;
+use Modules\Branch\Entities\Branch;
 use Modules\Core\Entities\User;
 use Modules\Core\Enums\ImageQuality;
 use Modules\Core\Enums\ImageSize;
 use Modules\Core\Services\ImageService;
-use Modules\Customer\Enums\GenderType;
-use Modules\Customer\Enums\Language;
-use Modules\Customer\Enums\Status;
 use Modules\GeoLocation\Entities\City;
 use Modules\GeoLocation\Entities\Country;
-use Modules\Items\Enums\AttributeType;
-use Modules\PPUDS\Entities\Company;
-use Modules\PPUDS\Entities\CompanyDepartment;
+use Modules\PPUDS\Enums\CompanyStatus;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Astrotomic\Translatable\Contracts\Translatable as TranslatableContract;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\Image\Enums\Fit;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-// use Modules\Items\Database\Factories\AttributeFactory;
 
-class Branch extends Model implements TranslatableContract
+
+class Major extends Model implements TranslatableContract, HasMedia
 {
     use LogsActivity;
     use Translatable;
     use softDeletes;
+    use InteractsWithMedia;
 
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
 
-        $this->setTable(config('branch.table_prefix') . 'branches');
+        $this->setTable(config('ppuds.table_prefix') . 'majors');
     }
 
     protected $fillable = [
-        'phone',
-        'email',
-        'city_id',
-        'country_id',
-        'latitude',
-        'longitude',
-        'opening_time',
-        'closing_time',
-        'status',
+        'id',
+        'reference_code',
         'created_by',
-    ];
-
-    protected $casts = [
-        'latitude' => 'decimal:8',
-        'longitude' => 'decimal:8',
-        'status' => BranchStatus::class,
     ];
 
     public $translatedAttributes = [
         'name',
-        'description',
-        'address',
+        'description'
     ];
 
     public $useTranslationFallback = true;
@@ -101,32 +82,5 @@ class Branch extends Model implements TranslatableContract
                 $model->save();
             }
         });
-    }
-
-    public function city(): BelongsTo
-    {
-        return $this->belongsTo(City::class, 'city_id');
-    }
-
-    public function country(): BelongsTo
-    {
-        return $this->belongsTo(Country::class, 'country_id');
-    }
-
-    public function companies(): BelongsToMany
-    {
-        return $this->belongsToMany(Company::class, 'ppu_ds_branch_company')
-            ->withPivot('is_main')
-            ->withTimestamps();
-    }
-
-    public function departments(): HasMany
-    {
-        return $this->hasMany(CompanyDepartment::class);
-    }
-
-    public function workingHours()
-    {
-        return $this->hasMany(BranchWorkingHour::class);
     }
 }
