@@ -151,6 +151,15 @@ class Add extends Component implements HasForms
                                                             return CompanyDepartment::all()->pluck('name', 'id');
                                                         })
                                                         ->autocomplete(false),
+
+                                                    Select::make('user_id')
+                                                        ->label(__('User'))
+                                                        ->options(User::all()->pluck('name', 'id'))
+                                                        ->searchable()
+                                                        ->createOptionForm([
+                                                            TextInput::make('name')
+                                                        ])
+                                                        ->required(),
                                                 ])
                                                 ->grid(2)
                                                 ->defaultItems(0)
