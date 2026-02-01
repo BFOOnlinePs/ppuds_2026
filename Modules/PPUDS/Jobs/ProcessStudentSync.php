@@ -42,9 +42,11 @@ class ProcessStudentSync implements ShouldQueue
             $user = User::firstOrNew(['email' => $email]);
 
             $user->fill([
-                'name'     => $data['studentNameArabic'],
-                'phone'    => $this->sanitizePhone($data['studentMobile'] ?? '00000000'),
-                'password' => Hash::make($studentId),
+                'name'      => $data['studentNameArabic'],
+                'name_en'   => $data['studentNameEnglish'],
+                'email'     => $email,
+                'phone'     => $this->sanitizePhone($data['studentMobile'] ?? '00000000'),
+                'password'  => Hash::make($studentId),
             ])->save();
 
             if (method_exists($user, 'assignRole')) {
