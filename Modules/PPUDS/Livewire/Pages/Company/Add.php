@@ -3,6 +3,8 @@
 namespace Modules\PPUDS\Livewire\Pages\Company;
 
 use App\View\Components\AppLayout;
+use Filament\Actions\Concerns\InteractsWithActions;
+use Filament\Actions\Contracts\HasActions;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
@@ -33,9 +35,10 @@ use Modules\PPUDS\Enums\CompanyStatus;
 use Nwidart\Modules\Facades\Module;
 use Spatie\Permission\Models\Role;
 
-class Add extends Component implements HasForms
+class Add extends Component implements HasForms, HasActions
 {
     use InteractsWithForms;
+    use InteractsWithActions;
 
     public ?array $data = [];
 
@@ -158,6 +161,7 @@ class Add extends Component implements HasForms
                                                         ->searchable()
                                                         ->createOptionForm([
                                                             TextInput::make('name')
+                                                                ->required(),
                                                         ])
                                                         ->required(),
                                                 ])
