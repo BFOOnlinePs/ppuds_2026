@@ -3,6 +3,7 @@
 namespace Modules\PPUDS\Livewire\Pages\Student;
 
 use App\View\Components\AppLayout;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -10,28 +11,32 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
-use Hash;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Livewire\Component;
-use Modules\Branch\Entities\Branch;
 use Modules\Core\Entities\User;
-use Nwidart\Modules\Facades\Module;
-use Spatie\Permission\Models\Role;
+use Modules\Core\Filament\Forms\Components\Textarea;
+use Modules\PPUDS\Entities\StudnetProfile;
+use Modules\PPUDS\Entities\Major;
 
 class Edit extends Component implements HasForms
 {
     use InteractsWithForms;
 
+    public User $user;
     public ?array $data = [];
-    public $user = null;
 
-    public function mount($user)
+    public function mount(User $user)
     {
-        $user = User::with('roles')->findOrFail($user);
         $this->user = $user;
-        $this->data = $user->toArray();
-        // dd($this->data);
-        $this->data['roles'] = $user->roles->pluck('id')->toArray();
-        $this->form->fill($this->data);
+
+        $profile = $this->user->studentProfile;
+
+        $this->form->fill(array_merge(
+            $this->user->attributesToArray(),
+            $profile ? $profile->attributesToArray() : []
+        ));
     }
 
     public function form(Form $form): Form
@@ -39,58 +44,170 @@ class Edit extends Component implements HasForms
         return $form
             ->schema([
                 Grid::make(3)
+                    ->schema([
+                        Grid::make(1)
+                            ->columnSpan(2)
                             ->schema([
-                                Section::make(__('User Information'))
-                                    ->columnSpan(2)
+                                Section::make(__('Account Information'))
+                                    ->description(__('Manage user login details'))
+                                    ->icon('heroicon-o-user')
+                                    ->columns(2)
                                     ->schema([
                                         TextInput::make('name')
+                                            ->label(__('Name (Arabic)'))
                                             ->required()
-                                            ->label(__('Name')),
+                                            ->maxLength(255),
+
+                                        TextInput::make('name_en')
+                                            ->label(__('Name (English)'))
+                                            ->required()
+                                            ->maxLength(255),
+
                                         TextInput::make('email')
+                                            ->label(__('Email Address'))
                                             ->email()
                                             ->required()
-                                            ->label(__('Email')),
+                                            ->unique('users', 'email', ignoreRecord: true),
+
+                                        TextInput::make('phone')
+                                            ->label(__('Phone'))
+                                            ->numeric()
+                                            ->required(),
+
                                         TextInput::make('password')
                                             ->label(__('Password'))
                                             ->password()
-                                            ->required()
-                                    ]),
-                                Select::make('roles')
-                                    ->multiple()
-                                    ->preload()
-                                    ->label(__('Roles'))
-                                    ->default(fn() => $this->data['roles'] ?? [])
-                                    ->options(fn() => Role::pluck('name', 'id'))
-                                    ->searchable()
-                                    ->required()
-                                    ->placeholder(__('Select Roles')),
+                                            ->revealable()
+                                            // التعديلات الخاصة بصفحة التعديل:
+                                            ->nullable() // غير إجباري
+                                            ->dehydrated(fn ($state) => filled($state)) // لا يرسل للسيرفر إلا إذا تم تعبئته
+                                            ->confirmed(),
 
-                                Section::make(__('Branches'))
-                                    ->columnSpan(1)
+                                        TextInput::make('password_confirmation')
+                                            ->label(__('Confirm Password'))
+                                            ->password()
+                                            ->revealable()
+                                            ->visible(fn ($get) => filled($get('password'))) // يظهر فقط إذا كتب باسورد
+                                            ->required(fn ($get) => filled($get('password'))),
+                                    ]),
+
+                                Section::make(__('Academic Information'))
+                                    ->description(__('Student university details'))
+                                    ->icon('heroicon-o-academic-cap')
+                                    ->columns(2)
                                     ->schema([
-                                        Select::make('branch_id')
-                                            ->preload()
-                                            ->label(__('Branches'))
-                                            ->options(fn() => Branch::get()->pluck('name', 'id'))
-                                            ->searchable()
+                                        TextInput::make('student_number')
+                                            ->label(__('Student Number'))
                                             ->required()
-                                            ->placeholder(__('Select Branch'))
-                                    ])
-                                    ->visible(fn() => Module::isEnabled('branch')),                            ]),
+                                            ->numeric()
+                                            // استثناء الرقم الجامعي الحالي (نستثني الـ ID الخاص بالبروفايل)
+                                            ->rule(function () {
+                                                $profileId = $this->user->studentProfile?->id;
+                                                return Rule::unique(config('ppuds.table_prefix') . 'student_profiles', 'student_number')
+                                                    ->ignore($profileId);
+                                            }),
+
+                                        Select::make('major_id')
+                                            ->label(__('Major'))
+                                            ->options(function () {
+                                                return Major::get()->pluck('name', 'id');
+                                            })
+                                            // خيار إضافة تخصص جديد سريعاً (اختياري في التعديل، لكن مفيد)
+                                            ->createOptionForm([
+                                                TextInput::make('reference_code')->label(__('Reference code'))->required(),
+                                                TextInput::make('name')->label(__('Name'))->required(),
+                                                Textarea::make('description')->label(__('Description'))
+                                            ])
+                                            ->createOptionUsing(function (array $data){
+                                                $data['created_by'] = auth()->id();
+                                                return Major::create($data);
+                                            })
+                                            ->searchable()
+                                            ->preload()
+                                            ->required(),
+
+                                        TextInput::make('enrollment_year')
+                                            ->label(__('Enrollment Year'))
+                                            ->numeric()
+                                            ->minValue(2000)
+                                            ->maxValue(date('Y') + 1),
+
+                                        Select::make('semester_level')
+                                            ->label(__('Semester Level'))
+                                            ->options(array_combine(range(1, 10), range(1, 10)))
+                                            ->required(),
+                                    ]),
+                            ]),
+
+                        Grid::make(1)
+                            ->columnSpan(1)
+                            ->schema([
+                                Section::make(__('Personal Details'))
+                                    ->icon('heroicon-o-identification')
+                                    ->schema([
+                                        DatePicker::make('dob')
+                                            ->label(__('Date of Birth'))
+                                            ->maxDate(now()),
+
+                                        Select::make('gender')
+                                            ->label(__('Gender'))
+                                            ->options([
+                                                'male' => __('Male'),
+                                                'female' => __('Female'),
+                                            ]),
+
+                                        TextInput::make('tawjihi_gpa')
+                                            ->label(__('Tawjihi GPA'))
+                                            ->numeric()
+                                            ->maxValue(100)
+                                            ->suffix('%'),
+                                    ]),
+                            ]),
+                    ]),
             ])
-            ->statePath('data');
+            ->statePath('data')
+            ->model($this->user); // ربط الموديل بالفورم للمساعدة في الـ Validation
     }
 
     public function save()
     {
-        $state = $this->form->getState();
+        $this->validate();
 
-        $roles = $state['roles'] ?? [];
-        unset($state['roles']);
+        DB::transaction(function () {
 
-        $this->user->update($state);
+            // 1. تحديث بيانات المستخدم الأساسية
+            $userData = [
+                'name'      => $this->data['name'],
+                'name_en'   => $this->data['name_en'],
+                'email'     => $this->data['email'],
+                'phone'     => $this->data['phone'],
+            ];
 
-        $this->user->syncRoles($roles);
+            // تحديث كلمة المرور فقط إذا تم إدخالها
+            if (!empty($this->data['password'])) {
+                $userData['password'] = Hash::make($this->data['password']);
+            }
+
+            $this->user->update($userData);
+
+            // 2. تحديث أو إنشاء بيانات البروفايل
+            $profileData = collect($this->data)
+                ->except(['name', 'name_en', 'email', 'password', 'password_confirmation', 'roles'])
+                ->toArray();
+
+            // استخدام updateOrCreate لضمان عدم حدوث أخطاء
+            StudnetProfile::updateOrCreate(
+                ['user_id' => $this->user->id], // شرط البحث
+                $profileData // البيانات للتحديث
+            );
+
+            // تحديث الأدوار إذا لزم الأمر (في Add كان يتم إسناد student فقط)
+            // إذا كنت تريد السماح بتعديل الأدوار هنا، يجب إضافة حقل Select للأدوار في الفورم
+            // حالياً هو طالب، لذا لا داعي لتغيير دوره
+        });
+
+        // إعادة التوجيه
+        return redirect()->route('students.index');
     }
 
     public function render()
@@ -98,8 +215,8 @@ class Edit extends Component implements HasForms
         return view('ppuds::livewire.pages.student.edit')->layout(AppLayout::class, [
             'breadcrumbs' => [
                 ['title' => __('Home'), 'url' => route('home')],
-                ['title' => __('Users List'), 'url' => route('users.index')],
-                ['title' => __('Edit User'), 'url' => route('users.edit', $this->data['id'])],
+                ['title' => __('Students List'), 'url' => route('students.index')],
+                ['title' => __('Edit Student'), 'url' => '#'], // الرابط الحالي
             ]
         ]);
     }

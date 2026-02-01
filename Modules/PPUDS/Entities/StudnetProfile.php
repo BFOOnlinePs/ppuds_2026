@@ -30,7 +30,7 @@ class StudnetProfile extends Model implements HasMedia
      * The attributes that are mass assignable.
      */
     protected $fillable = [
-        'dob','gender','cv_status','tawjihi_gpa'
+        'user_id','dob','gender','cv_status','tawjihi_gpa','student_number','enrollment_year','semester_level','major_id'
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -97,5 +97,10 @@ class StudnetProfile extends Model implements HasMedia
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function major(): BelongsTo
+    {
+        return $this->belongsTo(Major::class);
     }
 }

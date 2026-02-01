@@ -18,6 +18,7 @@ use Modules\Customer\Entities\Customer;
 use Modules\Delivery\Entities\CustomerAddress;
 use Modules\Items\Entities\Order;
 use Modules\Marketing\Entities\LoyaltyTier;
+use Modules\PPUDS\Entities\StudnetProfile;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\Permission\Traits\HasRoles;
@@ -85,6 +86,7 @@ class User extends Authenticatable implements HasMedia
     protected $fillable = [
         'id',
         'name',
+        'name_en',
         'email',
         'phone',
         'password',
@@ -347,6 +349,12 @@ class User extends Authenticatable implements HasMedia
     {
         return 'App.Models.User.'.$this->id;
     }
+
+    public function studentProfile(): HasOne
+    {
+        return $this->hasOne(StudnetProfile::class , 'user_id');
+    }
+
 
 //    public function routeNotificationForFcm()
 //    {

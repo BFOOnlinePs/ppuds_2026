@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('reference_code')->nullable();
             $table->foreignId('created_by')->index('created_by')->constrained('users')->cascadeOnDelete();
 
+            $table->softDeletes();
             $table->timestamps();
         });
     }

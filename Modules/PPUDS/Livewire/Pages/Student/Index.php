@@ -3,6 +3,8 @@
 namespace Modules\PPUDS\Livewire\Pages\Student;
 
 use App\View\Components\AppLayout;
+use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Section;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Forms\Contracts\HasForms;
@@ -14,15 +16,14 @@ use Filament\Forms\Components\TextInput;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
-use GuzzleHttp\Promise\Create;
-use Illuminate\Database\Eloquent\Builder;
-use Modules\Core\Entities\User;
+use Masmerise\Toaster\Toaster;
 use Modules\Core\Filament\Forms\Components\CreateAction;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
+use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\StudnetProfile;
-use View;
+use Modules\PPUDS\Services\PpuApiService;
 
 class Index extends Component implements HasTable, HasForms
 {
@@ -35,16 +36,29 @@ class Index extends Component implements HasTable, HasForms
             ->query(fn() => StudnetProfile::query())
             ->columns([
                 TextColumn::make('user.name')
-                    ->label(__('Name'))
+                    ->label(__('Arabic Name'))
                     ->searchable()
                     ->sortable(),
+
+                TextColumn::make('user.name_en')
+                    ->label(__('English Name'))
+                    ->searchable()
+                    ->sortable(),
+
                 TextColumn::make('user.email')
                     ->label(__('Email'))
                     ->searchable()
                     ->sortable(),
+
+                TextColumn::make('user.phone')
+                    ->label(__('Phone'))
+                    ->searchable()
+                    ->sortable(),
+
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->label(__('Created At')),
+
                 TextColumn::make('updated_at')
                     ->dateTime()
                     ->label(__('Updated At')),
@@ -54,10 +68,21 @@ class Index extends Component implements HasTable, HasForms
                 $this->getTableActions()
             )
             ->headerActions([
+
+                Action::make('sync_major')
+                    ->label(__('Sync Major'))
+                    ->icon('heroicon-o-arrow-path')
+                    ->action(function (PpuApiService $service){
+                        $status = $service->syncStudents(2024, 1);
+                        if ($status) {
+                            Toaster::success(__('Sync Major') . ' ' . ($status ? __('Success') : __('Failed')));
+                        }
+                    }),
+
                 CreateAction::make('create')
-                    ->label(__('Add User'))
-                    ->url(route('users.add'))
-                    ->visible(fn() => auth()->user()->can('User Create'))
+                    ->label(__('Add Student'))
+                    ->url(route('students.add'))
+                    ->visible(fn() => auth()->user()->can('Student Create'))
             ])
             ->bulkActions([]);
     }
@@ -103,30 +128,109 @@ class Index extends Component implements HasTable, HasForms
     {
         return [
             ViewAction::make('view')
-            ->form(function (Forms\Form $form, $record) {
-                return $form->schema([
-                    TextInput::make('name')
-                        ->label(__('Name'))
-                        ->default($record->name)
-                        ->disabled(),
-                    TextInput::make('email')
-                        ->label(__('Email'))
-                        ->default($record->email)
-                        ->disabled(),
-                    TextInput::make('roles')
-                        ->label(__('Roles'))
-                        ->default($record->roles->pluck('name')->implode(', '))
-                        ->disabled(),
-                ]);
-            })
-            ->modalSubmitAction(false)
-            ->visible(fn() => auth()->user()->can('User View')),
-            EditAction::make('edit')
-                ->url(fn(User $record) => route('users.edit', $record->id))
-                ->visible(fn() => auth()->user()->can('User Update')),
+                ->label('')
+                ->modalHeading(__('Student Details'))
+                ->form(function ($record) {
+                    return [
+                        Grid::make(3)
+                            ->schema([
+                                Grid::make(1)
+                                    ->columnSpan(2)
+                                    ->schema([
+                                        Section::make(__('Account Information'))
+                                            ->icon('heroicon-o-user')
+                                            ->columns(2)
+                                            ->schema([
+                                                TextInput::make('name_ar')
+                                                    ->label(__('Name (Arabic)'))
+                                                    ->default($record->user->name ?? '-')
+                                                    ->disabled(),
 
+                                                TextInput::make('name_en')
+                                                    ->label(__('Name (English)'))
+                                                    ->default($record->user->name_en ?? '-')
+                                                    ->disabled(),
+
+                                                TextInput::make('email')
+                                                    ->label(__('Email Address'))
+                                                    ->default($record->user->email ?? '-')
+                                                    ->columnSpanFull()
+                                                    ->disabled(),
+                                            ]),
+
+                                        // القسم 2: المعلومات الأكاديمية (من جدول student_profiles)
+                                        Section::make(__('Academic Information'))
+                                            ->icon('heroicon-o-academic-cap')
+                                            ->columns(2)
+                                            ->schema([
+                                                TextInput::make('student_number')
+                                                    ->label(__('Student Number'))
+                                                    ->default($record->student_number)
+                                                    ->disabled(),
+
+                                                // عرض اسم التخصص بدلاً من الرقم
+                                                TextInput::make('major_name')
+                                                    ->label(__('Major'))
+                                                    ->default($record->major->name ?? '-')
+                                                    ->disabled(),
+
+                                                TextInput::make('enrollment_year')
+                                                    ->label(__('Enrollment Year'))
+                                                    ->default($record->enrollment_year)
+                                                    ->disabled(),
+
+                                                TextInput::make('semester_level')
+                                                    ->label(__('Semester Level'))
+                                                    ->default($record->semester_level)
+                                                    ->disabled(),
+                                            ]),
+                                    ]),
+
+                                // العمود الثالث: البيانات الشخصية
+                                Grid::make(1)
+                                    ->columnSpan(1)
+                                    ->schema([
+                                        Section::make(__('Personal Details'))
+                                            ->icon('heroicon-o-identification')
+                                            ->schema([
+                                                Forms\Components\DatePicker::make('dob')
+                                                    ->label(__('Date of Birth'))
+                                                    ->default($record->dob)
+                                                    ->disabled(),
+
+                                                // نستخدم Select مع disabled لعرض "ذكر/أنثى" بدلاً من male/female
+                                                Forms\Components\Select::make('gender')
+                                                    ->label(__('Gender'))
+                                                    ->options([
+                                                        'male' => __('Male'),
+                                                        'female' => __('Female'),
+                                                    ])
+                                                    ->default($record->gender)
+                                                    ->disabled(),
+
+                                                TextInput::make('tawjihi_gpa')
+                                                    ->label(__('Tawjihi GPA'))
+                                                    ->default($record->tawjihi_gpa)
+                                                    ->suffix('%')
+                                                    ->disabled(),
+
+                                                // عرض الأدوار
+                                                TextInput::make('roles')
+                                                    ->label(__('Roles'))
+                                                    ->default($record->user->roles->pluck('name')->implode(', '))
+                                                    ->disabled(),
+                                            ]),
+                                    ]),
+                            ])
+                    ];
+                })
+                ->modalSubmitAction(false)
+                ->visible(fn() => auth()->user()->can('Student View')),
+            EditAction::make('edit')
+                ->url(fn(StudnetProfile $record) => route('students.edit', $record->user_id))
+                ->visible(fn() => auth()->user()->can('Student Update')),
             DeleteAction::make('delete')
-                ->visible(fn() => auth()->user()->can('User Delete'))
+                ->visible(fn() => auth()->user()->can('Student Delete'))
         ];
     }
 

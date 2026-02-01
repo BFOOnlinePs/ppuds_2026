@@ -29,8 +29,7 @@ class SidebarServiceProvider extends ServiceProvider
 
         $sidebar->add(
             (new SidebarGroup('Specialties', 'solar-users-group-rounded-bold-duotone' , ['Student View']))
-                ->add(new SidebarItem('Add Specialties' , 'solar-users-group-rounded-bold-duotone' , ['Student View'] ,  'students.add' ))
-                ->add(new SidebarItem('Specialties List' , 'solar-users-group-rounded-bold-duotone' , ['Student Create'] ,  'students.index' ))
+                ->add(new SidebarItem('Specialties List' , 'solar-users-group-rounded-bold-duotone' , ['Student View'] ,  'majors.index' ))
         );
 
         $sidebar->add(

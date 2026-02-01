@@ -25,7 +25,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ], function () {
                     Route::get('/students', Index::class)->name('students.index')->can('Student View List');
                     Route::get('/students/add', Add::class)->name('students.add')->can('Student Create');
-                    Route::get('/students/{student}/edit', Edit::class)->name('students.edit')->can('Student Update');
+                    Route::get('/students/{user}/edit', Edit::class)->name('students.edit')->can('Student Update');
                 });
 
                 Route::group([
@@ -52,6 +52,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     Route::get('/companies', Index::class)->name('companies.index')->can('Company View List');
                     Route::get('/companies/add', Add::class)->name('companies.add')->can('Company Create');
                     Route::get('/companies/{company}/edit', Edit::class)->name('companies.edit')->can('Company Update');
+                });
+
+                Route::group([
+                    'prefix' => 'majors',
+                    'as' => 'majors.',
+                    'namespace' => 'Modules\PPUDS\Livewire\Pages\Major',
+                ], function () {
+                    Route::get('/majors', Index::class)->name('index')->can('Student View List');
                 });
             });
         }

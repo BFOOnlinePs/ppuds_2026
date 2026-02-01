@@ -48,7 +48,7 @@
     "Specialties List": "قائمة التخصصات",
 
     "Registration": "التسجيل",
-    "Add Registration": "اضافة تسجيل",
+    "Add Registration": "إضافة تسجيل",
     "Registration List": "قائمة التسجيل",
 
     "Students of the current semester": "طلاب الفصل الدراسي الحالي",
@@ -77,7 +77,7 @@
     "Phone": "الهاتف",
 
     "Departments": "الأقسام",
-    "Define departments for this specific branch.": "تحديد الأقسام الخاصة بهذا الفرع.",
+    "Define departments for this specific branch.": "تحديد الأقسام التابعة لهذا الفرع.",
     "Departments List": "قائمة الأقسام",
     "Department Name": "اسم القسم",
     "Add New Department": "إضافة قسم جديد",
@@ -88,10 +88,32 @@
     "City": "المدينة",
 
     "Working Hours": "ساعات العمل",
-    "Opening": "بداية العمل",
-    "Closing": "نهاية العمل",
+    "Opening": "بداية الدوام",
+    "Closing": "نهاية الدوام",
 
     "Created successfully": "تم الإنشاء بنجاح",
     "Updated successfully": "تم التحديث بنجاح",
-    "Home": "الرئيسية"
+    "Home": "الرئيسية",
+
+    "Account Information": "معلومات الحساب",
+    "Manage user login details": "إدارة بيانات تسجيل الدخول",
+    "Academic Information": "المعلومات الأكاديمية",
+    "Student university details": "بيانات الطالب الجامعية",
+    "Personal Details": "البيانات الشخصية",
+    "Student Number": "الرقم الجامعي",
+    "Major": "التخصص",
+    "Enrollment Year": "سنة الالتحاق",
+    "Semester Level": "المستوى الدراسي",
+    "Date of Birth": "تاريخ الميلاد",
+    "Gender": "الجنس",
+    "Male": "ذكر",
+    "Female": "أنثى",
+    "Tawjihi GPA": "معدل التوجيهي",
+    "Roles": "الأدوار والصلاحيات",
+    "Name (Arabic)": "الاسم (بالعربي)",
+    "Name (English)": "الاسم (بالإنجليزي)",
+    "Password": "كلمة المرور",
+    "Confirm Password": "تأكيد كلمة المرور",
+    "Email Address": "البريد الإلكتروني",
+    "Full Name": "الاسم الكامل"
 }

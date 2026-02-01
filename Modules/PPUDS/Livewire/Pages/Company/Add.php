@@ -162,7 +162,26 @@ class Add extends Component implements HasForms, HasActions
                                                         ->createOptionForm([
                                                             TextInput::make('name')
                                                                 ->required(),
+
+                                                            TextInput::make('name_en')
+                                                                ->required(),
+
+                                                            TextInput::make('email')
+                                                                ->required()
+                                                                ->email(),
+
+                                                            TextInput::make('phone')
+                                                                ->required()
+                                                                ->numeric(),
+
+                                                            TextInput::make('password')
+                                                                ->required()
+                                                                ->password(),
                                                         ])
+                                                        ->createOptionUsing(function (array $data){
+                                                            $data['password'] = bcrypt($data['password']);
+                                                            return User::create($data);
+                                                        })
                                                         ->required(),
                                                 ])
                                                 ->grid(2)

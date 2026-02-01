@@ -150,6 +150,38 @@ class PermissionSeeder extends Seeder
                 'module_name' => 'Company',
             ],
 
+
+            // TODO Major
+            [
+                'name' => 'Major View List',
+                'guard_name' => 'web',
+                'module_name' => 'Major',
+            ],
+            [
+                'name' => 'Major Create',
+                'guard_name' => 'web',
+                'module_name' => 'Major',
+            ],
+            [
+                'name' => 'Major Update',
+                'guard_name' => 'web',
+                'module_name' => 'Major',
+            ],
+            [
+                'name' => 'Major Delete',
+                'guard_name' => 'web',
+                'module_name' => 'Company',
+            ],
+            [
+                'name' => 'Major View',
+                'guard_name' => 'web',
+                'module_name' => 'Major',
+            ],
+            [
+                'name' => 'Major Info',
+                'guard_name' => 'web',
+                'module_name' => 'Major',
+            ],
         ];
 
         foreach ($permissions as $perm) {

@@ -31,12 +31,18 @@ class AdminSeeder extends Seeder
 
         $user->generateAvatar();
 
-        // Kitchen For Pos
+        $roles = [
+            'Student',                         // طالب
+            'Head of Department',              // رئيس قسم
+            'Administrative Assistant',        // مساعد اداري
+            'M&E Officer',                     // مسؤول متابعة وتقييم (Monitoring and Evaluation)
+            'Corporate Relations Officer',      // مسؤول التواصل مع الشركات
+            'Practical Training Supervisor',   // مشرف التدريب العملي
+            'Company Supervisor',              // مسؤول متابعة في الشركة
+        ];
 
-        $permission = Permission::create(['name' => 'access_kitchen_display']);
-
-        $kitchen = Role::findOrCreate('Kitchen');
-
-        $kitchen->givePermissionTo($permission);
+        foreach ($roles as $role){
+            Role::findOrCreate($role);
+        }
     }
 }
