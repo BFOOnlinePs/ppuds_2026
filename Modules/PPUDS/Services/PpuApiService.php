@@ -17,7 +17,7 @@ class PpuApiService
         $url = "https://api-core.ppu.edu/api/DualStudies/getAllDsStudents/{$academicYear}/{$semesterNo}";
 
         $response = Http::withHeaders(['Accept' => 'application/json'])
-            ->withToken('eyJhbGciOiJSUzI1NiIsImtpZCI6ImNhZThlOTMyM2NhMzE0NjRkZDA4OTc5NTc4MTg3NzlkIiwidHlwIjoiYXQrand0In0.eyJuYmYiOjE3Njk5NTYyMjMsImV4cCI6MTc2OTk1OTgyMywiaXNzIjoiaHR0cHM6Ly9teS5wcHUuZWR1IiwiYXVkIjoiRXh0ZXJuYWxBcGlzLmFwaSIsImNsaWVudF9pZCI6IkRTTW9iaWxlLnBwdSIsInN1YiI6IkRTVGVzdGluZyIsImF1dGhfdGltZSI6MTc2OTk1NjIyMywiaWRwIjoibG9jYWwiLCJ1c2VyX25vIjoiMTQ0MDEwMSIsInVzZXJfdHlwZSI6IjEiLCJyb2xlIjoiODMiLCJuYW1lIjoiRFNUZXN0aW5nIiwic2Vzc2lvbl9pZCI6IjM2ZDIxYzdiLTEwZjktNGFiNi05ODgwLWNiNGZmZjcwZWE2OSIsInNjb3BlIjpbImVtYWlsIiwib3BlbmlkIiwicHJvZmlsZSIsInJvbGUiLCJ1c2Vybm8iLCJFeHRlcm5hbEFwaXMuYXBpIiwib2ZmbGluZV9hY2Nlc3MiXSwiYW1yIjpbInB3ZCJdfQ.Rft89G0en6m9W9BmM4KuQF1_AVEgOhv_dnKugriKlqMBz7ghHpFrpnyNeiHFgyaEhXtSs8r8RZwrPGTdEWvd9YUrWAaI5dPcnDTfgtEC7cuk7jzdzAQQ9-d5PFWMjVSEqhC7I1RHZXNmOucHeZ-C3fKIYp3HVeDo3Z4wEGJ-cOxnV6Y6tasXHItV6hwygGjND9W1-cDUICq2FGpp1vYvxJDWwGzYtPG9BcxLU4G87EaZeKZ1_l5-YGJwSRau3CYrST_at4UcujHGEfBaL3tm59s4xpLGsJWW94OLpGI0uzCT7N9NReTL9bYLRDJsYxN_hBJu0T4OGZ4e-vcw47zqnA')
+            ->withToken('eyJhbGciOiJSUzI1NiIsImtpZCI6ImNhZThlOTMyM2NhMzE0NjRkZDA4OTc5NTc4MTg3NzlkIiwidHlwIjoiYXQrand0In0.eyJuYmYiOjE3NzAwMjIwMDYsImV4cCI6MTc3MDAyNTYwNiwiaXNzIjoiaHR0cHM6Ly9teS5wcHUuZWR1IiwiYXVkIjoiRXh0ZXJuYWxBcGlzLmFwaSIsImNsaWVudF9pZCI6IkRTTW9iaWxlLnBwdSIsInN1YiI6IkRTVGVzdGluZyIsImF1dGhfdGltZSI6MTc3MDAyMjAwNiwiaWRwIjoibG9jYWwiLCJ1c2VyX25vIjoiMTQ0MDEwMSIsInVzZXJfdHlwZSI6IjEiLCJyb2xlIjoiODMiLCJuYW1lIjoiRFNUZXN0aW5nIiwic2Vzc2lvbl9pZCI6IjUwOTI3ZGUyLWU2YzUtNDJlZS04NWE1LTc0NzA2NTBkMjQ0MyIsInNjb3BlIjpbImVtYWlsIiwib3BlbmlkIiwicHJvZmlsZSIsInJvbGUiLCJ1c2Vybm8iLCJFeHRlcm5hbEFwaXMuYXBpIiwib2ZmbGluZV9hY2Nlc3MiXSwiYW1yIjpbInB3ZCJdfQ.MxYAoFiyVS6w_WHWPwbjJFvw2_nqFGb-tM-rhYutSGCg560pkLemVyA89QBZUjzLSjGmXpZRnzgtfYkT5MeMvow-jg3WJVbsE93jWPoywFx2kZUGduSutaI7fZ06KIVuRvvURwcffRknTS5hABsoFkLHvIEBfdqt9sG1why39mbperjna9ssSRQMhl6B9BMT5BLq4wb-cyfo2UB136-7dJHJkCzDimWPzAvaGz5tD66fqGCM3XXTbjA14KVYy9G_wu3JRfiEH1juLfds3bSwdshboL6VLgpZrOIsu-6R1c12wkmDUxkX-zhkyunhlfcbIRyIoNbv9riSYVKHqpMbqA')
             ->get($url);
 
         Log::info("Response: " . json_encode($response->json()));
@@ -25,20 +25,20 @@ class PpuApiService
         if ($response->successful()) {
             $students = $response->json('data') ?? [];
 
-            foreach ($students as $studentData) {
-                try {
-                    ProcessStudentSync::dispatch($studentData);
-                    Log::info("Successfully synced student: " . $studentData['studentNo']);
-                } catch (\Exception $e) {
-                    Log::error("Failed to sync student: " . ($studentData['studentNo'] ?? 'Unknown'), [
-                        'error' => $e->getMessage(),
-                        'data' => $studentData
-                    ]);
-                    continue;
+            collect($students)->chunk(50)->each(function ($chunk){
+                foreach ($chunk as $student){
+                    try {
+                        ProcessStudentSync::dispatch($student);
+                    }catch (\Exception $e){
+                        Log::error("Failed to dispatch sync job for student: " . ($student['studentNo'] ?? 'Unknown'));
+                    }
                 }
-            }
+            });
+
+            Log::info("Sync dispatched for " . count($students) . " students.");
             return true;
         }
+        Log::error("Failed to fetch students from API", ['status' => $response->status(), 'body' => $response->body()]);
         return false;
     }
 
@@ -48,7 +48,7 @@ class PpuApiService
             $response = Http::withHeaders([
                 'Accept' => 'application/json',
             ])
-                ->withToken('eyJhbGciOiJSUzI1NiIsImtpZCI6ImNhZThlOTMyM2NhMzE0NjRkZDA4OTc5NTc4MTg3NzlkIiwidHlwIjoiYXQrand0In0.eyJuYmYiOjE3Njk5NTYyMjMsImV4cCI6MTc2OTk1OTgyMywiaXNzIjoiaHR0cHM6Ly9teS5wcHUuZWR1IiwiYXVkIjoiRXh0ZXJuYWxBcGlzLmFwaSIsImNsaWVudF9pZCI6IkRTTW9iaWxlLnBwdSIsInN1YiI6IkRTVGVzdGluZyIsImF1dGhfdGltZSI6MTc2OTk1NjIyMywiaWRwIjoibG9jYWwiLCJ1c2VyX25vIjoiMTQ0MDEwMSIsInVzZXJfdHlwZSI6IjEiLCJyb2xlIjoiODMiLCJuYW1lIjoiRFNUZXN0aW5nIiwic2Vzc2lvbl9pZCI6IjM2ZDIxYzdiLTEwZjktNGFiNi05ODgwLWNiNGZmZjcwZWE2OSIsInNjb3BlIjpbImVtYWlsIiwib3BlbmlkIiwicHJvZmlsZSIsInJvbGUiLCJ1c2Vybm8iLCJFeHRlcm5hbEFwaXMuYXBpIiwib2ZmbGluZV9hY2Nlc3MiXSwiYW1yIjpbInB3ZCJdfQ.Rft89G0en6m9W9BmM4KuQF1_AVEgOhv_dnKugriKlqMBz7ghHpFrpnyNeiHFgyaEhXtSs8r8RZwrPGTdEWvd9YUrWAaI5dPcnDTfgtEC7cuk7jzdzAQQ9-d5PFWMjVSEqhC7I1RHZXNmOucHeZ-C3fKIYp3HVeDo3Z4wEGJ-cOxnV6Y6tasXHItV6hwygGjND9W1-cDUICq2FGpp1vYvxJDWwGzYtPG9BcxLU4G87EaZeKZ1_l5-YGJwSRau3CYrST_at4UcujHGEfBaL3tm59s4xpLGsJWW94OLpGI0uzCT7N9NReTL9bYLRDJsYxN_hBJu0T4OGZ4e-vcw47zqnA')
+                ->withToken('eyJhbGciOiJSUzI1NiIsImtpZCI6ImNhZThlOTMyM2NhMzE0NjRkZDA4OTc5NTc4MTg3NzlkIiwidHlwIjoiYXQrand0In0.eyJuYmYiOjE3NzAwMjIwMDYsImV4cCI6MTc3MDAyNTYwNiwiaXNzIjoiaHR0cHM6Ly9teS5wcHUuZWR1IiwiYXVkIjoiRXh0ZXJuYWxBcGlzLmFwaSIsImNsaWVudF9pZCI6IkRTTW9iaWxlLnBwdSIsInN1YiI6IkRTVGVzdGluZyIsImF1dGhfdGltZSI6MTc3MDAyMjAwNiwiaWRwIjoibG9jYWwiLCJ1c2VyX25vIjoiMTQ0MDEwMSIsInVzZXJfdHlwZSI6IjEiLCJyb2xlIjoiODMiLCJuYW1lIjoiRFNUZXN0aW5nIiwic2Vzc2lvbl9pZCI6IjUwOTI3ZGUyLWU2YzUtNDJlZS04NWE1LTc0NzA2NTBkMjQ0MyIsInNjb3BlIjpbImVtYWlsIiwib3BlbmlkIiwicHJvZmlsZSIsInJvbGUiLCJ1c2Vybm8iLCJFeHRlcm5hbEFwaXMuYXBpIiwib2ZmbGluZV9hY2Nlc3MiXSwiYW1yIjpbInB3ZCJdfQ.MxYAoFiyVS6w_WHWPwbjJFvw2_nqFGb-tM-rhYutSGCg560pkLemVyA89QBZUjzLSjGmXpZRnzgtfYkT5MeMvow-jg3WJVbsE93jWPoywFx2kZUGduSutaI7fZ06KIVuRvvURwcffRknTS5hABsoFkLHvIEBfdqt9sG1why39mbperjna9ssSRQMhl6B9BMT5BLq4wb-cyfo2UB136-7dJHJkCzDimWPzAvaGz5tD66fqGCM3XXTbjA14KVYy9G_wu3JRfiEH1juLfds3bSwdshboL6VLgpZrOIsu-6R1c12wkmDUxkX-zhkyunhlfcbIRyIoNbv9riSYVKHqpMbqA')
                 ->connectTimeout(5)
                 ->get("https://api-core.ppu.edu/api/DualStudies/getAllDSMajors");
 

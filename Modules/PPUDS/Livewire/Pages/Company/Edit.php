@@ -21,6 +21,7 @@ use Illuminate\Support\Arr;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Branch\Entities\Branch;
+use Modules\Core\Entities\User;
 use Modules\Core\Filament\Forms\Components\Textarea;
 use Modules\GeoLocation\Entities\City;
 use Modules\GeoLocation\Entities\Country;
@@ -146,18 +147,28 @@ class Edit extends Component implements HasForms
                                                 ->label(__('Departments List'))
                                                 ->schema([
                                                     TextInput::make('id')->hidden(),
-                                                    TextInput::make('name')
-                                                        ->label(__('Department Name'))
-                                                        ->required()
-                                                        ->placeholder('e.g. Sales, HR')
-                                                        ->datalist(function (){
-                                                            // جلب الأسماء بشكل آمن مع الترجمة
-                                                            return CompanyDepartment::get()
-                                                                ->pluck('name')
-                                                                ->unique() // إزالة التكرار
-                                                                ->toArray();
+                                                    Select::make('user_id')
+                                                        ->label(__('User'))
+                                                        ->options(User::role(['Company Supervisor'])->pluck('name', 'id'))
+                                                        ->searchable()
+                                                        ->getOptionLabelUsing(fn ($value) => User::find($value)?->name)
+                                                        ->createOptionForm([
+                                                            TextInput::make('name')->required(),
+                                                            TextInput::make('name_en')->required(),
+                                                            TextInput::make('email')->required()->email(),
+                                                            TextInput::make('phone')->required()->numeric(),
+                                                            TextInput::make('password')->required()->password(),
+                                                        ])
+                                                        ->createOptionUsing(function (array $data) {
+                                                            $data['password'] = bcrypt($data['password']);
+
+                                                            $user = Modules\Core\Entities\User::create($data);
+                                                            $user->assignRole('Company Supervisor');
+
+                                                            // إرجاع الـ ID ليتم اختياره
+                                                            return $user->id;
                                                         })
-                                                        ->autocomplete('off'),
+                                                        ->required(),
                                                 ])
                                                 ->grid(2)
                                                 ->defaultItems(0)

@@ -4,6 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Modules\PPUDS\Enums\CvStatus;
+use Modules\PPUDS\Enums\StudentGender;
 
 return new class extends Migration
 {
@@ -17,7 +18,7 @@ return new class extends Migration
 
             $table->foreignId('user_id')->index('user_id')->constrained('users')->cascadeOnDelete();
             $table->date('dob')->nullable();
-            $table->string('gender')->nullable();
+            $table->integer('gender')->nullable()->default(StudentGender::MALE->value);
             $table->integer('cv_status')->default(CvStatus::PENDING->value)->nullable();
             $table->string('tawjihi_gpa')->nullable();
 

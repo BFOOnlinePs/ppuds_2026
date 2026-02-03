@@ -146,41 +146,54 @@ class Add extends Component implements HasForms, HasActions
                                                 ->label(__('Departments List'))
                                                 ->relationship('departments')
                                                 ->schema([
-                                                    TextInput::make('name')
+                                                    Select::make('name')
                                                         ->label(__('Department Name'))
                                                         ->required()
-                                                        ->placeholder('e.g. Sales, HR')
-                                                        ->datalist(function (){
-                                                            return CompanyDepartment::all()->pluck('name', 'id');
+                                                        ->searchable()
+                                                        ->preload()
+                                                        ->options(function () {
+                                                            return \Modules\PPUDS\Entities\CompanyDepartment::get()
+                                                                ->pluck('name', 'name')
+                                                                ->unique()
+                                                                ->toArray();
                                                         })
-                                                        ->autocomplete(false),
+                                                        ->createOptionForm([
+                                                            TextInput::make('new_department_name')
+                                                                ->label(__('New Department Name'))
+                                                                ->required()
+                                                                ->maxLength(255),
+                                                        ])
+                                                        ->createOptionUsing(function (array $data) {
+                                                            return $data['new_department_name'];
+                                                        }),
 
                                                     Select::make('user_id')
                                                         ->label(__('User'))
-                                                        ->options(User::all()->pluck('name', 'id'))
+                                                        ->relationship(
+                                                            name: 'user',
+                                                            titleAttribute: 'name',
+                                                            modifyQueryUsing: fn (Builder $query) => $query->role('Company Supervisor')
+                                                        )
                                                         ->searchable()
+                                                        ->preload()
                                                         ->createOptionForm([
-                                                            TextInput::make('name')
-                                                                ->required(),
-
-                                                            TextInput::make('name_en')
-                                                                ->required(),
-
-                                                            TextInput::make('email')
-                                                                ->required()
-                                                                ->email(),
-
-                                                            TextInput::make('phone')
-                                                                ->required()
-                                                                ->numeric(),
-
-                                                            TextInput::make('password')
-                                                                ->required()
-                                                                ->password(),
+                                                            TextInput::make('name')->required(),
+                                                            TextInput::make('name_en')->required(),
+                                                            TextInput::make('email')->required()->email(),
+                                                            TextInput::make('phone')->required()->numeric(),
+                                                            TextInput::make('password')->required()->password(),
                                                         ])
-                                                        ->createOptionUsing(function (array $data){
+                                                        ->createOptionUsing(function (array $data) {
                                                             $data['password'] = bcrypt($data['password']);
-                                                            return User::create($data);
+
+                                                            // 1. إنشاء المستخدم
+                                                            $user = User::create($data);
+
+                                                            // 2. إعطاء الصلاحية
+                                                            $user->assignRole('Company Supervisor');
+
+                                                            // 3. مهم جداً: إرجاع الـ ID ليتم اختياره تلقائياً
+                                                            return $user->id;
                                                         })
                                                         ->required(),
                                                 ])
@@ -255,7 +268,7 @@ class Add extends Component implements HasForms, HasActions
             $company->addImage($this->data['logo']);
         }
 
-        // 2. إنشاء الفروع والأقسام
+        // 2. إنشاء الفروع
         if (!empty($this->data['branches'])) {
 
             foreach ($this->data['branches'] as $branchData) {
@@ -263,30 +276,41 @@ class Add extends Component implements HasForms, HasActions
                 $departmentsData = $branchData['departments'] ?? [];
                 $branchCleanData = \Illuminate\Support\Arr::except($branchData, ['departments']);
 
-                // === الحل هنا: إضافة created_by للفرع ===
                 $branchCleanData['created_by'] = auth()->id();
 
-                // الآن يتم الإنشاء
-                $branch = Branch::create($branchCleanData);
+                // إنشاء الفرع
+                $branch = Branch::create($branchCleanData); // تأكد أن المودل Branch هو الصحيح
 
                 // ربط الفرع بالشركة
                 $company->branches()->attach($branch->id, ['is_main' => false]);
 
-                // إنشاء الأقسام
+                // 3. معالجة الأقسام (لمنع التكرار)
                 foreach ($departmentsData as $deptData) {
 
                     $deptName = $deptData['name'];
 
-                    CompanyDepartment::firstOrCreate([
-                        'name' => $deptName,
-                    ],[
-                        'created_by' => auth()->id()
-                    ]);
+                    // --- [الحل لمنع التكرار] ---
 
-                    $branch->departments()->create([
-                        'name' => $deptData['name'],
-                        'created_by' => auth()->id(),
-                    ]);
+                    // 1. نبحث هل يوجد قسم بهذا الاسم داخل *هذا الفرع* تحديداً؟
+                    $existingDept = CompanyDepartment::where('branch_id', $branch->id)
+                        ->whereTranslation('name', $deptName) // دالة البحث في الترجمة
+                        ->first();
+
+                    if ($existingDept) {
+                        // 2. إذا وجد: نقوم بتحديثه فقط (مثلاً تحديث المدير إذا تغير)
+                        $existingDept->update([
+                            'user_id' => $deptData['user_id'] ?? $existingDept->user_id,
+                            // لا نحدث الاسم لأنه هو نفسه
+                        ]);
+                    } else {
+                        // 3. إذا لم يوجد: نقوم بإنشائه
+                        $branch->departments()->create([
+                            'name'       => $deptName,
+                            'user_id'    => $deptData['user_id'] ?? null,
+                            'created_by' => auth()->id(),
+                        ]);
+                    }
+                    // --- [انتهى الحل] ---
                 }
             }
         }

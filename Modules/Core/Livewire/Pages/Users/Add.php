@@ -60,7 +60,6 @@ class Add extends Component implements HasForms
                                             ->searchable()
                                             ->required()
                                             ->placeholder(__('Select Roles')),
-
                                     ]),
                                 Section::make(__('Branches'))
                                     ->columnSpan(1)
@@ -70,7 +69,6 @@ class Add extends Component implements HasForms
                                             ->label(__('Branches'))
                                             ->options(fn() => Branch::get()->pluck('name', 'id'))
                                             ->searchable()
-                                            ->required()
                                             ->placeholder(__('Select Branch'))
                                     ])
                                     ->visible(fn() => Module::isEnabled('branch')),

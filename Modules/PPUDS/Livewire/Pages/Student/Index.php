@@ -23,6 +23,7 @@ use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\StudnetProfile;
+use Modules\PPUDS\Enums\StudentGender;
 use Modules\PPUDS\Services\PpuApiService;
 
 class Index extends Component implements HasTable, HasForms
@@ -79,10 +80,10 @@ class Index extends Component implements HasTable, HasForms
                         }
                     }),
 
-                CreateAction::make('create')
-                    ->label(__('Add Student'))
-                    ->url(route('students.add'))
-                    ->visible(fn() => auth()->user()->can('Student Create'))
+//                CreateAction::make('create')
+//                    ->label(__('Add Student'))
+//                    ->url(route('students.add'))
+//                    ->visible(fn() => auth()->user()->can('Student Create'))
             ])
             ->bulkActions([]);
     }
@@ -198,13 +199,9 @@ class Index extends Component implements HasTable, HasForms
                                                     ->default($record->dob)
                                                     ->disabled(),
 
-                                                // نستخدم Select مع disabled لعرض "ذكر/أنثى" بدلاً من male/female
                                                 Forms\Components\Select::make('gender')
                                                     ->label(__('Gender'))
-                                                    ->options([
-                                                        'male' => __('Male'),
-                                                        'female' => __('Female'),
-                                                    ])
+                                                    ->options(collect(StudentGender::cases())->pluck('name', 'value'))
                                                     ->default($record->gender)
                                                     ->disabled(),
 
@@ -226,9 +223,9 @@ class Index extends Component implements HasTable, HasForms
                 })
                 ->modalSubmitAction(false)
                 ->visible(fn() => auth()->user()->can('Student View')),
-            EditAction::make('edit')
-                ->url(fn(StudnetProfile $record) => route('students.edit', $record->user_id))
-                ->visible(fn() => auth()->user()->can('Student Update')),
+//            EditAction::make('edit')
+//                ->url(fn(StudnetProfile $record) => route('students.edit', $record->user_id))
+//                ->visible(fn() => auth()->user()->can('Student Update')),
             DeleteAction::make('delete')
                 ->visible(fn() => auth()->user()->can('Student Delete'))
         ];

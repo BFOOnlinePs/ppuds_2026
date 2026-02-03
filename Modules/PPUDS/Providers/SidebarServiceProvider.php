@@ -23,7 +23,7 @@ class SidebarServiceProvider extends ServiceProvider
 
         $sidebar->add(
             (new SidebarGroup('Students', 'solar-users-group-rounded-bold-duotone' , ['Student View']))
-            ->add(new SidebarItem('Add Student' , 'solar-users-group-rounded-bold-duotone' , ['Student View'] ,  'students.add' ))
+//            ->add(new SidebarItem('Add Student' , 'solar-users-group-rounded-bold-duotone' , ['Student View'] ,  'students.add' ))
             ->add(new SidebarItem('Students List' , 'solar-users-group-rounded-bold-duotone' , ['Student Create'] ,  'students.index' ))
         );
 
@@ -34,7 +34,7 @@ class SidebarServiceProvider extends ServiceProvider
 
         $sidebar->add(
             (new SidebarGroup('Registration', 'solar-users-group-rounded-bold-duotone' , ['Student View']))
-                ->add(new SidebarItem('Add Registration' , 'solar-users-group-rounded-bold-duotone' , ['Student View'] ,  'students.add' ))
+                ->add(new SidebarItem('Add Registration' , 'solar-users-group-rounded-bold-duotone' , ['Student View'] ,  'students.index' ))
                 ->add(new SidebarItem('Registration List' , 'solar-users-group-rounded-bold-duotone' , ['Student Create'] ,  'students.index' ))
         );
 
@@ -48,7 +48,7 @@ class SidebarServiceProvider extends ServiceProvider
 
         $sidebar->add(
             (new SidebarGroup('Students of the current semester', 'solar-users-group-rounded-bold-duotone' , ['Student View']))
-                ->add(new SidebarItem('Add Students of the current semester' , 'solar-users-group-rounded-bold-duotone' , ['Student View'] ,  'students.add' ))
+                ->add(new SidebarItem('Add Students of the current semester' , 'solar-users-group-rounded-bold-duotone' , ['Student View'] ,  'students.index' ))
                 ->add(new SidebarItem('Students of the current semester List' , 'solar-users-group-rounded-bold-duotone' , ['Student Create'] ,  'students.index' ))
         );
 

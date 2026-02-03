@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Modules\Core\Entities\User;
 use Modules\PPUDS\Entities\Major;
+use Modules\PPUDS\Enums\StudentGender;
 
 class ProcessStudentSync implements ShouldQueue
 {
@@ -63,7 +64,7 @@ class ProcessStudentSync implements ShouldQueue
                 ['student_number' => $studentId],
                 [
                     'dob'             => isset($data['studentBirthDate']) ? substr($data['studentBirthDate'], 0, 10) : null,
-                    'gender'          => ($data['studentSex'] ?? 0) == 0 ? 'Male' : 'Female',
+                    'gender'          => ($data['studentSex'] ?? 0) == 0 ? StudentGender::MALE->value : StudentGender::FEMALE->value,
                     'tawjihi_gpa'     => $data['studentTawjihiGrade'],
                     'enrollment_year' => $data['admissionYear'],
                     'semester_level'  => $data['levelSem'],
