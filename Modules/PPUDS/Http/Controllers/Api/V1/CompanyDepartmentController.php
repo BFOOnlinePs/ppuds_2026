@@ -103,7 +103,7 @@ class CompanyDepartmentController extends Controller
             ->allowedFields(CompanyDepartmentResource::allowedFields())
             ->allowedFilters(CompanyDepartmentResource::allowedFilters())
             ->allowedSorts(CompanyDepartmentResource::allowedSorts())
-            ->with(['translations', 'branch']) // افترضت وجود علاقة branch
+            ->with(['translations', 'branch'])
             ->paginate($perPage)
             ->appends(request()->query());
 

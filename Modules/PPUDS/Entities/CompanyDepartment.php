@@ -6,6 +6,7 @@ use Astrotomic\Translatable\Translatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Modules\Branch\Entities\Branch;
 use Modules\Core\Entities\User;
 use Modules\PPUDS\Enums\CompanyStatus;
 use Spatie\Activitylog\LogOptions;
@@ -72,5 +73,10 @@ class CompanyDepartment extends Model implements TranslatableContract
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class, 'branch_id');
     }
 }
