@@ -20,6 +20,15 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
                 });
 
             Route::controller(CompanyDepartmentController::class)
+                ->prefix('company-categories') // 2. تعديل الإملاء
+                ->as('company-categories.')    // 2. تعديل الإملاء
+                ->group(function () {
+                    Route::get('/', 'index')->name('index');
+                    Route::post('/', 'store')->name('store');
+                    Route::get('/{company_category}', 'show')->name('show');
+                });
+
+            Route::controller(CompanyDepartmentController::class)
                 ->prefix('company-departments')
                 ->as('company-departments.')
                 ->group(function () {
@@ -27,7 +36,6 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
                     Route::post('/', 'store')->name('store');
                     Route::get('/{department}', 'show')->name('show');
                 });
-
         });
 
     });
