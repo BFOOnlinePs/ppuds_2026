@@ -5,6 +5,7 @@ namespace Modules\PPUDS\Entities;
 use Astrotomic\Translatable\Translatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\Branch\Entities\Branch;
 use Modules\Core\Entities\User;
@@ -75,8 +76,10 @@ class CompanyDepartment extends Model implements TranslatableContract
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function branch()
+    public function branches(): BelongsToMany
     {
-        return $this->belongsTo(Branch::class, 'branch_id');
+        return $this->belongsToMany(Branch::class, 'ppud_branch_department', 'company_department_id', 'branch_id')
+            ->withPivot('user_id')
+            ->withTimestamps();
     }
 }

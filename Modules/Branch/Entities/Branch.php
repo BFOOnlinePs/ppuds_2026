@@ -120,10 +120,12 @@ class Branch extends Model implements TranslatableContract
             ->withTimestamps();
     }
 
-    public function departments(): HasMany
-    {
-        return $this->hasMany(CompanyDepartment::class);
-    }
+        public function departments(): BelongsToMany
+        {
+            return $this->belongsToMany(CompanyDepartment::class, 'ppu_ds_branch_department', 'branch_id', 'company_department_id')
+                ->withPivot('user_id')
+                ->withTimestamps();
+        }
 
     public function workingHours()
     {

@@ -164,7 +164,7 @@ class CompanyDepartmentController extends Controller
             return $department;
         });
 
-        $department->load(['translations', 'branch']);
+        $department->load(['translations']);
 
         return $this->successResponse(
             new CompanyDepartmentResource($department),

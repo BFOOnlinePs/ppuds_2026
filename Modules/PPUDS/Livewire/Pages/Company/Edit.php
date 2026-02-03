@@ -3,6 +3,8 @@
 namespace Modules\PPUDS\Livewire\Pages\Company;
 
 use App\View\Components\AppLayout;
+use Filament\Actions\Concerns\InteractsWithActions;
+use Filament\Actions\Contracts\HasActions;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
@@ -30,9 +32,10 @@ use Modules\PPUDS\Entities\CompanyCategory;
 use Modules\PPUDS\Entities\CompanyDepartment;
 use Modules\PPUDS\Enums\CompanyStatus;
 
-class Edit extends Component implements HasForms
+class Edit extends Component implements HasForms, HasActions
 {
     use InteractsWithForms;
+    use InteractsWithActions;
 
     public ?array $data = [];
     public Company $company;
@@ -41,29 +44,36 @@ class Edit extends Component implements HasForms
     {
         $this->company = $company;
 
-        // تعبئة البيانات الموجودة مسبقاً بما في ذلك الفروع والأقسام
-        $this->form->fill([
-            ...$company->toArray(),
-            'branches' => $company->branches->map(function ($branch) {
-                return [
-                    'id' => $branch->id,
-                    'name' => $branch->name,
-                    'email' => $branch->email,
-                    'phone' => $branch->phone,
-                    'country_id' => $branch->country_id,
-                    'city_id' => $branch->city_id,
-                    'latitude' => $branch->latitude,
-                    'longitude' => $branch->longitude,
-                    'opening_time' => $branch->opening_time,
-                    'closing_time' => $branch->closing_time,
-                    // تحميل الأقسام
-                    'departments' => $branch->departments->map(fn($dept) => [
-                        'id' => $dept->id,
-                        'name' => $dept->name,
-                    ])->toArray(),
-                ];
-            })->toArray(),
-        ]);
+        // 1. تعبئة البيانات الأساسية للشركة
+        $formData = $company->toArray();
+
+        // 2. تعبئة الفروع والأقسام يدوياً
+        $formData['branches'] = $company->branches->map(function ($branch) {
+            return [
+                'id'           => $branch->id,
+                'name'         => $branch->name,
+                'email'        => $branch->email,
+                'phone'        => $branch->phone,
+                'country_id'   => $branch->country_id,
+                'city_id'      => $branch->city_id,
+                'latitude'     => $branch->latitude,
+                'longitude'    => $branch->longitude,
+                'opening_time' => $branch->opening_time,
+                'closing_time' => $branch->closing_time,
+
+                // جلب الأقسام المرتبطة بهذا الفرع
+                'departments' => $branch->departments->map(function ($dept) {
+                    return [
+                        'name'    => $dept->name,
+                        // هام جداً: قراءة المشرف من الجدول الوسيط (Pivot)
+                        // تأكد أنك أضفت ->withPivot('user_id') في علاقة الموديل
+                        'user_id' => $dept->pivot->user_id,
+                    ];
+                })->toArray(),
+            ];
+        })->toArray();
+
+        $this->form->fill($formData);
     }
 
     public function form(Form $form): Form
@@ -87,6 +97,7 @@ class Edit extends Component implements HasForms
                                     SpatieMediaLibraryFileUpload::make('logo')
                                         ->label(__('Logo'))
                                         ->collection('logo')
+                                        ->model($this->company)
                                         ->image(),
 
                                     Section::make()->schema([
@@ -114,7 +125,7 @@ class Edit extends Component implements HasForms
                         ->schema([
                             Repeater::make('branches')
                                 ->label(__('Branches'))
-                                ->itemLabel(fn (array $state): ?string => $state['name'] ?? __('New Branch'))
+                                ->itemLabel(fn(array $state): ?string => $state['name'] ?? __('New Branch'))
                                 ->extraAttributes([
                                     'style' => 'background-color: #f3f4f6; border-radius: 0.5rem; padding: 1rem;'
                                 ])
@@ -146,12 +157,35 @@ class Edit extends Component implements HasForms
                                             Repeater::make('departments')
                                                 ->label(__('Departments List'))
                                                 ->schema([
-                                                    TextInput::make('id')->hidden(),
+                                                    Select::make('name')
+                                                        ->label(__('Department Name'))
+                                                        ->required()
+                                                        ->searchable()
+                                                        ->preload()
+                                                        ->options(function () {
+                                                            return CompanyDepartment::get()
+                                                                ->pluck('name', 'name')
+                                                                ->unique()
+                                                                ->toArray();
+                                                        })
+                                                        ->createOptionForm([
+                                                            TextInput::make('new_department_name')
+                                                                ->label(__('New Department Name'))
+                                                                ->required()
+                                                                ->maxLength(255),
+                                                        ])
+                                                        ->createOptionUsing(fn(array $data) => $data['new_department_name']),
+
+                                                    // Select User (Supervisor)
                                                     Select::make('user_id')
                                                         ->label(__('User'))
-                                                        ->options(User::role(['Company Supervisor'])->pluck('name', 'id'))
+                                                        ->required()
+                                                        ->options(User::role('Company Supervisor')->pluck('name', 'id'))
                                                         ->searchable()
-                                                        ->getOptionLabelUsing(fn ($value) => User::find($value)?->name)
+                                                        ->preload()
+                                                        // هذا يضمن عرض الاسم الصحيح عند فتح الصفحة
+                                                        ->getOptionLabelUsing(fn ($value): ?string => User::find($value)?->name)
+                                                        ->live()
                                                         ->createOptionForm([
                                                             TextInput::make('name')->required(),
                                                             TextInput::make('name_en')->required(),
@@ -161,20 +195,16 @@ class Edit extends Component implements HasForms
                                                         ])
                                                         ->createOptionUsing(function (array $data) {
                                                             $data['password'] = bcrypt($data['password']);
-
-                                                            $user = Modules\Core\Entities\User::create($data);
+                                                            $user = User::create($data);
                                                             $user->assignRole('Company Supervisor');
-
-                                                            // إرجاع الـ ID ليتم اختياره
                                                             return $user->id;
-                                                        })
-                                                        ->required(),
+                                                        }),
                                                 ])
                                                 ->grid(2)
                                                 ->defaultItems(0)
                                                 ->collapsible()
                                                 ->addActionLabel(__('Add New Department'))
-                                                ->itemLabel(fn (array $state): ?string => $state['name'] ?? null),
+                                                ->itemLabel(fn(array $state): ?string => $state['name'] ?? null),
                                         ]),
 
                                     // 3. الموقع
@@ -187,16 +217,16 @@ class Edit extends Component implements HasForms
                                                     ->live()
                                                     ->required()
                                                     ->searchable()
-                                                    ->afterStateUpdated(fn (Set $set) => $set('city_id', null)),
+                                                    ->afterStateUpdated(fn(Set $set) => $set('city_id', null)),
                                                 Select::make('city_id')
                                                     ->label(__('City'))
-                                                    ->options(fn (Get $get) => City::whereHas('governorate', fn($q) => $q->where('country_id', $get('country_id')))->get()->pluck('name', 'id'))
+                                                    ->options(fn(Get $get) => City::whereHas('governorate', fn($q) => $q->where('country_id', $get('country_id')))->get()->pluck('name', 'id'))
                                                     ->required()
                                                     ->searchable(),
                                             ]),
                                             Grid::make(2)->schema([
-                                                TextInput::make('latitude')->numeric()->required(),
-                                                TextInput::make('longitude')->numeric()->required(),
+                                                TextInput::make('latitude')->numeric(),
+                                                TextInput::make('longitude')->numeric(),
                                             ]),
                                         ])->compact(),
 
@@ -224,9 +254,10 @@ class Edit extends Component implements HasForms
         $this->company->update($companyData);
 
         if (isset($this->data['logo'])) {
-            // منطق الصورة
+            // $this->company->addMedia(...) // لوجيك حفظ الصورة
         }
 
+        // 2. معالجة الفروع والأقسام
         $this->saveBranchesAndDepartments();
 
         Toaster::success(__('Company updated successfully'));
@@ -236,70 +267,69 @@ class Edit extends Component implements HasForms
     protected function saveBranchesAndDepartments()
     {
         $formBranches = $this->data['branches'] ?? [];
-
-        $existingBranchIds = $this->company->branches()->pluck('branch_branches.id')->toArray();
-        $submittedBranchIds = [];
+        $processedBranchIds = [];
 
         foreach ($formBranches as $branchData) {
+
             $branchId = $branchData['id'] ?? null;
             $departmentsData = $branchData['departments'] ?? [];
 
             $branchAttributes = Arr::except($branchData, ['departments', 'id']);
 
+            $branch = null;
+
             if ($branchId) {
+                // تحديث فرع موجود
                 $branch = Branch::find($branchId);
                 if ($branch) {
                     $branch->update($branchAttributes);
-                    $submittedBranchIds[] = $branchId;
                 }
             } else {
+                // إنشاء فرع جديد
                 $branchAttributes['created_by'] = auth()->id();
                 $branch = Branch::create($branchAttributes);
                 $this->company->branches()->attach($branch->id, ['is_main' => false]);
-                $submittedBranchIds[] = $branch->id;
             }
 
-            // معالجة الأقسام (سواء للفرع الجديد أو القديم)
-            if (isset($branch)) {
-                $this->syncDepartments($branch, $departmentsData);
+            if ($branch) {
+                $processedBranchIds[] = $branch->id;
+                // مزامنة الأقسام لهذا الفرع
+                $this->syncDepartmentsForBranch($branch, $departmentsData);
             }
         }
 
-        // حذف الفروع المحذوفة
-        $branchesToDelete = array_diff($existingBranchIds, $submittedBranchIds);
-        if (!empty($branchesToDelete)) {
-            $this->company->branches()->detach($branchesToDelete);
+        // --- التعديل هنا ---
+        // استخدام اسم الجدول "branch_branches" بدلاً من "branches"
+        $currentCompanyBranchIds = $this->company->branches()->pluck('branch_branches.id')->toArray();
+
+        $branchesToDetach = array_diff($currentCompanyBranchIds, $processedBranchIds);
+
+        if (!empty($branchesToDetach)) {
+            $this->company->branches()->detach($branchesToDetach);
         }
     }
 
-    protected function syncDepartments(Branch $branch, array $departmentsData)
+    protected function syncDepartmentsForBranch(Branch $branch, array $departmentsData)
     {
-        $existingDeptIds = $branch->departments()->pluck('id')->toArray();
-        $submittedDeptIds = [];
+        $syncData = [];
 
         foreach ($departmentsData as $deptData) {
-            $deptId = $deptData['id'] ?? null;
             $deptName = $deptData['name'];
+            $userId = $deptData['user_id'] ?? null;
 
-            if ($deptId) {
-                $department = $branch->departments()->find($deptId);
-                if ($department) {
-                    $department->update(['name' => $deptName]);
-                    $submittedDeptIds[] = $deptId;
-                }
-            } else {
-                $newDept = $branch->departments()->create([
-                    'name' => $deptName,
-                    'created_by' => auth()->id()
+            $department = CompanyDepartment::whereTranslation('name', $deptName)->first();
+
+            if (! $department) {
+                $department = CompanyDepartment::create([
+                    'name'       => $deptName,
+                    'created_by' => auth()->id(),
                 ]);
-                $submittedDeptIds[] = $newDept->id;
             }
+
+            $syncData[$department->id] = ['user_id' => $userId];
         }
 
-        $deptsToDelete = array_diff($existingDeptIds, $submittedDeptIds);
-        if (!empty($deptsToDelete)) {
-            $branch->departments()->whereIn('id', $deptsToDelete)->delete();
-        }
+        $branch->departments()->sync($syncData);
     }
 
     public function render()

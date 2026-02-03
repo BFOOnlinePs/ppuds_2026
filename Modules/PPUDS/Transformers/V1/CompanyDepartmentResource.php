@@ -5,6 +5,7 @@ namespace Modules\PPUDS\Transformers\V1;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Database\Eloquent\Builder;
+use Modules\Branch\Transformers\V1\BranchResource;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
 

@@ -18,7 +18,6 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
-use Hash;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Livewire\Component;
@@ -32,8 +31,6 @@ use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\CompanyCategory;
 use Modules\PPUDS\Entities\CompanyDepartment;
 use Modules\PPUDS\Enums\CompanyStatus;
-use Nwidart\Modules\Facades\Module;
-use Spatie\Permission\Models\Role;
 
 class Add extends Component implements HasForms, HasActions
 {
@@ -134,17 +131,16 @@ class Add extends Component implements HasForms, HasActions
                                             ]),
                                         ])->compact(),
 
-                                    // 2. إدارة الأقسام (تم إضافتها هنا لربطها بالفرع مباشرة)
+                                    // 2. إدارة الأقسام
                                     Section::make(__('Departments'))
                                         ->description(__('Define departments for this specific branch.'))
-                                        ->aside() // لجعل العنوان جانبيًا مما يقلل الزحمة الرأسية
+                                        ->aside()
                                         ->extraAttributes([
                                             'style' => 'background-color: #f3f4f6; border-radius: 0.5rem; padding: 1rem;'
                                         ])
                                         ->schema([
                                             Repeater::make('departments')
                                                 ->label(__('Departments List'))
-                                                ->relationship('departments')
                                                 ->schema([
                                                     Select::make('name')
                                                         ->label(__('Department Name'))
@@ -152,7 +148,7 @@ class Add extends Component implements HasForms, HasActions
                                                         ->searchable()
                                                         ->preload()
                                                         ->options(function () {
-                                                            return \Modules\PPUDS\Entities\CompanyDepartment::get()
+                                                            return CompanyDepartment::get()
                                                                 ->pluck('name', 'name')
                                                                 ->unique()
                                                                 ->toArray();
@@ -169,13 +165,16 @@ class Add extends Component implements HasForms, HasActions
 
                                                     Select::make('user_id')
                                                         ->label(__('User'))
-                                                        ->relationship(
-                                                            name: 'user',
-                                                            titleAttribute: 'name',
-                                                            modifyQueryUsing: fn (Builder $query) => $query->role('Company Supervisor')
-                                                        )
+                                                        ->required()
                                                         ->searchable()
                                                         ->preload()
+                                                        ->options(fn() => User::role('Company Supervisor')->pluck('name', 'id'))
+                                                        ->getSearchResultsUsing(fn (string $search) => User::role('Company Supervisor')
+                                                            ->where('name', 'like', "%{$search}%")
+                                                            ->limit(50)
+                                                            ->pluck('name', 'id')
+                                                        )
+                                                        ->getOptionLabelUsing(fn ($value): ?string => User::find($value)?->name)
                                                         ->createOptionForm([
                                                             TextInput::make('name')->required(),
                                                             TextInput::make('name_en')->required(),
@@ -185,14 +184,8 @@ class Add extends Component implements HasForms, HasActions
                                                         ])
                                                         ->createOptionUsing(function (array $data) {
                                                             $data['password'] = bcrypt($data['password']);
-
-                                                            // 1. إنشاء المستخدم
                                                             $user = User::create($data);
-
-                                                            // 2. إعطاء الصلاحية
                                                             $user->assignRole('Company Supervisor');
-
-                                                            // 3. مهم جداً: إرجاع الـ ID ليتم اختياره تلقائياً
                                                             return $user->id;
                                                         })
                                                         ->required(),
@@ -201,7 +194,6 @@ class Add extends Component implements HasForms, HasActions
                                                 ->defaultItems(0)
                                                 ->collapsible()
                                                 ->itemLabel(fn (array $state): ?string => $state['name'] ?? null)
-                                                // تمييز زر الإضافة
                                                 ->addActionLabel(__('Add New Department'))
                                         ]),
 
@@ -259,7 +251,7 @@ class Add extends Component implements HasForms, HasActions
         $this->validate();
 
         // 1. إنشاء الشركة
-        $companyData = \Illuminate\Support\Arr::except($this->data, ['branches', 'logo']);
+        $companyData = Arr::except($this->data, ['branches', 'logo']);
         $companyData['created_by'] = auth()->id();
 
         $company = Company::create($companyData);
@@ -274,43 +266,42 @@ class Add extends Component implements HasForms, HasActions
             foreach ($this->data['branches'] as $branchData) {
 
                 $departmentsData = $branchData['departments'] ?? [];
-                $branchCleanData = \Illuminate\Support\Arr::except($branchData, ['departments']);
+                $branchCleanData = Arr::except($branchData, ['departments']);
 
                 $branchCleanData['created_by'] = auth()->id();
 
                 // إنشاء الفرع
-                $branch = Branch::create($branchCleanData); // تأكد أن المودل Branch هو الصحيح
+                $branch = Branch::create($branchCleanData);
 
                 // ربط الفرع بالشركة
                 $company->branches()->attach($branch->id, ['is_main' => false]);
 
-                // 3. معالجة الأقسام (لمنع التكرار)
+                // 3. معالجة الأقسام (Many-to-Many Logic)
                 foreach ($departmentsData as $deptData) {
-
                     $deptName = $deptData['name'];
+                    // جلب معرف المشرف من الفورم
+                    $supervisorId = $deptData['user_id'] ?? null;
 
-                    // --- [الحل لمنع التكرار] ---
+                    // أ) البحث عن القسم في قاعدة البيانات
+                    // ملاحظة: لا نربط المشرف هنا في جدول الأقسام العام لأنه أصبح مرتبطاً بالفرع
+                    $department = CompanyDepartment::whereTranslation('name', $deptName)->first();
 
-                    // 1. نبحث هل يوجد قسم بهذا الاسم داخل *هذا الفرع* تحديداً؟
-                    $existingDept = CompanyDepartment::where('branch_id', $branch->id)
-                        ->whereTranslation('name', $deptName) // دالة البحث في الترجمة
-                        ->first();
-
-                    if ($existingDept) {
-                        // 2. إذا وجد: نقوم بتحديثه فقط (مثلاً تحديث المدير إذا تغير)
-                        $existingDept->update([
-                            'user_id' => $deptData['user_id'] ?? $existingDept->user_id,
-                            // لا نحدث الاسم لأنه هو نفسه
-                        ]);
-                    } else {
-                        // 3. إذا لم يوجد: نقوم بإنشائه
-                        $branch->departments()->create([
+                    // ب) إذا لم يوجد، نقوم بإنشائه (بدون مشرف عام)
+                    if (! $department) {
+                        $department = CompanyDepartment::create([
                             'name'       => $deptName,
-                            'user_id'    => $deptData['user_id'] ?? null,
+                            // لا نضيف user_id هنا لأنه انتقل للجدول الوسيط
                             'created_by' => auth()->id(),
                         ]);
                     }
-                    // --- [انتهى الحل] ---
+
+                    // ج) ربط القسم بالفرع الحالي (Pivot) + إضافة المشرف (user_id)
+                    // هذا هو الجزء الذي يحل الخطأ 1364
+                    $branch->departments()->syncWithoutDetaching([
+                        $department->id => [
+                            'user_id' => $supervisorId // <--- تخزين المشرف الخاص بهذا الفرع لهذا القسم
+                        ]
+                    ]);
                 }
             }
         }
