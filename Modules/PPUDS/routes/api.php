@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\PPUDS\Http\Controllers\Api\V1\CompanyCategoryController;
 use Modules\PPUDS\Http\Controllers\Api\V1\CompanyController;
 use Modules\PPUDS\Http\Controllers\Api\V1\CompanyDepartmentController;
 
@@ -19,7 +20,7 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
                     Route::get('/{company}', 'show')->name('show');
                 });
 
-            Route::controller(CompanyDepartmentController::class)
+            Route::controller(CompanyCategoryController::class)
                 ->prefix('company-categories') // 2. تعديل الإملاء
                 ->as('company-categories.')    // 2. تعديل الإملاء
                 ->group(function () {
