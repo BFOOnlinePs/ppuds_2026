@@ -5514,6 +5514,274 @@
                 ]
             }
         },
+        "/api/v1/ppuds/company-categories": {
+            "get": {
+                "tags": [
+                    "Company Categories"
+                ],
+                "summary": "Get all company categories",
+                "description": "Retrieve a list of all company categories",
+                "operationId": "8f7eada7022d541bbecba781b85abf26",
+                "parameters": [
+                    {
+                        "name": "Accept-Language",
+                        "in": "header",
+                        "description": "Language header (ar or en)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "default": "ar",
+                            "example": "en"
+                        }
+                    },
+                    {
+                        "name": "fields",
+                        "in": "query",
+                        "description": "Comma separated list of fields to be returned",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filter[name]",
+                        "in": "query",
+                        "description": "Filter by translated name (LIKE)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "Sort fields. Use leading '-' for DESC. Examples: id, -created_at",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "-id"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Number of items per page",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Company categories retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Company categories retrieved successfully"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "Technology"
+                                                    },
+                                                    "created_at": {
+                                                        "type": "string",
+                                                        "example": "2023-01-01 12:00:00"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Company Categories"
+                ],
+                "summary": "Create a new company category",
+                "description": "Creates a new category for companies.",
+                "operationId": "e3bce8a2fc0a6194502df38dacdc0a4c",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "description": "Category Name",
+                                        "type": "string",
+                                        "example": "Technology"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Category created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Category created successfully"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Technology"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/company-categories/{company_category}": {
+            "get": {
+                "tags": [
+                    "Company Categories"
+                ],
+                "summary": "Get a single company category",
+                "description": "Retrieve details of a specific category by ID",
+                "operationId": "c9a55e506f8fb42b377b5fd1251b39e9",
+                "parameters": [
+                    {
+                        "name": "Accept-Language",
+                        "in": "header",
+                        "description": "Language header (ar or en)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "default": "ar",
+                            "example": "en"
+                        }
+                    },
+                    {
+                        "name": "company_category",
+                        "in": "path",
+                        "description": "Category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Category retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Category retrieved successfully"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Technology"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Category not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/ppuds/companies": {
             "get": {
                 "tags": [
@@ -6005,15 +6273,6 @@
                         }
                     },
                     {
-                        "name": "filter[branch_id]",
-                        "in": "query",
-                        "description": "Filter by Branch ID",
-                        "required": false,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    },
-                    {
                         "name": "filter[name]",
                         "in": "query",
                         "description": "Filter by translated name (LIKE)",
@@ -6080,10 +6339,6 @@
                                                         "type": "string",
                                                         "example": "HR Department"
                                                     },
-                                                    "branch_id": {
-                                                        "type": "integer",
-                                                        "example": 5
-                                                    },
                                                     "created_at": {
                                                         "type": "string",
                                                         "example": "2023-01-01 10:00:00"
@@ -6113,7 +6368,7 @@
                     "Company Departments"
                 ],
                 "summary": "Create a new company department",
-                "description": "Creates a new department within a specific branch.",
+                "description": "Creates a new department.",
                 "operationId": "f643c478ac772ee51098b8fb3acfa42a",
                 "requestBody": {
                     "required": true,
@@ -6121,18 +6376,12 @@
                         "application/json": {
                             "schema": {
                                 "required": [
-                                    "name",
-                                    "branch_id"
+                                    "name"
                                 ],
                                 "properties": {
                                     "name": {
                                         "type": "string",
                                         "example": "IT Department"
-                                    },
-                                    "branch_id": {
-                                        "description": "The ID of the branch this department belongs to",
-                                        "type": "integer",
-                                        "example": 1
                                     },
                                     "description": {
                                         "type": "string",
@@ -6172,10 +6421,6 @@
                                                 "name": {
                                                     "type": "string",
                                                     "example": "IT Department"
-                                                },
-                                                "branch_id": {
-                                                    "type": "integer",
-                                                    "example": 1
                                                 }
                                             },
                                             "type": "object"
@@ -6234,7 +6479,7 @@
                         "required": false,
                         "schema": {
                             "type": "string",
-                            "example": "id,name,branch_id"
+                            "example": "id,name"
                         }
                     }
                 ],
@@ -6262,10 +6507,6 @@
                                                 "name": {
                                                     "type": "string",
                                                     "example": "IT Department"
-                                                },
-                                                "branch_id": {
-                                                    "type": "integer",
-                                                    "example": 1
                                                 }
                                             },
                                             "type": "object"
@@ -7029,6 +7270,10 @@
         {
             "name": "Marketing",
             "description": "Marketing"
+        },
+        {
+            "name": "Company Categories",
+            "description": "Company Categories"
         },
         {
             "name": "Companies",

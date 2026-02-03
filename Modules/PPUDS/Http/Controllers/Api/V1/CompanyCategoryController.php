@@ -5,21 +5,21 @@ namespace Modules\PPUDS\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
 use Modules\Core\Traits\ApiResponse;
-use Modules\PPUDS\Entities\CompanyDepartment;
-use Modules\PPUDS\Http\Requests\CompanyDepartmentRequest; // تم التعديل هنا
-use Modules\PPUDS\Transformers\V1\CompanyDepartmentResource;
+use Modules\PPUDS\Entities\CompanyCategory;
+use Modules\PPUDS\Http\Requests\CompanyCategoryRequest; // تأكد من إنشاء هذا الملف
+use Modules\PPUDS\Transformers\V1\CompanyCategoryResource;
 use Spatie\QueryBuilder\QueryBuilder;
 
-class CompanyDepartmentController extends Controller
+class CompanyCategoryController extends Controller
 {
     use ApiResponse;
 
     /**
      * @OA\Get(
-     * path="/api/v1/ppuds/company-departments",
-     * summary="Get all company departments",
-     * description="Retrieve a list of all company departments",
-     * tags={"Company Departments"},
+     * path="/api/v1/ppuds/company-categories",
+     * summary="Get all company categories",
+     * description="Retrieve a list of all company categories",
+     * tags={"Company Categories"},
      * security={{"sanctum": {}}},
      * @OA\Parameter(
      * name="Accept-Language",
@@ -46,8 +46,8 @@ class CompanyDepartmentController extends Controller
      * name="sort",
      * in="query",
      * required=false,
-     * description="Sort fields. Use leading '-' for DESC. Examples: name, -id",
-     * @OA\Schema(type="string", example="name")
+     * description="Sort fields. Use leading '-' for DESC. Examples: id, -created_at",
+     * @OA\Schema(type="string", example="-id")
      * ),
      * @OA\Parameter(
      * name="per_page",
@@ -65,19 +65,19 @@ class CompanyDepartmentController extends Controller
      * ),
      * @OA\Response(
      * response=200,
-     * description="Company departments retrieved successfully",
+     * description="Company categories retrieved successfully",
      * @OA\JsonContent(
      * type="object",
      * @OA\Property(property="status", type="boolean", example=true),
-     * @OA\Property(property="message", type="string", example="Company departments retrieved successfully"),
+     * @OA\Property(property="message", type="string", example="Company categories retrieved successfully"),
      * @OA\Property(
      * property="data",
      * type="array",
      * @OA\Items(
      * type="object",
      * @OA\Property(property="id", type="integer", example=1),
-     * @OA\Property(property="name", type="string", example="HR Department"),
-     * @OA\Property(property="created_at", type="string", example="2023-01-01 10:00:00")
+     * @OA\Property(property="name", type="string", example="Technology"),
+     * @OA\Property(property="created_at", type="string", example="2023-01-01 12:00:00")
      * )
      * )
      * )
@@ -91,26 +91,26 @@ class CompanyDepartmentController extends Controller
         $maxPerPage = config('core.pagination.max_per_page', 100);
         $perPage = min(request('per_page', $defaultPerPage), $maxPerPage);
 
-        $departments = QueryBuilder::for(CompanyDepartment::class)
-            ->allowedFields(CompanyDepartmentResource::allowedFields())
-            ->allowedFilters(CompanyDepartmentResource::allowedFilters())
-            ->allowedSorts(CompanyDepartmentResource::allowedSorts())
-            ->with(['translations'])
+        $categories = QueryBuilder::for(CompanyCategory::class)
+            ->allowedFields(CompanyCategoryResource::allowedFields())
+            ->allowedFilters(CompanyCategoryResource::allowedFilters())
+            ->allowedSorts(CompanyCategoryResource::allowedSorts())
+            ->with(['translations']) // تحميل الترجمات لتقليل الاستعلامات
             ->paginate($perPage)
             ->appends(request()->query());
 
         return $this->successResponse(
-            CompanyDepartmentResource::collection($departments),
-            __('Company departments retrieved successfully')
+            CompanyCategoryResource::collection($categories),
+            __('Company categories retrieved successfully')
         );
     }
 
     /**
      * @OA\Post(
-     * path="/api/v1/ppuds/company-departments",
-     * summary="Create a new company department",
-     * description="Creates a new department.",
-     * tags={"Company Departments"},
+     * path="/api/v1/ppuds/company-categories",
+     * summary="Create a new company category",
+     * description="Creates a new category for companies.",
+     * tags={"Company Categories"},
      * security={{"sanctum": {}}},
      * @OA\RequestBody(
      * required=true,
@@ -118,57 +118,55 @@ class CompanyDepartmentController extends Controller
      * mediaType="application/json",
      * @OA\Schema(
      * required={"name"},
-     * @OA\Property(property="name", type="string", example="IT Department"),
-     * @OA\Property(property="description", type="string", example="Information Technology Department"),
-     * @OA\Property(property="is_active", type="boolean", example=true)
+     * @OA\Property(property="name", type="string", example="Technology", description="Category Name"),
      * )
      * )
      * ),
      * @OA\Response(
      * response=201,
-     * description="Department created successfully",
+     * description="Category created successfully",
      * @OA\JsonContent(
      * type="object",
      * @OA\Property(property="status", type="boolean", example=true),
-     * @OA\Property(property="message", type="string", example="Department created successfully"),
+     * @OA\Property(property="message", type="string", example="Category created successfully"),
      * @OA\Property(
      * property="data",
      * type="object",
      * @OA\Property(property="id", type="integer", example=1),
-     * @OA\Property(property="name", type="string", example="IT Department"),
+     * @OA\Property(property="name", type="string", example="Technology")
      * )
      * )
      * ),
      * @OA\Response(response=422, description="Validation Error")
      * )
      */
-    public function store(CompanyDepartmentRequest $request)
+    public function store(CompanyCategoryRequest $request)
     {
-        $department = DB::transaction(function () use ($request) {
+        $category = DB::transaction(function () use ($request) {
 
             $data = $request->validated();
             $data['created_by'] = auth()->id();
 
-            $department = CompanyDepartment::create($data);
+            $category = CompanyCategory::create($data);
 
-            return $department;
+            return $category;
         });
 
-        $department->load(['translations']);
+        $category->load(['translations']);
 
         return $this->successResponse(
-            new CompanyDepartmentResource($department),
-            __('Department created successfully'),
+            new CompanyCategoryResource($category),
+            __('Category created successfully'),
             201
         );
     }
 
     /**
      * @OA\Get(
-     * path="/api/v1/ppuds/company-departments/{department}",
-     * summary="Get a single department",
-     * description="Retrieve details of a specific department by ID",
-     * tags={"Company Departments"},
+     * path="/api/v1/ppuds/company-categories/{company_category}",
+     * summary="Get a single company category",
+     * description="Retrieve details of a specific category by ID",
+     * tags={"Company Categories"},
      * security={{"sanctum": {}}},
      * @OA\Parameter(
      * name="Accept-Language",
@@ -178,49 +176,41 @@ class CompanyDepartmentController extends Controller
      * @OA\Schema(type="string", default="ar", example="en")
      * ),
      * @OA\Parameter(
-     * name="department",
+     * name="company_category",
      * in="path",
      * required=true,
-     * description="Department ID",
+     * description="Category ID",
      * @OA\Schema(type="integer", example=1)
-     * ),
-     * @OA\Parameter(
-     * name="fields",
-     * in="query",
-     * required=false,
-     * description="Comma separated list of fields to be returned",
-     * @OA\Schema(type="string", example="id,name")
      * ),
      * @OA\Response(
      * response=200,
-     * description="Department retrieved successfully",
+     * description="Category retrieved successfully",
      * @OA\JsonContent(
      * type="object",
      * @OA\Property(property="status", type="boolean", example=true),
-     * @OA\Property(property="message", type="string", example="Department retrieved successfully"),
+     * @OA\Property(property="message", type="string", example="Category retrieved successfully"),
      * @OA\Property(
      * property="data",
      * type="object",
      * @OA\Property(property="id", type="integer", example=1),
-     * @OA\Property(property="name", type="string", example="IT Department"),
+     * @OA\Property(property="name", type="string", example="Technology")
      * )
      * )
      * ),
-     * @OA\Response(response=401, description="Unauthenticated"),
-     * @OA\Response(response=404, description="Department not found")
+     * @OA\Response(response=404, description="Category not found")
      * )
      */
-    public function show(CompanyDepartment $department)
+    public function show(CompanyCategory $companyCategory)
     {
-        $department = QueryBuilder::for(CompanyDepartment::class)
-            ->where('id', $department->id)
-            ->allowedFields(CompanyDepartmentResource::allowedFields())
+        $category = QueryBuilder::for(CompanyCategory::class)
+            ->where('id', $companyCategory->id)
+            ->allowedFields(CompanyCategoryResource::allowedFields())
             ->with(['translations'])
             ->firstOrFail();
 
         return $this->successResponse(
-            new CompanyDepartmentResource($department),
-            __('Department retrieved successfully')
+            new CompanyCategoryResource($category),
+            __('Category retrieved successfully')
         );
     }
 }
