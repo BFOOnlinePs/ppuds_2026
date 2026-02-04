@@ -15,7 +15,7 @@ class DeleteAction extends Action
         $this
             ->label('')
             ->size('lg')
-            ->icon('solar-trash-bin-minimalistic-bold')
+            ->icon('heroicon-o-trash')
             ->tooltip(__('Delete'))
             ->modalHeading(__('Do you really want to delete these records?'))
             ->modalDescription(__('Once these records are deleted, all of their resources and data will be permanently deleted. Before deleting this record, please download any data you wish to retain.'))

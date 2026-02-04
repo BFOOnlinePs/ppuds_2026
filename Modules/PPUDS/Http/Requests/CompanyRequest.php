@@ -20,6 +20,7 @@ class CompanyRequest extends FormRequest
             'status'                => ['required', 'integer', 'in:' . implode(',', array_column(CompanyStatus::cases(), 'value'))],
             'logo'                  => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048'],
 
+            // Branch Validation
             'branches'                => ['required', 'array', 'min:1'],
             'branches.*.name'         => ['required', 'string', 'max:255'],
             'branches.*.email'        => ['nullable', 'email', 'max:255'],
@@ -31,8 +32,10 @@ class CompanyRequest extends FormRequest
             'branches.*.opening_time' => ['required', 'date_format:H:i'],
             'branches.*.closing_time' => ['required', 'date_format:H:i'],
 
-            'branches.*.departments'        => ['nullable', 'array'],
-            'branches.*.departments.*.name' => ['required', 'string', 'max:255'],
+            // Department Validation (Updated)
+            'branches.*.departments'         => ['nullable', 'array'],
+            'branches.*.departments.*.name'  => ['required', 'string', 'max:255'],
+            'branches.*.departments.*.user_id' => ['required', 'integer', 'exists:users,id'], // Supervisor
         ];
     }
 

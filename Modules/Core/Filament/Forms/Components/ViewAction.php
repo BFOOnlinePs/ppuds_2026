@@ -14,7 +14,7 @@ protected function setUp(): void
             ->size('xl')
             ->tooltip(__('View'))
             ->color('dark')
-            ->icon('solar-eye-bold')
+            ->icon('solar-eye-bold-duotone')
             ->extraAttributes([
                 'class' => 'text-dark',
             ]);

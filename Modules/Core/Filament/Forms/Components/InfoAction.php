@@ -22,7 +22,7 @@ class InfoAction extends Action
 
         $this
             ->label('')
-            ->icon('solar-info-circle-bold')
+            ->icon('solar-info-circle-bold-duotone')
             ->color('text-primary')
             ->size('xl')
             ->tooltip(__('Info'))

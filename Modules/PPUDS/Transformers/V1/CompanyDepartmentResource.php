@@ -17,6 +17,7 @@ class CompanyDepartmentResource extends JsonResource
         return [
             'id'                        => $this->id,
             'name'                      => $this->name,
+            'supervisor_id'             => $this->pivot->user_id ?? null
         ];
     }
 

@@ -122,32 +122,32 @@ class PermissionSeeder extends Seeder
             [
                 'name' => 'Company Department View List',
                 'guard_name' => 'web',
-                'module_name' => 'Company',
+                'module_name' => 'Company Department',
             ],
             [
                 'name' => 'Company Department Create',
                 'guard_name' => 'web',
-                'module_name' => 'Company',
+                'module_name' => 'Company Department',
             ],
             [
                 'name' => 'Company Department Update',
                 'guard_name' => 'web',
-                'module_name' => 'Company',
+                'module_name' => 'Company Department',
             ],
             [
                 'name' => 'Company Department Delete',
                 'guard_name' => 'web',
-                'module_name' => 'Company',
+                'module_name' => 'Company Department',
             ],
             [
                 'name' => 'Company Department View',
                 'guard_name' => 'web',
-                'module_name' => 'Company',
+                'module_name' => 'Company Department',
             ],
             [
                 'name' => 'Company Department Info',
                 'guard_name' => 'web',
-                'module_name' => 'Company',
+                'module_name' => 'Company Department',
             ],
 
 
@@ -181,6 +181,39 @@ class PermissionSeeder extends Seeder
                 'name' => 'Major Info',
                 'guard_name' => 'web',
                 'module_name' => 'Major',
+            ],
+
+
+            // TODO Course
+            [
+                'name' => 'Course View List',
+                'guard_name' => 'web',
+                'module_name' => 'Course',
+            ],
+            [
+                'name' => 'Course Create',
+                'guard_name' => 'web',
+                'module_name' => 'Course',
+            ],
+            [
+                'name' => 'Course Update',
+                'guard_name' => 'web',
+                'module_name' => 'Course',
+            ],
+            [
+                'name' => 'Course Delete',
+                'guard_name' => 'web',
+                'module_name' => 'Course',
+            ],
+            [
+                'name' => 'Course View',
+                'guard_name' => 'web',
+                'module_name' => 'Course',
+            ],
+            [
+                'name' => 'Course Info',
+                'guard_name' => 'web',
+                'module_name' => 'Course',
             ],
         ];
 

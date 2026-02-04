@@ -13,7 +13,7 @@ protected function setUp(): void
             ->label('')
             ->size('xl')
             ->color('success')
-            ->icon('solar-pen-new-square-bold')
+            ->icon('solar-pen-new-square-bold-duotone')
             ->tooltip(__('Edit'))
             ->extraAttributes([
                 'class' => 'text-success',

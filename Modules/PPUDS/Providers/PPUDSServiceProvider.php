@@ -27,6 +27,9 @@ class PPUDSServiceProvider extends ServiceProvider
         $this->registerConfig();
         $this->registerViews();
         $this->loadMigrationsFrom(module_path($this->name, 'database/migrations'));
+
+        // This for settings
+        $this->loadMigrationsFrom(module_path('PPUDS', 'database/Settings'));
     }
 
     /**

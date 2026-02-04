@@ -5803,78 +5803,12 @@
                         }
                     },
                     {
-                        "name": "fields",
+                        "name": "include",
                         "in": "query",
-                        "description": "Comma separated list of fields to be returned",
+                        "description": "Include relations (e.g. branches)",
                         "required": false,
                         "schema": {
                             "type": "string"
-                        }
-                    },
-                    {
-                        "name": "filter[id]",
-                        "in": "query",
-                        "description": "Filter by ID",
-                        "required": false,
-                        "schema": {
-                            "type": "integer"
-                        }
-                    },
-                    {
-                        "name": "filter[name]",
-                        "in": "query",
-                        "description": "Filter by translated name (LIKE)",
-                        "required": false,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "filter[email]",
-                        "in": "query",
-                        "description": "Filter by email",
-                        "required": false,
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
-                        "name": "filter[is_active]",
-                        "in": "query",
-                        "description": "Filter by is_active status",
-                        "required": false,
-                        "schema": {
-                            "type": "boolean"
-                        }
-                    },
-                    {
-                        "name": "sort",
-                        "in": "query",
-                        "description": "Sort fields. Use leading '-' for DESC. Examples: name, -id",
-                        "required": false,
-                        "schema": {
-                            "type": "string",
-                            "example": "name"
-                        }
-                    },
-                    {
-                        "name": "per_page",
-                        "in": "query",
-                        "description": "Number of items per page",
-                        "required": false,
-                        "schema": {
-                            "type": "integer",
-                            "example": 10
-                        }
-                    },
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "description": "Page number",
-                        "required": false,
-                        "schema": {
-                            "type": "integer",
-                            "example": 1
                         }
                     }
                 ],
@@ -5903,27 +5837,47 @@
                                                     },
                                                     "name": {
                                                         "type": "string",
-                                                        "example": "Company Name"
+                                                        "example": "New Tech Company"
                                                     },
                                                     "description": {
                                                         "type": "string",
-                                                        "example": "Company Description"
+                                                        "example": "Leading tech solutions"
                                                     },
-                                                    "email": {
+                                                    "company_category_id": {
+                                                        "type": "integer",
+                                                        "example": 5
+                                                    },
+                                                    "website": {
                                                         "type": "string",
-                                                        "example": "company@example.com"
+                                                        "example": "https://example.com"
                                                     },
-                                                    "phone": {
-                                                        "type": "string",
-                                                        "example": "0599999999"
+                                                    "status": {
+                                                        "type": "integer",
+                                                        "example": 1
                                                     },
-                                                    "logo": {
+                                                    "logo_url": {
                                                         "type": "string",
                                                         "example": "https://domain.com/storage/logo.png"
                                                     },
-                                                    "is_active": {
-                                                        "type": "boolean",
-                                                        "example": true
+                                                    "created_at": {
+                                                        "type": "string",
+                                                        "format": "date-time"
+                                                    },
+                                                    "branches": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "properties": {
+                                                                "id": {
+                                                                    "type": "integer",
+                                                                    "example": 10
+                                                                },
+                                                                "name": {
+                                                                    "type": "string",
+                                                                    "example": "Main Branch"
+                                                                }
+                                                            },
+                                                            "type": "object"
+                                                        }
                                                     }
                                                 },
                                                 "type": "object"
@@ -5934,9 +5888,6 @@
                                 }
                             }
                         }
-                    },
-                    "401": {
-                        "description": "Unauthenticated"
                     }
                 },
                 "security": [
@@ -5949,8 +5900,8 @@
                 "tags": [
                     "Companies"
                 ],
-                "summary": "Create a new company with branches and departments",
-                "description": "Creates a company, uploads logo, creates associated branches, and their departments.",
+                "summary": "Create a new company",
+                "description": "Creates company, branches, and links departments with supervisors.",
                 "operationId": "903448d47947ac42506bd64d04777417",
                 "requestBody": {
                     "required": true,
@@ -5981,20 +5932,14 @@
                                         "example": 1
                                     },
                                     "status": {
-                                        "type": "string",
-                                        "enum": [
-                                            "active",
-                                            "inactive"
-                                        ],
-                                        "example": "active"
+                                        "type": "integer",
+                                        "example": 1
                                     },
                                     "logo": {
-                                        "description": "Company Logo Image",
                                         "type": "string",
                                         "format": "binary"
                                     },
                                     "branches": {
-                                        "description": "List of branches",
                                         "type": "array",
                                         "items": {
                                             "required": [
@@ -6030,13 +5975,11 @@
                                                 },
                                                 "latitude": {
                                                     "type": "number",
-                                                    "format": "float",
-                                                    "example": 31.9038
+                                                    "example": 31.9
                                                 },
                                                 "longitude": {
                                                     "type": "number",
-                                                    "format": "float",
-                                                    "example": 35.2034
+                                                    "example": 35.2
                                                 },
                                                 "opening_time": {
                                                     "type": "string",
@@ -6047,16 +5990,21 @@
                                                     "example": "17:00"
                                                 },
                                                 "departments": {
-                                                    "description": "Departments inside this branch",
                                                     "type": "array",
                                                     "items": {
                                                         "required": [
-                                                            "name"
+                                                            "name",
+                                                            "user_id"
                                                         ],
                                                         "properties": {
                                                             "name": {
                                                                 "type": "string",
-                                                                "example": "HR Department"
+                                                                "example": "HR"
+                                                            },
+                                                            "user_id": {
+                                                                "description": "Supervisor ID",
+                                                                "type": "integer",
+                                                                "example": 5
                                                             }
                                                         },
                                                         "type": "object"
@@ -6074,57 +6022,7 @@
                 },
                 "responses": {
                     "201": {
-                        "description": "Company created successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "status": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Company created successfully"
-                                        },
-                                        "data": {
-                                            "description": "The created company object",
-                                            "properties": {
-                                                "id": {
-                                                    "type": "integer",
-                                                    "example": 1
-                                                },
-                                                "name": {
-                                                    "type": "string",
-                                                    "example": "New Tech Company"
-                                                },
-                                                "description": {
-                                                    "type": "string",
-                                                    "example": "Leading tech solutions"
-                                                },
-                                                "email": {
-                                                    "type": "string",
-                                                    "example": "company@example.com"
-                                                },
-                                                "logo": {
-                                                    "type": "string",
-                                                    "example": "https://domain.com/storage/logo.png"
-                                                },
-                                                "is_active": {
-                                                    "type": "boolean",
-                                                    "example": true
-                                                }
-                                            },
-                                            "type": "object"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error"
+                        "description": "Created successfully"
                     }
                 },
                 "security": [
@@ -6140,9 +6038,19 @@
                     "Companies"
                 ],
                 "summary": "Get a single company",
-                "description": "Retrieve details of a specific company by ID",
+                "description": "Retrieve details of a specific company",
                 "operationId": "48efd01c0147e7c0fd8c55baa4fb2c86",
                 "parameters": [
+                    {
+                        "name": "company",
+                        "in": "path",
+                        "description": "Company ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
                     {
                         "name": "Accept-Language",
                         "in": "header",
@@ -6155,23 +6063,12 @@
                         }
                     },
                     {
-                        "name": "company",
-                        "in": "path",
-                        "description": "Company ID",
-                        "required": true,
-                        "schema": {
-                            "type": "integer",
-                            "example": 1
-                        }
-                    },
-                    {
-                        "name": "fields",
+                        "name": "include",
                         "in": "query",
-                        "description": "Comma separated list of fields to be returned",
+                        "description": "Include relations (e.g. branches.departments)",
                         "required": false,
                         "schema": {
-                            "type": "string",
-                            "example": "id,name,description"
+                            "type": "string"
                         }
                     }
                 ],
@@ -6198,27 +6095,51 @@
                                                 },
                                                 "name": {
                                                     "type": "string",
-                                                    "example": "Company Name"
+                                                    "example": "New Tech Company"
                                                 },
                                                 "description": {
                                                     "type": "string",
-                                                    "example": "Company Description"
+                                                    "example": "Leading tech solutions"
                                                 },
-                                                "email": {
+                                                "company_category_id": {
+                                                    "type": "integer",
+                                                    "example": 5
+                                                },
+                                                "website": {
                                                     "type": "string",
-                                                    "example": "company@example.com"
+                                                    "example": "https://example.com"
                                                 },
-                                                "phone": {
-                                                    "type": "string",
-                                                    "example": "0599999999"
+                                                "status": {
+                                                    "type": "integer",
+                                                    "example": 1
                                                 },
-                                                "logo": {
+                                                "logo_url": {
                                                     "type": "string",
                                                     "example": "https://domain.com/storage/logo.png"
                                                 },
-                                                "is_active": {
-                                                    "type": "boolean",
-                                                    "example": true
+                                                "created_at": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                },
+                                                "branches": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "integer",
+                                                                "example": 10
+                                                            },
+                                                            "name": {
+                                                                "type": "string",
+                                                                "example": "Main Branch"
+                                                            },
+                                                            "city_id": {
+                                                                "type": "integer",
+                                                                "example": 2
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
                                                 }
                                             },
                                             "type": "object"
@@ -6228,9 +6149,6 @@
                                 }
                             }
                         }
-                    },
-                    "401": {
-                        "description": "Unauthenticated"
                     },
                     "404": {
                         "description": "Company not found"

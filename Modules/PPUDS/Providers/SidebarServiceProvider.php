@@ -53,6 +53,11 @@ class SidebarServiceProvider extends ServiceProvider
         );
 
         $sidebar->add(
+            (new SidebarGroup('Academic Courses', 'solar-book-bookmark-bold-duotone' , ['Course View']))
+                ->add(new SidebarItem('Courses List' , 'solar-checklist-minimalistic-bold-duotone' , ['Course View'] ,  'courses.index' ))
+        );
+
+        $sidebar->add(
             (new SidebarItem('Attendance and departure log', 'solar-users-group-rounded-bold-duotone' , ['Student View'], 'students.index'))
         );
 

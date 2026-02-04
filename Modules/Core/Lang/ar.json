@@ -137,5 +137,27 @@
 
     "Users retrieved successfully": "تم جلب المستخدمين بنجاح",
     "User retrieved successfully": "تم جلب المستخدم بنجاح",
-    "User updated successfully": "تم تحديث المستخدم بنجاح"
+    "User updated successfully": "تم تحديث المستخدم بنجاح",
+
+    "General Site Info": "معلومات الموقع العامة",
+    "Academic Settings": "الإعدادات الأكاديمية",
+    "Academic Configuration": "التكوين الأكاديمي",
+    "Semester Type": "نوع الفصل الدراسي",
+    "Academic Year": "السنة الدراسية",
+    "Report Status": "حالة التقارير",
+    "Login Method": "طريقة تسجيل الدخول",
+    "GIZ Evaluation Status": "حالة تقييم GIZ",
+    "Saved Successfully": "تم الحفظ بنجاح",
+    "Settings Updated": "تم تحديث الإعدادات",
+    "System settings have been updated successfully": "تم تحديث إعدادات النظام بنجاح",
+    "Theoretical": "نظري",
+    "Practical": "عملي",
+    "Both (Theory & Practical)": "نظري وعملي",
+    "First Semester": "الفصل الأول",
+    "Second Semester": "الفصل الثاني",
+    "Summer Semester": "الفصل الصيفي",
+    "Open": "مفتوح",
+    "Closed": "مغلق",
+    "Internal System": "النظام الداخلي",
+    "University SSO (PPU)": "نظام الجامعة (SSO)"
 }

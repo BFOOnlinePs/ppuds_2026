@@ -61,6 +61,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ], function () {
                     Route::get('/majors', Index::class)->name('index')->can('Student View List');
                 });
+
+                Route::group([
+                    'prefix' => 'courses',
+                    'as' => 'courses.',
+                    'namespace' => 'Modules\PPUDS\Livewire\Pages\Course',
+                ], function () {
+                    Route::get('/courses', Index::class)->name('index')->can('Course View List');
+                });
             });
         }
     );

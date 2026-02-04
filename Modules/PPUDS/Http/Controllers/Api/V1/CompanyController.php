@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\Branch\Entities\Branch;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\Company;
+use Modules\PPUDS\Entities\CompanyDepartment; // تأكد من استدعاء هذا الكلاس
 use Modules\PPUDS\Http\Requests\CompanyRequest;
 use Modules\PPUDS\Transformers\V1\CompanyResource;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -27,67 +28,14 @@ class CompanyController extends Controller
      * in="header",
      * required=true,
      * description="Language header (ar or en)",
-     * @OA\Schema(
-     * type="string",
-     * default="ar",
-     * example="en"
-     * )
+     * @OA\Schema(type="string", default="ar", example="en")
      * ),
      * @OA\Parameter(
-     * name="fields",
+     * name="include",
      * in="query",
      * required=false,
-     * description="Comma separated list of fields to be returned",
+     * description="Include relations (e.g. branches)",
      * @OA\Schema(type="string")
-     * ),
-     * @OA\Parameter(
-     * name="filter[id]",
-     * in="query",
-     * required=false,
-     * description="Filter by ID",
-     * @OA\Schema(type="integer")
-     * ),
-     * @OA\Parameter(
-     * name="filter[name]",
-     * in="query",
-     * required=false,
-     * description="Filter by translated name (LIKE)",
-     * @OA\Schema(type="string")
-     * ),
-     * @OA\Parameter(
-     * name="filter[email]",
-     * in="query",
-     * required=false,
-     * description="Filter by email",
-     * @OA\Schema(type="string")
-     * ),
-     * @OA\Parameter(
-     * name="filter[is_active]",
-     * in="query",
-     * required=false,
-     * description="Filter by is_active status",
-     * @OA\Schema(type="boolean")
-     * ),
-     * @OA\Parameter(
-     * name="sort",
-     * in="query",
-     * required=false,
-     * description="Sort fields. Use leading '-' for DESC. Examples: name, -id",
-     * @OA\Schema(type="string", example="name")
-     * ),
-     * @OA\Parameter(
-     * name="per_page",
-     * in="query",
-     * required=false,
-     * description="Number of items per page",
-     * @OA\Schema(type="integer", example=10)
-     * ),
-     * @OA\Parameter(
-     * name="page",
-     * in="query",
-     * required=false,
-     * description="Page number",
-     * @OA\Schema(type="integer", example=1)
      * ),
      * @OA\Response(
      * response=200,
@@ -102,17 +50,26 @@ class CompanyController extends Controller
      * @OA\Items(
      * type="object",
      * @OA\Property(property="id", type="integer", example=1),
-     * @OA\Property(property="name", type="string", example="Company Name"),
-     * @OA\Property(property="description", type="string", example="Company Description"),
-     * @OA\Property(property="email", type="string", example="company@example.com"),
-     * @OA\Property(property="phone", type="string", example="0599999999"),
-     * @OA\Property(property="logo", type="string", example="https://domain.com/storage/logo.png"),
-     * @OA\Property(property="is_active", type="boolean", example=true)
+     * @OA\Property(property="name", type="string", example="New Tech Company"),
+     * @OA\Property(property="description", type="string", example="Leading tech solutions"),
+     * @OA\Property(property="company_category_id", type="integer", example=5),
+     * @OA\Property(property="website", type="string", example="https://example.com"),
+     * @OA\Property(property="status", type="integer", example=1),
+     * @OA\Property(property="logo_url", type="string", example="https://domain.com/storage/logo.png"),
+     * @OA\Property(property="created_at", type="string", format="date-time"),
+     * @OA\Property(
+     * property="branches",
+     * type="array",
+     * @OA\Items(
+     * type="object",
+     * @OA\Property(property="id", type="integer", example=10),
+     * @OA\Property(property="name", type="string", example="Main Branch")
      * )
      * )
      * )
-     * ),
-     * @OA\Response(response=401, description="Unauthenticated")
+     * )
+     * )
+     * )
      * )
      */
     public function index()
@@ -125,7 +82,7 @@ class CompanyController extends Controller
             ->allowedFields(CompanyResource::allowedFields())
             ->allowedFilters(CompanyResource::allowedFilters())
             ->allowedSorts(CompanyResource::allowedSorts())
-            ->with(['media', 'translations'])
+            ->with(['media', 'translations']) // يمكنك إضافة branches إذا أردت عرضها في القائمة
             ->paginate($perPage)
             ->appends(request()->query());
 
@@ -138,8 +95,8 @@ class CompanyController extends Controller
     /**
      * @OA\Post(
      * path="/api/v1/ppuds/companies",
-     * summary="Create a new company with branches and departments",
-     * description="Creates a company, uploads logo, creates associated branches, and their departments.",
+     * summary="Create a new company",
+     * description="Creates company, branches, and links departments with supervisors.",
      * tags={"Companies"},
      * security={{"sanctum": {}}},
      * @OA\RequestBody(
@@ -152,12 +109,11 @@ class CompanyController extends Controller
      * @OA\Property(property="website", type="string", example="https://example.com"),
      * @OA\Property(property="description", type="string", example="Leading tech solutions"),
      * @OA\Property(property="company_category_id", type="integer", example=1),
-     * @OA\Property(property="status", type="string", example="active", enum={"active", "inactive"}),
-     * @OA\Property(property="logo", type="string", format="binary", description="Company Logo Image"),
+     * @OA\Property(property="status", type="integer", example=1),
+     * @OA\Property(property="logo", type="string", format="binary"),
      * @OA\Property(
      * property="branches",
      * type="array",
-     * description="List of branches",
      * @OA\Items(
      * type="object",
      * required={"name", "country_id", "city_id", "latitude", "longitude", "opening_time", "closing_time"},
@@ -166,18 +122,18 @@ class CompanyController extends Controller
      * @OA\Property(property="phone", type="string", example="+970599999999"),
      * @OA\Property(property="country_id", type="integer", example=1),
      * @OA\Property(property="city_id", type="integer", example=1),
-     * @OA\Property(property="latitude", type="number", format="float", example=31.9038),
-     * @OA\Property(property="longitude", type="number", format="float", example=35.2034),
+     * @OA\Property(property="latitude", type="number", example=31.90),
+     * @OA\Property(property="longitude", type="number", example=35.20),
      * @OA\Property(property="opening_time", type="string", example="08:00"),
      * @OA\Property(property="closing_time", type="string", example="17:00"),
      * @OA\Property(
      * property="departments",
      * type="array",
-     * description="Departments inside this branch",
      * @OA\Items(
      * type="object",
-     * required={"name"},
-     * @OA\Property(property="name", type="string", example="HR Department")
+     * required={"name", "user_id"},
+     * @OA\Property(property="name", type="string", example="HR"),
+     * @OA\Property(property="user_id", type="integer", example=5, description="Supervisor ID")
      * )
      * )
      * )
@@ -185,33 +141,13 @@ class CompanyController extends Controller
      * )
      * )
      * ),
-     * @OA\Response(
-     * response=201,
-     * description="Company created successfully",
-     * @OA\JsonContent(
-     * type="object",
-     * @OA\Property(property="status", type="boolean", example=true),
-     * @OA\Property(property="message", type="string", example="Company created successfully"),
-     * @OA\Property(
-     * property="data",
-     * type="object",
-     * description="The created company object",
-     * @OA\Property(property="id", type="integer", example=1),
-     * @OA\Property(property="name", type="string", example="New Tech Company"),
-     * @OA\Property(property="description", type="string", example="Leading tech solutions"),
-     * @OA\Property(property="email", type="string", example="company@example.com"),
-     * @OA\Property(property="logo", type="string", example="https://domain.com/storage/logo.png"),
-     * @OA\Property(property="is_active", type="boolean", example=true)
-     * )
-     * )
-     * ),
-     * @OA\Response(response=422, description="Validation Error")
+     * @OA\Response(response=201, description="Created successfully")
      * )
      */
     public function store(CompanyRequest $request)
     {
         $company = DB::transaction(function () use ($request) {
-
+            // 1. إنشاء الشركة
             $companyData = $request->safe()->except(['branches', 'logo']);
             $companyData['created_by'] = auth()->id();
 
@@ -221,23 +157,43 @@ class CompanyController extends Controller
                 $company->addMediaFromRequest('logo')->toMediaCollection('logo');
             }
 
+            // 2. إنشاء الفروع
             if ($request->has('branches')) {
                 foreach ($request->branches as $branchData) {
 
                     $departmentsData = $branchData['departments'] ?? [];
+                    // استبعاد الأقسام من بيانات الفرع لأنها تخزن في جدول منفصل/وسيط
                     $branchAttributes = collect($branchData)->except(['departments'])->toArray();
 
                     $branchAttributes['created_by'] = auth()->id();
 
                     $branch = Branch::create($branchAttributes);
 
+                    // ربط الفرع بالشركة
                     $company->branches()->attach($branch->id, ['is_main' => false]);
 
+                    // 3. معالجة الأقسام (Logic مطابق للـ Livewire)
                     if (!empty($departmentsData)) {
-                        foreach ($departmentsData as $dept) {
-                            $branch->departments()->create([
-                                'name'       => $dept['name'],
-                                'created_by' => auth()->id(),
+                        foreach ($departmentsData as $deptData) {
+                            $deptName = $deptData['name'];
+                            $supervisorId = $deptData['user_id'] ?? null;
+
+                            // البحث عن القسم أو إنشاؤه
+                            // ملاحظة: تأكد أن الموديل يدعم الترجمة، أو استخدم where('name', ...) إذا لم يكن مترجماً
+                            $department = CompanyDepartment::whereTranslation('name', $deptName)->first();
+
+                            if (! $department) {
+                                $department = CompanyDepartment::create([
+                                    'name'       => $deptName,
+                                    'created_by' => auth()->id(),
+                                ]);
+                            }
+
+                            // ربط القسم بالفرع مع المشرف
+                            $branch->departments()->syncWithoutDetaching([
+                                $department->id => [
+                                    'user_id' => $supervisorId
+                                ]
                             ]);
                         }
                     }
@@ -247,6 +203,7 @@ class CompanyController extends Controller
             return $company;
         });
 
+        // تحميل العلاقات للإرجاع
         $company->load(['media', 'branches.departments', 'translations']);
 
         return $this->successResponse(
@@ -260,20 +217,9 @@ class CompanyController extends Controller
      * @OA\Get(
      * path="/api/v1/ppuds/companies/{company}",
      * summary="Get a single company",
-     * description="Retrieve details of a specific company by ID",
+     * description="Retrieve details of a specific company",
      * tags={"Companies"},
      * security={{"sanctum": {}}},
-     * @OA\Parameter(
-     * name="Accept-Language",
-     * in="header",
-     * required=true,
-     * description="Language header (ar or en)",
-     * @OA\Schema(
-     * type="string",
-     * default="ar",
-     * example="en"
-     * )
-     * ),
      * @OA\Parameter(
      * name="company",
      * in="path",
@@ -282,11 +228,18 @@ class CompanyController extends Controller
      * @OA\Schema(type="integer", example=1)
      * ),
      * @OA\Parameter(
-     * name="fields",
+     * name="Accept-Language",
+     * in="header",
+     * required=true,
+     * description="Language header (ar or en)",
+     * @OA\Schema(type="string", default="ar", example="en")
+     * ),
+     * @OA\Parameter(
+     * name="include",
      * in="query",
      * required=false,
-     * description="Comma separated list of fields to be returned",
-     * @OA\Schema(type="string", example="id,name,description")
+     * description="Include relations (e.g. branches.departments)",
+     * @OA\Schema(type="string")
      * ),
      * @OA\Response(
      * response=200,
@@ -299,16 +252,26 @@ class CompanyController extends Controller
      * property="data",
      * type="object",
      * @OA\Property(property="id", type="integer", example=1),
-     * @OA\Property(property="name", type="string", example="Company Name"),
-     * @OA\Property(property="description", type="string", example="Company Description"),
-     * @OA\Property(property="email", type="string", example="company@example.com"),
-     * @OA\Property(property="phone", type="string", example="0599999999"),
-     * @OA\Property(property="logo", type="string", example="https://domain.com/storage/logo.png"),
-     * @OA\Property(property="is_active", type="boolean", example=true)
+     * @OA\Property(property="name", type="string", example="New Tech Company"),
+     * @OA\Property(property="description", type="string", example="Leading tech solutions"),
+     * @OA\Property(property="company_category_id", type="integer", example=5),
+     * @OA\Property(property="website", type="string", example="https://example.com"),
+     * @OA\Property(property="status", type="integer", example=1),
+     * @OA\Property(property="logo_url", type="string", example="https://domain.com/storage/logo.png"),
+     * @OA\Property(property="created_at", type="string", format="date-time"),
+     * @OA\Property(
+     * property="branches",
+     * type="array",
+     * @OA\Items(
+     * type="object",
+     * @OA\Property(property="id", type="integer", example=10),
+     * @OA\Property(property="name", type="string", example="Main Branch"),
+     * @OA\Property(property="city_id", type="integer", example=2)
+     * )
+     * )
      * )
      * )
      * ),
-     * @OA\Response(response=401, description="Unauthenticated"),
      * @OA\Response(response=404, description="Company not found")
      * )
      */

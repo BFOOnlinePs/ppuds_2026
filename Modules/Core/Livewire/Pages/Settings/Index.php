@@ -2,167 +2,176 @@
 
 namespace Modules\Core\Livewire\Pages\Settings;
 
-use App\Models\User;
 use App\View\Components\AppLayout;
-use Filament\Forms\Components\Actions\Action;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Grid;
-use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
+use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
-use Filament\Notifications\Notification;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Auth;
-use Jantinnerezo\LivewireAlert\Enums\Position;
+use Jantinnerezo\LivewireAlert\Facades\LivewireAlert;
 use Livewire\Attributes\On;
 use Livewire\Component;
-use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Modules\Core\Entities\Settings;
-use Modules\Core\Events\AbstractNotificationEvent;
 use Modules\Core\Events\RefreshNotificationEvent;
-use Modules\Core\Events\TestEvent;
-use Modules\Core\Filament\Forms\Components\FileUploadWithPreview;
 use Modules\Core\Notifications\GeneralNotification;
-use Modules\Core\Notifications\TestNotification;
 use Modules\Core\Settings\GeneralSettings;
-use Jantinnerezo\LivewireAlert\Facades\LivewireAlert;
-use Modules\Items\Events\ProductUpdated;
+use Modules\PPUDS\Settings\GeneralSettings as PPUDSGeneralSettings;
+use Modules\PPUDS\Enums\SemesterType;
+use Modules\PPUDS\Enums\ReportStatus;
+use Modules\PPUDS\Enums\LoginMethod;
+use Modules\PPUDS\Enums\GigEvaluationStatus;
 
 class Index extends Component implements HasForms
 {
     use InteractsWithForms;
 
-    public ?array $data;
+    public ?array $data = [];
     public Settings $settingsModel;
 
     public function mount()
     {
         $this->settingsModel = Settings::firstOrCreate([]);
+
+        // جلب الإعدادات من كلا الموديولين
         $generalSettings = app(GeneralSettings::class);
-        $this->data = [
-            'site_name' => $generalSettings->site_name,
-            'email_address_for_contact' => $generalSettings->email_address_for_contact,
-            'site_description' => $generalSettings->site_description,
-            'site_logo_url' => $generalSettings->site_logo_url,
-        ];
-        $this->form->fill($this->data);
-    }
+        $ppudsSettings = app(PPUDSGeneralSettings::class);
 
-    public function triggerEvent(): void
-    {
-        TestEvent::dispatch('Hello Mohamad Maraqa');
-    }
+        $this->form->fill([
+            'site_name'                     => $generalSettings->site_name,
+            'email_address_for_contact'     => $generalSettings->email_address_for_contact,
+            'site_description'              => $generalSettings->site_description,
 
-    #[On('echo:product_updated,.ProductUpdated')]
-    public function handleNotification(): void
-    {
-        LivewireAlert::title('تم ربط ال Reverb بنجاح')
-            ->success()
-            ->toast()
-            ->position('bottom-start')
-            ->show();
+            'semester_type'                 => $ppudsSettings->semester_type->value,
+            'year'                          => $ppudsSettings->year,
+            'report_status'                 => $ppudsSettings->report_status->value,
+            'login_method'                  => $ppudsSettings->login_method->value,
+            'giz_evaluation_status'         => $ppudsSettings->giz_evaluation_status->value,
+        ]);
     }
 
     public function form(Form $form): Form
     {
         return $form
-            ->model($this->settingsModel)
             ->schema([
-                Grid::make(3)
-                    ->schema([
-                        Section::make(__('Site Information'))
+                Tabs::make('Settings')
+                    ->tabs([
+                        // التبويب الأول: إعدادات الموقع
+                        Tabs\Tab::make(__('General Site Info'))
+                            ->icon('solar-global-bold-duotone')
                             ->schema([
-                                TextInput::make('site_name')
-                                    ->label(__('Site Name'))
-                                    ->required()
-                                    ->maxLength(255),
+                                Grid::make(3)->schema([
+                                    Section::make()
+                                        ->schema([
+                                            TextInput::make('site_name')
+                                                ->label(__('Site Name'))
+                                                ->prefixIcon('solar-text-field-focus-bold-duotone')
+                                                ->required(),
+                                            TextInput::make('email_address_for_contact')
+                                                ->label(__('Email Address For Contact'))
+                                                ->prefixIcon('solar-letter-bold-duotone')
+                                                ->email()
+                                                ->required(),
+                                            Textarea::make('site_description')
+                                                ->label(__('Site Description'))
+                                                ->rows(3)
+                                                ->required(),
+                                        ])->columnSpan(2),
 
-                                TextInput::make('email_address_for_contact')
-                                    ->label(__('Email Address For Contact'))
-                                    ->email()
-                                    ->required()
-                                    ->maxLength(255),
+                                    Section::make()
+                                        ->schema([
+                                            SpatieMediaLibraryFileUpload::make('logo')
+                                                ->model($this->settingsModel)
+                                                ->collection('logo')
+                                                ->label(__('Site Logo'))
+                                                ->image()
+                                                ->disk('media'),
+                                        ])->columnSpan(1),
+                                ]),
+                            ]),
 
-                                Textarea::make('site_description')
-                                    ->label(__('Site Description'))
-                                    ->required()
-                                    ->maxLength(500),
-                            ])
-                            ->columnSpan(2),
-
-                        Section::make()
+                        // التبويب الثاني: الإعدادات الأكاديمية (PPUDS)
+                        Tabs\Tab::make(__('Academic Settings'))
+                            ->icon('solar-diploma-bold-duotone')
                             ->schema([
-                                SpatieMediaLibraryFileUpload::make('logo')
-                                    ->model($this->settingsModel)
-                                    ->collection('logo')
-                                    ->label(__('Site Logo'))
-                                    ->disk('media')
-                                    ->image()
-                                    ->multiple(false)
-                                    ->columnSpanFull(),
-                            ])
-                            ->columnSpan(1),
-                    ]),
+                                Grid::make(2)->schema([
+                                    Select::make('semester_type')
+                                        ->label(__('Semester Type'))
+                                        ->prefixIcon('solar-calendar-bold-duotone')
+                                        ->options(SemesterType::options())
+                                        ->required(),
+
+                                    TextInput::make('year')
+                                        ->label(__('Academic Year'))
+                                        ->prefixIcon('solar-calendar-search-bold-duotone') // أيقونة Solar
+                                        ->numeric()
+                                        ->required(),
+
+                                    Select::make('report_status')
+                                        ->label(__('Report Status'))
+                                        ->prefixIcon('solar-document-bold-duotone')
+                                        ->options(ReportStatus::options())
+                                        ->required(),
+
+                                    Select::make('login_method')
+                                        ->label(__('Login Method'))
+                                        ->prefixIcon('solar-key-bold-duotone')
+                                        ->options(LoginMethod::options())
+                                        ->required(),
+
+                                    Select::make('giz_evaluation_status')
+                                        ->label(__('GIZ Evaluation Status'))
+                                        ->prefixIcon('solar-ranking-bold-duotone')
+                                        ->options(GigEvaluationStatus::options())
+                                        ->required(),
+                                ]),
+                            ]),
+                    ])->columnSpanFull(),
             ])
             ->statePath('data');
-    }
-
-    protected function Rule(): array
-    {
-        return [
-            'data.site_name' => 'required',
-            'data.email_address_for_contact' => 'required|email',
-            'data.site_description' => 'required',
-        ];
-    }
-
-    protected function messages(): array
-    {
-        return [
-            'data.site_name.required' => __('Site Name is required'),
-            'data.email_address_for_contact.required' => __('Email Address For Contact is required'),
-            'data.email_address_for_contact.email' => __('Email Address For Contact must be a valid email address'),
-            'data.site_description.required' => __('Site Description is required'),
-        ];
     }
 
     public function save()
     {
         $validatedData = $this->form->validate();
+        $data = $validatedData['data'];
 
+        // 1. حفظ إعدادات الموقع العامة
         $generalSettings = app(GeneralSettings::class);
-        $generalSettings->site_name = $validatedData['data']['site_name'];
-        $generalSettings->email_address_for_contact = $validatedData['data']['email_address_for_contact'];
-        $generalSettings->site_description = $validatedData['data']['site_description'];
-        $generalSettings->site_logo_url = 'logo';
-        $this->settingsModel->handleLogoUpload($this->data['logo'] ?? null);
-
+        $generalSettings->site_name = $data['site_name'];
+        $generalSettings->email_address_for_contact = $data['email_address_for_contact'];
+        $generalSettings->site_description = $data['site_description'];
         $generalSettings->save();
 
-//            auth()->user()->notify(new GeneralNotification(
-//                'اعداد جديد',
-//                'تم تحديث الاعدادات بنجاح',
-//                route('settings'),
-//                icon: 'welcome',color: 'success',notifiable: auth()->user()
-//            ));
+        // 2. حفظ إعدادات PPUDS الأكاديمية
+        $ppudsSettings = app(PPUDSGeneralSettings::class);
+        $ppudsSettings->semester_type = SemesterType::from($data['semester_type']);
+        $ppudsSettings->year = (int) $data['year'];
+        $ppudsSettings->report_status = ReportStatus::from($data['report_status']);
+        $ppudsSettings->login_method = LoginMethod::from($data['login_method']);
+        $ppudsSettings->giz_evaluation_status = GigEvaluationStatus::from($data['giz_evaluation_status']);
+        $ppudsSettings->save();
 
-        auth()->user()->notify(new GeneralNotification(
-            'اعداد جديد',
-            'تم تحديث الاعدادات بنجاح',
-            route('settings'),
-            icon: 'welcome',
-            color: 'success',
-        ));
+        // 3. التعامل مع الشعار
+        if (isset($data['logo'])) {
+            $this->settingsModel->handleLogoUpload($data['logo']);
+        }
 
-        event(new RefreshNotificationEvent());
+//        auth()->user()->notify(new GeneralNotification(
+//            __('Settings Updated'),
+//            __('System settings have been updated successfully'),
+//            route('settings'),
+//            icon: 'welcome',
+//            color: 'success',
+//        ));
 
-//        auth()->user()->notify(new TestNotification());
+//        event(new RefreshNotificationEvent());
+
+        LivewireAlert::title(__('Saved Successfully'))->success()->toast()->show();
     }
 
     public function render()
