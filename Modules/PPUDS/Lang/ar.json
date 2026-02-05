@@ -71,7 +71,6 @@
     "Students of the current semester List": "قائمة طلاب الفصل الحالي",
 
     "Attendance and departure log": "سجل الحضور والمغادرة",
-    "Follow-up file": "ملف المتابعة",
     "Ratings": "التقييمات",
 
     "General Info": "معلومات عامة",
@@ -216,8 +215,11 @@
     "Second Semester": "الفصل الثاني",
     "Summer Semester": "الفصل الصيفي",
 
-    "Follow Ups": "ملفات المتابعة",
-    "New Follow Up": "ملف متابعة جديد",
+    "Follow-up file": "تدريب الطالب في الشركة",
+    "Follow Ups": "تدريب الطلاب في الشركات",
+    "Add Follow-up file": "تسجيل طالب في شركة",
+    "Follow-up file List": "عرض تدريبات الطلاب",
+
     "Student & Registration Info": "بيانات الطالب والتسجيل",
     "Select Student Registration": "اختر سجل الطالب",
     "Placement Details": "تفاصيل مكان التدريب",
@@ -228,7 +230,10 @@
     "Training Status": "حالة التدريب",
     "Please select a student registration record.": "يرجى اختيار سجل تسجيل الطالب.",
     "The status field is required.": "حقل الحالة مطلوب.",
-    "Follow-up record created successfully": "تم إنشاء سجل المتابعة بنجاح",
+
+    "Follow-up record created successfully": "تم إنشاء سجل تدريب الطالب في الشركة بنجاح",
+    "Follow-up record updated successfully": "تم تحديث سجل تدريب الطالب في الشركة بنجاح",
+    "Follow-up record deleted successfully": "تم حذف سجل تدريب الطالب في الشركة بنجاح",
 
     "Available / Still Training": "متاح / قيد التدريب",
     "Finished": "منتهي",

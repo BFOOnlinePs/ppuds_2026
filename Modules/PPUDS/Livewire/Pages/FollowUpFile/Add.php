@@ -23,6 +23,7 @@ use Modules\PPUDS\Entities\CompanyDepartment;
 use Modules\PPUDS\Entities\FollowUp;
 use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Enums\TrainingStatus;
+use Modules\PPUDS\Settings\GeneralSettings;
 
 class Add extends Component implements HasForms, HasActions
 {
@@ -58,9 +59,11 @@ class Add extends Component implements HasForms, HasActions
                                         ->prefixIcon('solar-document-text-linear')
                                         ->options(function () {
                                             return Registration::with(['student', 'course'])
+                                                ->where('semester', app(GeneralSettings::class)->semester_type->value)
+                                                ->where('year', app(GeneralSettings::class)->year)
                                                 ->get()
                                                 ->mapWithKeys(function ($reg) {
-                                                    return [$reg->id => "{$reg->student->name} - {$reg->course->name} ({$reg->semester}/{$reg->year})"];
+                                                    return [$reg->id => "{$reg->student->studentProfile->student_number} - {$reg->student->name} - {$reg->course->name} ({$reg->semester}/{$reg->year})"];
                                                 });
                                         }),
                                 ]),

@@ -4,6 +4,7 @@ namespace Modules\PPUDS\Livewire\Pages\FollowUpFile;
 
 use App\View\Components\AppLayout;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -28,7 +29,9 @@ use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\FollowUp;
 use Modules\PPUDS\Entities\Course;
+use Modules\PPUDS\Enums\SemesterType;
 use Modules\PPUDS\Enums\TrainingStatus;
+use Modules\PPUDS\Settings\GeneralSettings;
 
 class Index extends Component implements HasTable, HasForms
 {
@@ -79,7 +82,7 @@ class Index extends Component implements HasTable, HasForms
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters($this->getTableFilters(), layout: FiltersLayout::AboveContent)
-            ->filtersFormColumns(4)
+            ->filtersFormColumns(5)
             ->actions($this->getTableActions())
             ->bulkActions($this->getTableBulkAction());
     }
@@ -93,14 +96,12 @@ class Index extends Component implements HasTable, HasForms
                 ->options(TrainingStatus::class)
                 ->native(false),
 
-            // فلتر الشركات
             SelectFilter::make('company_id')
                 ->label(__('Company'))
                 ->options(Company::get()->pluck('name', 'id'))
                 ->searchable()
                 ->preload(),
 
-            // فلتر المساق (يحتاج WhereHas لأن العلاقة غير مباشرة)
             SelectFilter::make('course')
                 ->label(__('Course'))
                 ->options(Course::get()->pluck('name', 'id'))
@@ -111,19 +112,33 @@ class Index extends Component implements HasTable, HasForms
                 })
                 ->searchable(),
 
-            // فلتر السنة (عبر علاقة التسجيل)
             Filter::make('year')
                 ->form([
                     TextInput::make('year')
                         ->label(__('Academic Year'))
                         ->prefixIcon('solar-calendar-search-bold-duotone')
                         ->numeric()
+                        ->default(app(GeneralSettings::class)->year)
                         ->placeholder(date('Y'))
                 ])
                 ->query(function (Builder $query, array $data): Builder {
                     return $query->when(
                         $data['year'],
                         fn (Builder $q, $year) => $q->whereHas('registration', fn($regQ) => $regQ->where('year', $year))
+                    );
+                }),
+
+            Filter::make('semester_type')
+                ->form([
+                    Select::make('semester_type')
+                        ->label(__('Semester Type'))
+                        ->options(SemesterType::options())
+                        ->default(app(GeneralSettings::class)->semester_type->value)
+                ])
+                ->query(function (Builder $query, array $data): Builder {
+                    return $query->when(
+                        $data['semester_type'],
+                        fn (Builder $q, $semester_type) => $q->whereHas('registration', fn($regQ) => $regQ->where('semester', $semester_type))
                     );
                 }),
         ];

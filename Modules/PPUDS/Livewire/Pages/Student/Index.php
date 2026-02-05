@@ -25,6 +25,7 @@ use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\StudnetProfile;
 use Modules\PPUDS\Enums\StudentGender;
 use Modules\PPUDS\Services\PpuApiService;
+use Modules\PPUDS\Settings\GeneralSettings;
 
 class Index extends Component implements HasTable, HasForms
 {
@@ -70,11 +71,11 @@ class Index extends Component implements HasTable, HasForms
             )
             ->headerActions([
 
-                Action::make('sync_major')
-                    ->label(__('Sync Major'))
+                Action::make('sync_student')
+                    ->label(__('Sync Student'))
                     ->icon('heroicon-o-arrow-path')
                     ->action(function (PpuApiService $service){
-                        $status = $service->syncStudents(2024, 1);
+                        $status = $service->syncStudents(app(GeneralSettings::class)->year, app(GeneralSettings::class)->semester_type->value);
                         if ($status) {
                             Toaster::success(__('Sync Major') . ' ' . ($status ? __('Success') : __('Failed')));
                         }
