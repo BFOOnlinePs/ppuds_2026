@@ -7,6 +7,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 use Modules\Core\Entities\User;
 use Modules\Core\Traits\Concerns\SelectsFieldsFromApi;
 use Modules\Items\Transformers\V1\OrderResource;
+use Spatie\QueryBuilder\AllowedFilter;
 
 class UserResource extends JsonResource
 {
@@ -43,11 +44,17 @@ class UserResource extends JsonResource
 
     public static function allowedFilters(): array
     {
-        return ['id', 'name', 'email', 'phone'];
+        return ['id', 'name', 'email', 'phone',
+            AllowedFilter::callback('role', function (Builder $query, $value) {
+                $query->whereHas('roles', function (Builder $q) use ($value) {
+                    $q->where('name', $value);
+                });
+            }),
+            ];
     }
 
     public static function allowedIncludes(): array
     {
-        return ['media', 'orders'];
+        return ['media', 'orders', 'roles'];
     }
 }

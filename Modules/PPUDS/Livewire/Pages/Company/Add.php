@@ -350,7 +350,7 @@ class Add extends Component implements HasForms, HasActions
 
     public function save()
     {
-        $this->authorize("Company Create");
+        $this->authorize("Companyy Create");
 
         $this->validate();
 
