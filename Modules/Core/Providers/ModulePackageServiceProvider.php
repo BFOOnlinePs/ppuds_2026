@@ -8,7 +8,7 @@ use Modules\Core\Services\ModulePackageService;
 class ModulePackageServiceProvider extends ServiceProvider
 {
     /**
-     * Register the service provider.
+     * Registration the service provider.
      */
     public function register(): void
     {

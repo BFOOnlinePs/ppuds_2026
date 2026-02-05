@@ -66,7 +66,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a callback to run after loading the environment.
+         * Registration a callback to run after loading the environment.
          *
          * @param \Closure $callback
          * @return void
@@ -79,7 +79,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a callback to run before a bootstrapper.
+         * Registration a callback to run before a bootstrapper.
          *
          * @param string $bootstrapper
          * @param \Closure $callback
@@ -93,7 +93,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a callback to run after a bootstrapper.
+         * Registration a callback to run after a bootstrapper.
          *
          * @param string $bootstrapper
          * @param \Closure $callback
@@ -542,7 +542,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a new registered listener.
+         * Registration a new registered listener.
          *
          * @param callable $callback
          * @return void
@@ -555,7 +555,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register all of the configured providers.
+         * Registration all of the configured providers.
          *
          * @return void
          * @static
@@ -567,7 +567,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a service provider with the application.
+         * Registration a service provider with the application.
          *
          * @param \Illuminate\Support\ServiceProvider|string $provider
          * @param bool $force
@@ -645,7 +645,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a deferred provider and service.
+         * Registration a deferred provider and service.
          *
          * @param string $provider
          * @param string|null $service
@@ -712,7 +712,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a new boot listener.
+         * Registration a new boot listener.
          *
          * @param callable $callback
          * @return void
@@ -725,7 +725,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a new "booted" listener.
+         * Registration a new "booted" listener.
          *
          * @param callable $callback
          * @return void
@@ -962,7 +962,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a terminating callback with the application.
+         * Registration a terminating callback with the application.
          *
          * @param callable|string $callback
          * @return \Illuminate\Foundation\Application
@@ -1164,7 +1164,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register the core class aliases in the container.
+         * Registration the core class aliases in the container.
          *
          * @return void
          * @static
@@ -1292,7 +1292,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a binding with the container.
+         * Registration a binding with the container.
          *
          * @param \Closure|string $abstract
          * @param \Closure|string|null $concrete
@@ -1370,7 +1370,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a binding if it hasn't already been registered.
+         * Registration a binding if it hasn't already been registered.
          *
          * @param \Closure|string $abstract
          * @param \Closure|string|null $concrete
@@ -1386,7 +1386,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a shared binding in the container.
+         * Registration a shared binding in the container.
          *
          * @param \Closure|string $abstract
          * @param \Closure|string|null $concrete
@@ -1401,7 +1401,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a shared binding if it hasn't already been registered.
+         * Registration a shared binding if it hasn't already been registered.
          *
          * @param \Closure|string $abstract
          * @param \Closure|string|null $concrete
@@ -1416,7 +1416,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a scoped binding in the container.
+         * Registration a scoped binding in the container.
          *
          * @param \Closure|string $abstract
          * @param \Closure|string|null $concrete
@@ -1431,7 +1431,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a scoped binding if it hasn't already been registered.
+         * Registration a scoped binding if it hasn't already been registered.
          *
          * @param \Closure|string $abstract
          * @param \Closure|string|null $concrete
@@ -1462,7 +1462,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register an existing instance as shared in the container.
+         * Registration an existing instance as shared in the container.
          *
          * @template TInstance of mixed
          * @param string $abstract
@@ -1664,7 +1664,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a new before resolving callback for all types.
+         * Registration a new before resolving callback for all types.
          *
          * @param \Closure|string $abstract
          * @param \Closure|null $callback
@@ -1679,7 +1679,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a new resolving callback.
+         * Registration a new resolving callback.
          *
          * @param \Closure|string $abstract
          * @param \Closure|null $callback
@@ -1694,7 +1694,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a new after resolving callback for all types.
+         * Registration a new after resolving callback for all types.
          *
          * @param \Closure|string $abstract
          * @param \Closure|null $callback
@@ -1709,7 +1709,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a new after resolving attribute callback for all types.
+         * Registration a new after resolving attribute callback for all types.
          *
          * @param string $attribute
          * @param \Closure $callback
@@ -1943,7 +1943,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom macro.
+         * Registration a custom macro.
          *
          * @param string $name
          * @param object|callable $macro
@@ -2040,7 +2040,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a callback to be invoked when the command lifecycle duration exceeds a given amount of time.
+         * Registration a callback to be invoked when the command lifecycle duration exceeds a given amount of time.
          *
          * @param \DateTimeInterface|\Carbon\CarbonInterval|float|int $threshold
          * @param callable $handler
@@ -2078,7 +2078,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a Closure based command with the application.
+         * Registration a Closure based command with the application.
          *
          * @param string $signature
          * @param \Closure $callback
@@ -2092,7 +2092,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register the given command with the console application.
+         * Registration the given command with the console application.
          *
          * @param \Symfony\Component\Console\Command\Command $command
          * @return void
@@ -2320,7 +2320,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a new callback based request guard.
+         * Registration a new callback based request guard.
          *
          * @param string $driver
          * @param callable $callback
@@ -2359,7 +2359,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom driver creator Closure.
+         * Registration a custom driver creator Closure.
          *
          * @param string $driver
          * @param \Closure $callback
@@ -2373,7 +2373,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom provider creator Closure.
+         * Registration a custom provider creator Closure.
          *
          * @param string $name
          * @param \Closure $callback
@@ -2642,7 +2642,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register an authentication attempt event listener.
+         * Registration an authentication attempt event listener.
          *
          * @param mixed $callback
          * @return void
@@ -2927,7 +2927,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom macro.
+         * Registration a custom macro.
          *
          * @param string $name
          * @param object|callable $macro
@@ -3073,7 +3073,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom Blade compiler.
+         * Registration a custom Blade compiler.
          *
          * @param callable $compiler
          * @return void
@@ -3098,7 +3098,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register an "if" statement directive.
+         * Registration an "if" statement directive.
          *
          * @param string $name
          * @param callable $callback
@@ -3126,7 +3126,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a class-based component alias directive.
+         * Registration a class-based component alias directive.
          *
          * @param string $class
          * @param string|null $alias
@@ -3141,7 +3141,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register an array of class-based components.
+         * Registration an array of class-based components.
          *
          * @param array $components
          * @param string $prefix
@@ -3167,7 +3167,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a new anonymous component path.
+         * Registration a new anonymous component path.
          *
          * @param string $path
          * @param string|null $prefix
@@ -3181,7 +3181,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register an anonymous component namespace.
+         * Registration an anonymous component namespace.
          *
          * @param string $directory
          * @param string|null $prefix
@@ -3195,7 +3195,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a class-based component namespace.
+         * Registration a class-based component namespace.
          *
          * @param string $namespace
          * @param string $prefix
@@ -3245,7 +3245,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a component alias directive.
+         * Registration a component alias directive.
          *
          * @param string $path
          * @param string|null $alias
@@ -3259,7 +3259,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register an include alias directive.
+         * Registration an include alias directive.
          *
          * @param string $path
          * @param string|null $alias
@@ -3273,7 +3273,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register an include alias directive.
+         * Registration an include alias directive.
          *
          * @param string $path
          * @param string|null $alias
@@ -3287,7 +3287,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a handler for custom directives, binding the handler to the compiler.
+         * Registration a handler for custom directives, binding the handler to the compiler.
          *
          * @param string $name
          * @param callable $handler
@@ -3302,7 +3302,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a handler for custom directives.
+         * Registration a handler for custom directives.
          *
          * @param string $name
          * @param callable $handler
@@ -3343,7 +3343,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a new precompiler.
+         * Registration a new precompiler.
          *
          * @param callable $precompiler
          * @return void
@@ -3564,7 +3564,7 @@ namespace Illuminate\Support\Facades {
      */
     class Broadcast {
         /**
-         * Register the routes for handling broadcast channel authentication and sockets.
+         * Registration the routes for handling broadcast channel authentication and sockets.
          *
          * @param array|null $attributes
          * @return void
@@ -3577,7 +3577,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register the routes for handling broadcast user authentication.
+         * Registration the routes for handling broadcast user authentication.
          *
          * @param array|null $attributes
          * @return void
@@ -3590,7 +3590,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register the routes for handling broadcast authentication and sockets.
+         * Registration the routes for handling broadcast authentication and sockets.
          *
          * Alias of "routes" method.
          *
@@ -3767,7 +3767,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom driver creator Closure.
+         * Registration a custom driver creator Closure.
          *
          * @param string $driver
          * @param \Closure $callback
@@ -4571,7 +4571,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom driver creator Closure.
+         * Registration a custom driver creator Closure.
          *
          * @param string $driver
          * @param \Closure $callback
@@ -5101,7 +5101,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom macro.
+         * Registration a custom macro.
          *
          * @param string $name
          * @param object|callable $macro
@@ -5436,7 +5436,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom instance creator Closure.
+         * Registration a custom instance creator Closure.
          *
          * @param string $name
          * @param \Closure $callback
@@ -5702,7 +5702,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom macro.
+         * Registration a custom macro.
          *
          * @param string $name
          * @param object|callable $macro
@@ -6311,7 +6311,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom macro.
+         * Registration a custom macro.
          *
          * @param string $name
          * @param object|callable $macro
@@ -6547,7 +6547,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom macro.
+         * Registration a custom macro.
          *
          * @param string $name
          * @param object|callable $macro
@@ -7052,7 +7052,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register an extension connection resolver.
+         * Registration an extension connection resolver.
          *
          * @param string $name
          * @param callable $resolver
@@ -7117,7 +7117,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom macro.
+         * Registration a custom macro.
          *
          * @param string $name
          * @param object|callable $macro
@@ -7595,7 +7595,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a callback to be invoked when the connection queries for longer than a given amount of time.
+         * Registration a callback to be invoked when the connection queries for longer than a given amount of time.
          *
          * @param \DateTimeInterface|\Carbon\CarbonInterval|float|int $threshold
          * @param (callable(\Illuminate\Database\Connection, class-string<\Illuminate\Database\Events\QueryExecuted>): mixed) $handler
@@ -7662,7 +7662,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a hook to be run just before a database transaction is started.
+         * Registration a hook to be run just before a database transaction is started.
          *
          * @param \Closure $callback
          * @return \Illuminate\Database\MySqlConnection
@@ -7676,7 +7676,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a hook to be run just before a database query is executed.
+         * Registration a hook to be run just before a database query is executed.
          *
          * @param \Closure $callback
          * @return \Illuminate\Database\MySqlConnection
@@ -7690,7 +7690,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a database query listener with the connection.
+         * Registration a database query listener with the connection.
          *
          * @param \Closure $callback
          * @return void
@@ -8255,7 +8255,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a connection resolver.
+         * Registration a connection resolver.
          *
          * @param string $driver
          * @param \Closure $callback
@@ -8376,7 +8376,7 @@ namespace Illuminate\Support\Facades {
      */
     class Event {
         /**
-         * Register an event listener with the dispatcher.
+         * Registration an event listener with the dispatcher.
          *
          * @param \Illuminate\Events\Queued\Closure|callable|array|class-string|string $events
          * @param \Illuminate\Events\Queued\Closure|callable|array|class-string|null $listener
@@ -8416,7 +8416,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register an event and payload to be fired later.
+         * Registration an event and payload to be fired later.
          *
          * @param string $event
          * @param object|array $payload
@@ -8443,7 +8443,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register an event subscriber with the dispatcher.
+         * Registration an event subscriber with the dispatcher.
          *
          * @param object|string $subscriber
          * @return void
@@ -8498,7 +8498,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register an event listener with the dispatcher.
+         * Registration an event listener with the dispatcher.
          *
          * @param \Closure|string|array $listener
          * @param bool $wildcard
@@ -8603,7 +8603,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom macro.
+         * Registration a custom macro.
          *
          * @param string $name
          * @param object|callable $macro
@@ -9469,7 +9469,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom macro.
+         * Registration a custom macro.
          *
          * @param string $name
          * @param object|callable $macro
@@ -9614,7 +9614,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a callback to run before all Gate checks.
+         * Registration a callback to run before all Gate checks.
          *
          * @param callable $callback
          * @return \Illuminate\Auth\Access\Gate
@@ -9627,7 +9627,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a callback to run after all Gate checks.
+         * Registration a callback to run after all Gate checks.
          *
          * @param callable $callback
          * @return \Illuminate\Auth\Access\Gate
@@ -10038,7 +10038,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom driver creator Closure.
+         * Registration a custom driver creator Closure.
          *
          * @param string $driver
          * @param \Closure $callback
@@ -10296,7 +10296,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a stub callable that will intercept requests and be able to return stub responses.
+         * Registration a stub callable that will intercept requests and be able to return stub responses.
          *
          * @param callable|array<string, mixed>|null $callback
          * @return \Illuminate\Http\Client\Factory
@@ -10309,7 +10309,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a response sequence for the given URL pattern.
+         * Registration a response sequence for the given URL pattern.
          *
          * @param string $url
          * @return \Illuminate\Http\Client\ResponseSequence
@@ -10525,7 +10525,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom macro.
+         * Registration a custom macro.
          *
          * @param string $name
          * @param object|callable $macro
@@ -10687,7 +10687,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a callback that is responsible for handling missing translation keys.
+         * Registration a callback that is responsible for handling missing translation keys.
          *
          * @param callable|null $callback
          * @return static
@@ -10921,7 +10921,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom macro.
+         * Registration a custom macro.
          *
          * @param string $name
          * @param object|callable $macro
@@ -11113,7 +11113,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom driver creator Closure.
+         * Registration a custom driver creator Closure.
          *
          * @param string $driver
          * @param \Closure $callback
@@ -11419,7 +11419,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom transport creator Closure.
+         * Registration a custom transport creator Closure.
          *
          * @param string $driver
          * @param \Closure $callback
@@ -11894,7 +11894,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom driver creator Closure.
+         * Registration a custom driver creator Closure.
          *
          * @param string $driver
          * @param \Closure $callback
@@ -12145,7 +12145,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom macro.
+         * Registration a custom macro.
          *
          * @param string $name
          * @param object|callable $macro
@@ -12505,7 +12505,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom macro.
+         * Registration a custom macro.
          *
          * @param string $name
          * @param object|callable $macro
@@ -12578,7 +12578,7 @@ namespace Illuminate\Support\Facades {
      */
     class Queue {
         /**
-         * Register an event listener for the before job event.
+         * Registration an event listener for the before job event.
          *
          * @param mixed $callback
          * @return void
@@ -12591,7 +12591,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register an event listener for the after job event.
+         * Registration an event listener for the after job event.
          *
          * @param mixed $callback
          * @return void
@@ -12604,7 +12604,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register an event listener for the exception occurred job event.
+         * Registration an event listener for the exception occurred job event.
          *
          * @param mixed $callback
          * @return void
@@ -12617,7 +12617,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register an event listener for the daemon queue loop.
+         * Registration an event listener for the daemon queue loop.
          *
          * @param mixed $callback
          * @return void
@@ -12630,7 +12630,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register an event listener for the failed job event.
+         * Registration an event listener for the failed job event.
          *
          * @param mixed $callback
          * @return void
@@ -12643,7 +12643,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register an event listener for the daemon queue starting.
+         * Registration an event listener for the daemon queue starting.
          *
          * @param mixed $callback
          * @return void
@@ -12656,7 +12656,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register an event listener for the daemon queue stopping.
+         * Registration an event listener for the daemon queue stopping.
          *
          * @param mixed $callback
          * @return void
@@ -13346,7 +13346,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a callback to be executed when creating job payloads.
+         * Registration a callback to be executed when creating job payloads.
          *
          * @param callable|null $callback
          * @return void
@@ -13391,7 +13391,7 @@ namespace Illuminate\Support\Facades {
      */
     class RateLimiter {
         /**
-         * Register a named limiter configuration.
+         * Registration a named limiter configuration.
          *
          * @param \BackedEnum|\UnitEnum|string $name
          * @param \Closure $callback
@@ -13813,7 +13813,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom macro.
+         * Registration a custom macro.
          *
          * @param string $name
          * @param object|callable $macro
@@ -16366,7 +16366,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom macro.
+         * Registration a custom macro.
          *
          * @param string $name
          * @param object|callable $macro
@@ -16736,7 +16736,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom macro.
+         * Registration a custom macro.
          *
          * @param string $name
          * @param object|callable $macro
@@ -16812,7 +16812,7 @@ namespace Illuminate\Support\Facades {
      */
     class Route {
         /**
-         * Register a new GET route with the router.
+         * Registration a new GET route with the router.
          *
          * @param string $uri
          * @param array|string|callable|null $action
@@ -16826,7 +16826,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a new POST route with the router.
+         * Registration a new POST route with the router.
          *
          * @param string $uri
          * @param array|string|callable|null $action
@@ -16840,7 +16840,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a new PUT route with the router.
+         * Registration a new PUT route with the router.
          *
          * @param string $uri
          * @param array|string|callable|null $action
@@ -16854,7 +16854,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a new PATCH route with the router.
+         * Registration a new PATCH route with the router.
          *
          * @param string $uri
          * @param array|string|callable|null $action
@@ -16868,7 +16868,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a new DELETE route with the router.
+         * Registration a new DELETE route with the router.
          *
          * @param string $uri
          * @param array|string|callable|null $action
@@ -16882,7 +16882,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a new OPTIONS route with the router.
+         * Registration a new OPTIONS route with the router.
          *
          * @param string $uri
          * @param array|string|callable|null $action
@@ -16896,7 +16896,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a new route responding to all verbs.
+         * Registration a new route responding to all verbs.
          *
          * @param string $uri
          * @param array|string|callable|null $action
@@ -16910,7 +16910,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a new fallback route with the router.
+         * Registration a new fallback route with the router.
          *
          * @param array|string|callable|null $action
          * @return \Illuminate\Routing\Route
@@ -16952,7 +16952,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a new route that returns a view.
+         * Registration a new route that returns a view.
          *
          * @param string $uri
          * @param string $view
@@ -16969,7 +16969,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a new route with the given verbs.
+         * Registration a new route with the given verbs.
          *
          * @param array|string $methods
          * @param string $uri
@@ -16984,7 +16984,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register an array of resource controllers.
+         * Registration an array of resource controllers.
          *
          * @param array $resources
          * @param array $options
@@ -16998,7 +16998,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register an array of resource controllers that can be soft deleted.
+         * Registration an array of resource controllers that can be soft deleted.
          *
          * @param array $resources
          * @param array $options
@@ -17027,7 +17027,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register an array of API resource controllers.
+         * Registration an array of API resource controllers.
          *
          * @param array $resources
          * @param array $options
@@ -17056,7 +17056,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register an array of singleton resource controllers.
+         * Registration an array of singleton resource controllers.
          *
          * @param array $singletons
          * @param array $options
@@ -17085,7 +17085,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register an array of API singleton resource controllers.
+         * Registration an array of API singleton resource controllers.
          *
          * @param array $singletons
          * @param array $options
@@ -17307,7 +17307,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a callback to run after implicit bindings are substituted.
+         * Registration a callback to run after implicit bindings are substituted.
          *
          * @param callable $callback
          * @return \Illuminate\Routing\Router
@@ -17320,7 +17320,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a route matched event listener.
+         * Registration a route matched event listener.
          *
          * @param string|callable $callback
          * @return void
@@ -17345,7 +17345,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a short-hand name for a middleware.
+         * Registration a short-hand name for a middleware.
          *
          * @param string $name
          * @param string $class
@@ -17384,7 +17384,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a group of middleware.
+         * Registration a group of middleware.
          *
          * @param string $name
          * @param array $middleware
@@ -17470,7 +17470,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a model binder for a wildcard.
+         * Registration a model binder for a wildcard.
          *
          * @param string $key
          * @param string $class
@@ -17802,7 +17802,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom macro.
+         * Registration a custom macro.
          *
          * @param string $name
          * @param object|callable $macro
@@ -18085,7 +18085,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom macro.
+         * Registration a custom macro.
          *
          * @param string $name
          * @param object|callable $macro
@@ -18741,7 +18741,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom macro.
+         * Registration a custom macro.
          *
          * @param string $name
          * @param object|callable $macro
@@ -18901,7 +18901,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom driver creator Closure.
+         * Registration a custom driver creator Closure.
          *
          * @param string $driver
          * @param \Closure $callback
@@ -19611,7 +19611,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom macro.
+         * Registration a custom macro.
          *
          * @param string $name
          * @param object|callable $macro
@@ -19855,7 +19855,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom driver creator Closure.
+         * Registration a custom driver creator Closure.
          *
          * @param string $driver
          * @param \Closure $callback
@@ -20633,7 +20633,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom macro.
+         * Registration a custom macro.
          *
          * @param string $name
          * @param object|callable $macro
@@ -21296,7 +21296,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom macro.
+         * Registration a custom macro.
          *
          * @param string $name
          * @param object|callable $macro
@@ -21385,7 +21385,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom validator extension.
+         * Registration a custom validator extension.
          *
          * @param string $rule
          * @param \Closure|string $extension
@@ -21400,7 +21400,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom implicit validator extension.
+         * Registration a custom implicit validator extension.
          *
          * @param string $rule
          * @param \Closure|string $extension
@@ -21415,7 +21415,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom dependent validator extension.
+         * Registration a custom dependent validator extension.
          *
          * @param string $rule
          * @param \Closure|string $extension
@@ -21430,7 +21430,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom validator message replacer.
+         * Registration a custom validator message replacer.
          *
          * @param string $rule
          * @param \Closure|string $replacer
@@ -21813,7 +21813,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a valid view extension and its engine.
+         * Registration a valid view extension and its engine.
          *
          * @param string $extension
          * @param string $engine
@@ -21989,7 +21989,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom macro.
+         * Registration a custom macro.
          *
          * @param string $name
          * @param object|callable $macro
@@ -22121,7 +22121,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a view creator event.
+         * Registration a view creator event.
          *
          * @param array|string $views
          * @param \Closure|string $callback
@@ -22135,7 +22135,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register multiple view composers via an array.
+         * Registration multiple view composers via an array.
          *
          * @param array $composers
          * @return array
@@ -22148,7 +22148,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a view composer event.
+         * Registration a view composer event.
          *
          * @param array|string $views
          * @param \Closure|string $callback
@@ -22901,7 +22901,7 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Register a custom macro.
+         * Registration a custom macro.
          *
          * @param string $name
          * @param object|callable $macro
@@ -23741,7 +23741,7 @@ namespace Laravel\Octane\Facades {
         }
 
         /**
-         * Register a Octane route.
+         * Registration a Octane route.
          *
          * @static
          */
@@ -23785,7 +23785,7 @@ namespace Laravel\Octane\Facades {
         }
 
         /**
-         * Register a callback to be called every N seconds.
+         * Registration a callback to be called every N seconds.
          *
          * @return \Laravel\Octane\Swoole\InvokeTickCallable
          * @static
@@ -25545,7 +25545,7 @@ namespace Nwidart\Modules\Facades {
         }
 
         /**
-         * Register a custom macro.
+         * Registration a custom macro.
          *
          * @param string $name
          * @param object|callable $macro
@@ -28917,7 +28917,7 @@ namespace  {
         }
 
         /**
-         * Register a new global scope.
+         * Registration a new global scope.
          *
          * @param string $identifier
          * @param \Illuminate\Database\Eloquent\Scope|\Closure $scope
@@ -29468,7 +29468,7 @@ namespace  {
         }
 
         /**
-         * Register a closure to be invoked after the query is executed.
+         * Registration a closure to be invoked after the query is executed.
          *
          * @param \Closure $callback
          * @return \Illuminate\Database\Eloquent\Builder<static>
@@ -29637,7 +29637,7 @@ namespace  {
         }
 
         /**
-         * Register a replacement for the default delete function.
+         * Registration a replacement for the default delete function.
          *
          * @param \Closure $callback
          * @return void
@@ -29957,7 +29957,7 @@ namespace  {
         }
 
         /**
-         * Register a closure to be invoked on a clone.
+         * Registration a closure to be invoked on a clone.
          *
          * @param \Closure $callback
          * @return \Illuminate\Database\Eloquent\Builder<static>
@@ -33226,7 +33226,7 @@ namespace  {
         }
 
         /**
-         * Register a closure to be invoked before the query is executed.
+         * Registration a closure to be invoked before the query is executed.
          *
          * @return \Illuminate\Database\Eloquent\Builder<static>
          * @static
@@ -34079,7 +34079,7 @@ namespace  {
         }
 
         /**
-         * Register a custom macro.
+         * Registration a custom macro.
          *
          * @param string $name
          * @param object|callable $macro

@@ -1,0 +1,213 @@
+<?php
+
+namespace Modules\PPUDS\Livewire\Pages\FollowUpFile;
+
+use App\View\Components\AppLayout;
+use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
+use Filament\Tables\Actions\BulkAction;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Table;
+use Filament\Tables\Enums\FiltersLayout;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Livewire\Component;
+use Masmerise\Toaster\Toaster;
+use Modules\Core\Entities\User;
+use Modules\Core\Filament\Forms\Components\DeleteAction;
+use Modules\Core\Filament\Forms\Components\EditAction;
+use Modules\Core\Filament\Forms\Components\InfoAction;
+use Modules\Core\Filament\Forms\Components\ViewAction;
+use Modules\PPUDS\Entities\Company;
+use Modules\PPUDS\Entities\FollowUp;
+use Modules\PPUDS\Entities\Course;
+use Modules\PPUDS\Enums\TrainingStatus;
+
+class Index extends Component implements HasTable, HasForms
+{
+    use InteractsWithTable;
+    use InteractsWithForms;
+
+    public function table(Table $table): Table
+    {
+        return $table
+            ->query(fn() => FollowUp::query()->with(['registration.student', 'registration.course', 'company', 'branch']))
+            ->columns([
+                TextColumn::make('registration.student.name')
+                    ->label(__('Student'))
+                    ->searchable()
+                    ->sortable()
+                    ->weight('bold')
+                    ->color('primary')
+                    ->url(fn (FollowUp $record) => route('follow-ups.edit', $record))
+                    ->description(fn (FollowUp $record) => $record->registration?->student?->email),
+
+                TextColumn::make('company.name')
+                    ->label(__('Company'))
+                    ->url(fn(FollowUp $record)  =>  route('companies.edit', $record->company_id))
+                    ->searchable()
+                    ->placeholder('—')
+                    ->color('primary'),
+
+                TextColumn::make('branch.name')
+                    ->label(__('Branch'))
+                    ->toggleable()
+                    ->placeholder('—'),
+
+                TextColumn::make('status')
+                    ->label(__('Status'))
+                    ->badge()
+                    ->sortable(),
+
+                TextColumn::make('registration.course.name')
+                    ->label(__('Course'))
+                    ->badge()
+                    ->color('gray')
+                    ->toggleable(),
+
+                TextColumn::make('created_at')
+                    ->label(__('Created At'))
+                    ->dateTime('Y-m-d')
+                    ->icon('solar-clock-circle-bold-duotone')
+                    ->toggleable(isToggledHiddenByDefault: true),
+            ])
+            ->filters($this->getTableFilters(), layout: FiltersLayout::AboveContent)
+            ->filtersFormColumns(4)
+            ->actions($this->getTableActions())
+            ->bulkActions($this->getTableBulkAction());
+    }
+
+    protected function getTableFilters(): array
+    {
+        return [
+            // فلتر الحالة
+            SelectFilter::make('status')
+                ->label(__('Training Status'))
+                ->options(TrainingStatus::class)
+                ->native(false),
+
+            // فلتر الشركات
+            SelectFilter::make('company_id')
+                ->label(__('Company'))
+                ->options(Company::get()->pluck('name', 'id'))
+                ->searchable()
+                ->preload(),
+
+            // فلتر المساق (يحتاج WhereHas لأن العلاقة غير مباشرة)
+            SelectFilter::make('course')
+                ->label(__('Course'))
+                ->options(Course::get()->pluck('name', 'id'))
+                ->query(function (Builder $query, array $data) {
+                    return $query->when($data['value'], function ($q, $courseId) {
+                        $q->whereHas('registration', fn($regQ) => $regQ->where('course_id', $courseId));
+                    });
+                })
+                ->searchable(),
+
+            // فلتر السنة (عبر علاقة التسجيل)
+            Filter::make('year')
+                ->form([
+                    TextInput::make('year')
+                        ->label(__('Academic Year'))
+                        ->prefixIcon('solar-calendar-search-bold-duotone')
+                        ->numeric()
+                        ->placeholder(date('Y'))
+                ])
+                ->query(function (Builder $query, array $data): Builder {
+                    return $query->when(
+                        $data['year'],
+                        fn (Builder $q, $year) => $q->whereHas('registration', fn($regQ) => $regQ->where('year', $year))
+                    );
+                }),
+        ];
+    }
+
+    protected function getTableActions(): array
+    {
+        return [
+            InfoAction::make('info')
+                ->label('')
+                ->visible(fn() => auth()->user()->can('Major Info')),
+            ViewAction::make('view')
+                ->label('')
+                ->tooltip(__('View Details'))
+                ->form(fn(FollowUp $record) => [
+                    Grid::make(2)->schema([
+                        TextInput::make('student_name')
+                            ->label(__('Student'))
+                            ->default($record->registration?->student?->name)
+                            ->disabled()
+                            ->prefixIcon('solar-user-id-bold-duotone'),
+
+                        TextInput::make('company_name')
+                            ->label(__('Company'))
+                            ->default($record->company?->name)
+                            ->disabled()
+                            ->prefixIcon('solar-city-bold-duotone'),
+
+                        TextInput::make('status')
+                            ->label(__('Status'))
+                            ->default($record->status?->getLabel())
+                            ->disabled()
+                            ->prefixIcon('solar-flag-bold-duotone'),
+
+                        TextInput::make('course_name')
+                            ->label(__('Course'))
+                            ->default($record->registration?->course?->name)
+                            ->disabled()
+                            ->prefixIcon('solar-book-bold-duotone'),
+                    ])
+                ])
+                ->modalSubmitAction(false)
+                ->visible(fn() => auth()->user()->can('FollowUp View')), // تأكد من اسم الصلاحية
+
+            EditAction::make('edit')
+                ->label('')
+                ->tooltip(__('Edit'))
+                ->url(fn(FollowUp $record) => route('follow-ups.edit', $record->id)) // تأكد من اسم الراوت
+                ->visible(fn() => auth()->user()->can('FollowUp Update')),
+
+            DeleteAction::make('delete')
+                ->label('')
+                ->tooltip(__('Delete'))
+                ->action(function ($record) {
+                    $record->delete();
+                    Toaster::success(__('Follow-up record deleted successfully'));
+                })
+                ->visible(fn() => auth()->user()->can('FollowUp Delete'))
+        ];
+    }
+
+    public function getTableBulkAction(): array
+    {
+        return [
+            BulkActionGroup::make([
+                BulkAction::make('delete')
+                    ->label(__('Delete Selected'))
+                    ->icon('solar-trash-bin-trash-bold-duotone')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->action(fn(Collection $records) => $records->each->delete())
+                    ->after(fn() => Toaster::success(__('Selected records deleted successfully'))),
+            ])
+        ];
+    }
+
+    public function render()
+    {
+        // تأكد من إنشاء ملف الـ Blade هذا
+        return view('ppuds::livewire.pages.follow-up.index')->layout(AppLayout::class, [
+            'breadcrumbs' => [
+                ['title' => __('Home'), 'url' => route('home')],
+                ['title' => __('Follow Ups'), 'url' => route('follow-ups.index')],
+            ]
+        ]);
+    }
+}

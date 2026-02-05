@@ -10,7 +10,7 @@ use Modules\Core\Services\SidebarService;
 class SidebarServiceProvider extends ServiceProvider
 {
     /**
-     * Register the service provider.
+     * Registration the service provider.
      */
     public function register(): void {
         $this->app->singleton(SidebarService::class, function () {

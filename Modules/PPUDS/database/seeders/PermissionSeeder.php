@@ -215,6 +215,72 @@ class PermissionSeeder extends Seeder
                 'guard_name' => 'web',
                 'module_name' => 'Course',
             ],
+
+
+            // TODO Registration
+            [
+                'name' => 'Registration View List',
+                'guard_name' => 'web',
+                'module_name' => 'Registration',
+            ],
+            [
+                'name' => 'Registration Create',
+                'guard_name' => 'web',
+                'module_name' => 'Registration',
+            ],
+            [
+                'name' => 'Registration Update',
+                'guard_name' => 'web',
+                'module_name' => 'Registration',
+            ],
+            [
+                'name' => 'Registration Delete',
+                'guard_name' => 'web',
+                'module_name' => 'Registration',
+            ],
+            [
+                'name' => 'Registration View',
+                'guard_name' => 'web',
+                'module_name' => 'Registration',
+            ],
+            [
+                'name' => 'Registration Info',
+                'guard_name' => 'web',
+                'module_name' => 'Registration',
+            ],
+
+
+            // TODO FollowUp
+            [
+                'name' => 'FollowUp View List',
+                'guard_name' => 'web',
+                'module_name' => 'FollowUp',
+            ],
+            [
+                'name' => 'FollowUp Create',
+                'guard_name' => 'web',
+                'module_name' => 'FollowUp',
+            ],
+            [
+                'name' => 'FollowUp Update',
+                'guard_name' => 'web',
+                'module_name' => 'FollowUp',
+            ],
+            [
+                'name' => 'FollowUp Delete',
+                'guard_name' => 'web',
+                'module_name' => 'FollowUp',
+            ],
+            [
+                'name' => 'FollowUp View',
+                'guard_name' => 'web',
+                'module_name' => 'FollowUp',
+            ],
+            [
+                'name' => 'FollowUp Info',
+                'guard_name' => 'web',
+                'module_name' => 'FollowUp',
+            ],
         ];
 
         foreach ($permissions as $perm) {

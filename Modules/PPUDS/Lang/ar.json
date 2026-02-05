@@ -50,6 +50,7 @@
     "Company Department Information": "معلومات قسم الشركة",
 
     "Students": "الطلاب",
+    "Student": "الطالب",
     "Add Student": "إضافة طالب",
     "Students List": "قائمة الطلاب",
 
@@ -59,7 +60,11 @@
 
     "Registration": "التسجيل",
     "Add Registration": "إضافة تسجيل",
+    "New Registration": "تسجيل جديد",
     "Registration List": "قائمة التسجيل",
+    "Registrations": "التسجيلات",
+    "Save Registration": "حفظ التسجيل",
+    "Registration created successfully": "تم إنشاء التسجيل بنجاح",
 
     "Students of the current semester": "طلاب الفصل الدراسي الحالي",
     "Add Students of the current semester": "إضافة طالب للفصل الحالي",
@@ -141,6 +146,18 @@
     "Email Address": "البريد الإلكتروني",
     "Full Name": "الاسم الكامل",
 
+    "Performance & Grades": "الأداء والعلامات",
+    "Leave empty if not graded yet": "اتركه فارغاً إذا لم يتم التقييم بعد",
+    "University Score": "علامة الجامعة",
+    "Company Score": "علامة الشركة",
+    "Final Grade": "العلامة النهائية",
+    "Total calculated grade": "المجموع النهائي المحتسب",
+    "Term Details": "تفاصيل الفصل الدراسي",
+    "Semester": "الفصل الدراسي",
+    "Academic Year": "السنة الدراسية",
+    "Supervision": "الإشراف",
+    "Academic Supervisor": "المشرف الأكاديمي",
+
     "The company name is required": "يرجى إدخال اسم الشركة",
     "The website URL is invalid": "رابط الموقع الإلكتروني غير صالح",
     "The company category is required": "يرجى اختيار تصنيف الشركة",
@@ -159,6 +176,13 @@
     "This email is already taken": "البريد الإلكتروني هذا مستخدم بالفعل",
     "The password is required": "كلمة المرور مطلوبة",
     "The password confirmation does not match": "تأكيد كلمة المرور غير متطابق",
+
+    "Please select a student.": "يرجى اختيار طالب.",
+    "Please select a course.": "يرجى اختيار مساق.",
+    "Please select the semester.": "يرجى اختيار الفصل الدراسي.",
+    "Please enter the academic year.": "يرجى إدخال السنة الدراسية.",
+    "Please assign an academic supervisor.": "يرجى تعيين مشرف أكاديمي.",
+    "The grade must be a number.": "يجب أن تكون العلامة رقماً.",
 
     "courses": "المساقات",
     "Course": "المساق",
@@ -190,5 +214,23 @@
     "University SSO (PPU)": "نظام الجامعة (SSO)",
     "First Semester": "الفصل الأول",
     "Second Semester": "الفصل الثاني",
-    "Summer Semester": "الفصل الصيفي"
+    "Summer Semester": "الفصل الصيفي",
+
+    "Follow Ups": "ملفات المتابعة",
+    "New Follow Up": "ملف متابعة جديد",
+    "Student & Registration Info": "بيانات الطالب والتسجيل",
+    "Select Student Registration": "اختر سجل الطالب",
+    "Placement Details": "تفاصيل مكان التدريب",
+    "Branch": "الفرع",
+    "Select Branch": "اختر الفرع",
+    "Select Company First": "اختر الشركة أولاً",
+    "Status & Settings": "الحالة والإعدادات",
+    "Training Status": "حالة التدريب",
+    "Please select a student registration record.": "يرجى اختيار سجل تسجيل الطالب.",
+    "The status field is required.": "حقل الحالة مطلوب.",
+    "Follow-up record created successfully": "تم إنشاء سجل المتابعة بنجاح",
+
+    "Available / Still Training": "متاح / قيد التدريب",
+    "Finished": "منتهي",
+    "Deleted": "محذوف"
 }

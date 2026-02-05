@@ -123,7 +123,7 @@ class Index extends Component implements HasForms, HasInfolists
                         'label' => 'Add User',
                         'route' => 'users.add',
                         'icon'  => 'solar-user-plus-bold-duotone',
-                        'desc'  => 'Register a new user in the system'
+                        'desc'  => 'Registration a new user in the system'
                     ],
                 ]
             ],

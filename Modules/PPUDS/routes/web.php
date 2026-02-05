@@ -67,7 +67,27 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     'as' => 'courses.',
                     'namespace' => 'Modules\PPUDS\Livewire\Pages\Course',
                 ], function () {
-                    Route::get('/courses', Index::class)->name('index')->can('Course View List');
+                    Route::get('/', Index::class)->name('index')->can('Course View List');
+                });
+
+                Route::group([
+                    'prefix' => 'registrations',
+                    'as' => 'registrations.',
+                    'namespace' => 'Modules\PPUDS\Livewire\Pages\Registration',
+                ], function () {
+                    Route::get('/', Index::class)->name('index')->can('Registration View List');
+                    Route::get('/add', Add::class)->name('add')->can('Registration Create');
+                    Route::get('/{registration}/edit', Edit::class)->name('edit')->can('Registration Update');
+                });
+
+                Route::group([
+                    'prefix' => 'follow-ups',
+                    'as' => 'follow-ups.',
+                    'namespace' => 'Modules\PPUDS\Livewire\Pages\FollowUpFile',
+                ], function () {
+                    Route::get('/', Index::class)->name('index')->can('FollowUp View List');
+                    Route::get('/add', Add::class)->name('add')->can('FollowUp Create');
+                    Route::get('/{followUp}/edit', Edit::class)->name('edit')->can('FollowUp Update');
                 });
             });
         }

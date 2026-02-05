@@ -124,7 +124,7 @@ return [
     /*
      * Teams Feature.
      * When set to true the package implements teams using the 'team_foreign_key'.
-     * If you want the migrations to register the 'team_foreign_key', you must
+     * If you want the migrations to registration the 'team_foreign_key', you must
      * set this to true before doing the migration.
      * If you already did the migration then you must make a new migration to also
      * add 'team_foreign_key' to 'roles', 'model_has_roles', and 'model_has_permissions'

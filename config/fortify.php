@@ -121,7 +121,7 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Register View Routes
+    | Registration View Routes
     |--------------------------------------------------------------------------
     |
     | Here you may specify if the routes returning views should be disabled as

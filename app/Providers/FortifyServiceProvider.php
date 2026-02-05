@@ -17,7 +17,7 @@ use Laravel\Fortify\Fortify;
 class FortifyServiceProvider extends ServiceProvider
 {
     /**
-     * Register any application services.
+     * Registration any application services.
      */
     public function register(): void
     {

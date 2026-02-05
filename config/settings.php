@@ -80,7 +80,7 @@ return [
 
     /*
      * The package will look for settings in these paths and automatically
-     * register them.
+     * registration them.
      */
     'auto_discover_settings' => [
         app_path('Settings'),

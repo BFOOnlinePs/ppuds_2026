@@ -199,7 +199,7 @@ return [
         | Migrations
         |--------------------------------------------------------------------------
         |
-        | This option for register migration automatically.
+        | This option for registration migration automatically.
         |
         */
         'migrations' => true,
@@ -209,7 +209,7 @@ return [
         | Translations
         |--------------------------------------------------------------------------
         |
-        | This option for register Lang file automatically.
+        | This option for registration Lang file automatically.
         |
         */
         'translations' => false,
@@ -265,17 +265,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Choose what laravel-modules will register as custom namespaces.
-    | Settings one to false will require you to register that part
+    | Choose what laravel-modules will registration as custom namespaces.
+    | Settings one to false will require you to registration that part
     | in your own Service Provider class.
     |--------------------------------------------------------------------------
     */
-    'register' => [
+    'registration' => [
         'translations' => true,
         /**
-         * load files on boot or register method
+         * load files on boot or registration method
          */
-        'files' => 'register',
+        'files' => 'registration',
     ],
 
     /*

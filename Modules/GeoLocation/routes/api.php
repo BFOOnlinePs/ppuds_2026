@@ -13,7 +13,7 @@ use Modules\GeoLocation\Http\Controllers\Api\V1\GovernorateController;
 |
 | API v1 routes are grouped here.
 | Routes are divided into three main sections:
-| 1. Authentication: For guests (login, register) and authenticated users (logout).
+| 1. Authentication: For guests (login, registration) and authenticated users (logout).
 | 2. Public Routes: Accessible by anyone (e.g., viewing products, categories).
 | 3. Protected Routes: Require authentication (e.g., creating an order, viewing profile).
 |

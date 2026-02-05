@@ -9,7 +9,7 @@ use Laravel\Jetstream\Jetstream;
 class JetstreamServiceProvider extends ServiceProvider
 {
     /**
-     * Register any application services.
+     * Registration any application services.
      */
     public function register(): void
     {

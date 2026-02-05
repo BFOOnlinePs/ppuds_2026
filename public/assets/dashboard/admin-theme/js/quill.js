@@ -246,7 +246,7 @@ function register() {
         throw new ParchmentError('Invalid definition');
     }
     else if (Definition.blotName === 'abstract') {
-        throw new ParchmentError('Cannot register abstract class');
+        throw new ParchmentError('Cannot registration abstract class');
     }
     types[Definition.blotName || Definition.attrName] = Definition;
     if (typeof Definition.keyName === 'string') {
@@ -1055,7 +1055,7 @@ var Quill = function () {
       if (typeof path !== 'string') {
         var name = path.attrName || path.blotName;
         if (typeof name === 'string') {
-          // register(Blot | Attributor, overwrite)
+          // registration(Blot | Attributor, overwrite)
           this.register('formats/' + name, path, target);
         } else {
           Object.keys(path).forEach(function (key) {
@@ -1556,7 +1556,7 @@ function expandConfig(container, userConfig) {
   } else {
     userConfig.theme = Quill.import('themes/' + userConfig.theme);
     if (userConfig.theme == null) {
-      throw new Error('Invalid theme ' + userConfig.theme + '. Did you register it?');
+      throw new Error('Invalid theme ' + userConfig.theme + '. Did you registration it?');
     }
   }
   var themeConfig = (0, _extend2.default)(true, {}, userConfig.theme.DEFAULTS);

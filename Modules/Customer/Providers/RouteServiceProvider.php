@@ -12,7 +12,7 @@ class RouteServiceProvider extends ServiceProvider
     /**
      * Called before routes are registered.
      *
-     * Register any model bindings or pattern based filters.
+     * Registration any model bindings or pattern based filters.
      */
     public function boot(): void
     {

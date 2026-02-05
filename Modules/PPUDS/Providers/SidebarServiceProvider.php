@@ -10,7 +10,7 @@ use Modules\Core\Services\SidebarService;
 class SidebarServiceProvider extends ServiceProvider
 {
     /**
-     * Register the service provider.
+     * Registration the service provider.
      */
     public function register(): void {
         $this->app->singleton(SidebarService::class, function () {
@@ -33,9 +33,9 @@ class SidebarServiceProvider extends ServiceProvider
         );
 
         $sidebar->add(
-            (new SidebarGroup('Registration', 'solar-users-group-rounded-bold-duotone' , ['Student View']))
-                ->add(new SidebarItem('Add Registration' , 'solar-users-group-rounded-bold-duotone' , ['Student View'] ,  'students.index' ))
-                ->add(new SidebarItem('Registration List' , 'solar-users-group-rounded-bold-duotone' , ['Student Create'] ,  'students.index' ))
+            (new SidebarGroup('Registration', 'solar-users-group-rounded-bold-duotone' , ['Registration View']))
+                ->add(new SidebarItem('Add Registration' , 'solar-users-group-rounded-bold-duotone' , ['Registration View'] ,  'registrations.add' ))
+                ->add(new SidebarItem('Registration List' , 'solar-users-group-rounded-bold-duotone' , ['Registration Create'] ,  'registrations.index' ))
         );
 
         $sidebar->add(
@@ -47,27 +47,23 @@ class SidebarServiceProvider extends ServiceProvider
         );
 
         $sidebar->add(
-            (new SidebarGroup('Students of the current semester', 'solar-users-group-rounded-bold-duotone' , ['Student View']))
-                ->add(new SidebarItem('Add Students of the current semester' , 'solar-users-group-rounded-bold-duotone' , ['Student View'] ,  'students.index' ))
-                ->add(new SidebarItem('Students of the current semester List' , 'solar-users-group-rounded-bold-duotone' , ['Student Create'] ,  'students.index' ))
-        );
-
-        $sidebar->add(
             (new SidebarGroup('Academic Courses', 'solar-book-bookmark-bold-duotone' , ['Course View']))
                 ->add(new SidebarItem('Courses List' , 'solar-checklist-minimalistic-bold-duotone' , ['Course View'] ,  'courses.index' ))
         );
 
-        $sidebar->add(
-            (new SidebarItem('Attendance and departure log', 'solar-users-group-rounded-bold-duotone' , ['Student View'], 'students.index'))
-        );
+//        $sidebar->add(
+//            (new SidebarItem('Attendance and departure log', 'solar-users-group-rounded-bold-duotone' , ['Student View'], 'students.index'))
+//        );
 
         $sidebar->add(
-            (new SidebarItem('Follow-up file', 'solar-users-group-rounded-bold-duotone' , ['Student View'] , 'students.index'))
+            (new SidebarGroup('Follow-up file', 'solar-users-group-rounded-bold-duotone' , ['FollowUp View']))
+                ->add(new SidebarItem('Add Follow-up file' , 'solar-users-group-rounded-bold-duotone' , ['FollowUp View'] ,  'follow-ups.add' ))
+                ->add(new SidebarItem('Follow-up file List' , 'solar-users-group-rounded-bold-duotone' , ['FollowUp Create'] ,  'follow-ups.index' ))
         );
 
-        $sidebar->add(
-            (new SidebarItem('Ratings', 'solar-users-group-rounded-bold-duotone' , ['Student View'] , 'students.index'))
-        );
+//        $sidebar->add(
+//            (new SidebarItem('Ratings', 'solar-users-group-rounded-bold-duotone' , ['Student View'] , 'students.index'))
+//        );
     }
 
     /**

@@ -33,7 +33,7 @@ class PPUDSServiceProvider extends ServiceProvider
     }
 
     /**
-     * Register the service provider.
+     * Registration the service provider.
      */
     public function register(): void
     {
@@ -43,7 +43,7 @@ class PPUDSServiceProvider extends ServiceProvider
     }
 
     /**
-     * Register commands in the format of Command::class
+     * Registration commands in the format of Command::class
      */
     protected function registerCommands(): void
     {
@@ -51,7 +51,7 @@ class PPUDSServiceProvider extends ServiceProvider
     }
 
     /**
-     * Register command Schedules.
+     * Registration command Schedules.
      */
     protected function registerCommandSchedules(): void
     {
@@ -62,7 +62,7 @@ class PPUDSServiceProvider extends ServiceProvider
     }
 
     /**
-     * Register translations.
+     * Registration translations.
      */
     public function registerTranslations(): void
     {
@@ -78,7 +78,7 @@ class PPUDSServiceProvider extends ServiceProvider
     }
 
     /**
-     * Register config.
+     * Registration config.
      */
     protected function registerConfig(): void
     {
@@ -122,7 +122,7 @@ class PPUDSServiceProvider extends ServiceProvider
     }
 
     /**
-     * Register views.
+     * Registration views.
      */
     public function registerViews(): void
     {
