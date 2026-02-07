@@ -12,7 +12,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create(config('ppuds.table_prefix') . 'follow_ups', function (Blueprint $table) {
+        Schema::create(config('ppuds.table_prefix') . 'students_companies', function (Blueprint $table) {
             $table->id();
 
             $table->foreignId('registration_id')
@@ -44,6 +44,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists(config('ppuds.table_prefix'));
+        Schema::dropIfExists(config('ppuds.table_prefix') . 'students_companies');
     }
 };

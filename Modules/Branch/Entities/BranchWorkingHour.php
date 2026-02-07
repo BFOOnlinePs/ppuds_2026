@@ -2,41 +2,14 @@
 
 namespace Modules\Branch\Entities;
 
-use ArPHP\I18N\Arabic;
-use Astrotomic\Translatable\Translatable;
-use Astrotomic\Translatable\Contracts\Translatable as TranslatableContract;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Str;
-use Intervention\Image\Encoders\PngEncoder;
-use Laravolt\Avatar\Avatar;
-use Modules\Branch\Enums\BranchStatus;
-use Modules\Clinic\Enums\RoomStatus;
-use Modules\Core\Entities\User;
-use Modules\Core\Enums\ImageQuality;
-use Modules\Core\Enums\ImageSize;
-use Modules\Core\Services\ImageService;
-use Modules\Customer\Enums\GenderType;
-use Modules\Customer\Enums\Language;
-use Modules\Customer\Enums\Status;
-use Modules\GeoLocation\Entities\City;
-use Modules\GeoLocation\Entities\Country;
-use Modules\Items\Enums\AttributeType;
-use Modules\PPUDS\Entities\Company;
-use Modules\PPUDS\Entities\CompanyDepartment;
+use Modules\Branch\Enums\WeekDay;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
-// use Modules\Items\Database\Factories\AttributeFactory;
-
-class BranchWorkingHour extends Model implements TranslatableContract
+class BranchWorkingHour extends Model
 {
     use LogsActivity;
-    use Translatable;
-    use softDeletes;
 
     public function __construct(array $attributes = [])
     {
@@ -51,6 +24,13 @@ class BranchWorkingHour extends Model implements TranslatableContract
         'start_time',
         'end_time',
         'is_closed',
+    ];
+
+    protected $casts = [
+        'day' => WeekDay::class,
+        'is_closed' => 'boolean',
+        'start_time' => 'datetime:H:i',
+        'end_time'   => 'datetime:H:i',
     ];
 
     public function getActivitylogOptions(): LogOptions

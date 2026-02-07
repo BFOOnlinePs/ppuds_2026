@@ -51,8 +51,38 @@ class Edit extends Component implements HasForms, HasActions
         // 1. تعبئة البيانات الأساسية للشركة
         $formData = $company->toArray();
 
-        // 2. تعبئة الفروع والأقسام يدوياً
+        // 2. تعبئة الفروع مع ساعات العمل والأقسام
         $formData['branches'] = $company->branches->map(function ($branch) {
+
+            // --- منطق جلب ساعات العمل ---
+            $existingHours = $branch->workingHours; // تأكد أن العلاقة workingHours معرفة في مودل Branch
+
+            if ($existingHours->isEmpty()) {
+                // إذا لم تكن هناك ساعات مسجلة، نضع الافتراضي (7 أيام)
+                $workingHoursData = [];
+                foreach (\Modules\Branch\Enums\WeekDay::cases() as $day) {
+                    $workingHoursData[] = [
+                        'day' => $day->value,
+                        'is_closed' => $day === \Modules\Branch\Enums\WeekDay::FRIDAY, // الجمعة عطلة افتراضياً
+                        'start_time' => '08:00',
+                        'end_time' => '16:00',
+                    ];
+                }
+            } else {
+                // إذا كانت موجودة، نقوم بتحويلها للصيغة المناسبة للفورم
+                $workingHoursData = $existingHours->map(function($wh) {
+                    return [
+                        'id' => $wh->id, // مهم للتحديث لاحقاً
+                        'day' => $wh->day->value, // (value) لأننا نستخدم Enum
+                        'is_closed' => (bool) $wh->is_closed,
+                        // تنسيق الوقت مهم جداً ليقبله الـ TimePicker
+                        'start_time' => $wh->start_time ? \Carbon\Carbon::parse($wh->start_time)->format('H:i') : null,
+                        'end_time' => $wh->end_time ? \Carbon\Carbon::parse($wh->end_time)->format('H:i') : null,
+                    ];
+                })->toArray();
+            }
+            // -----------------------------
+
             return [
                 'id'           => $branch->id,
                 'name'         => $branch->name,
@@ -62,10 +92,11 @@ class Edit extends Component implements HasForms, HasActions
                 'city_id'      => $branch->city_id,
                 'latitude'     => $branch->latitude,
                 'longitude'    => $branch->longitude,
-                'opening_time' => $branch->opening_time,
-                'closing_time' => $branch->closing_time,
 
-                // جلب الأقسام المرتبطة بهذا الفرع
+                // نضع المصفوفة المجهزة هنا
+                'working_hours' => $workingHoursData,
+
+                // جلب الأقسام
                 'departments' => $branch->departments->map(function ($dept) {
                     return [
                         'name'    => $dept->name,
@@ -204,21 +235,66 @@ class Edit extends Component implements HasForms, HasActions
                                                                 Section::make(__('Working Hours'))
                                                                     ->icon('solar-clock-circle-bold-duotone')
                                                                     ->schema([
-                                                                        Grid::make(2)->schema([
-                                                                            TimePicker::make('opening_time')
-                                                                                ->label(__('Opening'))
-                                                                                ->seconds(false)
-                                                                                ->required()
-                                                                                ->prefixIcon('solar-sun-fog-linear'),
-                                                                            TimePicker::make('closing_time')
-                                                                                ->label(__('Closing'))
-                                                                                ->seconds(false)
-                                                                                ->required()
-                                                                                ->prefixIcon('solar-moon-linear'),
-                                                                        ]),
-                                                                    ])->compact()->columnSpanFull()
+                                                                        Repeater::make('working_hours')
+                                                                            ->label(__('Weekly Schedule'))
+                                                                            ->hiddenLabel()
+                                                                            // ->relationship('workingHours')  <--- احذف هذا السطر في Edit.php
+                                                                            ->schema([
+                                                                                Grid::make(4)->schema([
+                                                                                    Select::make('day')
+                                                                                        ->label(__('Day'))
+                                                                                        ->options(\Modules\Branch\Enums\WeekDay::class)
+                                                                                        ->disabled()
+                                                                                        ->dehydrated()
+                                                                                        ->required()
+                                                                                        ->columnSpan(1),
+
+                                                                                    \Filament\Forms\Components\Toggle::make('is_closed')
+                                                                                        ->label(__('Closed?'))
+                                                                                        ->onColor('danger')
+                                                                                        ->offColor('success')
+                                                                                        ->inline(false)
+                                                                                        ->live()
+                                                                                        ->columnSpan(1),
+
+                                                                                    Group::make([
+                                                                                        TimePicker::make('start_time')
+                                                                                            ->label(__('Start'))
+                                                                                            ->seconds(false)
+                                                                                            ->default('08:00')
+                                                                                            ->required(fn (Get $get) => ! $get('is_closed')),
+
+                                                                                        TimePicker::make('end_time')
+                                                                                            ->label(__('End'))
+                                                                                            ->seconds(false)
+                                                                                            ->default('16:00')
+                                                                                            ->required(fn (Get $get) => ! $get('is_closed')),
+                                                                                    ])
+                                                                                        ->visible(fn (Get $get) => ! $get('is_closed'))
+                                                                                        ->columnSpan(2)
+                                                                                        ->columns(2),
+                                                                                ]),
+                                                                            ])
+                                                                            ->addable(false)
+                                                                            ->deletable(false)
+                                                                            ->reorderable(false)
+                                                                            ->defaultItems(7)
+                                                                            ->default(function() { // دالة الـ Default مهمة للفروع الجديدة التي تضاف أثناء التعديل
+                                                                                $days = [];
+                                                                                foreach (\Modules\Branch\Enums\WeekDay::cases() as $day) {
+                                                                                    $days[] = [
+                                                                                        'day' => $day->value,
+                                                                                        'is_closed' => $day === \Modules\Branch\Enums\WeekDay::FRIDAY,
+                                                                                        'start_time' => '08:00',
+                                                                                        'end_time' => '16:00',
+                                                                                    ];
+                                                                                }
+                                                                                return $days;
+                                                                            }),
+                                                                    ])
+                                                                    ->columnSpanFull()
                                                                     ->extraAttributes(['class' => 'bg-gray-50/50']),
-                                                            ]),
+                                                                ]),
                                                         ]),
 
                                                     // 2. تبويب الموقع
@@ -373,17 +449,21 @@ class Edit extends Component implements HasForms, HasActions
 
     public function save()
     {
+        // 1. التحقق من الصلاحيات والبيانات
         $this->authorize("Company Update");
-
         $this->validate();
 
+        // 2. تحديث بيانات الشركة الأساسية (مع استبعاد الفروع والشعار)
         $companyData = Arr::except($this->data, ['branches', 'logo']);
         $this->company->update($companyData);
 
-        $this->form->model($this->company)->saveRelationships();$this->form->model($this->company)->saveRelationships();
+        // 3. حفظ الصور (الشعار) عبر Filament Spatie Plugin
+        $this->form->model($this->company)->saveRelationships();
 
+        // 4. دالة مخصصة لحفظ الفروع، الأقسام، وساعات العمل
         $this->saveBranchesAndDepartments();
 
+        // 5. رسالة نجاح وتوجيه
         Toaster::success(__('Company updated successfully'));
         $this->redirect(route('companies.index'));
     }
@@ -396,18 +476,25 @@ class Edit extends Component implements HasForms, HasActions
         foreach ($formBranches as $branchData) {
 
             $branchId = $branchData['id'] ?? null;
-            $departmentsData = $branchData['departments'] ?? [];
 
-            $branchAttributes = Arr::except($branchData, ['departments', 'id']);
+            // استخراج المصفوفات الفرعية
+            $departmentsData = $branchData['departments'] ?? [];
+            $workingHoursData = $branchData['working_hours'] ?? []; // المصفوفة اليدوية لساعات العمل
+
+            // تنظيف بيانات الفرع (إبقاء الحقول الأساسية فقط)
+            $branchAttributes = Arr::except($branchData, ['departments', 'working_hours', 'id']);
 
             $branch = null;
 
+            // --- أ. التعامل مع الفرع (تحديث أو إنشاء) ---
             if ($branchId) {
+                // تحديث فرع موجود
                 $branch = Branch::find($branchId);
                 if ($branch) {
                     $branch->update($branchAttributes);
                 }
             } else {
+                // إنشاء فرع جديد (أضيف أثناء التعديل)
                 $branchAttributes['created_by'] = auth()->id();
                 $branch = Branch::create($branchAttributes);
                 $this->company->branches()->attach($branch->id, ['is_main' => false]);
@@ -415,15 +502,40 @@ class Edit extends Component implements HasForms, HasActions
 
             if ($branch) {
                 $processedBranchIds[] = $branch->id;
+
+                // --- ب. حفظ الأقسام (باستخدام الدالة الموجودة مسبقاً) ---
                 $this->syncDepartmentsForBranch($branch, $departmentsData);
+
+                // --- ج. حفظ ساعات العمل (الجزء الجديد والمهم) ---
+                // نستخدم updateOrCreate لنضمن تحديث اليوم إذا كان موجوداً أو إنشاؤه إذا كان جديداً
+                foreach ($workingHoursData as $wh) {
+                    $branch->workingHours()->updateOrCreate(
+                        ['day' => $wh['day']], // مفتاح البحث: اليوم
+                        [
+                            'is_closed'  => $wh['is_closed'],
+                            // إذا كان مغلقاً، نصفر الأوقات، وإلا نحفظ الوقت القادم من الفورم
+                            'start_time' => $wh['is_closed'] ? null : $wh['start_time'],
+                            'end_time'   => $wh['is_closed'] ? null : $wh['end_time'],
+                        ]
+                    );
+                }
             }
         }
 
-        $currentCompanyBranchIds = $this->company->branches()->pluck('branch_branches.id')->toArray();
+        // --- د. حذف الفروع التي أزالها المستخدم من الـ Repeater ---
+        $currentCompanyBranchIds = $this->company->branches()->pluck('branch_branches.id')->toArray(); // تأكد من اسم الجدول الوسيط الصحيح
+
+        // أو يمكنك استخدام العلاقة المباشرة إذا كانت معرفة:
+        // $currentCompanyBranchIds = $this->company->branches->pluck('id')->toArray();
+
         $branchesToDetach = array_diff($currentCompanyBranchIds, $processedBranchIds);
 
         if (!empty($branchesToDetach)) {
+            // فصل الفروع المحذوفة عن الشركة
             $this->company->branches()->detach($branchesToDetach);
+
+            // خياري: إذا أردت حذف الفرع نهائياً من قاعدة البيانات
+            // Branch::destroy($branchesToDetach);
         }
     }
 

@@ -56,9 +56,25 @@ class SidebarServiceProvider extends ServiceProvider
 //        );
 
         $sidebar->add(
-            (new SidebarGroup('Follow-up file', 'solar-users-group-rounded-bold-duotone' , ['FollowUp View']))
-                ->add(new SidebarItem('Add Follow-up file' , 'solar-users-group-rounded-bold-duotone' , ['FollowUp View'] ,  'follow-ups.add' ))
-                ->add(new SidebarItem('Follow-up file List' , 'solar-users-group-rounded-bold-duotone' , ['FollowUp Create'] ,  'follow-ups.index' ))
+            (new SidebarGroup('Student Companies', 'solar-users-group-rounded-bold-duotone' , ['StudentCompany View']))
+                ->add(new SidebarItem('Add Student Company' , 'solar-users-group-rounded-bold-duotone' , ['StudentCompany View'] ,  'student-companies.add' ))
+                ->add(new SidebarItem('Student Companies List' , 'solar-users-group-rounded-bold-duotone' , ['StudentCompany Create'] ,  'student-companies.index' ))
+        );
+
+        $sidebar->add(
+            (new SidebarGroup('Field Visits', 'solar-clipboard-list-bold-duotone', ['FieldVisit View']))
+                ->add(new SidebarItem('Add Field Visit', 'solar-clipboard-add-bold-duotone', ['FieldVisit View'], 'field-visits.add'))
+                ->add(new SidebarItem('Field Visits List', 'solar-clipboard-list-bold-duotone', ['FieldVisit Create'], 'field-visits.index'))
+        );
+
+        $sidebar->add(
+            (new SidebarGroup('Announcements', 'solar-users-group-rounded-bold-duotone' , ['Announcement View']))
+                ->add(new SidebarItem('Announcements List' , 'solar-users-group-rounded-bold-duotone' , ['Announcement View'] ,  'announcements.index' ))
+        );
+
+        $sidebar->add(
+            (new SidebarGroup('Leave Requests', 'solar-users-group-rounded-bold-duotone' , ['LeaveRequest View List']))
+                ->add(new SidebarItem('Leave Requests List' , 'solar-users-group-rounded-bold-duotone' , ['LeaveRequest View List'] ,  'leave-requests.index' ))
         );
 
 //        $sidebar->add(

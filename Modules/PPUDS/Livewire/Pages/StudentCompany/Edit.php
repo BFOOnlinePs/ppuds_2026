@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\PPUDS\Livewire\Pages\FollowUpFile;
+namespace Modules\PPUDS\Livewire\Pages\StudentCompany;
 
 use App\View\Components\AppLayout;
 use Filament\Actions\Concerns\InteractsWithActions;
@@ -18,7 +18,7 @@ use Masmerise\Toaster\Toaster;
 use Modules\Branch\Entities\Branch;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\CompanyDepartment;
-use Modules\PPUDS\Entities\FollowUp;
+use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Enums\TrainingStatus;
 
@@ -31,10 +31,10 @@ class Edit extends Component implements HasForms, HasActions
     public $record; // المتغير الذي يحمل السجل الحالي
 
     // استقبال المعامل من الراوت (تأكد أن الاسم يطابق ما في ملف routes/web.php)
-    public function mount($followUp)
+    public function mount($studentCompany)
     {
         // 1. جلب السجل
-        $this->record = FollowUp::findOrFail($followUp);
+        $this->record = StudentCompany::findOrFail($studentCompany);
 
         // 2. تعبئة النموذج بالبيانات الحالية
         $this->form->fill($this->record->toArray());
@@ -156,7 +156,7 @@ class Edit extends Component implements HasForms, HasActions
 
     public function save()
     {
-        // $this->authorize("FollowUp Update");
+        // $this->authorize("StudentCompany Update"); // Assuming permission update
 
         $this->validate();
 
@@ -173,19 +173,19 @@ class Edit extends Component implements HasForms, HasActions
         // تحديث السجل
         $this->record->update($data);
 
-        Toaster::success(__('Follow-up record updated successfully'));
+        Toaster::success(__('Student company record updated successfully'));
 
-        $this->redirect(route('follow-ups.index'));
+        $this->redirect(route('student-companies.index'));
     }
 
     public function render()
     {
         // تأكد من وجود ملف العرض (يمكنك نسخ ملف add.blade.php وتسميته edit.blade.php)
-        return view('ppuds::livewire.pages.follow-up.edit')->layout(AppLayout::class, [
+        return view('ppuds::livewire.pages.student-company.edit')->layout(AppLayout::class, [
             'breadcrumbs' => [
                 ['title' => __('Home'), 'url' => route('home')],
-                ['title' => __('Follow Ups'), 'url' => route('follow-ups.index')],
-                ['title' => __('Edit Follow Up'), 'url' => '#'],
+                ['title' => __('Student Companies'), 'url' => route('student-companies.index')],
+                ['title' => __('Edit Student Company'), 'url' => '#'], // Update breadcrumb
             ]
         ]);
     }

@@ -46,7 +46,7 @@
                     {{--  Display the site logo --}}
                     <img class="ml-[5px] w-8 flex-none" src="{{ $settingsModel?->getLogoUrl() }}" alt="image" />
                     {{--  Display the site name --}}
-                    <span class="align-middle text-lg font-semibold ltr:ml-1.5 rtl:mr-1.5 dark:text-white-light lg:inline">{{ $settings->site_name }}</span>
+                    <span class="align-middle text-lg font-semibold ltr:ml-1.5 rtl:mr-1.5 dark:text-white-light lg:inline">{{ $settings->site_name ?? '' }}</span>
                 </a>
                 {{--  Sidebar toggle button --}}
                 <a

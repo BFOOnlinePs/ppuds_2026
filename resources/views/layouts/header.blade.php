@@ -11,7 +11,7 @@
                     <span
                         class="hidden align-middle text-2xl font-semibold transition-all duration-300 ltr:ml-1.5 rtl:mr-1.5 dark:text-white-light md:inline"></span>
                 </a>
-                {{ $settings->site_name }}
+                {{ $settings->site_name ?? '' }}
                 <a href="javascript:;"
                     class="collapse-icon flex flex-none rounded-full bg-white-light/40 p-2 hover:bg-white-light/90 hover:text-primary ltr:ml-2 rtl:mr-2 dark:bg-dark/40 dark:text-[#d0d2d6] dark:hover:bg-dark/60 dark:hover:text-primary lg:hidden"
                     @click="$store.app.toggleSidebar()">

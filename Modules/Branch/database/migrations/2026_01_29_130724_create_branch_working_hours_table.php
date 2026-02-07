@@ -18,7 +18,7 @@ return new class extends Migration
             $table->foreignId('branch_id')
                 ->constrained(config('branch.table_prefix') . 'branches')
                 ->cascadeOnDelete();
-            $table->integer(WeekDay::class);
+            $table->integer('day');
             $table->time('start_time')->nullable();
             $table->time('end_time')->nullable();
             $table->boolean('is_closed')->default(false);

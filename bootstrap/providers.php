@@ -6,4 +6,6 @@ return [
     App\Providers\JetstreamServiceProvider::class,
     App\Providers\TelescopeServiceProvider::class,
     App\Providers\TenancyServiceProvider::class,
+    App\Providers\Wirechat\AdminPanelProvider::class,
+    App\Providers\Wirechat\ChatsPanelProvider::class,
 ];

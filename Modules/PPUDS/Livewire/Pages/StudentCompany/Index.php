@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\PPUDS\Livewire\Pages\FollowUpFile;
+namespace Modules\PPUDS\Livewire\Pages\StudentCompany;
 
 use App\View\Components\AppLayout;
 use Filament\Forms\Components\Grid;
@@ -11,37 +11,36 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
-use Filament\Tables\Enums\FiltersLayout;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
-use Modules\Core\Entities\User;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\Company;
-use Modules\PPUDS\Entities\FollowUp;
 use Modules\PPUDS\Entities\Course;
+use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\SemesterType;
 use Modules\PPUDS\Enums\TrainingStatus;
 use Modules\PPUDS\Settings\GeneralSettings;
 
-class Index extends Component implements HasTable, HasForms
+class Index extends Component implements HasForms, HasTable
 {
-    use InteractsWithTable;
     use InteractsWithForms;
+    use InteractsWithTable;
 
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn() => FollowUp::query()->with(['registration.student', 'registration.course', 'company', 'branch']))
+            ->query(fn () => StudentCompany::query()->with(['registration.student', 'registration.course', 'company', 'branch']))
             ->columns([
                 TextColumn::make('registration.student.name')
                     ->label(__('Student'))
@@ -49,12 +48,12 @@ class Index extends Component implements HasTable, HasForms
                     ->sortable()
                     ->weight('bold')
                     ->color('primary')
-                    ->url(fn (FollowUp $record) => route('follow-ups.edit', $record))
-                    ->description(fn (FollowUp $record) => $record->registration?->student?->email),
+                    ->url(fn (StudentCompany $record) => route('student-companies.edit', $record))
+                    ->description(fn (StudentCompany $record) => $record->registration?->student?->email),
 
                 TextColumn::make('company.name')
                     ->label(__('Company'))
-                    ->url(fn(FollowUp $record)  =>  route('companies.edit', $record->company_id))
+                    ->url(fn (StudentCompany $record) => route('companies.edit', $record->company_id))
                     ->searchable()
                     ->placeholder('—')
                     ->color('primary'),
@@ -84,6 +83,12 @@ class Index extends Component implements HasTable, HasForms
             ->filters($this->getTableFilters(), layout: FiltersLayout::AboveContent)
             ->filtersFormColumns(5)
             ->actions($this->getTableActions())
+            ->headerActions([
+                \Modules\Core\Filament\Forms\Components\CreateAction::make('create')
+                    ->label(__('Add Student Company'))
+                    ->url(route('student-companies.add'))
+                    ->visible(fn () => auth()->user()->can('StudentCompany Create')),
+            ])
             ->bulkActions($this->getTableBulkAction());
     }
 
@@ -107,7 +112,7 @@ class Index extends Component implements HasTable, HasForms
                 ->options(Course::get()->pluck('name', 'id'))
                 ->query(function (Builder $query, array $data) {
                     return $query->when($data['value'], function ($q, $courseId) {
-                        $q->whereHas('registration', fn($regQ) => $regQ->where('course_id', $courseId));
+                        $q->whereHas('registration', fn ($regQ) => $regQ->where('course_id', $courseId));
                     });
                 })
                 ->searchable(),
@@ -119,12 +124,12 @@ class Index extends Component implements HasTable, HasForms
                         ->prefixIcon('solar-calendar-search-bold-duotone')
                         ->numeric()
                         ->default(app(GeneralSettings::class)->year)
-                        ->placeholder(date('Y'))
+                        ->placeholder(date('Y')),
                 ])
                 ->query(function (Builder $query, array $data): Builder {
                     return $query->when(
                         $data['year'],
-                        fn (Builder $q, $year) => $q->whereHas('registration', fn($regQ) => $regQ->where('year', $year))
+                        fn (Builder $q, $year) => $q->whereHas('registration', fn ($regQ) => $regQ->where('year', $year))
                     );
                 }),
 
@@ -133,12 +138,12 @@ class Index extends Component implements HasTable, HasForms
                     Select::make('semester_type')
                         ->label(__('Semester Type'))
                         ->options(SemesterType::options())
-                        ->default(app(GeneralSettings::class)->semester_type->value)
+                        ->default(app(GeneralSettings::class)->semester_type->value),
                 ])
                 ->query(function (Builder $query, array $data): Builder {
                     return $query->when(
                         $data['semester_type'],
-                        fn (Builder $q, $semester_type) => $q->whereHas('registration', fn($regQ) => $regQ->where('semester', $semester_type))
+                        fn (Builder $q, $semester_type) => $q->whereHas('registration', fn ($regQ) => $regQ->where('semester', $semester_type))
                     );
                 }),
         ];
@@ -149,11 +154,11 @@ class Index extends Component implements HasTable, HasForms
         return [
             InfoAction::make('info')
                 ->label('')
-                ->visible(fn() => auth()->user()->can('Major Info')),
+                ->visible(fn () => auth()->user()->can('Major Info')),
             ViewAction::make('view')
                 ->label('')
                 ->tooltip(__('View Details'))
-                ->form(fn(FollowUp $record) => [
+                ->form(fn (StudentCompany $record) => [
                     Grid::make(2)->schema([
                         TextInput::make('student_name')
                             ->label(__('Student'))
@@ -178,25 +183,25 @@ class Index extends Component implements HasTable, HasForms
                             ->default($record->registration?->course?->name)
                             ->disabled()
                             ->prefixIcon('solar-book-bold-duotone'),
-                    ])
+                    ]),
                 ])
                 ->modalSubmitAction(false)
-                ->visible(fn() => auth()->user()->can('FollowUp View')), // تأكد من اسم الصلاحية
+                ->visible(fn () => auth()->user()->can('StudentCompany View')), // تأكد من اسم الصلاحية
 
             EditAction::make('edit')
                 ->label('')
                 ->tooltip(__('Edit'))
-                ->url(fn(FollowUp $record) => route('follow-ups.edit', $record->id)) // تأكد من اسم الراوت
-                ->visible(fn() => auth()->user()->can('FollowUp Update')),
+                ->url(fn (StudentCompany $record) => route('student-companies.edit', $record->id)) // تأكد من اسم الراوت
+                ->visible(fn () => auth()->user()->can('StudentCompany Update')),
 
             DeleteAction::make('delete')
                 ->label('')
                 ->tooltip(__('Delete'))
                 ->action(function ($record) {
                     $record->delete();
-                    Toaster::success(__('Follow-up record deleted successfully'));
+                    Toaster::success(__('Student company record deleted successfully'));
                 })
-                ->visible(fn() => auth()->user()->can('FollowUp Delete'))
+                ->visible(fn () => auth()->user()->can('StudentCompany Delete')),
         ];
     }
 
@@ -209,20 +214,20 @@ class Index extends Component implements HasTable, HasForms
                     ->icon('solar-trash-bin-trash-bold-duotone')
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->action(fn(Collection $records) => $records->each->delete())
-                    ->after(fn() => Toaster::success(__('Selected records deleted successfully'))),
-            ])
+                    ->action(fn (Collection $records) => $records->each->delete())
+                    ->after(fn () => Toaster::success(__('Selected records deleted successfully'))),
+            ]),
         ];
     }
 
     public function render()
     {
         // تأكد من إنشاء ملف الـ Blade هذا
-        return view('ppuds::livewire.pages.follow-up.index')->layout(AppLayout::class, [
+        return view('ppuds::livewire.pages.student-company.index')->layout(AppLayout::class, [
             'breadcrumbs' => [
                 ['title' => __('Home'), 'url' => route('home')],
-                ['title' => __('Follow Ups'), 'url' => route('follow-ups.index')],
-            ]
+                ['title' => __('Student Companies'), 'url' => route('student-companies.index')],
+            ],
         ]);
     }
 }

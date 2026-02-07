@@ -173,25 +173,74 @@ class Add extends Component implements HasForms, HasActions
                                                                     ->tel()
                                                                     ->prefixIcon('solar-phone-calling-linear'), // Solar Icon
 
+                                                                // استبدل الـ Section القديم بهذا الكود الجديد
                                                                 Section::make(__('Working Hours'))
-                                                                    ->icon('solar-clock-circle-bold-duotone') // Solar Icon
+                                                                    ->icon('solar-clock-circle-bold-duotone')
                                                                     ->schema([
-                                                                        Grid::make(2)->schema([
-                                                                            TimePicker::make('opening_time')
-                                                                                ->label(__('Opening'))
-                                                                                ->seconds(false)
-                                                                                ->required()
-                                                                                ->prefixIcon('solar-sun-fog-linear')
-                                                                                ->default('08:00'),
-                                                                            TimePicker::make('closing_time')
-                                                                                ->label(__('Closing'))
-                                                                                ->seconds(false)
-                                                                                ->required()
-                                                                                ->prefixIcon('solar-moon-linear')
-                                                                                ->default('16:00'),
-                                                                        ]),
-                                                                    ])->compact()->columnSpanFull()
-                                                                    ->extraAttributes(['class' => 'bg-gray-50/50']), // لون خلفية خفيف جداً
+                                                                        Repeater::make('working_hours')
+                                                                            ->label(__('Weekly Schedule'))
+                                                                            ->hiddenLabel() // إخفاء العنوان لتوفير المساحة
+                                                                            ->relationship('workingHours') // اسم العلاقة في مودل Branch
+                                                                            ->schema([
+                                                                                Grid::make(4)->schema([
+                                                                                    // 1. اسم اليوم (للعرض فقط)
+                                                                                    // نستخدم Select disabled لعرض اسم اليوم بناءً على الـ Enum
+                                                                                    Select::make('day')
+                                                                                        ->label(__('Day'))
+                                                                                        ->options(\Modules\Branch\Enums\WeekDay::class)
+                                                                                        ->disabled()
+                                                                                        ->dehydrated() // يرسل القيمة عند الحفظ
+                                                                                        ->required()
+                                                                                        ->columnSpan(1),
+
+                                                                                    // 2. زر مغلق
+                                                                                    \Filament\Forms\Components\Toggle::make('is_closed')
+                                                                                        ->label(__('Closed?'))
+                                                                                        ->onColor('danger')
+                                                                                        ->offColor('success')
+                                                                                        ->inline(false)
+                                                                                        ->live() // لتحديث الحقول المجاورة فوراً
+                                                                                        ->columnSpan(1),
+
+                                                                                    // 3. وقت البداية والنهاية (يختفيان إذا كان مغلقاً)
+                                                                                    Group::make([
+                                                                                        TimePicker::make('start_time')
+                                                                                            ->label(__('Start'))
+                                                                                            ->seconds(false)
+                                                                                            ->default('08:00')
+                                                                                            ->required(fn (Get $get) => ! $get('is_closed')),
+
+                                                                                        TimePicker::make('end_time')
+                                                                                            ->label(__('End'))
+                                                                                            ->seconds(false)
+                                                                                            ->default('16:00')
+                                                                                            ->required(fn (Get $get) => ! $get('is_closed')),
+                                                                                    ])
+                                                                                        ->visible(fn (Get $get) => ! $get('is_closed'))
+                                                                                        ->columnSpan(2)
+                                                                                        ->columns(2),
+                                                                                ]),
+                                                                            ])
+                                                                            ->addable(false)      // منع إضافة أيام يدوياً
+                                                                            ->deletable(false)    // منع حذف الأيام
+                                                                            ->reorderable(false)  // منع تغيير الترتيب
+                                                                            ->defaultItems(7)     // عرض 7 أيام دائماً
+                                                                            // دالة لملء الأيام السبعة تلقائياً عند فتح الفورم الجديد
+                                                                            ->default(function() {
+                                                                                $days = [];
+                                                                                foreach (\Modules\Branch\Enums\WeekDay::cases() as $day) {
+                                                                                    $days[] = [
+                                                                                        'day' => $day->value,
+                                                                                        'is_closed' => $day === \Modules\Branch\Enums\WeekDay::FRIDAY, // الجمعة عطلة افتراضياً
+                                                                                        'start_time' => '08:00',
+                                                                                        'end_time' => '16:00',
+                                                                                    ];
+                                                                                }
+                                                                                return $days;
+                                                                            }),
+                                                                    ])
+                                                                    ->columnSpanFull()
+                                                                    ->extraAttributes(['class' => 'bg-gray-50/50']),
                                                             ]),
                                                         ]),
 
@@ -354,32 +403,55 @@ class Add extends Component implements HasForms, HasActions
 
         $this->validate();
 
+        // 1. فصل بيانات الشركة الأساسية عن الفروع والشعار
         $companyData = Arr::except($this->data, ['branches', 'logo']);
         $companyData['created_by'] = auth()->id();
 
+        // 2. إنشاء الشركة
         $company = Company::create($companyData);
 
+        // 3. رفع الشعار
         if (isset($this->data['logo'])) {
             $company->addImage($this->data['logo']);
         }
 
+        // 4. معالجة الفروع
         if (!empty($this->data['branches'])) {
 
             foreach ($this->data['branches'] as $branchData) {
 
+                // فصل بيانات الأقسام وساعات العمل عن بيانات الفرع
                 $departmentsData = $branchData['departments'] ?? [];
-                $branchCleanData = Arr::except($branchData, ['departments']);
+                $workingHoursData = $branchData['working_hours'] ?? []; // المصفوفة الجديدة لساعات العمل
 
+                // تنظيف بيانات الفرع
+                $branchCleanData = Arr::except($branchData, ['departments', 'working_hours']);
                 $branchCleanData['created_by'] = auth()->id();
 
+                // إنشاء الفرع
                 $branch = Branch::create($branchCleanData);
 
+                // ربط الفرع بالشركة
                 $company->branches()->attach($branch->id, ['is_main' => false]);
 
+                // --- أ. حفظ ساعات العمل (الجديد) ---
+                if (!empty($workingHoursData)) {
+                    foreach ($workingHoursData as $wh) {
+                        $branch->workingHours()->create([
+                            'day'        => $wh['day'],
+                            'is_closed'  => $wh['is_closed'],
+                            'start_time' => $wh['is_closed'] ? null : $wh['start_time'],
+                            'end_time'   => $wh['is_closed'] ? null : $wh['end_time'],
+                        ]);
+                    }
+                }
+
+                // --- ب. حفظ الأقسام ---
                 foreach ($departmentsData as $deptData) {
                     $deptName = $deptData['name'];
                     $supervisorId = $deptData['user_id'] ?? null;
 
+                    // البحث عن القسم أو إنشاؤه
                     $department = CompanyDepartment::whereTranslation('name', $deptName)->first();
 
                     if (! $department) {
@@ -389,6 +461,7 @@ class Add extends Component implements HasForms, HasActions
                         ]);
                     }
 
+                    // ربط القسم بالفرع مع المشرف
                     $branch->departments()->syncWithoutDetaching([
                         $department->id => [
                             'user_id' => $supervisorId

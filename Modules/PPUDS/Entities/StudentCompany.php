@@ -19,7 +19,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-class FollowUp extends Model implements HasMedia
+class StudentCompany extends Model implements HasMedia
 {
     use LogsActivity;
     use SoftDeletes;
@@ -29,7 +29,7 @@ class FollowUp extends Model implements HasMedia
     {
         parent::__construct($attributes);
 
-        $this->setTable(config('ppuds.table_prefix') . 'follow_ups');
+        $this->setTable(config('ppuds.table_prefix') . 'students_companies');
     }
 
     protected $fillable = [
@@ -53,7 +53,7 @@ class FollowUp extends Model implements HasMedia
             ->logOnly($this->getFillable())
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()
-            ->setDescriptionForEvent(fn(string $eventName) => "This follow-up has been {$eventName}")
+            ->setDescriptionForEvent(fn(string $eventName) => "This student company record has been {$eventName}")
             ->useLogName(class_basename($this));
     }
 
@@ -86,7 +86,7 @@ class FollowUp extends Model implements HasMedia
 
         // مسح الملف السابق (إذا كنت تريد ملفاً واحداً فقط لكل متابعة)
         // إذا كان مسموحاً بأكثر من ملف، قم بإزالة هذا السطر
-        $this->clearMediaCollection('follow_up_files');
+        $this->clearMediaCollection('student_company_files');
 
         try {
             $originalName = $file->getClientOriginalName();
@@ -96,7 +96,7 @@ class FollowUp extends Model implements HasMedia
             $media = $this
                 ->addMedia($file)
                 ->usingFileName($fileName)
-                ->toMediaCollection('follow_up_files', 'follow_ups'); // Disk name can be changed
+                ->toMediaCollection('student_company_files', 'students_companies'); // Disk name can be changed
 
             // تطبيق خدمة ضغط وتحجيم الصور الخاصة بكم
             // ملاحظة: هذا الكود يعمل بشكل ممتاز مع الصور، تأكد أنه لا يسبب مشاكل مع ملفات PDF
@@ -109,14 +109,14 @@ class FollowUp extends Model implements HasMedia
 
             return $media;
         } catch (\Exception $e) {
-            \Log::error('Error uploading follow-up file: ' . $e->getMessage());
+            \Log::error('Error uploading student company file: ' . $e->getMessage());
             return null;
         }
     }
 
     public function getImageAttribute()
     {
-        return $this->getFirstMediaUrl('follow_up_files');
+        return $this->getFirstMediaUrl('student_company_files');
     }
 
     public function registration(): BelongsTo

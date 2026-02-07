@@ -56,6 +56,10 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->register(RouteServiceProvider::class);
         $this->app->register(ModulePackageServiceProvider::class);
         $this->app->register(SidebarServiceProvider::class);
+
+        $this->app->register(
+            \Modules\Core\Providers\ChatsPanelProvider::class
+        );
     }
 
     /**

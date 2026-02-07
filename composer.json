@@ -40,6 +40,7 @@
         "mcamara/laravel-localization": "^2.3",
         "mhmiton/laravel-modules-livewire": "^5.1",
         "milon/barcode": "^12.0",
+        "namu/wirechat": "^0.5.0",
         "nwidart/laravel-modules": "^12.0",
         "php-ffmpeg/php-ffmpeg": "^1.3",
         "saade/filament-fullcalendar": "^3.0",
@@ -49,7 +50,8 @@
         "spatie/laravel-medialibrary": "^11.13",
         "spatie/laravel-permission": "^6.20",
         "spatie/laravel-query-builder": "^6.3",
-        "spatie/laravel-settings": "^3.4"
+        "spatie/laravel-settings": "^3.4",
+        "wirechat/wirechat": "0.3"
     },
     "require-dev": {
         "barryvdh/laravel-debugbar": "*",
@@ -119,6 +121,6 @@
             "php": "8.3.28"
         }
     },
-    "minimum-stability": "stable",
+    "minimum-stability": "beta",
     "prefer-stable": true
 }

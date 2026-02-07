@@ -81,13 +81,39 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 });
 
                 Route::group([
-                    'prefix' => 'follow-ups',
-                    'as' => 'follow-ups.',
-                    'namespace' => 'Modules\PPUDS\Livewire\Pages\FollowUpFile',
+                    'prefix' => 'student-companies',
+                    'as' => 'student-companies.',
+                    'namespace' => 'Modules\PPUDS\Livewire\Pages\StudentCompany',
                 ], function () {
-                    Route::get('/', Index::class)->name('index')->can('FollowUp View List');
-                    Route::get('/add', Add::class)->name('add')->can('FollowUp Create');
-                    Route::get('/{followUp}/edit', Edit::class)->name('edit')->can('FollowUp Update');
+                    Route::get('/', Index::class)->name('index')->can('StudentCompany View List');
+                    Route::get('/add', Add::class)->name('add')->can('StudentCompany Create');
+                    Route::get('/{studentCompany}/edit', Edit::class)->name('edit')->can('StudentCompany Update');
+                });
+
+                Route::group([
+                    'prefix' => 'field-visits',
+                    'as' => 'field-visits.',
+                    'namespace' => 'Modules\PPUDS\Livewire\Pages\FieldVisit',
+                ], function () {
+                    Route::get('/', Index::class)->name('index')->can('FieldVisit View List');
+                    Route::get('/add', Add::class)->name('add')->can('FieldVisit Create');
+                    Route::get('/{fieldVisit}/edit', Edit::class)->name('edit')->can('FieldVisit Update');
+                });
+
+                Route::group([
+                    'prefix' => 'announcements',
+                    'as' => 'announcements.',
+                    'namespace' => 'Modules\PPUDS\Livewire\Pages\Announcement',
+                ], function () {
+                    Route::get('/announcements', Index::class)->name('index')->can('Announcement View List');
+                });
+
+                Route::group([
+                    'prefix' => 'leave-requests',
+                    'as' => 'leave-requests.',
+                    'namespace' => 'Modules\PPUDS\Livewire\Pages\LeaveRequest',
+                ], function () {
+                    Route::get('/', Index::class)->name('index')->can('LeaveRequest View List');
                 });
             });
         }

@@ -26,6 +26,8 @@
     @livewireStyles
     @filamentStyles
 
+    @wirechatStyles
+
     @vite(['resources/css/app.css'])
 
     </head>
@@ -399,6 +401,8 @@
             <div class="grid grid-cols-1 gap-6 pt-5">
 
                 {{ $slot }}
+
+                @wirechatAssets(panel:'chats')
 
             </div>
 

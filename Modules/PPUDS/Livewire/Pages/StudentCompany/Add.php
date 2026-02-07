@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\PPUDS\Livewire\Pages\FollowUpFile;
+namespace Modules\PPUDS\Livewire\Pages\StudentCompany;
 
 use App\View\Components\AppLayout;
 use Filament\Actions\Concerns\InteractsWithActions;
@@ -20,7 +20,7 @@ use Masmerise\Toaster\Toaster;
 use Modules\Branch\Entities\Branch;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\CompanyDepartment;
-use Modules\PPUDS\Entities\FollowUp;
+use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Enums\TrainingStatus;
 use Modules\PPUDS\Settings\GeneralSettings;
@@ -40,7 +40,7 @@ class Add extends Component implements HasForms, HasActions
     public function form(Form $form): Form
     {
         return $form
-            ->model(FollowUp::class)
+            ->model(StudentCompany::class)
             ->schema([
                 Grid::make(['default' => 1, 'lg' => 3])
                 ->schema([
@@ -141,7 +141,7 @@ class Add extends Component implements HasForms, HasActions
 
     public function save()
     {
-        $this->authorize("FollowUp Create");
+        $this->authorize("StudentCompany Create");
 
         $this->validate();
 
@@ -152,21 +152,21 @@ class Add extends Component implements HasForms, HasActions
         $registration = Registration::findOrFail($data['registration_id']);
         $data['student_id'] = $registration->student_id;
 
-        FollowUp::create($data);
+        StudentCompany::create($data);
 
-        Toaster::success(__('Follow-up record created successfully'));
+        Toaster::success(__('Student company record created successfully'));
 
-        $this->redirect(route('follow-ups.index'));
+        $this->redirect(route('student-companies.index'));
     }
 
     public function render()
     {
         // تأكد من إنشاء ملف الـ Blade في المسار المذكور
-        return view('ppuds::livewire.pages.follow-up.add')->layout(AppLayout::class, [
+        return view('ppuds::livewire.pages.student-company.add')->layout(AppLayout::class, [
             'breadcrumbs' => [
                 ['title' => __('Home'), 'url' => route('home')],
-                ['title' => __('Follow Ups'), 'url' => route('follow-ups.index')],
-                ['title' => __('New Follow Up'), 'url' => '#'],
+                ['title' => __('Student Companies'), 'url' => route('student-companies.index')],
+                ['title' => __('New Student Company'), 'url' => '#'],
             ]
         ]);
     }

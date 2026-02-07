@@ -11,5 +11,18 @@
     "Branch updated successfully": "تم تحديث بيانات الفرع بنجاح",
     "Branch deleted successfully": "تم حذف الفرع بنجاح",
     "Opening Time": "وقت الافتتاح",
-    "Closing Time": "وقت الاغلاق"
+    "Closing Time": "وقت الاغلاق",
+
+    "Weekly Schedule": "الجدول الأسبوعي",
+    "Day": "اليوم",
+    "Closed?": "مغلق؟",
+    "Start": "بداية الوقت",
+    "End": "نهاية الوقت",
+    "Saturday": "السبت",
+    "Sunday": "الأحد",
+    "Monday": "الإثنين",
+    "Tuesday": "الثلاثاء",
+    "Wednesday": "الأربعاء",
+    "Thursday": "الخميس",
+    "Friday": "الجمعة"
 }

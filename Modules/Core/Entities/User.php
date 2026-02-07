@@ -23,6 +23,9 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\Permission\Traits\HasRoles;
 use ArPHP\I18N\Arabic;
+use Wirechat\Wirechat\Contracts\WirechatUser;
+use Wirechat\Wirechat\Panel;
+use Wirechat\Wirechat\Traits\InteractsWithWirechat;
 
 /**
  *
@@ -67,7 +70,7 @@ use ArPHP\I18N\Arabic;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereUpdatedAt($value)
  * @mixin \Eloquent
  */
-class User extends Authenticatable implements HasMedia
+class User extends Authenticatable implements HasMedia, WirechatUser
 {
     use HasApiTokens;
 
@@ -77,6 +80,7 @@ class User extends Authenticatable implements HasMedia
     use TwoFactorAuthenticatable;
     use InteractsWithMedia;
     use HasRoles;
+    use InteractsWithWirechat;
 
     /**
      * The attributes that are mass assignable.
@@ -137,6 +141,21 @@ class User extends Authenticatable implements HasMedia
     public function routeNotificationForFcm()
     {
         return $this->deviceTokens()->pluck('token')->toArray();
+    }
+
+    public function canAccessWirechatPanel(Panel $panel): bool
+    {
+        return $this->hasVerifiedEmail();
+    }
+
+    public function canCreateChats(): bool
+    {
+        return true;
+    }
+
+    public function canCreateGroups(): bool
+    {
+        return true;
     }
 
     public function getAvatarUrlAttribute(): string

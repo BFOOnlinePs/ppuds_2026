@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b408db81e398e8aaaf9fee16076cfd39",
+    "content-hash": "7e682322aceb8bffab82783b656b9c28",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -7219,6 +7219,72 @@
                 }
             ],
             "time": "2025-08-01T08:46:24+00:00"
+        },
+        {
+            "name": "namu/wirechat",
+            "version": "v0.5.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/wirechat/wirechat.git",
+                "reference": "6b1cb1145586d22f09e6d71a6e2f5fc69ccf4a47"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/wirechat/wirechat/zipball/6b1cb1145586d22f09e6d71a6e2f5fc69ccf4a47",
+                "reference": "6b1cb1145586d22f09e6d71a6e2f5fc69ccf4a47",
+                "shasum": ""
+            },
+            "require": {
+                "laravel/framework": "^10.0|^11.0|^12.0",
+                "laravel/prompts": "^0.1.0|^0.3.5",
+                "livewire/livewire": "^3.7|^4.0",
+                "php": "^8.1|^8.2|^8.3|^8.4"
+            },
+            "require-dev": {
+                "christophrumpel/missing-livewire-assertions": "^2.8|^3.0",
+                "larastan/larastan": "^2.0|^3.0",
+                "laravel/pint": "^1.18",
+                "orchestra/testbench": "^8.24|^9.0|^10.0",
+                "pestphp/pest": "^2.34|^3.0.0",
+                "pestphp/pest-plugin-laravel": "^2.4|^3.0.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Wirechat\\Wirechat\\WirechatServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "files": [
+                    "src/Support/helpers.php"
+                ],
+                "psr-4": {
+                    "Wirechat\\Wirechat\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Namu Makwembo"
+                }
+            ],
+            "description": "A Laravel Livewire messaging app for teams with private chats and group conversations.",
+            "support": {
+                "issues": "https://github.com/wirechat/wirechat/issues",
+                "source": "https://github.com/wirechat/wirechat/tree/v0.5.0"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/namumakwembo",
+                    "type": "github"
+                }
+            ],
+            "time": "2026-01-31T11:01:56+00:00"
         },
         {
             "name": "nesbot/carbon",
@@ -14806,6 +14872,72 @@
             "time": "2023-04-15T19:07:00+00:00"
         },
         {
+            "name": "wirechat/wirechat",
+            "version": "0.3.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/wirechat/wirechat.git",
+                "reference": "f5b50209789795d0aaba76440215887c3df1b4c4"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/wirechat/wirechat/zipball/f5b50209789795d0aaba76440215887c3df1b4c4",
+                "reference": "f5b50209789795d0aaba76440215887c3df1b4c4",
+                "shasum": ""
+            },
+            "require": {
+                "laravel/framework": "^10.0|^11.0|^12.0",
+                "laravel/prompts": "^0.1.0|^0.3.5",
+                "livewire/livewire": "^3.2.3",
+                "php": "^8.1|^8.2|^8.3|^8.4"
+            },
+            "require-dev": {
+                "christophrumpel/missing-livewire-assertions": "^2.8",
+                "larastan/larastan": "^2.0|^3.0",
+                "laravel/pint": "^1.18",
+                "orchestra/testbench": "^8.24|^9.0|^10.0",
+                "pestphp/pest": "^2.34|^3.0.0",
+                "pestphp/pest-plugin-laravel": "^2.4|^3.0.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Wirechat\\Wirechat\\WirechatServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "files": [
+                    "src/Support/helpers.php"
+                ],
+                "psr-4": {
+                    "Wirechat\\Wirechat\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Namu Makwembo"
+                }
+            ],
+            "description": "A Laravel Livewire messaging app for teams with private chats and group conversations.",
+            "support": {
+                "issues": "https://github.com/wirechat/wirechat/issues",
+                "source": "https://github.com/wirechat/wirechat/tree/0.3.0"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/namumakwembo",
+                    "type": "github"
+                }
+            ],
+            "time": "2025-12-24T10:17:38+00:00"
+        },
+        {
             "name": "zircote/swagger-php",
             "version": "5.8.1",
             "source": {
@@ -17704,7 +17836,7 @@
         }
     ],
     "aliases": [],
-    "minimum-stability": "stable",
+    "minimum-stability": "beta",
     "stability-flags": {},
     "prefer-stable": true,
     "prefer-lowest": false,

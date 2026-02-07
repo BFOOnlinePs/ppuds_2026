@@ -250,36 +250,136 @@ class PermissionSeeder extends Seeder
             ],
 
 
-            // TODO FollowUp
+            // TODO StudentCompany
             [
-                'name' => 'FollowUp View List',
+                'name' => 'StudentCompany View List',
                 'guard_name' => 'web',
-                'module_name' => 'FollowUp',
+                'module_name' => 'StudentCompany',
             ],
             [
-                'name' => 'FollowUp Create',
+                'name' => 'StudentCompany Create',
                 'guard_name' => 'web',
-                'module_name' => 'FollowUp',
+                'module_name' => 'StudentCompany',
             ],
             [
-                'name' => 'FollowUp Update',
+                'name' => 'StudentCompany Update',
                 'guard_name' => 'web',
-                'module_name' => 'FollowUp',
+                'module_name' => 'StudentCompany',
             ],
             [
-                'name' => 'FollowUp Delete',
+                'name' => 'StudentCompany Delete',
                 'guard_name' => 'web',
-                'module_name' => 'FollowUp',
+                'module_name' => 'StudentCompany',
             ],
             [
-                'name' => 'FollowUp View',
+                'name' => 'StudentCompany View',
                 'guard_name' => 'web',
-                'module_name' => 'FollowUp',
+                'module_name' => 'StudentCompany',
             ],
             [
-                'name' => 'FollowUp Info',
+                'name' => 'StudentCompany Info',
                 'guard_name' => 'web',
-                'module_name' => 'FollowUp',
+                'module_name' => 'StudentCompany',
+            ],
+
+
+            // TODO FieldVisit
+            [
+                'name' => 'FieldVisit View List',
+                'guard_name' => 'web',
+                'module_name' => 'Field Visit',
+            ],
+            [
+                'name' => 'FieldVisit Create',
+                'guard_name' => 'web',
+                'module_name' => 'Field Visit',
+            ],
+            [
+                'name' => 'FieldVisit Update',
+                'guard_name' => 'web',
+                'module_name' => 'Field Visit',
+            ],
+            [
+                'name' => 'FieldVisit Delete',
+                'guard_name' => 'web',
+                'module_name' => 'Field Visit',
+            ],
+            [
+                'name' => 'FieldVisit View',
+                'guard_name' => 'web',
+                'module_name' => 'Field Visit',
+            ],
+            [
+                'name' => 'FieldVisit Info',
+                'guard_name' => 'web',
+                'module_name' => 'Field Visit',
+            ],
+
+
+            // TODO Announcement
+            [
+                'name' => 'Announcement View List',
+                'guard_name' => 'web',
+                'module_name' => 'Announcement',
+            ],
+            [
+                'name' => 'Announcement Create',
+                'guard_name' => 'web',
+                'module_name' => 'Announcement',
+            ],
+            [
+                'name' => 'Announcement Update',
+                'guard_name' => 'web',
+                'module_name' => 'Announcement',
+            ],
+            [
+                'name' => 'Announcement Delete',
+                'guard_name' => 'web',
+                'module_name' => 'Announcement',
+            ],
+            [
+                'name' => 'Announcement View',
+                'guard_name' => 'web',
+                'module_name' => 'Announcement',
+            ],
+            [
+                'name' => 'Announcement Info',
+                'guard_name' => 'web',
+                'module_name' => 'Announcement',
+            ],
+
+
+
+            // TODO LeaveRequest
+            [
+                'name' => 'LeaveRequest View List',
+                'guard_name' => 'web',
+                'module_name' => 'Leave Request',
+            ],
+            [
+                'name' => 'LeaveRequest Create',
+                'guard_name' => 'web',
+                'module_name' => 'Leave Request',
+            ],
+            [
+                'name' => 'LeaveRequest Update',
+                'guard_name' => 'web',
+                'module_name' => 'Leave Request',
+            ],
+            [
+                'name' => 'LeaveRequest Delete',
+                'guard_name' => 'web',
+                'module_name' => 'Leave Request',
+            ],
+            [
+                'name' => 'LeaveRequest View',
+                'guard_name' => 'web',
+                'module_name' => 'Leave Request',
+            ],
+            [
+                'name' => 'LeaveRequest Info',
+                'guard_name' => 'web',
+                'module_name' => 'Leave Request',
             ],
         ];
 
