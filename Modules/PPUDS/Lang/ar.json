@@ -287,5 +287,31 @@
 
     "Approved": "مقبول",
     "Discrepancy": "تعارض / غير مطابق",
-    "Undetermined": "غير محدد"
+    "Undetermined": "غير محدد",
+
+    "StudentAttendance View List": "عرض سجلات الحضور",
+    "StudentAttendance Create": "تسجيل حضور جديد",
+    "StudentAttendance Update": "تعديل سجل حضور",
+    "StudentAttendance Delete": "حذف سجل حضور",
+    "StudentAttendance View": "عرض تفاصيل الحضور",
+    "StudentAttendance Info": "معلومات الحضور",
+    "Attendance Date": "تاريخ الحضور",
+    "Check In Time": "وقت الدخول",
+    "Check Out Time": "وقت المغادرة",
+    "Check In": "تسجيل الدخول",
+    "Check Out": "تسجيل المغادرة",
+    "Confirm Check In": "تأكيد تسجيل الدخول",
+    "Confirm Check Out": "تأكيد تسجيل المغادرة",
+    "Please allow browser location access to proceed.": "يرجى السماح للمتصفح بتحديد الموقع للمتابعة.",
+    "Calculating your location... Please wait.": "جاري تحديد موقعك... يرجى الانتظار.",
+    "Location Required": "الموقع الجغرافي مطلوب",
+    "Checked In Successfully": "تم تسجيل الدخول بنجاح",
+    "Checked Out Successfully": "تم تسجيل المغادرة بنجاح",
+    "Notes": "ملاحظات",
+    "GPS coordinates for check-in and check-out": "إحداثيات الموقع للدخول والمغادرة",
+    "In Latitude": "خط العرض (دخول)",
+    "In Longitude": "خط الطول (دخول)",
+    "Out Latitude": "خط العرض (مغادرة)",
+    "Out Longitude": "خط الطول (مغادرة)",
+    "View Map": "عرض الخريطة"
 }

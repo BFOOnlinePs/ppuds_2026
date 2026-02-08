@@ -53,23 +53,14 @@ class StudentAttendance extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
-    protected static function booted()
-    {
-        parent::booted();
-
-        static::created(function ($model) {
-            $locale = app()->getLocale();
-            $translationData = request()->only($model->translatedAttributes);
-
-            if (!empty($translationData)) {
-                $model->translateOrNew($locale)->fill($translationData);
-                $model->save();
-            }
-        });
-    }
 
     public function studentCompany()
     {
         return $this->belongsTo(StudentCompany::class, 'student_company_id');
+    }
+
+    public function studentReport()
+    {
+        return $this->hasOne(StudentReport::class, 'student_attendance_id');
     }
 }

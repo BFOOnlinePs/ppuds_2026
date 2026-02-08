@@ -124,6 +124,14 @@ return [
             'visibility' => 'public',
             'throw' => false,
         ],
+
+        'student_reports' => [
+            'driver' => 'local',
+            'root'   => storage_path('app/public/ppuds/student_reports'),
+            'url'    => env('APP_URL').'/storage/ppuds/student_reports',
+            'visibility' => 'public',
+            'throw' => false,
+        ],
     ],
 
     /*
