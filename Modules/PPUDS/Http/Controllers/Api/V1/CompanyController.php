@@ -82,6 +82,7 @@ class CompanyController extends Controller
             ->allowedFields(CompanyResource::allowedFields())
             ->allowedFilters(CompanyResource::allowedFilters())
             ->allowedSorts(CompanyResource::allowedSorts())
+            ->allowedIncludes(CompanyResource::allowedIncludes())
             ->with(['media', 'translations']) // يمكنك إضافة branches إذا أردت عرضها في القائمة
             ->paginate($perPage)
             ->appends(request()->query());
