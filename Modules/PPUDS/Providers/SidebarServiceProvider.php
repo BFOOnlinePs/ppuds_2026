@@ -23,7 +23,6 @@ class SidebarServiceProvider extends ServiceProvider
 
         $sidebar->add(
             (new SidebarGroup('Students', 'solar-users-group-rounded-bold-duotone' , ['Student View']))
-//            ->add(new SidebarItem('Add Student' , 'solar-users-group-rounded-bold-duotone' , ['Student View'] ,  'students.add' ))
             ->add(new SidebarItem('Students List' , 'solar-users-group-rounded-bold-duotone' , ['Student Create'] ,  'students.index' ))
         );
 
@@ -51,10 +50,6 @@ class SidebarServiceProvider extends ServiceProvider
                 ->add(new SidebarItem('Courses List' , 'solar-checklist-minimalistic-bold-duotone' , ['Course View'] ,  'courses.index' ))
         );
 
-//        $sidebar->add(
-//            (new SidebarItem('Attendance and departure log', 'solar-users-group-rounded-bold-duotone' , ['Student View'], 'students.index'))
-//        );
-
         $sidebar->add(
             (new SidebarGroup('Student Companies', 'solar-users-group-rounded-bold-duotone' , ['StudentCompany View']))
                 ->add(new SidebarItem('Add Student Company' , 'solar-users-group-rounded-bold-duotone' , ['StudentCompany View'] ,  'student-companies.add' ))
@@ -77,9 +72,10 @@ class SidebarServiceProvider extends ServiceProvider
                 ->add(new SidebarItem('Leave Requests List' , 'solar-users-group-rounded-bold-duotone' , ['LeaveRequest View List'] ,  'leave-requests.index' ))
         );
 
-//        $sidebar->add(
-//            (new SidebarItem('Ratings', 'solar-users-group-rounded-bold-duotone' , ['Student View'] , 'students.index'))
-//        );
+        $sidebar->add(
+            (new SidebarGroup('Student Attendance', 'solar-users-group-rounded-bold-duotone' , ['StudentAttendance View List']))
+                ->add(new SidebarItem('Leave Requests List' , 'solar-users-group-rounded-bold-duotone' , ['StudentAttendance View List'] ,  'student-attendances.index' ))
+        );
     }
 
     /**

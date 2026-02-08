@@ -115,6 +115,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ], function () {
                     Route::get('/', Index::class)->name('index')->can('LeaveRequest View List');
                 });
+
+                Route::group([
+                    'prefix' => 'student-attendances',
+                    'as' => 'student-attendances.',
+                    'namespace' => 'Modules\PPUDS\Livewire\Pages\StudentAttendance',
+                ], function () {
+                    Route::get('/', Index::class)->name('index')->can('StudentAttendance View List');
+                });
             });
         }
     );

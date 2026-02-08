@@ -283,5 +283,9 @@
     "Leave Request updated successfully": "تم تحديث طلب الإذن بنجاح",
     "Leave Request deleted successfully": "تم حذف طلب الإذن بنجاح",
     "Student Training": "تدريب الطالب",
-    "Overall Status": "الحالة العامة"
+    "Overall Status": "الحالة العامة",
+
+    "Approved": "مقبول",
+    "Discrepancy": "تعارض / غير مطابق",
+    "Undetermined": "غير محدد"
 }

@@ -72,7 +72,9 @@ class RegisterController extends Controller
 
         $user->generateAvatar();
 
-        $user->assignRole('Customer');
+        $role = $request->input('role', 'Customer');
+
+        $user->assignRole($role);
 
         if ($user) {
             return $this->successResponse(

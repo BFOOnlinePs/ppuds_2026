@@ -3,6 +3,8 @@
 namespace Modules\Core\Http\Requests\Auth;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use Modules\Core\Enums\UserRole;
 
 class RegisterRequest extends FormRequest
 {
@@ -19,6 +21,11 @@ class RegisterRequest extends FormRequest
 
             'fcm_token'   => 'sometimes|string',
             'device_name' => 'sometimes|string|max:255',
+
+            'role'          => ['string', Rule::in([
+                UserRole::STUDENT->value,
+                UserRole::COMPANY_SUPERVISOR->value,
+            ])],
         ];
     }
 

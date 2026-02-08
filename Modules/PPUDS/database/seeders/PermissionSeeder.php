@@ -381,6 +381,39 @@ class PermissionSeeder extends Seeder
                 'guard_name' => 'web',
                 'module_name' => 'Leave Request',
             ],
+
+
+            // TODO StudentAttendance
+            [
+                'name' => 'StudentAttendance View List',
+                'guard_name' => 'web',
+                'module_name' => 'Student Attendance',
+            ],
+            [
+                'name' => 'StudentAttendance Create',
+                'guard_name' => 'web',
+                'module_name' => 'Student Attendance',
+            ],
+            [
+                'name' => 'StudentAttendance Update',
+                'guard_name' => 'web',
+                'module_name' => 'Student Attendance',
+            ],
+            [
+                'name' => 'StudentAttendance Delete',
+                'guard_name' => 'web',
+                'module_name' => 'Student Attendance',
+            ],
+            [
+                'name' => 'StudentAttendance View',
+                'guard_name' => 'web',
+                'module_name' => 'Student Attendance',
+            ],
+            [
+                'name' => 'StudentAttendance Info',
+                'guard_name' => 'web',
+                'module_name' => 'Student Attendance',
+            ],
         ];
 
         foreach ($permissions as $perm) {

@@ -2,42 +2,42 @@
 
 namespace Modules\PPUDS\Entities;
 
-use Astrotomic\Translatable\Translatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\Core\Entities\User;
+use Modules\PPUDS\Enums\AttendanceStatus;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
-use Astrotomic\Translatable\Contracts\Translatable as TranslatableContract;
-use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
-
-class Major extends Model implements TranslatableContract, HasMedia
+class StudentAttendance extends Model
 {
     use LogsActivity;
-    use Translatable;
     use softDeletes;
-    use InteractsWithMedia;
-
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
 
-        $this->setTable(config('ppuds.table_prefix') . 'majors');
+        $this->setTable(config('ppuds.table_prefix') . 'student_attendances');
     }
 
     protected $fillable = [
         'id',
-        'reference_code',
+        'student_company_id',
+        'attendance_date',
+        'check_in',
+        'check_in_latitude',
+        'check_in_longitude',
+        'check_out',
+        'check_out_latitude',
+        'check_out_longitude',
+        'status',
+        'description',
         'created_by',
     ];
 
-    public $translatedAttributes = [
-        'name',
-        'description'
+    protected $casts = [
+        'status' => AttendanceStatus::class,
     ];
-
-    public $useTranslationFallback = true;
 
     public function getActivitylogOptions(): LogOptions
     {
@@ -53,7 +53,6 @@ class Major extends Model implements TranslatableContract, HasMedia
     {
         return $this->belongsTo(User::class, 'created_by');
     }
-
     protected static function booted()
     {
         parent::booted();
@@ -67,5 +66,10 @@ class Major extends Model implements TranslatableContract, HasMedia
                 $model->save();
             }
         });
+    }
+
+    public function studentCompany()
+    {
+        return $this->belongsTo(StudentCompany::class, 'student_company_id');
     }
 }
