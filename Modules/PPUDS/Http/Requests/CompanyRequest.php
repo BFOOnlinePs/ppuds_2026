@@ -36,6 +36,12 @@ class CompanyRequest extends FormRequest
             'branches.*.departments'         => ['nullable', 'array'],
             'branches.*.departments.*.name'  => ['required', 'string', 'max:255'],
             'branches.*.departments.*.user_id' => ['required', 'integer', 'exists:users,id'], // Supervisor
+
+            'branches.*.working_hours'              => 'nullable|array',
+            'branches.*.working_hours.*.day'        => 'required|integer',
+            'branches.*.working_hours.*.is_closed'  => 'required|boolean',
+            'branches.*.working_hours.*.start_time' => 'nullable|date_format:H:i',
+            'branches.*.working_hours.*.end_time'   => 'nullable|date_format:H:i',
         ];
     }
 

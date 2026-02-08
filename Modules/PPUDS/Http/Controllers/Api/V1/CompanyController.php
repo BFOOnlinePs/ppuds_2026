@@ -144,10 +144,11 @@ class CompanyController extends Controller
      * @OA\Response(response=201, description="Created successfully")
      * )
      */
+    // في ملف CompanyController.php
+
     public function store(CompanyRequest $request)
     {
         $company = DB::transaction(function () use ($request) {
-            // 1. إنشاء الشركة
             $companyData = $request->safe()->except(['branches', 'logo']);
             $companyData['created_by'] = auth()->id();
 
@@ -157,29 +158,38 @@ class CompanyController extends Controller
                 $company->addMediaFromRequest('logo')->toMediaCollection('logo');
             }
 
-            // 2. إنشاء الفروع
             if ($request->has('branches')) {
                 foreach ($request->branches as $branchData) {
 
                     $departmentsData = $branchData['departments'] ?? [];
-                    // استبعاد الأقسام من بيانات الفرع لأنها تخزن في جدول منفصل/وسيط
-                    $branchAttributes = collect($branchData)->except(['departments'])->toArray();
+                    $workingHoursData = $branchData['working_hours'] ?? [];
+
+                    $branchAttributes = collect($branchData)
+                        ->except(['departments', 'working_hours'])
+                        ->toArray();
 
                     $branchAttributes['created_by'] = auth()->id();
 
                     $branch = Branch::create($branchAttributes);
 
-                    // ربط الفرع بالشركة
                     $company->branches()->attach($branch->id, ['is_main' => false]);
 
-                    // 3. معالجة الأقسام (Logic مطابق للـ Livewire)
+                    if (!empty($workingHoursData)) {
+                        foreach ($workingHoursData as $wh) {
+                            $branch->workingHours()->create([
+                                'day'        => $wh['day'],
+                                'is_closed'  => $wh['is_closed'] ?? false,
+                                'start_time' => ($wh['is_closed'] ?? false) ? null : ($wh['start_time'] ?? null),
+                                'end_time'   => ($wh['is_closed'] ?? false) ? null : ($wh['end_time'] ?? null),
+                            ]);
+                        }
+                    }
+
                     if (!empty($departmentsData)) {
                         foreach ($departmentsData as $deptData) {
                             $deptName = $deptData['name'];
                             $supervisorId = $deptData['user_id'] ?? null;
 
-                            // البحث عن القسم أو إنشاؤه
-                            // ملاحظة: تأكد أن الموديل يدعم الترجمة، أو استخدم where('name', ...) إذا لم يكن مترجماً
                             $department = CompanyDepartment::whereTranslation('name', $deptName)->first();
 
                             if (! $department) {
@@ -189,7 +199,6 @@ class CompanyController extends Controller
                                 ]);
                             }
 
-                            // ربط القسم بالفرع مع المشرف
                             $branch->departments()->syncWithoutDetaching([
                                 $department->id => [
                                     'user_id' => $supervisorId
@@ -203,8 +212,7 @@ class CompanyController extends Controller
             return $company;
         });
 
-        // تحميل العلاقات للإرجاع
-        $company->load(['media', 'branches.departments', 'translations']);
+        $company->load(['media', 'branches.departments', 'branches.workingHours', 'translations']); // أضفنا branches.workingHours
 
         return $this->successResponse(
             new CompanyResource($company),
