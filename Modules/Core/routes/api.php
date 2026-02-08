@@ -11,7 +11,7 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
 
     Route::prefix('auth')->as('auth.')->group(function () {
         Route::post('login', [LoginController::class, 'login'])->name('login');
-        Route::post('registration', [RegisterController::class, 'register'])->name('registration');
+        Route::post('register', [RegisterController::class, 'register'])->name('register');
     });
 
     Route::middleware('auth:sanctum')->group(function () {

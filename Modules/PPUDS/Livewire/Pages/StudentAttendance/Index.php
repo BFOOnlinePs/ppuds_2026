@@ -103,24 +103,52 @@ class Index extends Component implements HasTable, HasForms
                     ->form([
                         MapPicker::make('location')
                             ->label(__('Current Location'))
-                            // 1. منع المستخدم من تحريك الدبوس يدوياً
+                            // 1. تجميد الخريطة بصرياً (لمنع التلاعب)
                             ->draggable(false)
-
-                            // 2. منع المستخدم من النقر في مكان آخر في الخريطة لتغيير الموقع
                             ->clickable(false)
-
-                            // 3. (مهم) التأكد من ظهور زر "موقعي" ليتمكن من جلب إحداثياته
-                            ->showMyLocationButton(true)
-
-                            // 4. (اختياري) إزالة أزرار التحكم بالزوم لتقليل التشتت
+                            ->zoom(16)
                             ->showZoomControl(false)
                             ->showFullscreenControl(false)
+                            ->showMyLocationButton(false) // نخفيه لأننا سنفعله بالكود
+                            ->showMarker(true)
 
-                            // 5. تحديد مستوى تقريب مناسب ليرى موقعه بوضوح
-                            ->defaultZoom(15)
-
-                            // 6. تفعيل الحفظ المباشر عند تغيير الحالة (لضمان حفظ الإحداثيات بمجرد جلبها)
+                            // 2. تفعيل التحديث المباشر ضروري جداً لتنتقل الخريطة
                             ->live()
+
+                            // 3. السكربت المسؤول عن الدقة والجلب التلقائي
+                            ->extraInputAttributes([
+                                'x-init' => <<<'JS'
+            $nextTick(() => {
+                // شرط مهم: نطلب الموقع فقط إذا كان الحقل فارغاً (حتى لا نغير موقع محفوظ سابقاً عند التعديل)
+                // أو يمكنك إزالة الشرط إذا كنت تريده يحدث دائماً
+                if (! $wire.get($el.getAttribute('wire:model'))) {
+
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(
+                            (position) => {
+                                // هنا نرسل الإحداثيات لـ Livewire
+                                $wire.set($el.getAttribute('wire:model'), {
+                                    lat: position.coords.latitude,
+                                    lng: position.coords.longitude
+                                });
+                            },
+                            (error) => {
+                                console.error('Error fetching location:', error);
+                            },
+                            // =================================================
+                            // هذا هو الحل لمشكلة "جلب موقع آخر"
+                            // =================================================
+                            {
+                                enableHighAccuracy: true, // إجبار المتصفح على استخدام GPS
+                                timeout: 10000,           // انتظار 10 ثواني للحصول على أدق إشارة
+                                maximumAge: 0             // عدم استخدام بيانات مخزنة قديماً
+                            }
+                        );
+                    }
+                }
+            });
+        JS
+                            ])
                     ])
                     ->action(function (array $data) {
                         if (empty($data['latitude']) || empty($data['longitude'])) {
