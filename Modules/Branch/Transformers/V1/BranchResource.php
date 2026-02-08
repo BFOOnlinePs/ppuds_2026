@@ -74,6 +74,14 @@ class BranchResource extends JsonResource
         ];
     }
 
+    public static function allowedIncludes(): array
+    {
+        return [
+            'workingHours',
+            'translations'
+        ];
+    }
+
     /**
      * تحويل الـ resource إلى مصفوفة.
      * من الأفضل تحديد الحقول هنا بشكل صريح.
@@ -94,6 +102,7 @@ class BranchResource extends JsonResource
             'opening_time'  => $this->opening_time,
             'closing_time'  => $this->closing_time,
             'status'        => $this->status,
+            'working_hours' => BranchWorkingHourResource::collection($this->whenLoaded('workingHours')),
             'translations'   => $this->whenLoaded('translations')
         ];
     }

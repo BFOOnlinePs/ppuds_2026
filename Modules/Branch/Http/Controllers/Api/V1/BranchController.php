@@ -175,6 +175,7 @@ class BranchController extends Controller
             ->allowedFields(BranchResource::allowedFields())
             ->allowedFilters(BranchResource::allowedFilters())
             ->allowedSorts(BranchResource::allowedSorts())
+            ->allowedIncludes(BranchResource::allowedIncludes())
             ->paginate($perPage)
             ->appends(request()->query());
 
