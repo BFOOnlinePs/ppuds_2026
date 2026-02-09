@@ -62,6 +62,7 @@ class CompanyResource extends JsonResource
             'createdBy',
             'branches',
             'branches.departments',
+            'branches.workingHours'
         ];
     }
 }
