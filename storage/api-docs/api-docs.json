@@ -1081,14 +1081,14 @@
                 ]
             }
         },
-        "/api/v1/auth/register": {
+        "/api/v1/auth/registration": {
             "post": {
                 "tags": [
                     "Auth"
                 ],
-                "summary": "Register a new user",
+                "summary": "Registration a new user",
                 "description": "Create a new user account",
-                "operationId": "3dd6b4902c76f94e74a52783ba84bcdc",
+                "operationId": "bc44de070b3415f03fb035f7b235e40a",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -6449,6 +6449,281 @@
                 ]
             }
         },
+        "/api/v1/ppuds/student-companies": {
+            "get": {
+                "tags": [
+                    "Student Companies"
+                ],
+                "summary": "Get all student companies",
+                "description": "Retrieve a list of all student companies",
+                "operationId": "3073116683e1407c455254e1fc0cf356",
+                "parameters": [
+                    {
+                        "name": "Accept-Language",
+                        "in": "header",
+                        "description": "Language header (ar or en)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "default": "ar",
+                            "example": "en"
+                        }
+                    },
+                    {
+                        "name": "include",
+                        "in": "query",
+                        "description": "Include relations (e.g. branches)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Student companies retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Companies retrieved successfully"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "New Student Tech"
+                                                    },
+                                                    "description": {
+                                                        "type": "string",
+                                                        "example": "Student project"
+                                                    },
+                                                    "created_at": {
+                                                        "type": "string",
+                                                        "format": "date-time"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Student Companies"
+                ],
+                "summary": "Create a new student company",
+                "description": "Creates student company, branches, and links departments with supervisors.",
+                "operationId": "806c66c0178820f57a4ecbba39ee17e5",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "company_category_id",
+                                    "status",
+                                    "branches"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "New Tech Company"
+                                    },
+                                    "website": {
+                                        "type": "string",
+                                        "example": "https://example.com"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "example": "Leading tech solutions"
+                                    },
+                                    "company_category_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "status": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "logo": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "branches": {
+                                        "type": "array",
+                                        "items": {
+                                            "required": [
+                                                "name",
+                                                "country_id",
+                                                "city_id",
+                                                "latitude",
+                                                "longitude",
+                                                "opening_time",
+                                                "closing_time"
+                                            ],
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Main Branch"
+                                                },
+                                                "country_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "city_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "latitude": {
+                                                    "type": "number",
+                                                    "example": 31.9
+                                                },
+                                                "longitude": {
+                                                    "type": "number",
+                                                    "example": 35.2
+                                                },
+                                                "opening_time": {
+                                                    "type": "string",
+                                                    "example": "08:00"
+                                                },
+                                                "closing_time": {
+                                                    "type": "string",
+                                                    "example": "17:00"
+                                                },
+                                                "departments": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "required": [
+                                                            "name",
+                                                            "user_id"
+                                                        ],
+                                                        "properties": {
+                                                            "name": {
+                                                                "type": "string",
+                                                                "example": "HR"
+                                                            },
+                                                            "user_id": {
+                                                                "description": "Supervisor ID",
+                                                                "type": "integer",
+                                                                "example": 5
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/student-companies/{studentCompany}": {
+            "get": {
+                "tags": [
+                    "Student Companies"
+                ],
+                "summary": "Get a single student company",
+                "description": "Retrieve details of a specific student company",
+                "operationId": "98dc02aaa8e506760d34f863a37d5a0d",
+                "parameters": [
+                    {
+                        "name": "studentCompany",
+                        "in": "path",
+                        "description": "Student Company ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "Accept-Language",
+                        "in": "header",
+                        "description": "Language header (ar or en)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "default": "ar",
+                            "example": "en"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Student Company retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Company retrieved successfully"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Company not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/reels/reels": {
             "get": {
                 "tags": [
@@ -7200,6 +7475,10 @@
         {
             "name": "Company Departments",
             "description": "Company Departments"
+        },
+        {
+            "name": "Student Companies",
+            "description": "Student Companies"
         },
         {
             "name": "Reels",
