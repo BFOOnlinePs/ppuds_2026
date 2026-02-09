@@ -122,6 +122,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     'namespace' => 'Modules\PPUDS\Livewire\Pages\StudentAttendance',
                 ], function () {
                     Route::get('/', Index::class)->name('index')->can('StudentAttendance View List');
+                    Route::get('{studentAttendance}/report', Report::class)->name('report')->can('StudentAttendance Report List');
                 });
             });
         }

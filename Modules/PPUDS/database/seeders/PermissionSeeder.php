@@ -414,6 +414,11 @@ class PermissionSeeder extends Seeder
                 'guard_name' => 'web',
                 'module_name' => 'Student Attendance',
             ],
+            [
+                'name' => 'StudentAttendance Report List',
+                'guard_name' => 'web',
+                'module_name' => 'Student Attendance',
+            ],
         ];
 
         foreach ($permissions as $perm) {

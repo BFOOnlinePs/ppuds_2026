@@ -278,97 +278,10 @@ class Index extends Component implements HasForms, HasTable
                     // Removed ->model() as it was causing confusion
                 ->button()
                 ->label(__('Report'))
-                ->mountUsing(function (Forms\ComponentContainer $form, StudentAttendance $record) {
-                    // Correctly fill the form with existing report data
-                    $report = $record->studentReport;
-
-                    $form->fill([
-                        'report_text' => $report?->report_text,
-                        // We don't fill the file upload as we treat it as a "New Upload" field
-                        // Existing image is shown via Placeholder
-                    ]);
-                })
-                ->form([
-                    Grid::make(2)
-                        ->schema([
-                            Section::make('studentReport')
-                                ->schema([
-
-                                    Placeholder::make('current_image')
-                                        ->label(__('Current Image'))
-                                        ->visible(fn (StudentAttendance $record) => $record->studentReport?->image)
-                                        ->content(fn (StudentAttendance $record) => new HtmlString(
-                                            '<img src="'.$record->studentReport->image.'" style="max-height: 200px; border-radius: 8px;" />'
-                                        ))
-                                        ->columnSpanFull(),
-
-                                    RichEditor::make('report_text')
-                                        ->label(__('Report Text'))
-                                        ->required(),
-
-                                    Forms\Components\FileUpload::make('report_file')
-                                        ->label(__('Report File'))
-                                        ->disk('student_reports')
-                                        ->panelLayout('grid'),
-                                    // Removed multiple() as the addImage logic handles one file.
-                                ])
-                                ->columnSpanFull(),
-                        ]),
-                ])
-                ->action(function (array $data, StudentAttendance $record, Forms\ComponentContainer $form) {
-
-                    $report = $record->studentReport()->updateOrCreate([
-                        'student_attendance_id' => $record->id,
-                    ], [
-                        'report_text' => $data['report_text'],
-                        'created_by' => auth()->id(),
-                    ]);
-
-                    if (! empty($data['report_file'])) {
-                        // We have a file path (or array of paths if weird context)
-                        // Since we use public disk, we need the full path or file object
-                        // FileUpload returns the relative path usually.
-
-                        // We can use the file path to add media.
-                        // However, addImage expects an UploadedFile or a path.
-
-                        // Let's use the Storage facade to retrieve the file
-                        $filePath = \Illuminate\Support\Facades\Storage::disk('public')->path($data['report_file']);
-
-                        if (file_exists($filePath)) {
-                            // Add to media library
-                            $report->addMedia($filePath)
-                                ->toMediaCollection('file_report', 'student_reports');
-
-                            // Original addImage logic was a bit custom, let's stick to standard Spatie usage here
-                            // to be safe, or call addImage if it does extra processing.
-                            // But addImage in StudentReport clears collection and optimizes.
-                            // Let's call addImage if we can pass the path.
-                            // StudentReport::addImage checks for UploadedFile or TemporaryUploadedFile.
-                            // Passing a string path might fail the check inside addImage?
-
-                            // Let's check StudentReport::addImage content again.
-                            // It checks: if (!$file instanceof UploadedFile && !($file instanceof TemporaryUploadedFile)) return null;
-
-                            // So we CANNOT pass a path string to addImage.
-                            // We must reimplement the logic here or modify addImage.
-                            // I'll reimplement the logic here to be safe and avoid modifying the Entity for now.
-
-                            $report->clearMediaCollection('file_report');
-                            $report->addMedia($filePath)
-                                ->usingFileName(basename($filePath))
-                                ->toMediaCollection('file_report', 'student_reports');
-
-                            // Note: Image optimization/resize was in addImage, we skip that or rely on registerMediaConversions
-                        }
-                    }
-
-                    Toaster::success(__('Report Saved Successfully'));
-                })
-            //                    ->visible(fn (StudentAttendance $record) =>
-            //                        $record->check_out !== null && $record->studentReport === null
-            //                    )
-            ,
+                ->url(fn($record) => route('student-attendances.report', $record))
+                ->visible(fn (StudentAttendance $record) =>
+                    ($record->check_out !== null && $record->studentReport === null) && (auth()->user()->can('StudentAttendance Report List'))
+                ),
             InfoAction::make('info')
                 ->label('')
                 ->visible(fn () => auth()->user()->can('Major Info')),
@@ -433,7 +346,7 @@ class Index extends Component implements HasForms, HasTable
 
     public function render()
     {
-        return view('ppuds::livewire.pages.major.index')->layout(AppLayout::class, [
+        return view('ppuds::livewire.pages.student-attendance.index')->layout(AppLayout::class, [
             'breadcrumbs' => [
                 ['title' => __('Home'), 'url' => route('home')],
                 ['title' => __('Companies List'), 'url' => route('majors.index')],
