@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Modules\PPUDS\Http\Controllers\Api\V1\CompanyCategoryController;
 use Modules\PPUDS\Http\Controllers\Api\V1\CompanyController;
 use Modules\PPUDS\Http\Controllers\Api\V1\CompanyDepartmentController;
+use Modules\PPUDS\Http\Controllers\Api\V1\StudentCompanyController;
 
 
 Route::prefix('v1')->as('api.v1.')->group(function () {
