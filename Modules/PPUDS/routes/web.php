@@ -26,6 +26,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     Route::get('/students', Index::class)->name('students.index')->can('Student View List');
 //                    Route::get('/students/add', Add::class)->name('students.add')->can('Student Create');
 //                    Route::get('/students/{user}/edit', Edit::class)->name('students.edit')->can('Student Update');
+                    Route::get('/students/{user}/details', Details::class)->name('students.details')->can('Student Details List');
                 });
 
                 Route::group([

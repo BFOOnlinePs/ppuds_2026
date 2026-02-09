@@ -224,6 +224,13 @@ class Index extends Component implements HasTable, HasForms
                 })
                 ->modalSubmitAction(false)
                 ->visible(fn() => auth()->user()->can('Student View')),
+
+            Action::make('details')
+                ->label('')
+                ->icon('heroicon-o-user')
+                ->url(fn($record) => route('students.details', $record->user_id))
+                ->visible(fn() => auth()->user()->can('Student Details List')),
+
 //            EditAction::make('edit')
 //                ->url(fn(StudnetProfile $record) => route('students.edit', $record->user_id))
 //                ->visible(fn() => auth()->user()->can('Student Update')),

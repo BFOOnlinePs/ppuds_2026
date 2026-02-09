@@ -12,6 +12,7 @@ use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
@@ -65,6 +66,10 @@ class Report extends Component implements HasForms
                                         ->disk('student_reports')
                                         ->collection('file_report')
                                         ->image()
+                                        ->multiple()
+                                        ->maxFiles(5)
+                                        ->reorderable()
+                                        ->panelLayout('grid')
                                         ->imageEditor()
                                         ->maxSize(5120) // 5MB
                                         ->columnSpanFull(),
@@ -87,11 +92,26 @@ class Report extends Component implements HasForms
                                         ->content($this->attendance->attendance_date),
 
                                     // عرض الصورة الحالية إن وجدت
-                                    Placeholder::make('current_image')
-                                        ->label(__('Current Uploaded Image'))
-                                        ->visible(fn () => $this->attendance->studentReport?->getFirstMediaUrl('file_report'))
+                                    Placeholder::make('current_images')
+                                        ->label(__('Current Uploaded Images'))
+                                        // 1. الشرط: اعرض الحقل فقط إذا كان التقرير موجوداً وبه صور
+                                        ->visible(fn () => $this->report && $this->report->getMedia('file_report')->count() > 0)
                                         ->content(fn () => new HtmlString(
-                                            '<img src="' . $this->attendance->studentReport->getFirstMediaUrl('file_report') . '" style="width: 100%; border-radius: 8px; border: 1px solid #eee;" />'
+                                            Blade::render(<<<'HTML'
+                                                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px;">
+                                                        @foreach($images as $url)
+                                                            <a href="{{ $url }}" target="_blank" style="display: block;">
+                                                                <img
+                                                                    src="{{ $url }}"
+                                                                    style="width: 100%; height: 100px; object-fit: cover; border-radius: 8px; border: 1px solid #ddd;"
+                                                                    alt="Image"
+                                                                >
+                                                            </a>
+                                                        @endforeach
+                                                    </div>
+                                                HTML,
+                                                ['images' => $this->report?->getMultipleImage() ?? []]
+                                            )
                                         )),
                                 ]),
                         ]),
@@ -114,8 +134,11 @@ class Report extends Component implements HasForms
                 ]
             );
 
-            if (!empty($this->data['report_file'])) {
-                $report->addImage($this->data['report_file']);
+            if (!empty($this->data['file_report'])) {
+                foreach ($this->data['file_report'] as $file)
+                {
+                    $report->addImage($file);
+                }
             }
 
             Toaster::success(__('Report saved successfully'));

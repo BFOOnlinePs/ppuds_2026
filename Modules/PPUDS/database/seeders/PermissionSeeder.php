@@ -50,6 +50,11 @@ class PermissionSeeder extends Seeder
                 'guard_name' => 'web',
                 'module_name' => 'Student',
             ],
+            [
+                'name' => 'Student Details List',
+                'guard_name' => 'web',
+                'module_name' => 'Student',
+            ],
 
 
             // TODO Company Category

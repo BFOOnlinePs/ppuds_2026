@@ -59,42 +59,62 @@ class StudentReport extends Model implements HasMedia
             ->nonQueued();
     }
 
-    public function addImage($file)
+    // في ملف Modules\PPUDS\Entities\StudentReport.php
+
+    public function addImage($files)
     {
-        if (is_array($file)) {
-            $file = reset($file);
+        // 1. تحويل المدخل إلى مصفوفة دائماً للتعامل الموحد
+        if (!is_array($files)) {
+            $files = [$files];
         }
 
-        // التحقق من نوع الملف
-        if (
-            !$file instanceof \Illuminate\Http\UploadedFile &&
-            !($file instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile)
-        ) {
-            return null;
+        foreach ($files as $file) {
+            // التحقق من صحة الملف (سواء كان كائن رفع أو مسار نصي من Livewire)
+            if (
+                !is_string($file) &&
+                !$file instanceof \Illuminate\Http\UploadedFile &&
+                !($file instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile)
+            ) {
+                continue;
+            }
+
+            try {
+                // تحديد اسم الملف
+                if (is_string($file)) {
+                    // إذا كان مساراً (String Path)
+                    $extension = pathinfo($file, PATHINFO_EXTENSION);
+                    $fileName = time() . '_' . \Illuminate\Support\Str::random(10) . '.' . $extension;
+                } else {
+                    // إذا كان كائناً (UploadedFile)
+                    $originalName = $file->getClientOriginalName();
+                    $extension = $file->getClientOriginalExtension();
+                    $fileName = time() . '_' . \Illuminate\Support\Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $extension;
+                }
+
+                // 2. الإضافة للمكتبة (بدون حذف السابق)
+                $media = $this
+                    ->addMedia($file)
+                    ->usingFileName($fileName)
+                    ->toMediaCollection('file_report', 'student_reports');
+
+                // 3. تطبيق التحسينات الخاصة بك (Resize & Optimize)
+                $size = ImageSize::MEDIUM; // تأكد من استدعاء الكلاس الصحيح
+
+                // تطبيق السيرفس الخاص بك
+                ImageService::optimize($media->getPath(), ImageQuality::HIGH->value);
+                ImageService::resize($media->getPath(), $size->width(), $size->height());
+
+            } catch (\Exception $e) {
+                \Log::error('Error uploading file report : ' . $e->getMessage());
+            }
         }
+    }
 
-        $this->clearMediaCollection('file_report');
-
-        try {
-            $originalName = $file->getClientOriginalName();
-            $extension = $file->getClientOriginalExtension();
-            $fileName = time() . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $extension;
-
-            $media = $this
-                ->addMedia($file)
-                ->usingFileName($fileName)
-                ->toMediaCollection('file_report', 'student_reports');
-
-            $size = ImageSize::MEDIUM;
-
-            ImageService::optimize($media->getPath() , ImageQuality::HIGH->value);
-            ImageService::resize($media->getPath() , $size->width(), $size->height());
-
-            return $media;
-        } catch (\Exception $e) {
-            \Log::error('Error uploading file report : ' . $e->getMessage());
-            return null;
-        }
+    public function getMultipleImage()
+    {
+        return $this->getMedia('file_report')->map(function ($media) {
+            return $media->getUrl();
+        });
     }
 
     public function getImageAttribute()
