@@ -37,6 +37,15 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
                     Route::post('/', 'store')->name('store');
                     Route::get('/{department}', 'show')->name('show');
                 });
+
+            Route::controller(StudentCompanyController::class)
+                ->prefix('student-companies')
+                ->as('student-companies.')
+                ->group(function () {
+                    Route::get('/', 'index')->name('index');
+                    Route::post('/', 'store')->name('store');
+                    Route::get('/{studentCompany}', 'show')->name('show');
+                });
         });
 
     });

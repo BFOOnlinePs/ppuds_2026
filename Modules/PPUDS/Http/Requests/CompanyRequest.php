@@ -29,10 +29,7 @@ class CompanyRequest extends FormRequest
             'branches.*.city_id'      => ['required', 'integer', 'exists:geolocation_cities,id'],
             'branches.*.latitude'     => ['required', 'numeric'],
             'branches.*.longitude'    => ['required', 'numeric'],
-            'branches.*.opening_time' => ['required', 'date_format:H:i'],
-            'branches.*.closing_time' => ['required', 'date_format:H:i'],
 
-            // Department Validation (Updated)
             'branches.*.departments'         => ['nullable', 'array'],
             'branches.*.departments.*.name'  => ['required', 'string', 'max:255'],
             'branches.*.departments.*.user_id' => ['required', 'integer', 'exists:users,id'], // Supervisor
