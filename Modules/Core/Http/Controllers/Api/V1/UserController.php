@@ -129,7 +129,11 @@ class UserController extends Controller
      */
     public function show(User $user)
     {
-        $user->load('media');
+        $user = QueryBuilder::for(User::class)
+            ->allowedFields(UserResource::allowedFields())
+            ->allowedSorts(UserResource::allowedSorts())
+            ->allowedIncludes(UserResource::allowedIncludes())
+            ->findOrFail($user->id);
 
         return $this->successResponse(
             new UserResource($user),
