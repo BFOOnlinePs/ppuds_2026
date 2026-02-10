@@ -56,6 +56,6 @@ class UserResource extends JsonResource
 
     public static function allowedIncludes(): array
     {
-        return ['media', 'orders', 'roles'];
+        return ['media', 'orders', 'roles', 'studentProfile'];
     }
 }

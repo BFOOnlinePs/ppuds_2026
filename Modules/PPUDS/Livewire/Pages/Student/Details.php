@@ -5,12 +5,14 @@ namespace Modules\PPUDS\Livewire\Pages\Student;
 use App\View\Components\AppLayout;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Livewire;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\Tabs\Tab;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\View;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
@@ -117,56 +119,111 @@ class Details extends Component implements HasForms, HasInfolists
                                     Tabs\Tab::make('Student Profile')
                                         ->icon('heroicon-o-academic-cap')
                                         ->schema([
+                                            Grid::make(3)
+                                                ->schema([
+                                                    Section::make()
+                                                        ->columnSpan(2)
+                                                        ->schema([
+                                                            Grid::make(2)
+                                                                ->schema([
+                                                                    TextInput::make('studentProfile.student_number')
+                                                                        ->label(__('Student Number'))
+                                                                        ->numeric()
+                                                                        ->disabled()
+                                                                        ->required(),
+
+                                                                    Select::make('studentProfile.major_id')
+                                                                        ->label(__('Major'))
+                                                                        ->options(\Modules\PPUDS\Entities\Major::get()->pluck('name', 'id'))
+                                                                        ->disabled()
+                                                                        ->searchable(),
+
+                                                                    TextInput::make('studentProfile.enrollment_year')
+                                                                        ->label(__('Enrollment Year'))
+                                                                        ->numeric()
+                                                                        ->disabled()
+                                                                        ->minLength(4)
+                                                                        ->maxLength(4),
+
+                                                                    TextInput::make('studentProfile.semester_level')
+                                                                        ->label(__('Semester Level'))
+                                                                        ->disabled()
+                                                                        ->numeric(),
+
+                                                                    TextInput::make('studentProfile.tawjihi_gpa')
+                                                                        ->label(__('Tawjihi GPA'))
+                                                                        ->numeric()
+                                                                        ->disabled()
+                                                                        ->step(0.1),
+
+                                                                    DatePicker::make('studentProfile.dob')
+                                                                        ->label(__('Date of Birth'))
+                                                                        ->disabled()
+                                                                        ->displayFormat('d/m/Y'),
+
+                                                                    Select::make('studentProfile.gender')
+                                                                        ->label(__('Gender'))
+                                                                        ->disabled()
+                                                                        ->options([
+                                                                            'male' => __('Male'),
+                                                                            'female' => __('Female'),
+                                                                        ]),
+
+                                                                    Select::make('studentProfile.cv_status')
+                                                                        ->label(__('CV Status'))
+                                                                        ->disabled()
+                                                                        ->options([
+                                                                            'pending' => __('Pending'),
+                                                                            'approved' => __('Approved'),
+                                                                            'rejected' => __('Rejected'),
+                                                                        ]),
+                                                                ])
+                                                        ]),
+
+                                                    Section::make()
+                                                        ->columnSpan(1)
+                                                        ->schema([
+                                                            SpatieMediaLibraryFileUpload::make('cv_file')
+                                                        ]),
+                                                ]),
+                                        ]),
+
+                                    Tabs\Tab::make('Work Experience')
+                                        ->icon('heroicon-o-academic-cap')
+                                        ->schema([
                                             Grid::make(2)
                                                 ->schema([
-                                                    TextInput::make('studentProfile.student_number')
-                                                        ->label(__('Student Number'))
-                                                        ->numeric()
-                                                        ->required(),
 
-                                                    Select::make('studentProfile.major_id')
-                                                        ->label(__('Major'))
-                                                        ->options(\Modules\PPUDS\Entities\Major::get()->pluck('name', 'id')) // تأكد من استيراد كلاس Major
-                                                        ->searchable(),
+                                                ]),
+                                        ]),
 
-                                                    TextInput::make('studentProfile.enrollment_year')
-                                                        ->label(__('Enrollment Year'))
-                                                        ->numeric()
-                                                        ->minLength(4)
-                                                        ->maxLength(4),
+                                    Tabs\Tab::make('Training History')
+                                        ->icon('heroicon-o-academic-cap')
+                                        ->schema([
+                                            Grid::make(2)
+                                                ->schema([
+                                                    Livewire::make(\Modules\PPUDS\Livewire\Pages\Student\Details\StudentCompany\Index::class ,
+                                                        [
+                                                            'studentId' => $this->user->id,
+                                                        ]
+                                                    )
+                                                        ->columnSpanFull()
+                                                    ->lazy()
+                                                ]),
+                                        ]),
 
-                                                    TextInput::make('studentProfile.semester_level')
-                                                        ->label(__('Semester Level'))
-                                                        ->numeric(),
-
-                                                    TextInput::make('studentProfile.tawjihi_gpa')
-                                                        ->label(__('Tawjihi GPA'))
-                                                        ->numeric()
-                                                        ->step(0.1),
-
-                                                    // --- البيانات الشخصية للطالب ---
-                                                    DatePicker::make('studentProfile.dob')
-                                                        ->label(__('Date of Birth'))
-                                                        ->displayFormat('d/m/Y'),
-
-                                                    Select::make('studentProfile.gender')
-                                                        ->label(__('Gender'))
-                                                        ->options([
-                                                            'male' => __('Male'),
-                                                            'female' => __('Female'),
-                                                        ]),
-
-                                                    // --- الحالة والسيرة الذاتية ---
-                                                    Select::make('studentProfile.cv_status')
-                                                        ->label(__('CV Status'))
-                                                        ->options([
-                                                            'pending' => __('Pending'),
-                                                            'approved' => __('Approved'),
-                                                            'rejected' => __('Rejected'),
-                                                        ]),
-
-                                                    // ملاحظة: رفع ملف الـ CV لعلاقة HasOne يتطلب إعدادات خاصة في Filament
-                                                    // يفضل عرضه هنا للقراءة فقط أو استخدام Resource منفصل للطالب لرفع الملفات
+                                    Tabs\Tab::make('Registration')
+                                        ->icon('heroicon-o-academic-cap')
+                                        ->schema([
+                                            Grid::make(2)
+                                                ->schema([
+                                                    Livewire::make(\Modules\PPUDS\Livewire\Pages\Student\Details\Registration\Index::class ,
+                                                        [
+                                                            'studentId' => $this->user->id,
+                                                        ]
+                                                    )
+                                                        ->columnSpanFull()
+                                                        ->lazy()
                                                 ]),
                                         ]),
                                 ])

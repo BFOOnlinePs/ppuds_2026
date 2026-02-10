@@ -10,6 +10,7 @@ use Modules\Core\Entities\User;
 use Modules\Core\Enums\ImageQuality;
 use Modules\Core\Enums\ImageSize;
 use Modules\Core\Services\ImageService;
+use Modules\PPUDS\Enums\SemesterType;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\MediaLibrary\HasMedia;
@@ -43,6 +44,9 @@ class Registration extends Model implements HasMedia
         'created_by',
     ];
 
+    public $casts = [
+        'semester' => SemesterType::class,
+    ];
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
