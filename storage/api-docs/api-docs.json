@@ -6449,6 +6449,347 @@
                 ]
             }
         },
+        "/api/v1/ppuds/attendances": {
+            "get": {
+                "tags": [
+                    "Student Attendances"
+                ],
+                "summary": "List all attendances",
+                "description": "List Student Attendances\n\nRetrieve a paginated list of student attendances with filtering and sorting options.",
+                "operationId": "2cb41b8f8ea7bb6307137270d5195818",
+                "parameters": [
+                    {
+                        "name": "filter[student_company_id]",
+                        "in": "query",
+                        "description": "Filter by Student Company ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
+                        }
+                    },
+                    {
+                        "name": "filter[attendance_date]",
+                        "in": "query",
+                        "description": "Filter by specific date (YYYY-MM-DD)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2024-03-15"
+                        }
+                    },
+                    {
+                        "name": "filter[status]",
+                        "in": "query",
+                        "description": "Filter by status (present, absent, late, excused)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "present"
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "Sort results (e.g. -attendance_date, created_at)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "-attendance_date"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Number of items per page",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 15
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful retrieval",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Attendances retrieved successfully"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "student_company_id": {
+                                                        "type": "integer",
+                                                        "example": 5
+                                                    },
+                                                    "attendance_date": {
+                                                        "type": "string",
+                                                        "format": "date",
+                                                        "example": "2024-03-15"
+                                                    },
+                                                    "check_in": {
+                                                        "properties": {
+                                                            "time": {
+                                                                "type": "string",
+                                                                "example": "08:00:00"
+                                                            },
+                                                            "latitude": {
+                                                                "type": "number",
+                                                                "format": "float",
+                                                                "example": 31.9522
+                                                            },
+                                                            "longitude": {
+                                                                "type": "number",
+                                                                "format": "float",
+                                                                "example": 35.2332
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    },
+                                                    "status": {
+                                                        "type": "string",
+                                                        "example": "present"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "meta": {
+                                            "description": "Pagination metadata",
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/attendances/check-in": {
+            "post": {
+                "tags": [
+                    "Student Attendances"
+                ],
+                "summary": "Student Check-In",
+                "description": "Student Check-In\n\nRecord a student's arrival at the company location.",
+                "operationId": "2a93677dbf21b8d008ca80c182cf1431",
+                "requestBody": {
+                    "description": "Check-in data including location",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "student_company_id",
+                                    "latitude",
+                                    "longitude"
+                                ],
+                                "properties": {
+                                    "student_company_id": {
+                                        "description": "The ID of the student company record",
+                                        "type": "integer",
+                                        "example": 10
+                                    },
+                                    "latitude": {
+                                        "description": "Current device latitude",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 31.9038
+                                    },
+                                    "longitude": {
+                                        "description": "Current device longitude",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 35.2034
+                                    },
+                                    "description": {
+                                        "description": "Optional notes",
+                                        "type": "string",
+                                        "example": "Arrived on time"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Check-in successful",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Checked in successfully"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 50
+                                                },
+                                                "check_in_time": {
+                                                    "type": "string",
+                                                    "example": "08:05:00"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error or Already Checked In",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "You have already checked in today."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/attendances/check-out": {
+            "post": {
+                "tags": [
+                    "Student Attendances"
+                ],
+                "summary": "Student Check-Out",
+                "description": "Student Check-Out\n\nRecord a student's departure. Must have an existing check-in for today.",
+                "operationId": "a0e231a5ee8ae02dfcf687824c54d56c",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "student_company_id",
+                                    "latitude",
+                                    "longitude"
+                                ],
+                                "properties": {
+                                    "student_company_id": {
+                                        "type": "integer",
+                                        "example": 10
+                                    },
+                                    "latitude": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 31.9038
+                                    },
+                                    "longitude": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 35.2034
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Check-out successful",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Checked out successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No active check-in found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "No active check-in found for today."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/ppuds/student-companies": {
             "get": {
                 "tags": [
@@ -7420,6 +7761,10 @@
         }
     },
     "tags": [
+        {
+            "name": "Student Attendances",
+            "description": "API Endpoints for managing student check-ins and check-outs"
+        },
         {
             "name": "Branch",
             "description": "Branch"

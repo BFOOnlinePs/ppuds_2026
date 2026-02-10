@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\StudentAttendance;
+use Modules\PPUDS\Http\Requests\StudentAttendanceRequest;
 use Modules\PPUDS\Transformers\V1\StudentAttendanceResource;
 use Spatie\QueryBuilder\QueryBuilder;
 
@@ -164,7 +165,7 @@ class StudentAttendanceController extends Controller
      * )
      * )
      */
-    public function checkIn(Request $request)
+    public function checkIn(StudentAttendanceRequest $request)
     {
         $request->validate([
             'student_company_id' => 'required|exists:student_companies,id',
@@ -236,14 +237,8 @@ class StudentAttendanceController extends Controller
      * )
      * )
      */
-    public function checkOut(Request $request)
+    public function checkOut(StudentAttendanceRequest $request)
     {
-        $request->validate([
-            'student_company_id' => 'required|exists:student_companies,id',
-            'latitude'           => 'required|numeric',
-            'longitude'          => 'required|numeric',
-        ]);
-
         $attendance = StudentAttendance::where('student_company_id', $request->student_company_id)
             ->where('attendance_date', now()->toDateString())
             ->whereNull('check_out')
