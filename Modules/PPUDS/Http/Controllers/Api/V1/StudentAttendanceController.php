@@ -233,11 +233,11 @@ class StudentAttendanceController extends Controller
      */
     public function checkOut(StudentAttendanceRequest $request)
     {
-//        $attendance = StudentAttendance::where('student_company_id', $request->student_company_id)
-//            ->where('attendance_date', now()->toDateString())
-//            ->whereNull('check_out')
-//            ->first();
-//
+        $attendance = StudentAttendance::where('student_company_id', $request->student_company_id)
+            ->where('attendance_date', now()->toDateString())
+            ->whereNull('check_out')
+            ->first();
+
 //        if (! $attendance) {
 //            return $this->errorResponse(__('No active check-in found for today.'), 404);
 //        }
