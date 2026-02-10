@@ -22,7 +22,7 @@ use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\CompanyDepartment;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Entities\Registration;
-use Modules\PPUDS\Enums\TrainingStatus;
+use Modules\PPUDS\Enums\Enums\TrainingStatus;
 use Modules\PPUDS\Settings\GeneralSettings;
 
 class Add extends Component implements HasForms, HasActions

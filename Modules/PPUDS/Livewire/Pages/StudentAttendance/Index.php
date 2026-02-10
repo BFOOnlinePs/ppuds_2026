@@ -38,7 +38,7 @@ use Modules\PPUDS\Entities\Major;
 use Modules\PPUDS\Entities\StudentAttendance;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Entities\StudentReport;
-use Modules\PPUDS\Enums\AttendanceStatus;
+use Modules\PPUDS\Enums\Enums\AttendanceStatus;
 
 class Index extends Component implements HasForms, HasTable
 {

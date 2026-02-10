@@ -10,7 +10,7 @@ use Modules\Core\Entities\User;
 use Modules\Core\Enums\ImageQuality;
 use Modules\Core\Enums\ImageSize;
 use Modules\Core\Services\ImageService;
-use Modules\PPUDS\Enums\SemesterType;
+use Modules\PPUDS\Enums\Enums\SemesterType;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\MediaLibrary\HasMedia;

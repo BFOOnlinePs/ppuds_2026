@@ -3,8 +3,8 @@
 namespace Modules\PPUDS\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Modules\PPUDS\Enums\CompanyStatus;
-use Modules\PPUDS\Enums\TrainingStatus;
+use Modules\PPUDS\Enums\Enums\CompanyStatus;
+use Modules\PPUDS\Enums\Enums\TrainingStatus;
 
 class StudentCompanyRequest extends FormRequest
 {

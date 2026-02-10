@@ -1,9 +1,9 @@
 <?php
 
-use Modules\PPUDS\Enums\GigEvaluationStatus;
-use Modules\PPUDS\Enums\LoginMethod;
-use Modules\PPUDS\Enums\ReportStatus;
-use Modules\PPUDS\Enums\SemesterType;
+use Modules\PPUDS\Enums\Enums\GigEvaluationStatus;
+use Modules\PPUDS\Enums\Enums\LoginMethod;
+use Modules\PPUDS\Enums\Enums\ReportStatus;
+use Modules\PPUDS\Enums\Enums\SemesterType;
 use Spatie\LaravelSettings\Migrations\SettingsMigration;
 
 return new class extends SettingsMigration

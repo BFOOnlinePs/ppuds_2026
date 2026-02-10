@@ -3,8 +3,8 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use Modules\PPUDS\Enums\CvStatus;
-use Modules\PPUDS\Enums\StudentGender;
+use Modules\PPUDS\Enums\Enums\CvStatus;
+use Modules\PPUDS\Enums\Enums\StudentGender;
 
 return new class extends Migration
 {

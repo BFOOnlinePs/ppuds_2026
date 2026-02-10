@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\Branch\Entities\Branch;
 use Modules\Core\Entities\User;
-use Modules\PPUDS\Enums\CompanyStatus;
+use Modules\PPUDS\Enums\Enums\CompanyStatus;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Astrotomic\Translatable\Contracts\Translatable as TranslatableContract;

@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Modules\Core\Entities\User;
 use Modules\PPUDS\Entities\Major;
-use Modules\PPUDS\Enums\StudentGender;
+use Modules\PPUDS\Enums\Enums\StudentGender;
 
 class ProcessStudentSync implements ShouldQueue
 {

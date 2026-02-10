@@ -6,7 +6,7 @@ use Astrotomic\Translatable\Translatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\Core\Entities\User;
-use Modules\PPUDS\Enums\CourseType;
+use Modules\PPUDS\Enums\Enums\CourseType;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Astrotomic\Translatable\Contracts\Translatable as TranslatableContract;

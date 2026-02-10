@@ -3,7 +3,7 @@
 namespace Modules\PPUDS\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Modules\PPUDS\Enums\CompanyStatus;
+use Modules\PPUDS\Enums\Enums\CompanyStatus;
 
 class CompanyDepartmentRequest extends FormRequest
 {

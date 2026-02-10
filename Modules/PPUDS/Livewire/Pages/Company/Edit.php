@@ -34,7 +34,7 @@ use Modules\GeoLocation\Entities\Country;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\CompanyCategory;
 use Modules\PPUDS\Entities\CompanyDepartment;
-use Modules\PPUDS\Enums\CompanyStatus;
+use Modules\PPUDS\Enums\Enums\CompanyStatus;
 
 class Edit extends Component implements HasForms, HasActions
 {

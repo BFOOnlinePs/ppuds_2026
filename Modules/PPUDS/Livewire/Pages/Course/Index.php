@@ -26,7 +26,7 @@ use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\Textarea;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\Course;
-use Modules\PPUDS\Enums\CourseType;
+use Modules\PPUDS\Enums\Enums\CourseType;
 
 class Index extends Component implements HasTable, HasForms
 {

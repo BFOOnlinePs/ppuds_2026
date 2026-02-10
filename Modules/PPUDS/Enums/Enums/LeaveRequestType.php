@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\PPUDS\Enums;
+namespace Modules\PPUDS\Enums\Enums;
 
 use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasIcon; // إضافة مفيدة للعرض

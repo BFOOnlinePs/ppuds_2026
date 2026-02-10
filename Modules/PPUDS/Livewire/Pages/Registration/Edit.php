@@ -20,7 +20,7 @@ use Masmerise\Toaster\Toaster;
 use Modules\Core\Entities\User;
 use Modules\PPUDS\Entities\Course;
 use Modules\PPUDS\Entities\Registration;
-use Modules\PPUDS\Enums\SemesterType;
+use Modules\PPUDS\Enums\Enums\SemesterType;
 
 class Edit extends Component implements HasForms, HasActions
 {

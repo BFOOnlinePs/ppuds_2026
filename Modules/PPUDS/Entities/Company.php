@@ -16,7 +16,7 @@ use Modules\Core\Enums\ImageSize;
 use Modules\Core\Services\ImageService;
 use Modules\GeoLocation\Entities\City;
 use Modules\GeoLocation\Entities\Country;
-use Modules\PPUDS\Enums\CompanyStatus;
+use Modules\PPUDS\Enums\Enums\CompanyStatus;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Astrotomic\Translatable\Contracts\Translatable as TranslatableContract;

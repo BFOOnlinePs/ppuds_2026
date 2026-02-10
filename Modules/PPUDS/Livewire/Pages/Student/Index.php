@@ -23,7 +23,7 @@ use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\StudnetProfile;
-use Modules\PPUDS\Enums\StudentGender;
+use Modules\PPUDS\Enums\Enums\StudentGender;
 use Modules\PPUDS\Services\PpuApiService;
 use Modules\PPUDS\Settings\GeneralSettings;
 

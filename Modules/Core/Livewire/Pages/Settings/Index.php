@@ -21,10 +21,10 @@ use Modules\Core\Events\RefreshNotificationEvent;
 use Modules\Core\Notifications\GeneralNotification;
 use Modules\Core\Settings\GeneralSettings;
 use Modules\PPUDS\Settings\GeneralSettings as PPUDSGeneralSettings;
-use Modules\PPUDS\Enums\SemesterType;
-use Modules\PPUDS\Enums\ReportStatus;
-use Modules\PPUDS\Enums\LoginMethod;
-use Modules\PPUDS\Enums\GigEvaluationStatus;
+use Modules\PPUDS\Enums\Enums\SemesterType;
+use Modules\PPUDS\Enums\Enums\ReportStatus;
+use Modules\PPUDS\Enums\Enums\LoginMethod;
+use Modules\PPUDS\Enums\Enums\GigEvaluationStatus;
 
 class Index extends Component implements HasForms
 {

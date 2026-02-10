@@ -31,8 +31,8 @@ use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\Announcement;
 use Modules\PPUDS\Entities\LeaveRequest;
 use Modules\PPUDS\Entities\StudentCompany;
-use Modules\PPUDS\Enums\LeaveRequestStatus;
-use Modules\PPUDS\Enums\LeaveRequestType;
+use Modules\PPUDS\Enums\Enums\LeaveRequestStatus;
+use Modules\PPUDS\Enums\Enums\LeaveRequestType;
 
 class Index extends Component implements HasTable, HasForms
 {

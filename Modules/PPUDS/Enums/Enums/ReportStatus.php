@@ -1,31 +1,28 @@
 <?php
 
-namespace Modules\PPUDS\Enums;
+namespace Modules\PPUDS\Enums\Enums;
 
 use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasLabel;
 
-enum SemesterType : int implements HasLabel, HasColor
+enum ReportStatus : int implements HasLabel, HasColor
 {
-    case FIRST  = 1;
-    case SECOND = 2;
-    case SUMMER = 3;
+    case OPEN   = 1;
+    case CLOSED = 2;
 
     public function getLabel(): ?string
     {
         return match ($this) {
-            self::FIRST  => __('First Semester'),
-            self::SECOND => __('Second Semester'),
-            self::SUMMER => __('Summer Semester'),
+            self::OPEN   => __('Open'),
+            self::CLOSED => __('Closed'),
         };
     }
 
     public function getColor(): ?string
     {
         return match ($this) {
-            self::FIRST  => 'info',
-            self::SECOND => 'info',
-            self::SUMMER => 'warning',
+            self::OPEN   => 'success',
+            self::CLOSED => 'danger',
         };
     }
 

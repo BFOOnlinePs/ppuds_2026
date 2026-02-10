@@ -29,7 +29,7 @@ use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Entities\Course; // ✅ تأكد من استدعاء مودل الكورس
-use Modules\PPUDS\Enums\SemesterType;
+use Modules\PPUDS\Enums\Enums\SemesterType;
 
 class Index extends Component implements HasTable, HasForms
 {

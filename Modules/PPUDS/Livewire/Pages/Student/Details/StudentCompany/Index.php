@@ -28,8 +28,8 @@ use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\Course;
 use Modules\PPUDS\Entities\StudentCompany;
-use Modules\PPUDS\Enums\SemesterType;
-use Modules\PPUDS\Enums\TrainingStatus;
+use Modules\PPUDS\Enums\Enums\SemesterType;
+use Modules\PPUDS\Enums\Enums\TrainingStatus;
 use Modules\PPUDS\Settings\GeneralSettings;
 
 class Index extends Component implements HasForms, HasTable
