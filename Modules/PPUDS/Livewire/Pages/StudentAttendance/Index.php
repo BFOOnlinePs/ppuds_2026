@@ -3,7 +3,6 @@
 namespace Modules\PPUDS\Livewire\Pages\StudentAttendance;
 
 use App\View\Components\AppLayout;
-use AttendanceStatus;
 use Filament\Forms;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -30,6 +29,7 @@ use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\Major;
 use Modules\PPUDS\Entities\StudentAttendance;
 use Modules\PPUDS\Entities\StudentCompany;
+use Modules\PPUDS\Enums\AttendanceStatus;
 
 class Index extends Component implements HasForms, HasTable
 {
