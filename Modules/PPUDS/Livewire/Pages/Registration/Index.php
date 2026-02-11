@@ -61,12 +61,6 @@ class Index extends Component implements HasTable, HasForms
                 // 3. عمود الفصل والسنة
                 TextColumn::make('semester')
                     ->label(__('Term'))
-                    ->formatStateUsing(function ($state, $record) {
-                        $semesterName = SemesterType::tryFrom($state)?->getLabel() ??
-                            __('Semester') . ' ' . $state;
-                        return $semesterName . ' - ' .
-                            $record->year;
-                    })
                     ->icon('solar-calendar-date-linear'),
                 // تم إزالة sortable لتجنب المشاكل حالياً
 

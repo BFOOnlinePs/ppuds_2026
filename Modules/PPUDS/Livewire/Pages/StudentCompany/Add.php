@@ -20,8 +20,8 @@ use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\CompanyDepartment;
 use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Entities\StudentCompany;
+use Modules\PPUDS\Enums\TrainingStatus;
 use Modules\PPUDS\Settings\GeneralSettings;
-use TrainingStatus;
 
 // نحتاجه لحقل الطالب
 // لجلب قيم الحقول الأخرى (للفلترة)
@@ -64,7 +64,9 @@ class Add extends Component implements HasForms, HasActions
                                                 ->where('year', app(GeneralSettings::class)->year)
                                                 ->get()
                                                 ->mapWithKeys(function ($reg) {
-                                                    return [$reg->id => "{$reg->student->studentProfile->student_number} - {$reg->student->name} - {$reg->course->name} ({$reg->semester}/{$reg->year})"];
+                                                    $semesterLabel = $reg->semester?->getLabel() ?? $reg->semester?->value;
+
+                                                    return [$reg->id => "{$reg->student->studentProfile->student_number} - {$reg->student->name} - {$reg->course->name} ({$semesterLabel}/{$reg->year})"];
                                                 });
                                         }),
                                 ]),
@@ -152,6 +154,8 @@ class Add extends Component implements HasForms, HasActions
 
         $registration = Registration::findOrFail($data['registration_id']);
         $data['student_id'] = $registration->student_id;
+
+        dd($data);
 
         StudentCompany::create($data);
 

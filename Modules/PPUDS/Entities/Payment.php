@@ -75,10 +75,10 @@ class Payment extends Model implements HasMedia
         return $this->belongsTo(User::class, 'supervisor_id');
     }
 
-    public function registration()
-    {
-        $this->studentCompany?->registration;
-    }
+//    public function registration()
+//    {
+//        $this->studentCompany?->registration;
+//    }
 
     public function createdBy(): BelongsTo
     {

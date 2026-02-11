@@ -185,6 +185,10 @@ class User extends Authenticatable implements HasMedia, WirechatUser
 
         $this->addMediaCollection('avatar')
             ->singleFile()
+            ->useFallbackUrl($fallbackDataUrl);
+
+        $this->addMediaCollection('cover_photo')
+            ->singleFile()
             ->useFallbackUrl($fallbackDataUrl); // استخدم الرابط المُعدل
     }
 
@@ -257,13 +261,6 @@ class User extends Authenticatable implements HasMedia, WirechatUser
             ->toMediaCollection('avatar', 'media');
     }
 
-/* <<<<<<<<<<<<<<  ✨ Windsurf Command ⭐ >>>>>>>>>>>>>>>> */
-    /**
-     * Get the URL of the user's profile image.
-     *
-     * @return string
-     */
-/* <<<<<<<<<<  eec7d621-ea2f-409c-a43c-6d3525902173  >>>>>>>>>>> */
     public function getProfileImageUrlAttribute(): string
     {
         $mediaUrl = $this->getFirstMediaUrl('avatar');

@@ -87,11 +87,14 @@ class Details extends Component implements HasForms, HasInfolists
                                                         ->schema([
                                                             TextInput::make('name')
                                                                 ->label(__('Name'))
+                                                                ->disabled()
                                                                 ->required(),
 
                                                             TextInput::make('email')
                                                                 ->label(__('Email'))
                                                                 ->email()
+                                                                ->disabled()
+                                                                ->unique(ignoreRecord: true,ignorable: $this->user)
                                                                 ->required(),
 
                                                             TextInput::make('password')
@@ -104,12 +107,18 @@ class Details extends Component implements HasForms, HasInfolists
 
                                                     Grid::make(1)
                                                         ->schema([
+                                                            SpatieMediaLibraryFileUpload::make('cover_photo')
+                                                                ->disk('media')
+                                                                ->collection('cover_photo')
+                                                                ->imageEditor()
+                                                                ->alignCenter(),
+
                                                             SpatieMediaLibraryFileUpload::make('avatar')
                                                                 ->disk('media')
                                                                 ->collection('avatar')
                                                                 ->image()
                                                                 ->imageEditor()
-                                                                ->avatar() // جعلها دائرية للمعاينة
+                                                                ->avatar()
                                                                 ->alignCenter()
                                                         ])
                                                         ->columnSpan(1)
@@ -267,28 +276,19 @@ class Details extends Component implements HasForms, HasInfolists
     {
         $this->validate();
 
+        $data = $this->form->getState();
+
         DB::transaction(function () {
 
-            $userData = [
-                'name'          => $this->data['name'],
-                'email'         => $this->data['email'],
-                'phone'         => $this->data['phone'],
-                'password'      => Hash::make($this->data['password']),
-            ];
+            $user = User::firstOrCreate([
+                'email' => $this->data['email'],
+            ], [
+                'name' => $this->data['name'],
+                'email' => $this->data['email'],
+                'password' => Hash::make($this->data['password']),
+            ]);
 
-            $user = User::create($userData);
-            $user->generateAvatar();
-
-            $user->assignRole('student');
-
-            $profileData = collect($this->data)
-                ->except(['name', 'email', 'password', 'password_confirmation', 'roles'])
-                ->toArray();
-
-            StudnetProfile::create(array_merge($profileData, [
-                'user_id' => $user->id,
-                'cv_status' => 1,
-            ]));
+            $this->form->model($user)->saveRelationships();
 
             // Notification::make()->title('Saved successfully')->success()->send();
         });

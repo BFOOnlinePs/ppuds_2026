@@ -4,7 +4,9 @@ namespace Modules\PPUDS\Livewire\Pages\Student\Details\Payment;
 
 use App\View\Components\AppLayout;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -21,6 +23,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
+use Modules\Core\Entities\Currency;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
@@ -29,6 +32,7 @@ use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\Course;
 use Modules\PPUDS\Entities\Payment;
 use Modules\PPUDS\Entities\StudentCompany;
+use Modules\PPUDS\Enums\PaymentStatus;
 use Modules\PPUDS\Enums\SemesterType;
 use Modules\PPUDS\Enums\TrainingStatus;
 use Modules\PPUDS\Settings\GeneralSettings;
@@ -43,7 +47,6 @@ class Index extends Component implements HasForms, HasTable
     public function mount(?int $studentId = null)
     {
         $this->studentId = $studentId;
-        dd(Payment::whereHas('studentCompany', fn ($q) => $q->where('student_id', $this->studentId))->get());
     }
 
     public function table(Table $table): Table
@@ -51,8 +54,23 @@ class Index extends Component implements HasForms, HasTable
         return $table
             ->query(fn () => Payment::query()->with(['studentCompany', 'currency', 'supervisor', 'createdBy'])->whereHas('studentCompany', fn ($q) => $q->where('student_id', $this->studentId)))
             ->columns([
-                TextColumn::make('branch.name')
+                TextColumn::make('studentCompany.company.name')
+                    ->label(__('Comapny'))
+                    ->toggleable()
+                    ->placeholder('—'),
+
+                TextColumn::make('studentCompany.branch.name')
                     ->label(__('Branch'))
+                    ->toggleable()
+                    ->placeholder('—'),
+
+                TextColumn::make('payment_value')
+                    ->label(__('Payment Value'))
+                    ->toggleable()
+                    ->placeholder('—'),
+
+                TextColumn::make('currency.name')
+                    ->label(__('Currency'))
                     ->toggleable()
                     ->placeholder('—'),
 
@@ -60,7 +78,6 @@ class Index extends Component implements HasForms, HasTable
                     ->label(__('Status'))
                     ->badge()
                     ->sortable(),
-
 
                 TextColumn::make('created_at')
                     ->label(__('Created At'))
@@ -76,26 +93,50 @@ class Index extends Component implements HasForms, HasTable
                     ->label(__('Add Payment'))
                     ->form(function ($record, $form){
                         return $form->schema([
-                            Select::make('student_company_id')
-                                ->label(__('Student Company'))
-                                ->options(function () {
-                                    return StudentCompany::with(['student', 'company', 'branch'])
-                                    ->get()
-                                        ->mapWithKeys(function ($item) {
-                                            $studentName = $item->student->name ?? __('Unknown Student');
-                                            $companyName = $item->company->name ?? __('Unknown Company');
-                                            $branch      = $item->branch->name  ?? __('Unknown Branch');
+                            Grid::make(3)
+                                ->schema([
+                                    Section::make('')
+                                        ->columnSpan(2)
+                                        ->schema([
+                                            Select::make('student_company_id')
+                                                ->label(__('Student Company'))
+                                                ->options(function () {
+                                                    return StudentCompany::with(['student', 'company', 'branch'])
+                                                        ->where('student_id', $this->studentId)
+                                                        ->get()
+                                                        ->mapWithKeys(function ($item) {
+                                                            $studentName = $item->student->name ?? __('Unknown Student');
+                                                            $companyName = $item->company->name ?? __('Unknown Company');
+                                                            $branch      = $item->branch->name  ?? __('Unknown Branch');
 
-                                            return [$item->id => "{$studentName} - {$companyName} - {$branch}"];
-                                        });
-                                })
-                                ->searchable()
-                                ->preload(),
+                                                            return [$item->id => "{$studentName} - {$companyName} - {$branch}"];
+                                                        });
+                                                })
+                                                ->searchable()
+                                                ->required()
+                                                ->preload(),
 
-                            TextInput::make('payment_value')
-                                ->label(__('Payment Value'))
-                                ->numeric()
-                                ->required(),
+                                            TextInput::make('payment_value')
+                                                ->label(__('Payment Value'))
+                                                ->numeric()
+                                                ->required(),
+
+                                            Select::make('currency_id')
+                                                ->label(__('Currency'))
+                                                ->searchable()
+                                                ->options(Currency::get()->pluck('name', 'id'))
+                                                ->required()
+                                        ]),
+
+                                    Section::make('')
+                                        ->columnSpan(1)
+                                        ->schema([
+                                            SpatieMediaLibraryFileUpload::make('receipt')
+                                                ->disk('payments')
+                                                ->collection('receipt')
+                                                ->imageEditor()
+                                        ])
+                                ])
                         ]);
                     })
                     ->using(function (array $data){
@@ -112,11 +153,11 @@ class Index extends Component implements HasForms, HasTable
         return [
             // فلتر الحالة
             SelectFilter::make('status')
-                ->label(__('Training Status'))
-                ->options(TrainingStatus::class)
+                ->label(__('Payment Status'))
+                ->options(PaymentStatus::class)
                 ->native(false),
 
-            SelectFilter::make('company_id')
+            SelectFilter::make('studentCompany.company.company_id')
                 ->label(__('Company'))
                 ->options(Company::get()->pluck('name', 'id'))
                 ->searchable()
