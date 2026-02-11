@@ -6,12 +6,12 @@ use App\View\Components\AppLayout;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Forms\Components\Grid;
-use Filament\Forms\Components\Group; // تمت الاضافة
+use Filament\Forms\Components\Group;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
-use Filament\Forms\Components\Tabs; // تمت الاضافة
+use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
@@ -23,8 +23,8 @@ use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Blade; // تمت الاضافة
-use Illuminate\Support\HtmlString; // تمت الاضافة
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\HtmlString;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Branch\Entities\Branch;
@@ -34,7 +34,12 @@ use Modules\GeoLocation\Entities\Country;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\CompanyCategory;
 use Modules\PPUDS\Entities\CompanyDepartment;
-use Modules\PPUDS\Enums\Enums\CompanyStatus;
+use Modules\PPUDS\Enums\CompanyStatus;
+
+// تمت الاضافة
+// تمت الاضافة
+// تمت الاضافة
+// تمت الاضافة
 
 class Edit extends Component implements HasForms, HasActions
 {

@@ -5,8 +5,6 @@ namespace Modules\PPUDS\Livewire\Pages\Registration;
 use App\View\Components\AppLayout;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
-use Filament\Forms\Components\Actions;
-use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Group;
 use Filament\Forms\Components\Section;
@@ -20,8 +18,8 @@ use Masmerise\Toaster\Toaster;
 use Modules\Core\Entities\User;
 use Modules\PPUDS\Entities\Course;
 use Modules\PPUDS\Entities\Registration;
-use Modules\PPUDS\Enums\Enums\SemesterType;
 use Modules\PPUDS\Settings\GeneralSettings;
+use SemesterType;
 
 class Add extends Component implements HasForms, HasActions
 {

@@ -15,13 +15,8 @@ use Illuminate\Database\Eloquent\Collection;
 use Livewire\Component;
 use Filament\Forms;
 use Filament\Forms\Components\TextInput;
-use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\Filter;
-use GuzzleHttp\Promise\Create;
-use Illuminate\Database\Eloquent\Builder;
 use Masmerise\Toaster\Toaster;
-use Modules\Core\Entities\User;
 use Modules\Core\Filament\Forms\Components\CreateAction;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
@@ -29,8 +24,6 @@ use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\Textarea;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\Company;
-use Modules\PPUDS\Entities\CompanyCategory;
-use Modules\PPUDS\Entities\StudnetProfile;
 use View;
 
 class Index extends Component implements HasTable, HasForms

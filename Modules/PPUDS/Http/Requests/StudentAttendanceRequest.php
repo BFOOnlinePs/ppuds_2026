@@ -6,7 +6,6 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\Enums\CompanyStatus;
-use Modules\PPUDS\Enums\Enums\TrainingStatus;
 
 class StudentAttendanceRequest extends FormRequest
 {
@@ -18,6 +17,21 @@ class StudentAttendanceRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'attendance_date' => [
+                'nullable',
+                'date',
+            ],
+
+            'check_in' => [
+                'nullable',
+                'timezone',
+            ],
+
+            'check_out' => [
+                'nullable',
+                'timezone',
+            ],
+
             'student_company_id' => [
                 'required',
                 'integer',

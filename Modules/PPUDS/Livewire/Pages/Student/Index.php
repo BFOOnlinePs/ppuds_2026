@@ -3,29 +3,26 @@
 namespace Modules\PPUDS\Livewire\Pages\Student;
 
 use App\View\Components\AppLayout;
+use Filament\Forms;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Section;
-use Filament\Forms\Concerns\InteractsWithForms;
-use Filament\Tables\Contracts\HasTable;
-use Filament\Forms\Contracts\HasForms;
-use Filament\Tables\Concerns\InteractsWithTable;
-use Filament\Tables\Table;
-use Livewire\Component;
-use Filament\Forms;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Filters\Filter;
+use Filament\Tables\Table;
+use Livewire\Component;
 use Masmerise\Toaster\Toaster;
-use Modules\Core\Filament\Forms\Components\CreateAction;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
-use Modules\Core\Filament\Forms\Components\EditAction;
-use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\StudnetProfile;
-use Modules\PPUDS\Enums\Enums\StudentGender;
 use Modules\PPUDS\Services\PpuApiService;
 use Modules\PPUDS\Settings\GeneralSettings;
+use StudentGender;
 
 class Index extends Component implements HasTable, HasForms
 {

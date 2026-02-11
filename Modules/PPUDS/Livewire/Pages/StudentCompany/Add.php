@@ -9,21 +9,22 @@ use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Group;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Hidden; // نحتاجه لحقل الطالب
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
-use Filament\Forms\Get; // لجلب قيم الحقول الأخرى (للفلترة)
-use Illuminate\Support\Collection;
+use Filament\Forms\Get;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Branch\Entities\Branch;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\CompanyDepartment;
-use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Entities\Registration;
-use Modules\PPUDS\Enums\Enums\TrainingStatus;
+use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Settings\GeneralSettings;
+use TrainingStatus;
+
+// نحتاجه لحقل الطالب
+// لجلب قيم الحقول الأخرى (للفلترة)
 
 class Add extends Component implements HasForms, HasActions
 {

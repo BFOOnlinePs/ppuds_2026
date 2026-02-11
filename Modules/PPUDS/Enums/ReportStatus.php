@@ -1,28 +1,28 @@
 <?php
 
-namespace Modules\PPUDS\Enums\Enums;
+namespace Modules\PPUDS\Enums;
 
 use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasLabel;
 
-enum GigEvaluationStatus : int implements HasLabel, HasColor
+enum ReportStatus : int implements HasLabel, HasColor
 {
-    case ACTIVE     = 1;
-    case NOT_ACTIVE = 2;
+    case OPEN   = 1;
+    case CLOSED = 2;
 
     public function getLabel(): ?string
     {
         return match ($this) {
-            self::ACTIVE     => __('Active'),
-            self::NOT_ACTIVE => __('Not Active'),
+            self::OPEN   => __('Open'),
+            self::CLOSED => __('Closed'),
         };
     }
 
     public function getColor(): ?string
     {
         return match ($this) {
-            self::ACTIVE     => 'success',
-            self::NOT_ACTIVE => 'danger',
+            self::OPEN   => 'success',
+            self::CLOSED => 'danger',
         };
     }
 

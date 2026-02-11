@@ -3,33 +3,34 @@
 namespace Modules\PPUDS\Livewire\Pages\Student\Details\Registration;
 
 use App\View\Components\AppLayout;
-use Filament\Forms\Concerns\InteractsWithForms;
-use Filament\Tables\Actions\BulkAction;
-use Filament\Tables\Actions\BulkActionGroup;
-use Filament\Tables\Contracts\HasTable;
-use Filament\Forms\Contracts\HasForms;
-use Filament\Tables\Concerns\InteractsWithTable;
-use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Collection;
-use Livewire\Component;
 use Filament\Forms;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
+use Filament\Tables\Actions\BulkAction;
+use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\SelectFilter;
-use Filament\Tables\Filters\Filter;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Enums\FiltersLayout;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Core\Entities\User;
-use Modules\Core\Filament\Forms\Components\CreateAction;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
+use Modules\PPUDS\Entities\Course;
 use Modules\PPUDS\Entities\Registration;
-use Modules\PPUDS\Entities\Course; // ✅ تأكد من استدعاء مودل الكورس
-use Modules\PPUDS\Enums\Enums\SemesterType;
+use Modules\PPUDS\Enums\SemesterType;
+
+// ✅ تأكد من استدعاء مودل الكورس
 
 class Index extends Component implements HasTable, HasForms
 {

@@ -1,9 +1,8 @@
 <?php
 
-namespace Modules\PPUDS\Livewire\Pages\StudentAttendance;
+namespace Modules\PPUDS\Livewire\Pages\Student\Details\StudentAttendance;
 
 use App\View\Components\AppLayout;
-use AttendanceStatus;
 use Filament\Forms;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -30,16 +29,24 @@ use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\Major;
 use Modules\PPUDS\Entities\StudentAttendance;
 use Modules\PPUDS\Entities\StudentCompany;
+use Modules\PPUDS\Enums\AttendanceStatus;
 
 class Index extends Component implements HasForms, HasTable
 {
     use InteractsWithForms;
     use InteractsWithTable;
 
+    public ?int $studentId = null;
+
+    public function mount(?int $studentId = null)
+    {
+        $this->studentId = $studentId;
+    }
+
     public function table(Table $table)
     {
         return $table
-            ->query(fn () => StudentAttendance::query()->with(['studentCompany', 'studentReport']))
+            ->query(fn () => StudentAttendance::query()->whereHas('studentCompany', fn ($query) => $query->where('student_id', $this->studentId))->with(['studentCompany', 'studentReport']))
             ->columns([
                 TextColumn::make('studentCompany.student.name')
                     ->label(__('Student Name'))

@@ -2,19 +2,16 @@
 
 namespace Modules\PPUDS\Entities;
 
-use Astrotomic\Translatable\Contracts\Translatable as TranslatableContract;
-use Astrotomic\Translatable\Translatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
-use Modules\Branch\Entities\Branch;
+use Modules\Core\Entities\Currency;
 use Modules\Core\Entities\User;
 use Modules\Core\Enums\ImageQuality;
 use Modules\Core\Enums\ImageSize;
 use Modules\Core\Services\ImageService;
-use Modules\PPUDS\Enums\CompanyStatus;
+use Modules\PPUDS\Enums\PaymentStatus;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Image\Enums\Fit;
@@ -22,39 +19,36 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-
-class Company extends Model implements TranslatableContract, HasMedia
+class Payment extends Model implements HasMedia
 {
     use LogsActivity;
-    use Translatable;
-    use softDeletes;
+    use SoftDeletes;
     use InteractsWithMedia;
 
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
 
-        $this->setTable(config('ppuds.table_prefix') . 'companies');
+        // تعيين اسم الجدول بناءً على الكونفيج
+        $this->setTable(config('ppuds.table_prefix') . 'payments');
     }
 
     protected $fillable = [
-        'id',
-        'website',
-        'company_category_id',
+        'student_company_id',
+        'reference_id',
+        'payment_value',
+        'student_role',
         'status',
+        'currency_id',
+        'company_notes',
+        'supervisor_id',
         'created_by',
     ];
 
     protected $casts = [
-        'status'    => CompanyStatus::class
+        'payment_value' => 'decimal:2',
+         'status' => PaymentStatus::class, // قم بتفعيل هذا السطر إذا أنشأت Enum خاص بالحالة
     ];
-
-    public $translatedAttributes = [
-        'name',
-        'description'
-    ];
-
-    public $useTranslationFallback = true;
 
     public function getActivitylogOptions(): LogOptions
     {
@@ -62,34 +56,40 @@ class Company extends Model implements TranslatableContract, HasMedia
             ->logOnly($this->getFillable())
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()
-            ->setDescriptionForEvent(fn(string $eventName) => "This model has been {$eventName} and value ")
-            ->useLogName(class_basename($this));
+            ->setDescriptionForEvent(fn(string $eventName) => "Payment has been {$eventName}")
+            ->useLogName('Payment');
     }
 
-    public function createdBy()
+    public function studentCompany(): BelongsTo
+    {
+        return $this->belongsTo(StudentCompany::class, 'student_company_id');
+    }
+
+    public function currency(): BelongsTo
+    {
+        return $this->belongsTo(Currency::class, 'currency_id');
+    }
+
+    public function supervisor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'supervisor_id');
+    }
+
+    public function registration()
+    {
+        $this->studentCompany?->registration;
+    }
+
+    public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    protected static function booted()
-    {
-        parent::booted();
-
-        static::created(function ($model) {
-            $locale = app()->getLocale();
-            $translationData = request()->only($model->translatedAttributes);
-
-            if (!empty($translationData)) {
-                $model->translateOrNew($locale)->fill($translationData);
-                $model->save();
-            }
-        });
-    }
 
     public function registerMediaConversions(?Media $media = null): void
     {
         $this
-            ->addMediaConversion('logo')
+            ->addMediaConversion('receipt')
             ->fit(Fit::Contain, 300, 300)
             ->nonQueued();
     }
@@ -100,7 +100,6 @@ class Company extends Model implements TranslatableContract, HasMedia
             $file = reset($file);
         }
 
-        // التحقق من نوع الملف
         if (
             !$file instanceof \Illuminate\Http\UploadedFile &&
             !($file instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile)
@@ -108,8 +107,7 @@ class Company extends Model implements TranslatableContract, HasMedia
             return null;
         }
 
-        // مسح الصورة السابقة
-        $this->clearMediaCollection('logo');
+        $this->clearMediaCollection('receipt');
 
         try {
             $originalName = $file->getClientOriginalName();
@@ -119,7 +117,7 @@ class Company extends Model implements TranslatableContract, HasMedia
             $media = $this
                 ->addMedia($file)
                 ->usingFileName($fileName)
-                ->toMediaCollection('logo', 'companies');
+                ->toMediaCollection('receipt', 'payments');
 
             $size = ImageSize::MEDIUM;
 
@@ -128,25 +126,13 @@ class Company extends Model implements TranslatableContract, HasMedia
 
             return $media;
         } catch (\Exception $e) {
-            \Log::error('Error uploading product image: ' . $e->getMessage());
+            \Log::error('Error uploading receipt file: ' . $e->getMessage());
             return null;
         }
     }
 
     public function getImageAttribute()
     {
-        return $this->getFirstMediaUrl('logo');
-    }
-
-    public function category(): BelongsTo
-    {
-        return $this->belongsTo(CompanyCategory::class, 'company_category_id');
-    }
-
-    public function branches(): BelongsToMany
-    {
-        return $this->belongsToMany(Branch::class, 'ppu_ds_branch_company')
-            ->withPivot('is_main')
-            ->withTimestamps();
+        return $this->getFirstMediaUrl('receipt');
     }
 }

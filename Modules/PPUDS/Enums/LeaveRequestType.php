@@ -1,10 +1,12 @@
 <?php
 
-namespace Modules\PPUDS\Enums\Enums;
+namespace Modules\PPUDS\Enums;
 
 use Filament\Support\Contracts\HasColor;
-use Filament\Support\Contracts\HasIcon; // إضافة مفيدة للعرض
+use Filament\Support\Contracts\HasIcon;
 use Filament\Support\Contracts\HasLabel;
+
+// إضافة مفيدة للعرض
 
 enum LeaveRequestType: int implements HasLabel, HasColor, HasIcon
 {

@@ -2,11 +2,11 @@
 
 namespace Modules\PPUDS\Settings;
 
+use Modules\PPUDS\Enums\GigEvaluationStatus;
+use Modules\PPUDS\Enums\LoginMethod;
+use Modules\PPUDS\Enums\ReportStatus;
+use Modules\PPUDS\Enums\SemesterType;
 use Spatie\LaravelSettings\Settings;
-use Modules\PPUDS\Enums\Enums\SemesterType;
-use Modules\PPUDS\Enums\Enums\ReportStatus;
-use Modules\PPUDS\Enums\Enums\LoginMethod;
-use Modules\PPUDS\Enums\Enums\GigEvaluationStatus;
 
 class GeneralSettings extends Settings
 {

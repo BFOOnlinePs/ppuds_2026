@@ -3,15 +3,15 @@
 namespace Modules\PPUDS\Jobs;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Modules\Core\Entities\User;
 use Modules\PPUDS\Entities\Major;
-use Modules\PPUDS\Enums\Enums\StudentGender;
+use StudentGender;
 
 class ProcessStudentSync implements ShouldQueue
 {

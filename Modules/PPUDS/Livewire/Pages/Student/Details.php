@@ -226,6 +226,36 @@ class Details extends Component implements HasForms, HasInfolists
                                                         ->lazy()
                                                 ]),
                                         ]),
+
+                                    Tabs\Tab::make('Attendance')
+                                        ->icon('heroicon-o-academic-cap')
+                                        ->schema([
+                                            Grid::make(2)
+                                                ->schema([
+                                                    Livewire::make(\Modules\PPUDS\Livewire\Pages\Student\Details\StudentAttendance\Index::class ,
+                                                        [
+                                                            'studentId' => $this->user->id,
+                                                        ]
+                                                    )
+                                                        ->columnSpanFull()
+                                                        ->lazy()
+                                                ]),
+                                        ]),
+
+                                    Tabs\Tab::make('Payment')
+                                        ->icon('heroicon-o-academic-cap')
+                                        ->schema([
+                                            Grid::make(2)
+                                                ->schema([
+                                                    Livewire::make(\Modules\PPUDS\Livewire\Pages\Student\Details\Payment\Index::class ,
+                                                        [
+                                                            'studentId' => $this->user->id,
+                                                        ]
+                                                    )
+                                                        ->columnSpanFull()
+                                                        ->lazy()
+                                                ]),
+                                        ]),
                                 ])
                             ->columnSpanFull()
                 ]),

@@ -13,18 +13,15 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
+use GigEvaluationStatus;
 use Jantinnerezo\LivewireAlert\Facades\LivewireAlert;
-use Livewire\Attributes\On;
 use Livewire\Component;
+use LoginMethod;
 use Modules\Core\Entities\Settings;
-use Modules\Core\Events\RefreshNotificationEvent;
-use Modules\Core\Notifications\GeneralNotification;
 use Modules\Core\Settings\GeneralSettings;
 use Modules\PPUDS\Settings\GeneralSettings as PPUDSGeneralSettings;
-use Modules\PPUDS\Enums\Enums\SemesterType;
-use Modules\PPUDS\Enums\Enums\ReportStatus;
-use Modules\PPUDS\Enums\Enums\LoginMethod;
-use Modules\PPUDS\Enums\Enums\GigEvaluationStatus;
+use ReportStatus;
+use SemesterType;
 
 class Index extends Component implements HasForms
 {

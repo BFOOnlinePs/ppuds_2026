@@ -1,28 +1,28 @@
 <?php
 
-namespace Modules\PPUDS\Enums\Enums;
+namespace Modules\PPUDS\Enums;
 
 use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasLabel;
 
-enum LoginMethod : int implements HasLabel, HasColor
+enum CompanyStatus : int implements HasLabel, HasColor
 {
-    case SYSTEM = 1; // النظام المحلي
-    case PPU    = 2; // نظام الجامعة
+    case ACTIVE     = 1;
+    case INACTIVE   = 0;
 
     public function getLabel(): ?string
     {
         return match ($this) {
-            self::SYSTEM => __('Internal System'),
-            self::PPU    => __('University SSO (PPU)'),
+            self::ACTIVE        => __('Active'),
+            self::INACTIVE      => __('Inactive'),
         };
     }
 
     public function getColor(): ?string
     {
         return match ($this) {
-            self::SYSTEM => 'info',
-            self::PPU    => 'success',
+            self::ACTIVE        => 'success',
+            self::INACTIVE      => 'danger',
         };
     }
 

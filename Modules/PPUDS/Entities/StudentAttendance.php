@@ -5,10 +5,10 @@ namespace Modules\PPUDS\Entities;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\Core\Entities\User;
-use Modules\PPUDS\Enums\Enums\AttendanceStatus;
+use Modules\PPUDS\Enums\AttendanceStatus;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
-use Spatie\MediaLibrary\InteractsWithMedia;
+
 class StudentAttendance extends Model
 {
     use LogsActivity;

@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\PPUDS\Enums\Enums;
+namespace Modules\PPUDS\Enums;
 
 use Filament\Support\Contracts\HasLabel;
 

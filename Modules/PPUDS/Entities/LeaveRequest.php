@@ -5,9 +5,9 @@ namespace Modules\PPUDS\Entities;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use LeaveRequestStatus;
+use LeaveRequestType;
 use Modules\Core\Entities\User;
-use Modules\PPUDS\Enums\Enums\LeaveRequestStatus;
-use Modules\PPUDS\Enums\Enums\LeaveRequestType;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 

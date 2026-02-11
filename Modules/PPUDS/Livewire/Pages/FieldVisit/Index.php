@@ -136,7 +136,7 @@ class Index extends Component implements HasForms, HasTable
                 ->form([
                     \Filament\Forms\Components\Select::make('semester_type')
                         ->label(__('Semester Type'))
-                        ->options(\Modules\PPUDS\Enums\Enums\SemesterType::options())
+                        ->options(\SemesterType::options())
                         ->default(app(\Modules\PPUDS\Settings\GeneralSettings::class)->semester_type->value)
                         ->prefixIcon('solar-bookmark-circle-bold-duotone'),
                 ])
