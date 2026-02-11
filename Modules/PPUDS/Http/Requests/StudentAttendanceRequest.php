@@ -24,12 +24,15 @@ class StudentAttendanceRequest extends FormRequest
 
             'check_in' => [
                 'nullable',
-                'timezone',
+                // يقبل التاريخ والوقت بصيغة Y-m-d H:i:s
+                'date_format:Y-m-d H:i:s',
             ],
 
             'check_out' => [
                 'nullable',
-                'timezone',
+                'date_format:Y-m-d H:i:s',
+                // يفضل إضافة هذا الشرط لضمان أن وقت الخروج بعد وقت الدخول
+                'after:check_in',
             ],
 
             'student_company_id' => [
