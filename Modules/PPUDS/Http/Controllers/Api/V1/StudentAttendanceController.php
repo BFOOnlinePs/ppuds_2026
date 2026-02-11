@@ -3,9 +3,9 @@
 namespace Modules\PPUDS\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use AttendanceStatus;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\StudentAttendance;
+use Modules\PPUDS\Enums\AttendanceStatus;
 use Modules\PPUDS\Http\Requests\StudentAttendanceRequest;
 use Modules\PPUDS\Transformers\V1\StudentAttendanceResource;
 use Spatie\QueryBuilder\QueryBuilder;
