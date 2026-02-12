@@ -92,6 +92,11 @@ class Company extends Model implements TranslatableContract, HasMedia
             ->addMediaConversion('logo')
             ->fit(Fit::Contain, 300, 300)
             ->nonQueued();
+
+        $this
+            ->addMediaConversion('cover_photo')
+            ->fit(Fit::Contain, 1200, 600)
+            ->nonQueued();
     }
 
     public function addImage($file)

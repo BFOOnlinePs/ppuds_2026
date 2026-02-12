@@ -121,6 +121,11 @@ class PermissionSeeder extends Seeder
                 'guard_name' => 'web',
                 'module_name' => 'Company',
             ],
+            [
+                'name' => 'Company Details List',
+                'guard_name' => 'web',
+                'module_name' => 'Company',
+            ],
 
 
             // TODO Companies Department

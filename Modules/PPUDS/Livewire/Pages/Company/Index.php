@@ -4,6 +4,7 @@ namespace Modules\PPUDS\Livewire\Pages\Company;
 
 use App\View\Components\AppLayout;
 use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Columns\ImageColumn;
@@ -113,6 +114,13 @@ class Index extends Component implements HasTable, HasForms
             })
             ->modalSubmitAction(false)
             ->visible(fn() => auth()->user()->can('Company Category View')),
+
+            Action::make('details')
+                ->label('')
+                ->icon('heroicon-o-user')
+                ->url(fn($record) => route('companies.details', $record))
+                ->visible(fn() => auth()->user()->can('Student Details List')),
+
             EditAction::make('edit')
                 ->url(fn(Company $record) => route('companies.edit', $record->id))
                 ->visible(fn() => auth()->user()->can('Company Category Update')),

@@ -2,7 +2,7 @@
 
     <!-- Cover -->
     <div class="relative w-full bg-cover bg-center"
-         style="height:260px; background-image:url('https://ds.ppu.edu/wp-content/uploads/2024/04/424735415_372156985571622_5879436999441108637_n.jpg');">
+         style="height:260px; background-image:url('{{ $this->user->getFirstMediaUrl('cover_photo') }}');">
 
         <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent"></div>
 

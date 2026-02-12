@@ -1,12 +1,10 @@
 <?php
 
-namespace Modules\PPUDS\Livewire\Pages\Student\Details\Payment;
+namespace Modules\PPUDS\Livewire\Pages\Student\Details\StudentCompany;
 
 use App\View\Components\AppLayout;
 use Filament\Forms\Components\Grid;
-use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -23,16 +21,13 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
-use Modules\Core\Entities\Currency;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\Course;
-use Modules\PPUDS\Entities\Payment;
 use Modules\PPUDS\Entities\StudentCompany;
-use Modules\PPUDS\Enums\PaymentStatus;
 use Modules\PPUDS\Enums\SemesterType;
 use Modules\PPUDS\Enums\TrainingStatus;
 use Modules\PPUDS\Settings\GeneralSettings;
@@ -42,35 +37,36 @@ class Index extends Component implements HasForms, HasTable
     use InteractsWithForms;
     use InteractsWithTable;
 
-    public ?int $studentId = null;
+    public ?int $companyId = null;
 
-    public function mount(?int $studentId = null)
+    public function mount(?int $companyId = null)
     {
-        $this->studentId = $studentId;
+        $this->companyId = $companyId;
     }
 
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn () => Payment::query()->with(['studentCompany', 'currency', 'supervisor', 'createdBy'])->whereHas('studentCompany', fn ($q) => $q->where('student_id', $this->studentId)))
+            ->query(fn () => StudentCompany::query()->where('company_id', $this->companyId)->with(['registration.student', 'registration.course', 'company', 'branch']))
             ->columns([
-                TextColumn::make('studentCompany.company.name')
-                    ->label(__('Comapny'))
-                    ->toggleable()
-                    ->placeholder('—'),
+//                TextColumn::make('registration.student.name')
+//                    ->label(__('Student'))
+//                    ->searchable()
+//                    ->sortable()
+//                    ->weight('bold')
+//                    ->color('primary')
+//                    ->url(fn (StudentCompany $record) => route('student-companies.edit', $record))
+//                    ->description(fn (StudentCompany $record) => $record->registration?->student?->email),
 
-                TextColumn::make('studentCompany.branch.name')
+                TextColumn::make('company.name')
+                    ->label(__('Company'))
+                    ->url(fn (StudentCompany $record) => route('companies.edit', $record->company_id))
+                    ->searchable()
+                    ->placeholder('—')
+                    ->color('primary'),
+
+                TextColumn::make('branch.name')
                     ->label(__('Branch'))
-                    ->toggleable()
-                    ->placeholder('—'),
-
-                TextColumn::make('payment_value')
-                    ->label(__('Payment Value'))
-                    ->toggleable()
-                    ->placeholder('—'),
-
-                TextColumn::make('currency.name')
-                    ->label(__('Currency'))
                     ->toggleable()
                     ->placeholder('—'),
 
@@ -78,6 +74,22 @@ class Index extends Component implements HasForms, HasTable
                     ->label(__('Status'))
                     ->badge()
                     ->sortable(),
+
+                TextColumn::make('registration.course.name')
+                    ->label(__('Course'))
+                    ->badge()
+                    ->color('gray')
+                    ->toggleable(),
+
+                TextColumn::make('registration.semester')
+                    ->label(__('Semester'))
+                    ->toggleable(),
+
+                TextColumn::make('registration.semester')
+                    ->label(__('Semester')),
+
+                TextColumn::make('registration.year')
+                    ->label(__('Year')),
 
                 TextColumn::make('created_at')
                     ->label(__('Created At'))
@@ -90,59 +102,8 @@ class Index extends Component implements HasForms, HasTable
 //            ->actions($this->getTableActions())
             ->headerActions([
                 \Modules\Core\Filament\Forms\Components\CreateAction::make('create')
-                    ->label(__('Add Payment'))
-                    ->form(function ($record, $form){
-                        return $form->schema([
-                            Grid::make(3)
-                                ->schema([
-                                    Section::make('')
-                                        ->columnSpan(2)
-                                        ->schema([
-                                            Select::make('student_company_id')
-                                                ->label(__('Student Company'))
-                                                ->options(function () {
-                                                    return StudentCompany::with(['student', 'company', 'branch'])
-                                                        ->where('student_id', $this->studentId)
-                                                        ->get()
-                                                        ->mapWithKeys(function ($item) {
-                                                            $studentName = $item->student->name ?? __('Unknown Student');
-                                                            $companyName = $item->company->name ?? __('Unknown Company');
-                                                            $branch      = $item->branch->name  ?? __('Unknown Branch');
-
-                                                            return [$item->id => "{$studentName} - {$companyName} - {$branch}"];
-                                                        });
-                                                })
-                                                ->searchable()
-                                                ->required()
-                                                ->preload(),
-
-                                            TextInput::make('payment_value')
-                                                ->label(__('Payment Value'))
-                                                ->numeric()
-                                                ->required(),
-
-                                            Select::make('currency_id')
-                                                ->label(__('Currency'))
-                                                ->searchable()
-                                                ->options(Currency::get()->pluck('name', 'id'))
-                                                ->required()
-                                        ]),
-
-                                    Section::make('')
-                                        ->columnSpan(1)
-                                        ->schema([
-                                            SpatieMediaLibraryFileUpload::make('receipt')
-                                                ->disk('payments')
-                                                ->collection('receipt')
-                                                ->imageEditor()
-                                        ])
-                                ])
-                        ]);
-                    })
-                    ->using(function (array $data){
-                        $data['created_by'] = auth()->user()->id;
-                        return Payment::create($data);
-                    })
+                    ->label(__('Add Student Company'))
+                    ->url(route('student-companies.add'))
                     ->visible(fn () => auth()->user()->can('StudentCompany Create')),
             ])
             ->bulkActions($this->getTableBulkAction());
@@ -153,11 +114,11 @@ class Index extends Component implements HasForms, HasTable
         return [
             // فلتر الحالة
             SelectFilter::make('status')
-                ->label(__('Payment Status'))
-                ->options(PaymentStatus::class)
+                ->label(__('Training Status'))
+                ->options(TrainingStatus::class)
                 ->native(false),
 
-            SelectFilter::make('studentCompany.company.company_id')
+            SelectFilter::make('company_id')
                 ->label(__('Company'))
                 ->options(Company::get()->pluck('name', 'id'))
                 ->searchable()
@@ -168,7 +129,7 @@ class Index extends Component implements HasForms, HasTable
                 ->options(Course::get()->pluck('name', 'id'))
                 ->query(function (Builder $query, array $data) {
                     return $query->when($data['value'], function ($q, $courseId) {
-                        $q->whereHas('studentCompany.registration', fn ($regQ) => $regQ->where('course_id', $courseId));
+                        $q->whereHas('registration', fn ($regQ) => $regQ->where('course_id', $courseId));
                     });
                 })
                 ->searchable(),
@@ -185,7 +146,7 @@ class Index extends Component implements HasForms, HasTable
                 ->query(function (Builder $query, array $data): Builder {
                     return $query->when(
                         $data['year'],
-                        fn (Builder $q, $year) => $q->whereHas('studentCompany.registration', fn ($regQ) => $regQ->where('year', $year))
+                        fn (Builder $q, $year) => $q->whereHas('registration', fn ($regQ) => $regQ->where('year', $year))
                     );
                 }),
 
@@ -199,7 +160,7 @@ class Index extends Component implements HasForms, HasTable
                 ->query(function (Builder $query, array $data): Builder {
                     return $query->when(
                         $data['semester_type'],
-                        fn (Builder $q, $semester_type) => $q->whereHas('studentCompany.registration', fn ($regQ) => $regQ->where('semester', $semester_type))
+                        fn (Builder $q, $semester_type) => $q->whereHas('registration', fn ($regQ) => $regQ->where('semester', $semester_type))
                     );
                 }),
         ];
@@ -278,7 +239,7 @@ class Index extends Component implements HasForms, HasTable
 
     public function render()
     {
-        return view('ppuds::livewire.pages.student.details.payment.index')->layout(AppLayout::class, [
+        return view('ppuds::livewire.pages.student.details.student-company.index')->layout(AppLayout::class, [
             'breadcrumbs' => [
                 ['title' => __('Home'), 'url' => route('home')],
                 ['title' => __('Student Companies'), 'url' => route('student-companies.index')],

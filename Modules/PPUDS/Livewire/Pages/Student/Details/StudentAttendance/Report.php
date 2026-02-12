@@ -150,7 +150,7 @@ class Report extends Component implements HasForms
 
     public function render()
     {
-        return view('ppuds::livewire.pages.student-attendance.report')->layout(AppLayout::class, [
+        return view('ppuds::livewire.pages.student.details.student-attendance.report')->layout(AppLayout::class, [
             'breadcrumbs' => [
                 ['title' => __('Home'), 'url' => route('home')],
                 ['title' => __('Attendance List'), 'url' => route('student-attendances.index')],

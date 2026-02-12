@@ -26,7 +26,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     Route::get('/students', Index::class)->name('students.index')->can('Student View List');
 //                    Route::get('/students/add', Add::class)->name('students.add')->can('Student Create');
 //                    Route::get('/students/{user}/edit', Edit::class)->name('students.edit')->can('Student Update');
-                    Route::get('/students/{user}/details', Details::class)->name('students.details')->can('Student Details List');
+                    Route::get('/students/{user}/details', Details\Details::class)->name('students.details')->can('Student Details List');
                 });
 
                 Route::group([
@@ -46,13 +46,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 });
 
                 Route::group([
-                    'prefix' => '',
-                    'as' => '',
+                    'prefix' => 'companies',
+                    'as' => 'companies.',
                     'namespace' => 'Modules\PPUDS\Livewire\Pages\Company',
                 ], function () {
-                    Route::get('/companies', Index::class)->name('companies.index')->can('Company View List');
-                    Route::get('/companies/add', Add::class)->name('companies.add')->can('Company Create');
-                    Route::get('/companies/{company}/edit', Edit::class)->name('companies.edit')->can('Company Update');
+                    Route::get('/', Index::class)->name('index')->can('Company View List');
+                    Route::get('/add', Add::class)->name('add')->can('Company Create');
+                    Route::get('/{company}/edit', Edit::class)->name('edit')->can('Company Update');
+                    Route::get('/{company}/details', Details\Details::class)->name('details')->can('Company Details List');
                 });
 
                 Route::group([

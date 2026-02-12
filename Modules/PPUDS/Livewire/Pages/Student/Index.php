@@ -20,9 +20,9 @@ use Masmerise\Toaster\Toaster;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\StudnetProfile;
+use Modules\PPUDS\Enums\StudentGender;
 use Modules\PPUDS\Services\PpuApiService;
 use Modules\PPUDS\Settings\GeneralSettings;
-use StudentGender;
 
 class Index extends Component implements HasTable, HasForms
 {
@@ -86,13 +86,6 @@ class Index extends Component implements HasTable, HasForms
             ->bulkActions([]);
     }
 
-    /*************  ✨ Windsurf Command ⭐  *************/
-    /**
-     * The table filters.
-     *
-     * @return array
-     */
-    /*******  923c272c-8fa7-4881-8754-4bd584d02cc1  *******/
     protected function getTableFilters(): array
     {
         return [

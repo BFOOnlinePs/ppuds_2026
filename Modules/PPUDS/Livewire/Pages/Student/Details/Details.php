@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\PPUDS\Livewire\Pages\Student;
+namespace Modules\PPUDS\Livewire\Pages\Student\Details;
 
 use App\View\Components\AppLayout;
 use Filament\Forms\Components\DatePicker;
@@ -12,7 +12,6 @@ use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\Tabs\Tab;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\View;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
@@ -25,10 +24,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Component;
 use Modules\Core\Entities\User;
-use Modules\Core\Filament\Forms\Components\Textarea;
-use Modules\PPUDS\Entities\StudnetProfile; // انتبه: الاسم كما في ملفك المرفق
-use Modules\PPUDS\Entities\Major; // تأكد من وجود موديل للتخصصات
-use Spatie\Permission\Models\Role;
 
 class Details extends Component implements HasForms, HasInfolists
 {
@@ -299,7 +294,7 @@ class Details extends Component implements HasForms, HasInfolists
 
     public function render()
     {
-        return view('ppuds::livewire.pages.student.details')->layout(AppLayout::class, [
+        return view('ppuds::livewire.pages.student.details.details')->layout(AppLayout::class, [
             'breadcrumbs' => [
                 ['title' => __('Home'), 'url' => route('home')],
                 ['title' => __('Students List'), 'url' => route('students.index')],
