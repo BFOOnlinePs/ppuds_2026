@@ -164,7 +164,7 @@ class Details extends Component implements HasForms, HasInfolists
                                             ])
                                     ]),
 
-                                Tabs\Tab::make(__('Branches & Operations'))
+                                Tabs\Tab::make(__('Branches asd Department'))
                                     ->icon('solar-shop-2-bold-duotone')
                                     ->schema([
                                         Repeater::make('branches')
@@ -377,7 +377,7 @@ class Details extends Component implements HasForms, HasInfolists
                                     ]),
 
 
-                                Tabs\Tab::make('Training History')
+                                Tabs\Tab::make('تدريبات الطلاب')
                                     ->icon('heroicon-o-academic-cap')
                                     ->schema([
                                         Grid::make(2)

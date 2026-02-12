@@ -58,9 +58,9 @@ class Index extends Component implements HasForms, HasTable
 //                    ->url(fn (StudentCompany $record) => route('student-companies.edit', $record))
 //                    ->description(fn (StudentCompany $record) => $record->registration?->student?->email),
 
-                TextColumn::make('company.name')
-                    ->label(__('Company'))
-                    ->url(fn (StudentCompany $record) => route('companies.edit', $record->company_id))
+                TextColumn::make('student.name')
+                    ->label(__('Student'))
+//                    ->url(fn (StudentCompany $record) => route('student.edit', $record->company_id))
                     ->searchable()
                     ->placeholder('—')
                     ->color('primary'),
