@@ -92,6 +92,12 @@ class Branch extends Model implements TranslatableContract
     {
         parent::booted();
 
+        static::creating(function ($branch) {
+            if (! $branch->created_by) {
+                $branch->created_by = auth()->id() ?? 1; // 1 كقيمة افتراضية إذا لم يكن هناك مستخدم مسجل
+            }
+        });
+
         static::created(function ($model) {
             $locale = app()->getLocale();
             $translationData = request()->only($model->translatedAttributes);

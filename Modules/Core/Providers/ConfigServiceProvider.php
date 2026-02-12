@@ -119,6 +119,26 @@ class ConfigServiceProvider extends ServiceProvider
                 'class' => 'bg-gray-50',
             ]);
         });
+
+        Repeater::configureUsing(function (Repeater $repeater) {
+            $repeater->extraAttributes([
+                'class' => '
+            /* 1. تنسيق البطاقة (العنصر) بالكامل: أبيض، حدود دائرية، ظل */
+            [&_.fi-fo-repeater-item]:bg-gray-100
+            [&_.fi-fo-repeater-item]:rounded-xl
+            [&_.fi-fo-repeater-item]:border
+            [&_.fi-fo-repeater-item]:border-gray-100
+            [&_.fi-fo-repeater-item]:shadow-sm
+            [&_.fi-fo-repeater-item]:mb-4
+            [&_.fi-fo-repeater-item]:overflow-hidden
+
+            /* 2. تنسيق الهيدر (الشريط العلوي) فقط: لون سكني */
+            [&_.fi-fo-repeater-item-header]:!bg-gray-50
+            [&_.fi-fo-repeater-item-header]:border-b
+            [&_.fi-fo-repeater-item-header]:border-gray-200
+        '
+            ]);
+        });
         // TextColumn::configureUsing(function (TextColumn $column) {
         //     $column->extraAttributes([
         //         'class' => 'text-sm text-[#ff5733] dark:text-gray-100',

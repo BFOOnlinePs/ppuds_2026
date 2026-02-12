@@ -3,29 +3,35 @@
 namespace Modules\PPUDS\Livewire\Pages\Company\Details;
 
 use App\View\Components\AppLayout;
-use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Group;
 use Filament\Forms\Components\Livewire;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\Tabs;
-use Filament\Forms\Components\Tabs\Tab;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
-use Filament\Infolists\Components\ImageEntry;
-use Filament\Infolists\Components\TextEntry;
+use Filament\Forms\Get;
+use Filament\Forms\Set;
 use Filament\Infolists\Concerns\InteractsWithInfolists;
 use Filament\Infolists\Contracts\HasInfolists;
-use Filament\Infolists\Infolist;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Arr;
 use Livewire\Component;
+use Masmerise\Toaster\Toaster;
+use Modules\Branch\Entities\Branch; // تأكد من استدعاء مودل الفرع
+use Modules\Core\Entities\User;
 use Modules\Core\Filament\Forms\Components\Textarea;
+use Modules\GeoLocation\Entities\City;
+use Modules\GeoLocation\Entities\Country;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\CompanyCategory;
+use Modules\PPUDS\Entities\CompanyDepartment;
 
 class Details extends Component implements HasForms, HasInfolists
 {
@@ -37,11 +43,65 @@ class Details extends Component implements HasForms, HasInfolists
 
     public function mount(Company $company)
     {
-//        $this->$company = $company->load('studentProfile');
+        $this->company = $company;
 
-        $data = $this->company->toArray();
+        // 1. تعبئة البيانات الأساسية للشركة
+        $formData = $company->toArray();
 
-        $this->form->fill($data);
+        // 2. تعبئة الفروع مع ساعات العمل والأقسام (نفس منطق Edit.php)
+        $formData['branches'] = $company->branches->map(function ($branch) {
+
+            // --- منطق جلب ساعات العمل ---
+            $existingHours = $branch->workingHours;
+
+            if ($existingHours->isEmpty()) {
+                // إذا لم تكن هناك ساعات مسجلة، نضع الافتراضي
+                $workingHoursData = [];
+                foreach (\Modules\Branch\Enums\WeekDay::cases() as $day) {
+                    $workingHoursData[] = [
+                        'day' => $day->value,
+                        'is_closed' => $day === \Modules\Branch\Enums\WeekDay::FRIDAY,
+                        'start_time' => '08:00',
+                        'end_time' => '16:00',
+                    ];
+                }
+            } else {
+                // تحويل الساعات الموجودة للصيغة المناسبة للفورم
+                $workingHoursData = $existingHours->map(function($wh) {
+                    return [
+                        'id' => $wh->id,
+                        'day' => $wh->day->value,
+                        'is_closed' => (bool) $wh->is_closed,
+                        'start_time' => $wh->start_time ? \Carbon\Carbon::parse($wh->start_time)->format('H:i') : null,
+                        'end_time' => $wh->end_time ? \Carbon\Carbon::parse($wh->end_time)->format('H:i') : null,
+                    ];
+                })->toArray();
+            }
+
+            return [
+                'id'           => $branch->id,
+                'name'         => $branch->name,
+                'email'        => $branch->email,
+                'phone'        => $branch->phone,
+                'country_id'   => $branch->country_id,
+                'city_id'      => $branch->city_id,
+                'latitude'     => $branch->latitude,
+                'longitude'    => $branch->longitude,
+
+                // المصفوفة المجهزة لساعات العمل
+                'working_hours' => $workingHoursData,
+
+                // جلب الأقسام
+                'departments' => $branch->departments->map(function ($dept) {
+                    return [
+                        'name'    => $dept->name,
+                        'user_id' => $dept->pivot->user_id,
+                    ];
+                })->toArray(),
+            ];
+        })->toArray();
+
+        $this->form->fill($formData);
     }
 
     public function form(Form $form): Form
@@ -50,113 +110,402 @@ class Details extends Component implements HasForms, HasInfolists
             ->model($this->company)
             ->schema([
                 Grid::make(3)
-                ->schema([
-                            Tabs::make('tabs')
-                                ->tabs([
+                    ->schema([
+                        Tabs::make('tabs')
+                            ->tabs([
 
-                                    Tabs\Tab::make('Personal Information')
-                                        ->icon('heroicon-o-user')
-                                        ->schema([
-                                            Grid::make(3)
-                                                ->schema([
-                                                    Grid::make(2)
-                                                        ->schema([
-                                                            TextInput::make('name')
-                                                                ->label(__('Name'))
-                                                                ->columnSpanFull()
-                                                                ->required(),
+                                Tabs\Tab::make('Personal Information')
+                                    ->icon('heroicon-o-user')
+                                    ->schema([
+                                        Grid::make(3)
+                                            ->schema([
+                                                Grid::make(2)
+                                                    ->schema([
+                                                        TextInput::make('name')
+                                                            ->label(__('Name'))
+                                                            ->columnSpanFull()
+                                                            ->required(),
 
-                                                            TextInput::make('website')
-                                                                ->label(__('Website'))
-                                                                ->columnSpan(1)
-                                                                ->url(),
+                                                        TextInput::make('website')
+                                                            ->label(__('Website'))
+                                                            ->columnSpan(1)
+                                                            ->url(),
 
-                                                            Select::make('company_category_id')
-                                                                ->label(__('Company Category'))
-                                                                ->options(CompanyCategory::all()->pluck('name', 'id'))
-                                                                ->required(),
+                                                        Select::make('company_category_id')
+                                                            ->label(__('Company Category'))
+                                                            ->options(CompanyCategory::all()->pluck('name', 'id'))
+                                                            ->required(),
 
-                                                            Textarea::make('description')
-                                                                ->label(__('Description'))
-                                                                ->columnSpanFull()
-                                                                ->rows(3)
-                                                                ->required(),
-                                                        ])
-                                                        ->columnSpan(2),
+                                                        Textarea::make('description')
+                                                            ->label(__('Description'))
+                                                            ->columnSpanFull()
+                                                            ->rows(3)
+                                                            ->required(),
+                                                    ])
+                                                    ->columnSpan(2),
 
-                                                    Grid::make(1)
-                                                        ->schema([
-                                                            SpatieMediaLibraryFileUpload::make('cover_photo')
-                                                                ->disk('media')
-                                                                ->collection('cover_photo')
-                                                                ->imageEditor()
-                                                                ->alignCenter(),
+                                                Grid::make(1)
+                                                    ->schema([
+                                                        SpatieMediaLibraryFileUpload::make('cover_photo')
+                                                            ->disk('media')
+                                                            ->collection('cover_photo')
+                                                            ->imageEditor()
+                                                            ->alignCenter(),
 
-                                                            SpatieMediaLibraryFileUpload::make('logo')
-                                                                ->disk('media')
-                                                                ->collection('logo')
-                                                                ->image()
-                                                                ->imageEditor()
-                                                                ->avatar()
-                                                                ->alignCenter()
-                                                        ])
-                                                        ->columnSpan(1)
-                                                ])
-                                        ]),
+                                                        SpatieMediaLibraryFileUpload::make('logo')
+                                                            ->disk('media')
+                                                            ->collection('logo')
+                                                            ->image()
+                                                            ->imageEditor()
+                                                            ->avatar()
+                                                            ->alignCenter()
+                                                    ])
+                                                    ->columnSpan(1)
+                                            ])
+                                    ]),
 
-                                    Tabs\Tab::make('Branches')
-                                        ->icon('heroicon-o-user')
-                                        ->schema([
-                                            Grid::make(3)
-                                                ->schema([
-                                                    Grid::make(2)
-                                                        ->schema([
+                                Tabs\Tab::make(__('Branches & Operations'))
+                                    ->icon('solar-shop-2-bold-duotone')
+                                    ->schema([
+                                        Repeater::make('branches')
+                                            ->label(__('Branches'))
+                                            ->collapsed()
+                                            // ->relationship('branches') // تم إزالة العلاقة المباشرة لنتمكن من التحكم بالحفظ يدوياً كما في Edit
+                                            ->collapsible()
+                                            ->cloneable()
+                                            ->itemLabel(fn (array $state): ?string => $state['name'] ?? __('New Branch'))
+                                            ->addActionLabel(__('Add New Branch'))
+                                            ->grid(1)
+                                            ->schema([
+                                                // حقل مخفي لمعرف الفرع
+                                                TextInput::make('id')->hidden(),
 
-                                                        ])
-                                                        ->columnSpanFull(2),
-                                                ])
-                                        ]),
+                                                Group::make()
+                                                    ->schema([
+                                                        Tabs::make('Branch Settings')
+                                                            ->tabs([
+                                                                // 1. Overview
+                                                                Tabs\Tab::make(__('Overview'))
+                                                                    ->icon('solar-info-circle-bold-duotone')
+                                                                    ->schema([
+                                                                        Grid::make(4)
+                                                                            ->schema([
+                                                                                TextInput::make('name')
+                                                                                    ->label(__('Branch Name'))
+                                                                                    ->required()
+                                                                                    ->default(__('Main Branch'))
+                                                                                    ->columnSpanFull(),
 
-                                    Tabs\Tab::make('Training History')
-                                        ->icon('heroicon-o-academic-cap')
-                                        ->schema([
-                                            Grid::make(2)
-                                                ->schema([
-                                                    Livewire::make(\Modules\PPUDS\Livewire\Pages\Student\Details\StudentCompany\Index::class ,
-                                                        [
-                                                            'companyId' => $this->company->id,
-                                                        ]
-                                                    )
-                                                        ->columnSpanFull()
+                                                                                TextInput::make('email')
+                                                                                    ->label(__('Contact Email'))
+                                                                                    ->email(),
+
+                                                                                TextInput::make('phone')
+                                                                                    ->label(__('Phone Number')),
+
+                                                                                // Working hours
+                                                                                Section::make(__('Working Hours'))
+                                                                                    ->icon('solar-clock-circle-bold-duotone')
+                                                                                    ->schema([
+                                                                                        Repeater::make('working_hours')
+                                                                                            ->hiddenLabel()
+                                                                                            // ->relationship('workingHours') // حذف العلاقة المباشرة
+                                                                                            ->schema([
+                                                                                                Grid::make(4)->schema([
+                                                                                                    Select::make('day')
+                                                                                                        ->label(__('Day'))
+                                                                                                        ->options(\Modules\Branch\Enums\WeekDay::class)
+                                                                                                        ->disabled()
+                                                                                                        ->dehydrated()
+                                                                                                        ->required()
+                                                                                                        ->columnSpan(1),
+
+                                                                                                    \Filament\Forms\Components\Toggle::make('is_closed')
+                                                                                                        ->label(__('Closed?'))
+                                                                                                        ->onColor('danger')
+                                                                                                        ->offColor('success')
+                                                                                                        ->inline(false)
+                                                                                                        ->live()
+                                                                                                        ->columnSpan(1),
+
+                                                                                                    Group::make([
+                                                                                                        TimePicker::make('start_time')
+                                                                                                            ->label(__('Start'))
+                                                                                                            ->seconds(false)
+                                                                                                            ->default('08:00')
+                                                                                                            ->required(fn (Get $get) => ! $get('is_closed')),
+
+                                                                                                        TimePicker::make('end_time')
+                                                                                                            ->label(__('End'))
+                                                                                                            ->seconds(false)
+                                                                                                            ->default('16:00')
+                                                                                                            ->required(fn (Get $get) => ! $get('is_closed')),
+                                                                                                    ])
+                                                                                                        ->visible(fn (Get $get) => ! $get('is_closed'))
+                                                                                                        ->columnSpan(2)
+                                                                                                        ->columns(2),
+                                                                                                ]),
+                                                                                            ])
+                                                                                            ->addable(false)
+                                                                                            ->deletable(false)
+                                                                                            ->reorderable(false)
+                                                                                            ->defaultItems(7)
+                                                                                            // الدالة الافتراضية للفروع الجديدة
+                                                                                            ->default(function() {
+                                                                                                $days = [];
+                                                                                                foreach (\Modules\Branch\Enums\WeekDay::cases() as $day) {
+                                                                                                    $days[] = [
+                                                                                                        'day' => $day->value,
+                                                                                                        'is_closed' => $day === \Modules\Branch\Enums\WeekDay::FRIDAY,
+                                                                                                        'start_time' => '08:00',
+                                                                                                        'end_time' => '16:00',
+                                                                                                    ];
+                                                                                                }
+                                                                                                return $days;
+                                                                                            }),
+                                                                                    ])
+                                                                                    ->columnSpanFull()
+                                                                                    ->extraAttributes(['class' => 'bg-gray-50/50']),
+                                                                            ]),
+                                                                    ]),
+
+                                                                // 2. Location
+                                                                Tabs\Tab::make(__('Location'))
+                                                                    ->icon('solar-map-point-bold-duotone')
+                                                                    ->schema([
+                                                                        Grid::make(2)
+                                                                            ->schema([
+                                                                                Select::make('country_id')
+                                                                                    ->label(__('Country'))
+                                                                                    ->options(Country::get()->pluck('name', 'id'))
+                                                                                    ->default(fn () => Country::whereTranslation('name', 'فلسطين')
+                                                                                        ->orWhereTranslation('name', 'Palestine')->first()?->id)
+                                                                                    ->searchable()
+                                                                                    ->required()
+                                                                                    ->live()
+                                                                                    ->afterStateUpdated(fn (Set $set) => $set('city_id', null)),
+
+                                                                                Select::make('city_id')
+                                                                                    ->label(__('City'))
+                                                                                    ->options(function (Get $get) {
+                                                                                        $countryId = $get('country_id');
+                                                                                        if (! $countryId) return [];
+                                                                                        return City::whereHas('governorate', function (Builder $query) use ($countryId) {
+                                                                                            $query->where('country_id', $countryId);
+                                                                                        })->get()->pluck('name', 'id');
+                                                                                    })
+                                                                                    ->default(fn () => City::whereTranslation('name', 'الخليل')
+                                                                                        ->orWhereTranslation('name', 'Hebron')->first()?->id)
+                                                                                    ->searchable()
+                                                                                    ->required(),
+
+                                                                                TextInput::make('latitude')->numeric()->placeholder('31.xxxx'),
+                                                                                TextInput::make('longitude')->numeric()->placeholder('35.xxxx'),
+                                                                            ]),
+                                                                    ]),
+
+                                                                // 3. Departments & Staff
+                                                                Tabs\Tab::make(__('Departments & Staff'))
+                                                                    ->icon('solar-users-group-rounded-bold-duotone')
+                                                                    ->schema([
+                                                                        Repeater::make('departments')
+                                                                            ->hiddenLabel()
+                                                                            ->schema([
+                                                                                Grid::make(2)->schema([
+                                                                                    Select::make('name')
+                                                                                        ->label(__('Department'))
+                                                                                        ->required()
+                                                                                        ->searchable()
+                                                                                        ->preload()
+                                                                                        ->prefixIcon('solar-case-minimalistic-linear')
+                                                                                        ->options(function () {
+                                                                                            return CompanyDepartment::get()
+                                                                                                ->pluck('name', 'name')
+                                                                                                ->unique()
+                                                                                                ->toArray();
+                                                                                        })
+                                                                                        ->createOptionForm([
+                                                                                            TextInput::make('new_department_name')
+                                                                                                ->label(__('Name'))
+                                                                                                ->required()
+                                                                                                ->maxLength(255),
+                                                                                        ])
+                                                                                        ->createOptionUsing(fn(array $data) => $data['new_department_name']),
+
+                                                                                    Select::make('user_id')
+                                                                                        ->label(__('Supervisor'))
+                                                                                        ->required()
+                                                                                        ->searchable()
+                                                                                        ->preload()
+                                                                                        ->prefixIcon('solar-user-id-linear')
+                                                                                        ->options(fn() => User::role('Company Supervisor')->pluck('name', 'id'))
+                                                                                        ->getSearchResultsUsing(fn (string $search) => User::role('Company Supervisor')
+                                                                                            ->where('name', 'like', "%{$search}%")
+                                                                                            ->limit(50)
+                                                                                            ->pluck('name', 'id')
+                                                                                        )
+                                                                                        ->getOptionLabelUsing(fn ($value): ?string => User::find($value)?->name)
+                                                                                        ->createOptionForm([
+                                                                                            Grid::make(2)->schema([
+                                                                                                TextInput::make('name')->required(),
+                                                                                                TextInput::make('name_en')->required(),
+                                                                                                TextInput::make('email')->required()->email(),
+                                                                                                TextInput::make('phone')->required()->numeric(),
+                                                                                                TextInput::make('password')->required()->password()->confirmed(),
+                                                                                                TextInput::make('password_confirmation')->required()->password(),
+                                                                                            ])
+                                                                                        ])
+                                                                                        ->createOptionUsing(function (array $data) {
+                                                                                            $data['password'] = bcrypt($data['password']);
+                                                                                            $user = User::create($data);
+                                                                                            $user->assignRole('Company Supervisor');
+                                                                                            return $user->id;
+                                                                                        })
+                                                                                        ->required(),
+                                                                                ]),
+                                                                            ])
+                                                                            ->defaultItems(0)
+                                                                            ->collapsible()
+                                                                            ->itemLabel(fn (array $state): ?string => $state['name'] ?? null)
+                                                                            ->addActionLabel(__('Add Department'))
+                                                                            ->reorderableWithButtons()
+                                                                            ->extraAttributes(['class' => 'border-l-4 border-primary-500 pl-4']),
+                                                                    ]),
+                                                            ]),
+                                                    ]),
+                                            ]),
+                                    ]),
+
+
+                                Tabs\Tab::make('Training History')
+                                    ->icon('heroicon-o-academic-cap')
+                                    ->schema([
+                                        Grid::make(2)
+                                            ->schema([
+                                                Livewire::make(\Modules\PPUDS\Livewire\Pages\Student\Details\StudentCompany\Index::class ,
+                                                    [
+                                                        'companyId' => $this->company->id,
+                                                    ]
+                                                )
+                                                    ->columnSpanFull()
                                                     ->lazy()
-                                                ]),
-                                        ]),
-                                ])
+                                            ]),
+                                    ]),
+                            ])
                             ->columnSpanFull()
-                ]),
+                    ]),
             ])
             ->statePath('data');
     }
 
     public function save()
     {
+        // 1. التحقق من البيانات
         $this->validate();
 
-        $data = $this->form->getState();
+        // 2. تحديث بيانات الشركة الأساسية (استبعاد الفروع والشعار مؤقتاً)
+        $companyData = Arr::except($this->data, ['branches', 'logo', 'cover_photo']);
+        $this->company->update($companyData);
 
-        DB::transaction(function () use ($data) {
+        // 3. حفظ الصور (الشعار والغلاف)
+            $this->form->model($this->company)->saveRelationships();
 
-            $company = Company::updateOrCreate(
-                ['id' => $this->company->id ?? null],
-                $data
-            );
+        // 4. حفظ الفروع والأقسام وساعات العمل (المنطق الجديد)
+        $this->saveBranchesAndDepartments();
 
-            $this->form->model($company)->saveRelationships();
+        // 5. رسالة نجاح
+        Toaster::success(__('Saved successfully'));
 
-            $this->company = $company;
-        });
-
+        // إعادة التوجيه للصفحة الحالية لتحديث البيانات
         return redirect()->route('companies.details', $this->company);
+    }
+
+    protected function saveBranchesAndDepartments()
+    {
+        $formBranches = $this->data['branches'] ?? [];
+        $processedBranchIds = [];
+
+        foreach ($formBranches as $branchData) {
+
+            $branchId = $branchData['id'] ?? null;
+
+            // استخراج البيانات الفرعية
+            $departmentsData = $branchData['departments'] ?? [];
+            $workingHoursData = $branchData['working_hours'] ?? [];
+
+            // تنظيف بيانات الفرع
+            $branchAttributes = Arr::except($branchData, ['departments', 'working_hours', 'id']);
+
+            $branch = null;
+
+            // --- أ. التعامل مع الفرع (تحديث أو إنشاء) ---
+            if ($branchId) {
+                // تحديث فرع موجود
+                $branch = Branch::find($branchId);
+                if ($branch) {
+                    $branch->update($branchAttributes);
+                }
+            } else {
+                // إنشاء فرع جديد
+                $branchAttributes['created_by'] = auth()->id();
+                $branch = Branch::create($branchAttributes);
+                $this->company->branches()->attach($branch->id, ['is_main' => false]);
+            }
+
+            if ($branch) {
+                $processedBranchIds[] = $branch->id;
+
+                // --- ب. حفظ الأقسام ---
+                $this->syncDepartmentsForBranch($branch, $departmentsData);
+
+                // --- ج. حفظ ساعات العمل ---
+                foreach ($workingHoursData as $wh) {
+                    $branch->workingHours()->updateOrCreate(
+                        ['day' => $wh['day']],
+                        [
+                            'is_closed'  => $wh['is_closed'],
+                            'start_time' => $wh['is_closed'] ? null : $wh['start_time'],
+                            'end_time'   => $wh['is_closed'] ? null : $wh['end_time'],
+                        ]
+                    );
+                }
+            }
+        }
+
+        // --- د. حذف الفروع التي تمت إزالتها من النموذج ---
+        // نحصل على معرفات الفروع الحالية للشركة
+        $currentCompanyBranchIds = $this->company->branches()->pluck('branch_branches.id')->toArray();
+
+        // الفروع التي يجب فصلها هي الموجودة في الداتابيز ولكن غير موجودة في الـ processedBranchIds
+        $branchesToDetach = array_diff($currentCompanyBranchIds, $processedBranchIds);
+
+        if (!empty($branchesToDetach)) {
+            $this->company->branches()->detach($branchesToDetach);
+            // Branch::destroy($branchesToDetach); // اختياري: إذا أردت الحذف النهائي
+        }
+    }
+
+    protected function syncDepartmentsForBranch(Branch $branch, array $departmentsData)
+    {
+        $syncData = [];
+
+        foreach ($departmentsData as $deptData) {
+            $deptName = $deptData['name'];
+            $userId = $deptData['user_id'] ?? null;
+
+            $department = CompanyDepartment::whereTranslation('name', $deptName)->first();
+
+            if (! $department) {
+                $department = CompanyDepartment::create([
+                    'name'       => $deptName,
+                    'created_by' => auth()->id(),
+                ]);
+            }
+
+            $syncData[$department->id] = ['user_id' => $userId];
+        }
+
+        $branch->departments()->sync($syncData);
     }
 
     public function render()
