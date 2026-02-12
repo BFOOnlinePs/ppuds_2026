@@ -21,7 +21,7 @@ class PaymentResource extends JsonResource
             'status'             => $this->status,
             'status_label'       => $this->status?->getLabel(), // إذا كان الـ Enum يدعم getLabel
             'reference_id'       => $this->reference_id,
-            'student_role'       => $this->student_role,
+            'student_notes'       => $this->student_notes,
             'company_notes'      => $this->company_notes,
             'receipt_url'        => $this->image, // Accessor from Payment model: getImageAttribute
             'created_by'         => $this->created_by,
