@@ -10,8 +10,8 @@ return new class extends Migration
     {
         Schema::table(config('ppuds.table_prefix') . 'payments', function (Blueprint $table) {
 
-            if (Schema::hasColumn(config('ppuds.table_prefix') . 'payments', 'student_notes')) {
-                $table->renameColumn('student_notes', 'student_role');
+            if (Schema::hasColumn(config('ppuds.table_prefix') . 'payments', 'student_role')) {
+                $table->renameColumn('student_role', 'student_notes');
             }
         });
     }
@@ -19,8 +19,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table(config('ppuds.table_prefix') . 'payments', function (Blueprint $table) {
-            if (Schema::hasColumn(config('ppuds.table_prefix') . 'payments', 'student_role')) {
-                $table->renameColumn('student_role', 'student_notes');
+            if (Schema::hasColumn(config('ppuds.table_prefix') . 'payments', 'student_notes')) {
+                $table->renameColumn('student_notes', 'student_role');
             }
         });
     }

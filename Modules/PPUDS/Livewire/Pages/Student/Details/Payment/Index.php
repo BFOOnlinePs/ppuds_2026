@@ -4,6 +4,7 @@ namespace Modules\PPUDS\Livewire\Pages\Student\Details\Payment;
 
 use App\View\Components\AppLayout;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
@@ -27,6 +28,7 @@ use Modules\Core\Entities\Currency;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
+use Modules\Core\Filament\Forms\Components\Textarea;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\Course;
@@ -52,7 +54,7 @@ class Index extends Component implements HasForms, HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn () => Payment::query()->with(['studentCompany', 'currency', 'supervisor', 'createdBy'])->whereHas('studentCompany', fn ($q) => $q->where('student_id', $this->studentId)))
+            ->query(fn() => Payment::query()->with(['studentCompany', 'currency', 'supervisor', 'createdBy'])->whereHas('studentCompany', fn($q) => $q->where('student_id', $this->studentId)))
             ->columns([
                 TextColumn::make('studentCompany.company.name')
                     ->label(__('Comapny'))
@@ -87,63 +89,83 @@ class Index extends Component implements HasForms, HasTable
             ])
             ->filters($this->getTableFilters(), layout: FiltersLayout::AboveContent)
             ->filtersFormColumns(5)
-//            ->actions($this->getTableActions())
+            ->actions($this->getTableActions())
             ->headerActions([
                 \Modules\Core\Filament\Forms\Components\CreateAction::make('create')
                     ->label(__('Add Payment'))
-                    ->form(function ($record, $form){
+                    ->form(function ($record, $form) {
                         return $form->schema([
                             Grid::make(3)
                                 ->schema([
-                                    Section::make('')
+                                    Grid::make(2)
                                         ->columnSpan(2)
                                         ->schema([
-                                            Select::make('student_company_id')
-                                                ->label(__('Student Company'))
-                                                ->options(function () {
-                                                    return StudentCompany::with(['student', 'company', 'branch'])
-                                                        ->where('student_id', $this->studentId)
-                                                        ->get()
-                                                        ->mapWithKeys(function ($item) {
-                                                            $studentName = $item->student->name ?? __('Unknown Student');
-                                                            $companyName = $item->company->name ?? __('Unknown Company');
-                                                            $branch      = $item->branch->name  ?? __('Unknown Branch');
+                                            Section::make('')
+                                                ->schema([
+                                                    Select::make('student_company_id')
+                                                        ->label(__('Student Company'))
+                                                        ->options(function () {
+                                                            return StudentCompany::with(['student', 'company', 'branch'])
+                                                                ->where('student_id', $this->studentId)
+                                                                ->get()
+                                                                ->mapWithKeys(function ($item) {
+                                                                    $studentName = $item->student->name ?? __('Unknown Student');
+                                                                    $companyName = $item->company->name ?? __('Unknown Company');
+                                                                    $branch      = $item->branch->name  ?? __('Unknown Branch');
 
-                                                            return [$item->id => "{$studentName} - {$companyName} - {$branch}"];
-                                                        });
-                                                })
-                                                ->searchable()
-                                                ->required()
-                                                ->preload(),
+                                                                    return [$item->id => "{$studentName} - {$companyName} - {$branch}"];
+                                                                });
+                                                        })
+                                                        ->searchable()
+                                                        ->required()
+                                                        ->preload(),
 
-                                            TextInput::make('payment_value')
-                                                ->label(__('Payment Value'))
-                                                ->numeric()
-                                                ->required(),
+                                                    TextInput::make('payment_value')
+                                                        ->label(__('Payment Value'))
+                                                        ->numeric()
+                                                        ->required(),
 
-                                            Select::make('currency_id')
-                                                ->label(__('Currency'))
-                                                ->searchable()
-                                                ->options(Currency::get()->pluck('name', 'id'))
-                                                ->required()
+                                                    Section::make('')
+                                                        ->columnSpan(1)
+                                                        ->schema([
+                                                            Textarea::make('company_notes')
+                                                                ->label(__('Company Notes'))
+                                                        ])
+                                                ])
                                         ]),
 
-                                    Section::make('')
+                                    Grid::make(1)
                                         ->columnSpan(1)
                                         ->schema([
-                                            SpatieMediaLibraryFileUpload::make('receipt')
-                                                ->disk('payments')
-                                                ->collection('receipt')
-                                                ->imageEditor()
+                                            Section::make('')
+                                                ->columnSpan(1)
+                                                ->schema([
+                                                    SpatieMediaLibraryFileUpload::make('receipt')
+                                                        ->disk('payments')
+                                                        ->collection('receipt')
+                                                        ->imageEditor(),
+                                                ]),
+
+                                            Section::make('')
+                                                ->columnSpan(1)
+                                                ->schema([
+                                                    Select::make('currency_id')
+                                                        ->label(__('Currency'))
+                                                        ->searchable()
+                                                        ->options(Currency::get()->pluck('name', 'id'))
+                                                        ->required(),
+                                                ]),
+
+
                                         ])
                                 ])
                         ]);
                     })
-                    ->using(function (array $data){
+                    ->using(function (array $data) {
                         $data['created_by'] = auth()->user()->id;
                         return Payment::create($data);
                     })
-                    ->visible(fn () => auth()->user()->can('StudentCompany Create')),
+                    ->visible(fn() => auth()->user()->can('StudentCompany Create')),
             ])
             ->bulkActions($this->getTableBulkAction());
     }
@@ -168,7 +190,7 @@ class Index extends Component implements HasForms, HasTable
                 ->options(Course::get()->pluck('name', 'id'))
                 ->query(function (Builder $query, array $data) {
                     return $query->when($data['value'], function ($q, $courseId) {
-                        $q->whereHas('studentCompany.registration', fn ($regQ) => $regQ->where('course_id', $courseId));
+                        $q->whereHas('studentCompany.registration', fn($regQ) => $regQ->where('course_id', $courseId));
                     });
                 })
                 ->searchable(),
@@ -185,7 +207,7 @@ class Index extends Component implements HasForms, HasTable
                 ->query(function (Builder $query, array $data): Builder {
                     return $query->when(
                         $data['year'],
-                        fn (Builder $q, $year) => $q->whereHas('studentCompany.registration', fn ($regQ) => $regQ->where('year', $year))
+                        fn(Builder $q, $year) => $q->whereHas('studentCompany.registration', fn($regQ) => $regQ->where('year', $year))
                     );
                 }),
 
@@ -199,7 +221,7 @@ class Index extends Component implements HasForms, HasTable
                 ->query(function (Builder $query, array $data): Builder {
                     return $query->when(
                         $data['semester_type'],
-                        fn (Builder $q, $semester_type) => $q->whereHas('studentCompany.registration', fn ($regQ) => $regQ->where('semester', $semester_type))
+                        fn(Builder $q, $semester_type) => $q->whereHas('studentCompany.registration', fn($regQ) => $regQ->where('semester', $semester_type))
                     );
                 }),
         ];
@@ -208,56 +230,106 @@ class Index extends Component implements HasForms, HasTable
     protected function getTableActions(): array
     {
         return [
-            InfoAction::make('info')
-                ->label('')
-                ->visible(fn () => auth()->user()->can('Major Info')),
+            // InfoAction::make('info')
+            //     ->label('')
+            //     ->visible(fn() => auth()->user()->can('Major Info')),
             ViewAction::make('view')
                 ->label('')
                 ->tooltip(__('View Details'))
-                ->form(fn (StudentCompany $record) => [
-                    Grid::make(2)->schema([
-                        TextInput::make('student_name')
-                            ->label(__('Student'))
-                            ->default($record->registration?->student?->name)
-                            ->disabled()
-                            ->prefixIcon('solar-user-id-bold-duotone'),
+                ->form(fn(Payment $record) => [
+                    Grid::make(3)
+                        ->schema([
+                            Grid::make(1)
+                                ->columnSpan(2)
+                                ->schema([
+                                    Section::make(__('Payment Details'))
+                                        ->schema([
+                                            Grid::make(2)->schema([
+                                                TextInput::make('company_name')
+                                                    ->label(__('Company'))
+                                                    ->default($record->studentCompany->company->name ?? '—')
+                                                    ->prefixIcon('solar-city-bold-duotone')
+                                                    ->disabled(),
 
-                        TextInput::make('company_name')
-                            ->label(__('Company'))
-                            ->default($record->company?->name)
-                            ->disabled()
-                            ->prefixIcon('solar-city-bold-duotone'),
+                                                TextInput::make('branch_name')
+                                                    ->label(__('Branch'))
+                                                    ->default($record->studentCompany->branch->name ?? '—')
+                                                    ->prefixIcon('solar-map-point-bold-duotone')
+                                                    ->disabled(),
 
-                        TextInput::make('status')
-                            ->label(__('Status'))
-                            ->default($record->status?->getLabel())
-                            ->disabled()
-                            ->prefixIcon('solar-flag-bold-duotone'),
+                                                TextInput::make('payment_value')
+                                                    ->label(__('Payment Value'))
+                                                    ->default(number_format($record->payment_value, 2))
+                                                    ->suffix($record->currency->name ?? '')
+                                                    ->prefixIcon('solar-wallet-money-bold-duotone')
+                                                    ->disabled(),
 
-                        TextInput::make('course_name')
-                            ->label(__('Course'))
-                            ->default($record->registration?->course?->name)
-                            ->disabled()
-                            ->prefixIcon('solar-book-bold-duotone'),
-                    ]),
-                ])
-                ->modalSubmitAction(false)
-                ->visible(fn () => auth()->user()->can('StudentCompany View')), // تأكد من اسم الصلاحية
+                                                TextInput::make('status')
+                                                    ->label(__('Status'))
+                                                    ->default($record->status->getLabel()) // يجلب التسمية من الـ Enum
+                                                    ->prefixIcon('solar-info-circle-bold-duotone')
+                                                    ->disabled(),
+                                            ]),
 
-            EditAction::make('edit')
-                ->label('')
-                ->tooltip(__('Edit'))
-                ->url(fn (StudentCompany $record) => route('student-companies.edit', $record->id)) // تأكد من اسم الراوت
-                ->visible(fn () => auth()->user()->can('StudentCompany Update')),
+                                            Textarea::make('company_notes')
+                                                ->label(__('Company Notes'))
+                                                ->default($record->company_notes)
+                                                ->disabled()
+                                                ->columnSpanFull(),
 
-            DeleteAction::make('delete')
-                ->label('')
-                ->tooltip(__('Delete'))
-                ->action(function ($record) {
-                    $record->delete();
-                    Toaster::success(__('Student company record deleted successfully'));
-                })
-                ->visible(fn () => auth()->user()->can('StudentCompany Delete')),
+                                            Textarea::make('student_notes')
+                                                ->label(__('Student Notes'))
+                                                ->default($record->student_notes)
+                                                ->disabled()
+                                                ->columnSpanFull(),
+                                        ]),
+                                ]),
+
+                            Grid::make(1)
+                                ->columnSpan(1)
+                                ->schema([
+                                    Section::make(__('Receipt'))
+                                        ->schema([
+                                            SpatieMediaLibraryFileUpload::make('receipt')
+                                                ->label('')
+                                                ->disk('payments')
+                                                ->collection('receipt')
+                                                ->openable()
+                                                ->downloadable()
+                                                ->disabled(),
+                                        ]),
+
+                                    Section::make(__('Metadata'))
+                                        ->schema([
+                                            TextInput::make('created_by')
+                                                ->label(__('Created By'))
+                                                ->default($record->createdBy->name ?? '—')
+                                                ->prefixIcon('solar-user-id-bold-duotone')
+                                                ->disabled(),
+
+                                            TextInput::make('created_at')
+                                                ->label(__('Created At'))
+                                                ->default($record->created_at->format('Y-m-d'))
+                                                ->prefixIcon('solar-calendar-bold-duotone')
+                                                ->disabled(),
+                                        ]),
+                                ]),
+                        ]),
+                ]),
+            // EditAction::make('edit')
+            //     ->label('')
+            //     ->tooltip(__('Edit'))
+            //     ->url(fn(StudentCompany $record) => route('student-companies.edit', $record->id)) // تأكد من اسم الراوت
+            //     ->visible(fn() => auth()->user()->can('StudentCompany Update')),
+
+            // DeleteAction::make('delete')
+            //     ->label('')
+            //     ->tooltip(__('Delete'))
+            //     ->action(function ($record) {
+            //         $record->delete();
+            //         Toaster::success(__('Student company record deleted successfully'));
+            //     })
+            //     ->visible(fn() => auth()->user()->can('StudentCompany Delete')),
         ];
     }
 
@@ -270,8 +342,8 @@ class Index extends Component implements HasForms, HasTable
                     ->icon('solar-trash-bin-trash-bold-duotone')
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->action(fn (Collection $records) => $records->each->delete())
-                    ->after(fn () => Toaster::success(__('Selected records deleted successfully'))),
+                    ->action(fn(Collection $records) => $records->each->delete())
+                    ->after(fn() => Toaster::success(__('Selected records deleted successfully'))),
             ]),
         ];
     }
