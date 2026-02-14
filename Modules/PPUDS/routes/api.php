@@ -65,6 +65,7 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
                 ->group(function () {
                     Route::get('/', 'index')->name('index');
                     Route::post('/', 'store')->name('store');
+                    Route::patch('/{payment}', 'update')->name('update');
                     Route::get('/{payment}', 'show')->name('show');
                 });
         });

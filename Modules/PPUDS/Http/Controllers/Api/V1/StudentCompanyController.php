@@ -3,10 +3,7 @@
 namespace Modules\PPUDS\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\DB;
-use Modules\Branch\Entities\Branch;
 use Modules\Core\Traits\ApiResponse;
-use Modules\PPUDS\Entities\CompanyDepartment;
 use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Entities\StudentCompany; // تأكدنا من استخدام هذا الكلاس
 use Modules\PPUDS\Http\Requests\CompanyRequest;

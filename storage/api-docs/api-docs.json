@@ -6641,6 +6641,151 @@
                         "sanctum": []
                     }
                 ]
+            },
+            "post": {
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Update an existing payment",
+                "description": "Update payment details including receipt image. \r\n     * **Note:** You must use `POST` method with `_method` parameter set to `PUT` or `PATCH` to support file uploads in PHP.",
+                "operationId": "8e132416760fa38a27d236f7a05a3a25",
+                "parameters": [
+                    {
+                        "name": "payment",
+                        "in": "path",
+                        "description": "Payment ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "Accept-Language",
+                        "in": "header",
+                        "description": "Language (ar or en)",
+                        "schema": {
+                            "type": "string",
+                            "default": "ar",
+                            "example": "en"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "_method"
+                                ],
+                                "properties": {
+                                    "_method": {
+                                        "description": "REQUIRED: Must be 'PUT' or 'PATCH' to spoof the HTTP method.",
+                                        "type": "string",
+                                        "example": "PUT"
+                                    },
+                                    "student_company_id": {
+                                        "description": "Student Company ID (Optional)",
+                                        "type": "integer",
+                                        "example": 5
+                                    },
+                                    "payment_value": {
+                                        "description": "Amount (Optional)",
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 150.5
+                                    },
+                                    "currency_id": {
+                                        "description": "Currency ID (Optional)",
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "status": {
+                                        "description": "Payment Status (1:Pending, 2:Approved, 3:Rejected)",
+                                        "type": "integer",
+                                        "example": 2
+                                    },
+                                    "reference_id": {
+                                        "description": "External Reference ID (Optional)",
+                                        "type": "string",
+                                        "example": "REF-2024-001"
+                                    },
+                                    "company_notes": {
+                                        "description": "Notes or remarks (Optional)",
+                                        "type": "string",
+                                        "example": "Approved after reviewing receipt."
+                                    },
+                                    "supervisor_id": {
+                                        "description": "Assign a supervisor ID (Optional)",
+                                        "type": "integer",
+                                        "example": 10
+                                    },
+                                    "student_role": {
+                                        "description": "Role of the student submitting (Optional)",
+                                        "type": "string",
+                                        "example": "Treasurer"
+                                    },
+                                    "receipt": {
+                                        "description": "New receipt image file (Optional). Replaces the old one.",
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Payment updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Payment updated successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Payment not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             }
         },
         "/api/v1/ppuds/attendances": {
