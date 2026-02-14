@@ -39,7 +39,7 @@ class Index extends Component implements HasTable, HasForms
             ->columns([
                 ImageColumn::make('logo')
                     ->label(__('Logo'))
-                    ->getStateUsing(function ($record){
+                    ->getStateUsing(function ($record) {
                         return $record->getImageAttribute();
                     }),
 
@@ -69,9 +69,7 @@ class Index extends Component implements HasTable, HasForms
 
     protected function getTableFilters(): array
     {
-        return [
-
-        ];
+        return [];
     }
 
     public function getTableBulkAction(): array
@@ -93,30 +91,31 @@ class Index extends Component implements HasTable, HasForms
                 ->label('')
                 ->visible(fn() => auth()->user()->can('Company Info')),
             ViewAction::make('view')
-            ->form(function (Forms\Form $form, $record) {
-                return $form->schema([
-                    TextInput::make('name')
-                        ->label(__('Name'))
-                        ->default($record->name)
-                        ->disabled(),
-                    TextInput::make('website')
-                        ->label(__('Website'))
-                        ->default($record->website)
-                        ->disabled(),
-                    TextInput::make('category.name')
-                        ->label(__('Category'))
-                        ->default($record->category->name)
-                        ->disabled(),
-                    Textarea::make('description')
-                        ->default($record->description)
-                        ->disabled(),
-                ]);
-            })
-            ->modalSubmitAction(false)
-            ->visible(fn() => auth()->user()->can('Company Category View')),
+                ->form(function (Forms\Form $form, $record) {
+                    return $form->schema([
+                        TextInput::make('name')
+                            ->label(__('Name'))
+                            ->default($record->name)
+                            ->disabled(),
+                        TextInput::make('website')
+                            ->label(__('Website'))
+                            ->default($record->website)
+                            ->disabled(),
+                        TextInput::make('category.name')
+                            ->label(__('Category'))
+                            ->default($record->category->name)
+                            ->disabled(),
+                        Textarea::make('description')
+                            ->default($record->description)
+                            ->disabled(),
+                    ]);
+                })
+                ->modalSubmitAction(false)
+                ->visible(fn() => auth()->user()->can('Company Category View')),
 
             Action::make('details')
                 ->label('')
+                ->size('xl')
                 ->icon('heroicon-o-user')
                 ->url(fn($record) => route('companies.details', $record))
                 ->visible(fn() => auth()->user()->can('Student Details List')),

@@ -24,7 +24,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
-use Modules\Branch\Entities\Branch; // تأكد من استدعاء مودل الفرع
+use Modules\Branch\Entities\Branch;
 use Modules\Core\Entities\User;
 use Modules\Core\Filament\Forms\Components\Textarea;
 use Modules\GeoLocation\Entities\City;
@@ -48,14 +48,13 @@ class Details extends Component implements HasForms, HasInfolists
         // 1. تعبئة البيانات الأساسية للشركة
         $formData = $company->toArray();
 
-        // 2. تعبئة الفروع مع ساعات العمل والأقسام (نفس منطق Edit.php)
+        // 2. تعبئة الفروع مع ساعات العمل والأقسام
         $formData['branches'] = $company->branches->map(function ($branch) {
 
             // --- منطق جلب ساعات العمل ---
             $existingHours = $branch->workingHours;
 
             if ($existingHours->isEmpty()) {
-                // إذا لم تكن هناك ساعات مسجلة، نضع الافتراضي
                 $workingHoursData = [];
                 foreach (\Modules\Branch\Enums\WeekDay::cases() as $day) {
                     $workingHoursData[] = [
@@ -66,7 +65,6 @@ class Details extends Component implements HasForms, HasInfolists
                     ];
                 }
             } else {
-                // تحويل الساعات الموجودة للصيغة المناسبة للفورم
                 $workingHoursData = $existingHours->map(function($wh) {
                     return [
                         'id' => $wh->id,
@@ -87,11 +85,7 @@ class Details extends Component implements HasForms, HasInfolists
                 'city_id'      => $branch->city_id,
                 'latitude'     => $branch->latitude,
                 'longitude'    => $branch->longitude,
-
-                // المصفوفة المجهزة لساعات العمل
                 'working_hours' => $workingHoursData,
-
-                // جلب الأقسام
                 'departments' => $branch->departments->map(function ($dept) {
                     return [
                         'name'    => $dept->name,
@@ -114,7 +108,8 @@ class Details extends Component implements HasForms, HasInfolists
                         Tabs::make('tabs')
                             ->tabs([
 
-                                Tabs\Tab::make('Personal Information')
+                                // التعديل هنا: استخدام دالة الترجمة
+                                Tabs\Tab::make(__('Personal Information'))
                                     ->icon('heroicon-o-user')
                                     ->schema([
                                         Grid::make(3)
@@ -164,20 +159,19 @@ class Details extends Component implements HasForms, HasInfolists
                                             ])
                                     ]),
 
-                                Tabs\Tab::make(__('Branches asd Department'))
+                                // التعديل هنا: تصحيح الاسم واستخدام دالة الترجمة ليطابق ملف JSON
+                                Tabs\Tab::make(__('Branches & Departments'))
                                     ->icon('solar-shop-2-bold-duotone')
                                     ->schema([
                                         Repeater::make('branches')
                                             ->label(__('Branches'))
                                             ->collapsed()
-                                            // ->relationship('branches') // تم إزالة العلاقة المباشرة لنتمكن من التحكم بالحفظ يدوياً كما في Edit
                                             ->collapsible()
                                             ->cloneable()
                                             ->itemLabel(fn (array $state): ?string => $state['name'] ?? __('New Branch'))
                                             ->addActionLabel(__('Add New Branch'))
                                             ->grid(1)
                                             ->schema([
-                                                // حقل مخفي لمعرف الفرع
                                                 TextInput::make('id')->hidden(),
 
                                                 Group::make()
@@ -209,7 +203,6 @@ class Details extends Component implements HasForms, HasInfolists
                                                                                     ->schema([
                                                                                         Repeater::make('working_hours')
                                                                                             ->hiddenLabel()
-                                                                                            // ->relationship('workingHours') // حذف العلاقة المباشرة
                                                                                             ->schema([
                                                                                                 Grid::make(4)->schema([
                                                                                                     Select::make('day')
@@ -250,7 +243,6 @@ class Details extends Component implements HasForms, HasInfolists
                                                                                             ->deletable(false)
                                                                                             ->reorderable(false)
                                                                                             ->defaultItems(7)
-                                                                                            // الدالة الافتراضية للفروع الجديدة
                                                                                             ->default(function() {
                                                                                                 $days = [];
                                                                                                 foreach (\Modules\Branch\Enums\WeekDay::cases() as $day) {
@@ -278,6 +270,7 @@ class Details extends Component implements HasForms, HasInfolists
                                                                                 Select::make('country_id')
                                                                                     ->label(__('Country'))
                                                                                     ->options(Country::get()->pluck('name', 'id'))
+                                                                                    // ملاحظة: تم ابقاء القيم العربية هنا لأنها قيم بحث في قاعدة البيانات
                                                                                     ->default(fn () => Country::whereTranslation('name', 'فلسطين')
                                                                                         ->orWhereTranslation('name', 'Palestine')->first()?->id)
                                                                                     ->searchable()
@@ -294,6 +287,7 @@ class Details extends Component implements HasForms, HasInfolists
                                                                                             $query->where('country_id', $countryId);
                                                                                         })->get()->pluck('name', 'id');
                                                                                     })
+                                                                                    // ملاحظة: تم ابقاء القيم العربية هنا لأنها قيم بحث في قاعدة البيانات
                                                                                     ->default(fn () => City::whereTranslation('name', 'الخليل')
                                                                                         ->orWhereTranslation('name', 'Hebron')->first()?->id)
                                                                                     ->searchable()
@@ -377,7 +371,8 @@ class Details extends Component implements HasForms, HasInfolists
                                     ]),
 
 
-                                Tabs\Tab::make('تدريبات الطلاب')
+                                // التعديل هنا: تحويل "تدريبات الطلاب" إلى مفتاح ترجمة
+                                Tabs\Tab::make(__('Student Trainings'))
                                     ->icon('heroicon-o-academic-cap')
                                     ->schema([
                                         Grid::make(2)
@@ -410,7 +405,7 @@ class Details extends Component implements HasForms, HasInfolists
         // 3. حفظ الصور (الشعار والغلاف)
             $this->form->model($this->company)->saveRelationships();
 
-        // 4. حفظ الفروع والأقسام وساعات العمل (المنطق الجديد)
+        // 4. حفظ الفروع والأقسام وساعات العمل
         $this->saveBranchesAndDepartments();
 
         // 5. رسالة نجاح
@@ -513,7 +508,7 @@ class Details extends Component implements HasForms, HasInfolists
         return view('ppuds::livewire.pages.company.details.details')->layout(AppLayout::class, [
             'breadcrumbs' => [
                 ['title' => __('Home'), 'url' => route('home')],
-                ['title' => __('Company List'), 'url' => route('companies.index')],
+                ['title' => __('Companies List'), 'url' => route('companies.index')],
                 ['title' => __('Company Details'), 'url' => route('companies.details', $this->company)],
             ]
         ]);

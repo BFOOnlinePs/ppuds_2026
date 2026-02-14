@@ -4,10 +4,13 @@ namespace Modules\PPUDS\Livewire\Pages\Student\Details\StudentCompany;
 
 use App\View\Components\AppLayout;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Group;
+use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Forms\Get;
 use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Columns\TextColumn;
@@ -21,12 +24,16 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
+use Modules\Branch\Entities\Branch;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\Company;
+use Modules\PPUDS\Entities\CompanyDepartment;
 use Modules\PPUDS\Entities\Course;
+use Modules\PPUDS\Entities\Payment;
+use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\SemesterType;
 use Modules\PPUDS\Enums\TrainingStatus;
@@ -47,20 +54,20 @@ class Index extends Component implements HasForms, HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn () => StudentCompany::query()->where('company_id', $this->companyId)->with(['registration.student', 'registration.course', 'company', 'branch']))
+            ->query(fn() => StudentCompany::query()->where('company_id', $this->companyId)->with(['registration.student', 'registration.course', 'company', 'branch']))
             ->columns([
-//                TextColumn::make('registration.student.name')
-//                    ->label(__('Student'))
-//                    ->searchable()
-//                    ->sortable()
-//                    ->weight('bold')
-//                    ->color('primary')
-//                    ->url(fn (StudentCompany $record) => route('student-companies.edit', $record))
-//                    ->description(fn (StudentCompany $record) => $record->registration?->student?->email),
+                //                TextColumn::make('registration.student.name')
+                //                    ->label(__('Student'))
+                //                    ->searchable()
+                //                    ->sortable()
+                //                    ->weight('bold')
+                //                    ->color('primary')
+                //                    ->url(fn (StudentCompany $record) => route('student-companies.edit', $record))
+                //                    ->description(fn (StudentCompany $record) => $record->registration?->student?->email),
 
                 TextColumn::make('student.name')
                     ->label(__('Student'))
-//                    ->url(fn (StudentCompany $record) => route('student.edit', $record->company_id))
+                    //                    ->url(fn (StudentCompany $record) => route('student.edit', $record->company_id))
                     ->searchable()
                     ->placeholder('—')
                     ->color('primary'),
@@ -99,12 +106,116 @@ class Index extends Component implements HasForms, HasTable
             ])
             ->filters($this->getTableFilters(), layout: FiltersLayout::AboveContent)
             ->filtersFormColumns(5)
-//            ->actions($this->getTableActions())
+            //            ->actions($this->getTableActions())
             ->headerActions([
                 \Modules\Core\Filament\Forms\Components\CreateAction::make('create')
                     ->label(__('Add Student Company'))
-                    ->url(route('student-companies.add'))
-                    ->visible(fn () => auth()->user()->can('StudentCompany Create')),
+                    // ->url(route('student-companies.add'))
+                    ->form([
+                        Grid::make(['default' => 1, 'lg' => 3])
+                            ->schema([
+                                Group::make()
+                                    ->columnSpan(['lg' => 2])
+                                    ->schema([
+
+                                        Section::make(__('Student & Registration Info'))
+                                            ->icon('solar-user-id-bold-duotone')
+                                            ->schema([
+                                                Select::make('registration_id')
+                                                    ->label(__('Select Student Registration'))
+                                                    ->required()
+                                                    ->searchable()
+                                                    ->preload()
+                                                    ->prefixIcon('solar-document-text-linear')
+                                                    ->options(function () {
+                                                        return Registration::with(['student', 'course'])
+                                                            ->where('semester', app(GeneralSettings::class)->semester_type->value)
+                                                            ->where('year', app(GeneralSettings::class)->year)
+                                                            ->get()
+                                                            ->mapWithKeys(function ($reg) {
+                                                                $semesterLabel = $reg->semester?->getLabel() ?? $reg->semester?->value;
+
+                                                                return [$reg->id => "{$reg->student->studentProfile->student_number} - {$reg->student->name} - {$reg->course->name} ({$semesterLabel}/{$reg->year})"];
+                                                            });
+                                                    }),
+                                            ]),
+
+                                        Section::make(__('Placement Details'))
+                                            ->icon('solar-buildings-2-bold-duotone')
+                                            ->schema([
+                                                Grid::make(2)->schema([
+
+                                                    Select::make('company_id')
+                                                        ->label(__('Company'))
+                                                        ->options(Company::where('id', $this->companyId)->get()->pluck('name', 'id'))
+                                                        ->searchable()
+                                                        ->preload()
+                                                        ->live()
+                                                        ->default($this->companyId)
+                                                        ->selectablePlaceholder(false)
+                                                        ->afterStateUpdated(fn(Select $component) => $component->getContainer()->getComponent('branchSelect')->state(null)) // تصفير الفرع عند تغيير الشركة
+                                                        ->prefixIcon('solar-city-linear'),
+
+                                                    Select::make('branch_id')
+                                                        ->label(__('Branch'))
+                                                        ->key('branchSelect')
+                                                        ->searchable()
+                                                        ->preload()
+                                                        ->prefixIcon('solar-map-point-linear')
+                                                        ->placeholder(fn(Get $get) => $get('company_id') ? __('Select Branch') : __('Select Company First'))
+                                                        ->disabled(fn(Get $get) => ! $get('company_id'))
+                                                        ->options(
+                                                            fn(Get $get) =>
+                                                            Branch::whereHas('companies', function ($query) use ($get) {
+                                                                $query->where('company_id', $get('company_id'));
+                                                            })->get()->pluck('name', 'id')
+                                                        ),
+
+                                                    Select::make('department_id')
+                                                        ->label(__('Department'))
+                                                        ->searchable()
+                                                        ->preload()
+                                                        ->prefixIcon('solar-users-group-two-rounded-linear')
+                                                        ->disabled(fn(Get $get) => ! $get('company_id'))
+                                                        ->options(
+                                                            fn(Get $get) =>
+                                                            CompanyDepartment::get()->pluck('name', 'id')
+                                                        )
+                                                        ->columnSpanFull(),
+                                                ]),
+                                            ]),
+                                    ]),
+
+                                Group::make()
+                                    ->columnSpan(['lg' => 1])
+                                    ->schema([
+                                        Section::make(__('Status & Settings'))
+                                            ->icon('solar-settings-bold-duotone')
+                                            ->schema([
+                                                Select::make('status')
+                                                    ->label(__('Training Status'))
+                                                    ->required()
+                                                    ->options(TrainingStatus::class) // يدعم الـ Enum مباشرة كما فعلنا سابقاً
+                                                    ->default(TrainingStatus::AVAILABLE)
+                                                    ->native(false)
+                                                    ->prefixIcon('solar-flag-bold-duotone'),
+                                            ]),
+                                    ]),
+                            ]),
+                    ])
+                    ->action(function (array $data) {
+                        $this->authorize('StudentCompany Create');
+
+                        $data['created_by'] =   auth()->id();
+
+                        $registration = Registration::findOrFail($data['registration_id']);
+                        $data['student_id'] = $registration->student_id;
+
+                        StudentCompany::create($data);
+
+                        Toaster::success(__('Student company record created successfully'));
+                    })
+                    ->visible(fn() => auth()->user()->can('StudentCompany Create')),
             ])
             ->bulkActions($this->getTableBulkAction());
     }
@@ -129,7 +240,7 @@ class Index extends Component implements HasForms, HasTable
                 ->options(Course::get()->pluck('name', 'id'))
                 ->query(function (Builder $query, array $data) {
                     return $query->when($data['value'], function ($q, $courseId) {
-                        $q->whereHas('registration', fn ($regQ) => $regQ->where('course_id', $courseId));
+                        $q->whereHas('registration', fn($regQ) => $regQ->where('course_id', $courseId));
                     });
                 })
                 ->searchable(),
@@ -146,7 +257,7 @@ class Index extends Component implements HasForms, HasTable
                 ->query(function (Builder $query, array $data): Builder {
                     return $query->when(
                         $data['year'],
-                        fn (Builder $q, $year) => $q->whereHas('registration', fn ($regQ) => $regQ->where('year', $year))
+                        fn(Builder $q, $year) => $q->whereHas('registration', fn($regQ) => $regQ->where('year', $year))
                     );
                 }),
 
@@ -160,7 +271,7 @@ class Index extends Component implements HasForms, HasTable
                 ->query(function (Builder $query, array $data): Builder {
                     return $query->when(
                         $data['semester_type'],
-                        fn (Builder $q, $semester_type) => $q->whereHas('registration', fn ($regQ) => $regQ->where('semester', $semester_type))
+                        fn(Builder $q, $semester_type) => $q->whereHas('registration', fn($regQ) => $regQ->where('semester', $semester_type))
                     );
                 }),
         ];
@@ -171,11 +282,11 @@ class Index extends Component implements HasForms, HasTable
         return [
             InfoAction::make('info')
                 ->label('')
-                ->visible(fn () => auth()->user()->can('Major Info')),
+                ->visible(fn() => auth()->user()->can('Major Info')),
             ViewAction::make('view')
                 ->label('')
                 ->tooltip(__('View Details'))
-                ->form(fn (StudentCompany $record) => [
+                ->form(fn(StudentCompany $record) => [
                     Grid::make(2)->schema([
                         TextInput::make('student_name')
                             ->label(__('Student'))
@@ -203,13 +314,13 @@ class Index extends Component implements HasForms, HasTable
                     ]),
                 ])
                 ->modalSubmitAction(false)
-                ->visible(fn () => auth()->user()->can('StudentCompany View')), // تأكد من اسم الصلاحية
+                ->visible(fn() => auth()->user()->can('StudentCompany View')), // تأكد من اسم الصلاحية
 
             EditAction::make('edit')
                 ->label('')
                 ->tooltip(__('Edit'))
-                ->url(fn (StudentCompany $record) => route('student-companies.edit', $record->id)) // تأكد من اسم الراوت
-                ->visible(fn () => auth()->user()->can('StudentCompany Update')),
+                ->url(fn(StudentCompany $record) => route('student-companies.edit', $record->id)) // تأكد من اسم الراوت
+                ->visible(fn() => auth()->user()->can('StudentCompany Update')),
 
             DeleteAction::make('delete')
                 ->label('')
@@ -218,7 +329,7 @@ class Index extends Component implements HasForms, HasTable
                     $record->delete();
                     Toaster::success(__('Student company record deleted successfully'));
                 })
-                ->visible(fn () => auth()->user()->can('StudentCompany Delete')),
+                ->visible(fn() => auth()->user()->can('StudentCompany Delete')),
         ];
     }
 
@@ -231,8 +342,8 @@ class Index extends Component implements HasForms, HasTable
                     ->icon('solar-trash-bin-trash-bold-duotone')
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->action(fn (Collection $records) => $records->each->delete())
-                    ->after(fn () => Toaster::success(__('Selected records deleted successfully'))),
+                    ->action(fn(Collection $records) => $records->each->delete())
+                    ->after(fn() => Toaster::success(__('Selected records deleted successfully'))),
             ]),
         ];
     }

@@ -15,7 +15,8 @@ class PaymentRequestUpdate extends FormRequest
     {
         return [
             'status'                => ['required', 'integer', Rule::in(array_column(PaymentStatus::cases(), 'value'))],
-            'company_notes'         => ['nullable', 'string']
+            'company_notes'         => ['nullable', 'string'],
+            'student_notes'         => ['nullable', 'string']
         ];
     }
 

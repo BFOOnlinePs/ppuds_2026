@@ -313,5 +313,9 @@
     "In Longitude": "خط الطول (دخول)",
     "Out Latitude": "خط العرض (مغادرة)",
     "Out Longitude": "خط الطول (مغادرة)",
-    "View Map": "عرض الخريطة"
+    "View Map": "عرض الخريطة",
+
+    "Personal Information": "المعلومات الشخصية",
+    "Student Trainings": "تدريبات الطلاب",
+    "Company Details": "تفاصيل الشركة"
 }

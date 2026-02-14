@@ -3,7 +3,6 @@
 namespace Modules\PPUDS\Livewire\Pages\StudentAttendance;
 
 use App\View\Components\AppLayout;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\RichEditor;
@@ -14,7 +13,6 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
@@ -35,8 +33,10 @@ class Report extends Component implements HasForms
 
         $this->report = $studentAttendance->studentReport;
 
-        $this->form->fill($this->report->toArray());
+        $this->form->fill($this->report?->toArray());
     }
+
+
 
     public function form(Form $form): Form
     {
