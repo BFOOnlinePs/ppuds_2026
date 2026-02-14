@@ -7129,6 +7129,193 @@
                 ]
             }
         },
+        "/api/v1/ppuds/reports": {
+            "get": {
+                "tags": [
+                    "Student Reports"
+                ],
+                "summary": "List all reports",
+                "operationId": "4ca4e7a4d20f19f875dfaff7d2beffa0",
+                "parameters": [
+                    {
+                        "name": "filter[student_attendance_id]",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "example": 15
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful retrieval",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Reports retrieved successfully"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "student_attendance_id": {
+                                                        "type": "integer",
+                                                        "example": 10
+                                                    },
+                                                    "report_text": {
+                                                        "type": "string"
+                                                    },
+                                                    "image": {
+                                                        "type": "string",
+                                                        "nullable": true
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Student Reports"
+                ],
+                "summary": "Create a new report",
+                "operationId": "9bbde7b3ee6e41113f29863e37a1a7fe",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "student_attendance_id"
+                                ],
+                                "properties": {
+                                    "student_attendance_id": {
+                                        "type": "integer"
+                                    },
+                                    "report_text": {
+                                        "type": "string"
+                                    },
+                                    "file_report": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/reports/{report}": {
+            "get": {
+                "tags": [
+                    "Student Reports"
+                ],
+                "summary": "Get a single report",
+                "operationId": "6899f2165e79d391f653619378d4fd6d",
+                "parameters": [
+                    {
+                        "name": "report",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/ppuds/student-companies": {
             "get": {
                 "tags": [
@@ -8103,6 +8290,10 @@
         {
             "name": "Student Attendances",
             "description": "API Endpoints for managing student check-ins and check-outs"
+        },
+        {
+            "name": "Student Reports",
+            "description": "API Endpoints for managing student daily reports"
         },
         {
             "name": "Branch",
