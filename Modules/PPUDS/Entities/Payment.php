@@ -37,7 +37,7 @@ class Payment extends Model implements HasMedia
         'student_company_id',
         'reference_id',
         'payment_value',
-        'student_role',
+        'student_notes',
         'status',
         'currency_id',
         'company_notes',
