@@ -48,6 +48,7 @@ class StudentAttendanceReportResource extends JsonResource
             AllowedFilter::partial('academic_feedback'),
             AllowedFilter::exact('created_by'),
             AllowedFilter::exact('created_at'),
+            AllowedFilter::scope('today', 'today'),
         ];
     }
 

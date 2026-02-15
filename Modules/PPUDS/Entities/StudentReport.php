@@ -2,6 +2,7 @@
 
 namespace Modules\PPUDS\Entities;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\Core\Entities\User;
@@ -128,5 +129,10 @@ class StudentReport extends Model implements HasMedia
     public function studentAttendance()
     {
         return $this->belongsTo(StudentAttendance::class, 'student_attendance_id');
+    }
+
+    public function today(): Builder
+    {
+        return $this->whereDate('created_at', now()->toDateString());
     }
 }
