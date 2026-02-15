@@ -22,7 +22,7 @@ class StudentAttendanceReportRequest extends FormRequest
             'academic_feedback'     => ['nullable', 'string'],
             'submit_latitude'       => ['nullable', 'numeric', 'between:-90,90'],
             'submit_longitude'      => ['nullable', 'numeric', 'between:-180,180'],
-            'file_report'           => ['nullable', 'image', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png', 'max:10240'], // Max 10MB
+            'file_report'           => ['nullable', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png', 'max:10240'], // Max 10MB
         ];
     }
 }

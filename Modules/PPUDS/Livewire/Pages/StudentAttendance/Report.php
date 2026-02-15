@@ -65,7 +65,6 @@ class Report extends Component implements HasForms
                                         ->label(__('Attachment (Image/File)'))
                                         ->disk('student_reports')
                                         ->collection('file_report')
-                                        ->image()
                                         ->multiple()
                                         ->maxFiles(5)
                                         ->reorderable()
@@ -82,7 +81,6 @@ class Report extends Component implements HasForms
                             Section::make(__('Attendance Info'))
                                 ->icon('heroicon-o-information-circle')
                                 ->schema([
-                                    // عرض معلومات فقط (Read-only) للسياق
                                     Placeholder::make('student_name')
                                         ->label(__('Student Name'))
                                         ->content($this->attendance->studentCompany->student->name ?? '-'),
@@ -91,10 +89,8 @@ class Report extends Component implements HasForms
                                         ->label(__('Date'))
                                         ->content($this->attendance->attendance_date),
 
-                                    // عرض الصورة الحالية إن وجدت
                                     Placeholder::make('current_images')
                                         ->label(__('Current Uploaded Images'))
-                                        // 1. الشرط: اعرض الحقل فقط إذا كان التقرير موجوداً وبه صور
                                         ->visible(fn () => $this->report && $this->report->getMedia('file_report')->count() > 0)
                                         ->content(fn () => new HtmlString(
                                             Blade::render(<<<'HTML'
