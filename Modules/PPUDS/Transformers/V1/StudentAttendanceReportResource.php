@@ -47,6 +47,7 @@ class StudentAttendanceReportResource extends JsonResource
             AllowedFilter::partial('company_feedback'),
             AllowedFilter::partial('academic_feedback'),
             AllowedFilter::exact('created_by'),
+            AllowedFilter::exact('created_at'),
         ];
     }
 
