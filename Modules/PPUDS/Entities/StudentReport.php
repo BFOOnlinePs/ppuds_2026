@@ -131,7 +131,7 @@ class StudentReport extends Model implements HasMedia
         return $this->belongsTo(StudentAttendance::class, 'student_attendance_id');
     }
 
-    public function today(): Builder
+    public function scopeToday(): Builder
     {
         return $this->whereDate('created_at', now()->toDateString());
     }
