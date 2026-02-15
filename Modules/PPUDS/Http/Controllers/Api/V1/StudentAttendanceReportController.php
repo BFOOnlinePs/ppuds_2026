@@ -157,7 +157,11 @@ class StudentAttendanceReportController extends Controller
      */
     public function store(StudentAttendanceReportRequest $request)
     {
-        $report = StudentReport::create($request->validated());
+        $data = $request->validated();
+
+        $data['created_by'] = auth()->id();
+
+        $report = StudentReport::create($data);
 
         if ($request->hasFile('file_report') && method_exists($report, 'addImage')) {
             $report->addImage($request->file('file_report'));
