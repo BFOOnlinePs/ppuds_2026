@@ -19,7 +19,7 @@ class StudentAttendanceReportResource extends JsonResource
             'academic_feedback'         => $this->academic_feedback,
             'submit_latitude'           => $this->submit_latitude,
             'submit_longitude'          => $this->submit_longitude,
-            'image'                     => $this->image,
+            'file_report'               => $this->getMultipleImage(),
             'created_by'                => $this->whenLoaded('createdBy'),
         ];
     }
