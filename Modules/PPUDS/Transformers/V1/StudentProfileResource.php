@@ -15,7 +15,7 @@ class StudentProfileResource extends JsonResource
             'id'                    => $this->id,
             'student_number'        => $this->student_number,
             'user_id'               => $this->user_id,
-            'dob'                   => $this->dob?->format('Y-m-d'),
+            'dob'                   => $this->dob,
             'gender'                => $this->gender,
             'cv_status'             => $this->cv_status,
             'tawjihi_gpa'           => $this->tawjihi_gpa,

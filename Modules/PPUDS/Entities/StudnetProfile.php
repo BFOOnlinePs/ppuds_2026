@@ -38,6 +38,10 @@ class StudnetProfile extends Model implements HasMedia
         'user_id','dob','gender','cv_status','tawjihi_gpa','student_number','enrollment_year','semester_level','major_id'
     ];
 
+    protected $casts = [
+        'dob' => 'date',
+    ];
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
