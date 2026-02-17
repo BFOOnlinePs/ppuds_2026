@@ -126,6 +126,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     Route::get('/', Index::class)->name('index')->can('StudentAttendance View List');
                     Route::get('{studentAttendance}/report', Report::class)->name('report')->can('StudentAttendance Report List');
                 });
+
+                Route::group([
+                    'prefix' => 'surveys',
+                    'as' => 'surveys.',
+                    'namespace' => 'Modules\PPUDS\Livewire\Pages\Survey',
+                ], function () {
+                    Route::get('/', Index::class)->name('index')->can('Survey View List');
+                    Route::get('/add', Add::class)->name('add')->can('Survey Create');
+                    Route::get('/{survey}/edit', Edit::class)->name('edit')->can('Survey Update');
+                });
             });
         }
     );
