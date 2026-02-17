@@ -8,6 +8,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 use Modules\Core\Entities\User;
 use Modules\Core\Traits\Concerns\SelectsFieldsFromApi;
 use Modules\Items\Transformers\V1\OrderResource;
+use Modules\PPUDS\Transformers\V1\StudentProfileResource;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class UserResource extends JsonResource
@@ -27,7 +28,12 @@ class UserResource extends JsonResource
             'point_balance'     => $this->getPointBalance(),
             'branch_id'         => $this->branch_id,
             'roles'             => $this->whenLoaded('roles'),
-            'profile'           => $this->whenLoaded('studentProfile'),
+            'profile'           => $this->whenLoaded(function () {
+                if ($this->relationLoaded('studentProfile')) {
+                    return new StudentProfileResource($this->studentProfile);
+                }
+                return null;
+            }),
             'created_at'        => $this->created_at,
             'updated_at'        => $this->updated_at,
         ];
