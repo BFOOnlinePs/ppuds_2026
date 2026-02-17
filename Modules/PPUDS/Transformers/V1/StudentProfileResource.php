@@ -22,6 +22,7 @@ class StudentProfileResource extends JsonResource
             'enrollment_year'       => $this->enrollment_year,
             'semester_level'        => $this->semester_level,
             'major_id'              => $this->major_id,
+            'major'                 => $this->whenLoaded('major'),
             'created_by'            => $this->created_by,
             'created_at'            => $this->created_at
         ];
