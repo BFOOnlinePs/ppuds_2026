@@ -28,12 +28,7 @@ class UserResource extends JsonResource
             'point_balance'     => $this->getPointBalance(),
             'branch_id'         => $this->branch_id,
             'roles'             => $this->whenLoaded('roles'),
-            'profile'           => $this->whenLoaded(function () {
-                if ($this->relationLoaded('studentProfile')) {
-                    return new StudentProfileResource($this->studentProfile);
-                }
-                return null;
-            }),
+            'profile'           => new StudentProfileResource($this->whenLoaded('studentProfile')),
             'created_at'        => $this->created_at,
             'updated_at'        => $this->updated_at,
         ];
