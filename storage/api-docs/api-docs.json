@@ -5515,6 +5515,69 @@
             }
         },
         "/api/v1/ppuds/announcements": {
+            "get": {
+                "tags": [
+                    "Announcements"
+                ],
+                "summary": "Get all announcements",
+                "description": "Retrieve a list of all announcements with filtering and sorting",
+                "operationId": "25fac5db6eeb4684cb2675a5bdbb3c61",
+                "parameters": [
+                    {
+                        "name": "Accept-Language",
+                        "in": "header",
+                        "description": "Language header (ar or en)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "default": "ar",
+                            "example": "en"
+                        }
+                    },
+                    {
+                        "name": "filter[name]",
+                        "in": "query",
+                        "description": "Filter by name",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Announcements retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Announcements retrieved successfully"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/AnnouncementResource"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
             "post": {
                 "tags": [
                     "Announcements"
@@ -5545,6 +5608,56 @@
                                         "message": {
                                             "type": "string",
                                             "example": "Created successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/AnnouncementResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/announcements/{id}": {
+            "get": {
+                "tags": [
+                    "Announcements"
+                ],
+                "summary": "Get announcement details",
+                "operationId": "9fac9bf4dd4ee460e856cc1e08e2d014",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Announcement ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Announcement retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Announcement retrieved successfully"
                                         },
                                         "data": {
                                             "$ref": "#/components/schemas/AnnouncementResource"
