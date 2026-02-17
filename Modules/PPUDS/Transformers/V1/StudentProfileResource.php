@@ -23,7 +23,7 @@ class StudentProfileResource extends JsonResource
             'semester_level'        => $this->semester_level,
             'major_id'              => $this->major_id,
             'created_by'            => $this->created_by,
-            'created_at'            => $this->created_at?->toIso8601String
+            'created_at'            => $this->created_at
         ];
     }
 
