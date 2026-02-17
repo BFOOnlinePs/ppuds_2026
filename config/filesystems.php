@@ -133,6 +133,14 @@ return [
             'throw' => false,
         ],
 
+        'student_profiles' => [
+            'driver' => 'local',
+            'root'   => storage_path('app/public/ppuds/student_profiles'),
+            'url'    => env('APP_URL').'/storage/ppuds/student_profiles',
+            'visibility' => 'public',
+            'throw' => false,
+        ],
+
         'payments' => [
             'driver' => 'local',
             'root'   => storage_path('app/public/ppuds/student_payments'),

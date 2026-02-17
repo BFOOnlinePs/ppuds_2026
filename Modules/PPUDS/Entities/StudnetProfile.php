@@ -61,7 +61,11 @@ class StudnetProfile extends Model implements HasMedia
     {
         $this->addMediaCollection('cv')
             ->singleFile()
-            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
+            ->acceptsMimeTypes([
+                'application/pdf',
+                'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            ]);
     }
 
     public function addImage($file)

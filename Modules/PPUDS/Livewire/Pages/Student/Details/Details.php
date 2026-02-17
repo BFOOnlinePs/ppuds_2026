@@ -187,7 +187,13 @@ class Details extends Component implements HasForms, HasInfolists
                                                     Section::make()
                                                         ->columnSpan(1)
                                                         ->schema([
-                                                            SpatieMediaLibraryFileUpload::make('cv_file')
+                                                            SpatieMediaLibraryFileUpload::make('cv')
+                                                                ->label(__('CV'))
+                                                                ->disk('student_profiles')
+                                                                ->collection('cv')
+                                                                ->image()
+                                                                ->imageEditor()
+                                                                ->alignCenter(),
                                                         ]),
                                                 ]),
                                         ]),
