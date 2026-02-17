@@ -4,6 +4,7 @@ namespace Modules\Core\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Modules\PPUDS\Enums\StudentGender;
 
 class UserRequest extends FormRequest
 {
@@ -13,9 +14,17 @@ class UserRequest extends FormRequest
     public function rules(): array
     {
         $rules = [
-            'name'  => 'required|string|max:255',
-            'email' => 'required|email|max:255',
-            'phone' => 'required|numeric|digits_between:10,15|unique:users,phone|regex:/^\+?[0-9]{10,15}$/',
+            'name'              => 'required|string|max:255',
+            'email'             => 'required|email|max:255',
+            'phone'             => 'required|numeric|digits_between:10,15|unique:users,phone|regex:/^\+?[0-9]{10,15}$/',
+
+            'studentProfile'    => 'sometimes|array',
+            'studentProfile.dob' => 'sometimes|date',
+            'studentProfile.gender' => 'sometimes|integer|in:' . implode(',', array_column(StudentGender::cases(), 'value')),
+            'studentProfile.tawjihi_gpa' => 'sometimes|numeric|between:0,4',
+            'studentProfile.enrollment_year' => 'sometimes|integer|min:1900|max:'.date('Y'),
+            'studentProfile.semester_level' => 'sometimes|integer|min:1|max:12',
+            'studentProfile.major_id' => 'sometimes|integer|exists:ppu_ds_majors,id',
         ];
 
         if ($this->method('PUT') || $this->method('PATCH'))

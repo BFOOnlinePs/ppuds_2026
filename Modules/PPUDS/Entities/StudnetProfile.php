@@ -101,6 +101,11 @@ class StudnetProfile extends Model implements HasMedia
         }
     }
 
+    public function getCvUrlAttribute()
+    {
+        return $this->getFirstMediaUrl('cv');
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

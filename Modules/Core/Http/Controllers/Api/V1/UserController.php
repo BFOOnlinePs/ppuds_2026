@@ -196,6 +196,15 @@ class UserController extends Controller
     {
         $user->update($request->validated());
 
+        $studentProfile = $user->studentProfile()->updateOrCreate(
+            ['user_id' => $user->id],
+            $request->input('studentProfile', [])
+        );
+
+        if ($request->hasFile('cv')) {
+            $studentProfile->addImage($request->file('cv'));
+        }
+
         if ($request->hasFile('avatar')) {
 
             $user->addMediaFromRequest('avatar')
