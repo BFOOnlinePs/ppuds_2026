@@ -7,6 +7,26 @@ use Illuminate\Http\Resources\Json\JsonResource;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
 
+
+/**
+ * @OA\Schema(
+ * schema="StudentAttendanceReportResource",
+ * title="Student Attendance Report Resource",
+ * description="Student Attendance Report details",
+ * @OA\Xml(name="StudentAttendanceReportResource"),
+ * @OA\Property(property="id", type="integer", example=1),
+ * @OA\Property(property="student_attendance_id", type="integer", example=5),
+ * @OA\Property(property="report_text", type="string", example="Today I learned about..."),
+ * @OA\Property(property="company_feedback", type="string", example="Excellent work"),
+ * @OA\Property(property="academic_feedback", type="string", example="Keep it up"),
+ * @OA\Property(property="submit_latitude", type="number", format="float", example=31.9038),
+ * @OA\Property(property="submit_longitude", type="number", format="float", example=35.2034),
+ * @OA\Property(property="file_report", type="string", example="/uploads/report_1.jpg"),
+ * @OA\Property(property="created_by", type="integer", example=123),
+ * @OA\Property(property="created_at", type="string", format="date-time")
+ * )
+ */
+
 class StudentAttendanceReportResource extends JsonResource
 {
     public function toArray(Request $request): array

@@ -5514,6 +5514,55 @@
                 ]
             }
         },
+        "/api/v1/ppuds/announcements": {
+            "post": {
+                "tags": [
+                    "Announcements"
+                ],
+                "summary": "Create announcement",
+                "operationId": "4c5af8ce66ceb78639f0e3452ac8ab91",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AnnouncementResource"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Created successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/AnnouncementResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/ppuds/company-categories": {
             "get": {
                 "tags": [
@@ -7130,93 +7179,12 @@
             }
         },
         "/api/v1/ppuds/reports": {
-            "get": {
-                "tags": [
-                    "Student Reports"
-                ],
-                "summary": "List all reports",
-                "operationId": "4ca4e7a4d20f19f875dfaff7d2beffa0",
-                "parameters": [
-                    {
-                        "name": "filter[student_attendance_id]",
-                        "in": "query",
-                        "schema": {
-                            "type": "integer"
-                        }
-                    },
-                    {
-                        "name": "per_page",
-                        "in": "query",
-                        "schema": {
-                            "type": "integer",
-                            "example": 15
-                        }
-                    },
-                    {
-                        "name": "page",
-                        "in": "query",
-                        "schema": {
-                            "type": "integer",
-                            "example": 1
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful retrieval",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "status": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Reports retrieved successfully"
-                                        },
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "properties": {
-                                                    "id": {
-                                                        "type": "integer",
-                                                        "example": 1
-                                                    },
-                                                    "student_attendance_id": {
-                                                        "type": "integer",
-                                                        "example": 10
-                                                    },
-                                                    "report_text": {
-                                                        "type": "string"
-                                                    },
-                                                    "image": {
-                                                        "type": "string",
-                                                        "nullable": true
-                                                    }
-                                                },
-                                                "type": "object"
-                                            }
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "sanctum": []
-                    }
-                ]
-            },
             "post": {
                 "tags": [
                     "Student Reports"
                 ],
                 "summary": "Create a new report",
+                "description": "Create Student Report\n\nCreate a new daily report for a specific attendance record.",
                 "operationId": "9bbde7b3ee6e41113f29863e37a1a7fe",
                 "requestBody": {
                     "required": true,
@@ -7228,12 +7196,37 @@
                                 ],
                                 "properties": {
                                     "student_attendance_id": {
-                                        "type": "integer"
+                                        "description": "The ID of the related attendance record",
+                                        "type": "integer",
+                                        "example": 5
                                     },
                                     "report_text": {
-                                        "type": "string"
+                                        "description": "The content of the report",
+                                        "type": "string",
+                                        "example": "Today I learned about..."
+                                    },
+                                    "company_feedback": {
+                                        "description": "Feedback from the company mentor",
+                                        "type": "string",
+                                        "example": "Excellent work"
+                                    },
+                                    "academic_feedback": {
+                                        "description": "Feedback from the academic supervisor",
+                                        "type": "string",
+                                        "example": "Keep it up"
+                                    },
+                                    "submit_latitude": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 31.9038
+                                    },
+                                    "submit_longitude": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 35.2034
                                     },
                                     "file_report": {
+                                        "description": "Optional image/file attachment for the report",
                                         "type": "string",
                                         "format": "binary"
                                     }
@@ -7245,7 +7238,7 @@
                 },
                 "responses": {
                     "201": {
-                        "description": "Created",
+                        "description": "Report created successfully",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -7254,7 +7247,30 @@
                                             "type": "boolean",
                                             "example": true
                                         },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Student Attendance Report created successfully"
+                                        },
                                         "data": {
+                                            "$ref": "#/components/schemas/StudentAttendanceReportResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "The given data was invalid."
+                                        },
+                                        "errors": {
                                             "type": "object"
                                         }
                                     },
@@ -7277,20 +7293,23 @@
                     "Student Reports"
                 ],
                 "summary": "Get a single report",
+                "description": "Get Student Report Details\n\nRetrieve details of a specific report by its ID.",
                 "operationId": "6899f2165e79d391f653619378d4fd6d",
                 "parameters": [
                     {
                         "name": "report",
                         "in": "path",
+                        "description": "The ID of the report",
                         "required": true,
                         "schema": {
-                            "type": "integer"
+                            "type": "integer",
+                            "example": 1
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Success",
+                        "description": "Report retrieved successfully",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -7299,8 +7318,28 @@
                                             "type": "boolean",
                                             "example": true
                                         },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Student Attendance Report retrieved successfully"
+                                        },
                                         "data": {
-                                            "type": "object"
+                                            "$ref": "#/components/schemas/StudentAttendanceReportResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Report not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "No query results for model [Modules\\\\PPUDS\\\\Entities\\\\StudentReport]."
                                         }
                                     },
                                     "type": "object"
@@ -8276,6 +8315,94 @@
                     }
                 },
                 "type": "object"
+            },
+            "AnnouncementResource": {
+                "title": "Announcement Resource",
+                "description": "Announcement details",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "example": "إعلان هام"
+                    },
+                    "target_roles[]": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "student",
+                            "company"
+                        ]
+                    },
+                    "content": {
+                        "type": "string",
+                        "example": "تفاصيل الإعلان..."
+                    },
+                    "published_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "image_url": {
+                        "type": "string",
+                        "example": "https://site.com/img.png"
+                    }
+                },
+                "type": "object",
+                "xml": {
+                    "name": "AnnouncementResource"
+                }
+            },
+            "StudentAttendanceReportResource": {
+                "title": "Student Attendance Report Resource",
+                "description": "Student Attendance Report details",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "student_attendance_id": {
+                        "type": "integer",
+                        "example": 5
+                    },
+                    "report_text": {
+                        "type": "string",
+                        "example": "Today I learned about..."
+                    },
+                    "company_feedback": {
+                        "type": "string",
+                        "example": "Excellent work"
+                    },
+                    "academic_feedback": {
+                        "type": "string",
+                        "example": "Keep it up"
+                    },
+                    "submit_latitude": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 31.9038
+                    },
+                    "submit_longitude": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 35.2034
+                    },
+                    "file_report": {
+                        "type": "string",
+                        "example": "/uploads/report_1.jpg"
+                    },
+                    "created_by": {
+                        "type": "integer",
+                        "example": 123
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object",
+                "xml": {
+                    "name": "StudentAttendanceReportResource"
+                }
             }
         },
         "securitySchemes": {
@@ -8338,6 +8465,10 @@
         {
             "name": "Marketing",
             "description": "Marketing"
+        },
+        {
+            "name": "Announcements",
+            "description": "Announcements"
         },
         {
             "name": "Company Categories",

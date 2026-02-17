@@ -140,6 +140,14 @@ return [
             'visibility' => 'public',
             'throw' => false,
         ],
+
+        'announcements' => [
+            'driver' => 'local',
+            'root'   => storage_path('app/public/ppuds/announcements'),
+            'url'    => env('APP_URL').'/storage/ppuds/announcements',
+            'visibility' => 'public',
+            'throw' => false,
+        ],
     ],
 
     /*

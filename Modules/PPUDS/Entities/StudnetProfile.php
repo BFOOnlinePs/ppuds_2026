@@ -3,11 +3,16 @@
 namespace Modules\PPUDS\Entities;
 
 use Astrotomic\Translatable\Translatable;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Modules\Core\Entities\User;
+use Modules\Core\Enums\ImageQuality;
+use Modules\Core\Enums\ImageSize;
+use Modules\Core\Services\ImageService;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\MediaLibrary\HasMedia;
@@ -61,7 +66,6 @@ class StudnetProfile extends Model implements HasMedia
             $file = reset($file);
         }
 
-        // التحقق من نوع الملف
         if (
             !$file instanceof \Illuminate\Http\UploadedFile &&
             !($file instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile)
@@ -69,8 +73,7 @@ class StudnetProfile extends Model implements HasMedia
             return null;
         }
 
-        // مسح الصورة السابقة
-        $this->clearMediaCollection('category');
+        $this->clearMediaCollection('cv');
 
         try {
             $originalName = $file->getClientOriginalName();
@@ -80,7 +83,7 @@ class StudnetProfile extends Model implements HasMedia
             $media = $this
                 ->addMedia($file)
                 ->usingFileName($fileName)
-                ->toMediaCollection('category', 'items');
+                ->toMediaCollection('cv', 'student_profiles');
 
             $size = ImageSize::MEDIUM;
 
@@ -89,7 +92,7 @@ class StudnetProfile extends Model implements HasMedia
 
             return $media;
         } catch (\Exception $e) {
-            \Log::error('Error uploading category image: ' . $e->getMessage());
+            Log::error('Error uploading student profile cv: ' . $e->getMessage());
             return null;
         }
     }

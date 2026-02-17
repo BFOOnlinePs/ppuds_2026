@@ -19,73 +19,7 @@ class StudentAttendanceReportController extends Controller
 {
     use ApiResponse;
 
-    /**
-     * List Student Reports
-     *
-     * Retrieve a paginated list of student reports with filtering and sorting options.
-     *
-     * @OA\Get(
-     * path="/api/v1/ppuds/reports",
-     * summary="List all reports",
-     * tags={"Student Reports"},
-     * security={{"sanctum": {}}},
-     * @OA\Parameter(
-     * name="filter[student_attendance_id]",
-     * in="query",
-     * description="Filter by Attendance ID",
-     * required=false,
-     * @OA\Schema(type="integer", example=10)
-     * ),
-     * @OA\Parameter(
-     * name="filter[report_text]",
-     * in="query",
-     * description="Filter by report text content",
-     * required=false,
-     * @OA\Schema(type="string")
-     * ),
-     * @OA\Parameter(
-     * name="sort",
-     * in="query",
-     * description="Sort results (e.g. -created_at, id)",
-     * required=false,
-     * @OA\Schema(type="string", example="-created_at")
-     * ),
-     * @OA\Parameter(
-     * name="per_page",
-     * in="query",
-     * description="Number of items per page",
-     * required=false,
-     * @OA\Schema(type="integer", example=15)
-     * ),
-     * @OA\Parameter(
-     * name="page",
-     * in="query",
-     * description="Page number",
-     * required=false,
-     * @OA\Schema(type="integer", example=1)
-     * ),
-     * @OA\Response(
-     * response=200,
-     * description="Successful retrieval",
-     * @OA\JsonContent(
-     * type="object",
-     * @OA\Property(property="status", type="boolean", example=true),
-     * @OA\Property(property="message", type="string", example="Student Attendance Reports retrieved successfully"),
-     * @OA\Property(
-     * property="data",
-     * type="array",
-     * @OA\Items(ref="#/components/schemas/StudentAttendanceReportResource")
-     * ),
-     * @OA\Property(
-     * property="meta",
-     * type="object",
-     * description="Pagination metadata"
-     * )
-     * )
-     * ),
-     * @OA\Response(response=401, description="Unauthenticated")
-     * )
-     */
+    
     public function index()
     {
         $report = QueryBuilder::for(StudentReport::class)
