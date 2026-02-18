@@ -9,7 +9,7 @@ class SurveyQuestionTranslation extends Model
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
-        $this->setTable(config('ppuds.table_prefix') . 'survey_translations');
+        $this->setTable(config('ppuds.table_prefix') . 'survey_question_translations');
     }
 
     protected $fillable = [

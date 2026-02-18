@@ -15,7 +15,7 @@ return new class extends Migration
         Schema::create(config('ppuds.table_prefix') . 'surveys', function (Blueprint $table) {
             $table->id();
             
-            $table->integer('serve_group')->nullable();
+            $table->string('serve_group')->nullable();
             $table->dateTime('start_date')->nullable();
             $table->dateTime('end_date')->nullable();
             $table->boolean('is_active')->default(false);

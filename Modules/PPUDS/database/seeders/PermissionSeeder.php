@@ -429,6 +429,40 @@ class PermissionSeeder extends Seeder
                 'guard_name' => 'web',
                 'module_name' => 'Student Attendance',
             ],
+
+
+
+            // TODO Survey
+            [
+                'name' => 'Survey View List',
+                'guard_name' => 'web',
+                'module_name' => 'Survey',
+            ],
+            [
+                'name' => 'Survey Create',
+                'guard_name' => 'web',
+                'module_name' => 'Survey',
+            ],
+            [
+                'name' => 'Survey Update',
+                'guard_name' => 'web',
+                'module_name' => 'Survey',
+            ],
+            [
+                'name' => 'Survey Delete',
+                'guard_name' => 'web',
+                'module_name' => 'Survey',
+            ],
+            [
+                'name' => 'Survey View',
+                'guard_name' => 'web',
+                'module_name' => 'Survey',
+            ],
+            [
+                'name' => 'Survey Info',
+                'guard_name' => 'web',
+                'module_name' => 'Survey',
+            ],
         ];
 
         foreach ($permissions as $perm) {

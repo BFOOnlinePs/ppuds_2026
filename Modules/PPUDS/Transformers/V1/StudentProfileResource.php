@@ -23,11 +23,12 @@ class StudentProfileResource extends JsonResource
             'semester_level'        => $this->semester_level,
             'major_id'              => $this->major_id,
             'major'                 => $this->whenLoaded('major'),
-            'cv'                    => $this->getCvUrlAttribute(),
+            'cv'                => $this->getFirstMediaUrl('cv'),
             'created_by'            => $this->created_by,
             'created_at'            => $this->created_at
         ];
     }
+
 
     public static function allowedFields(): array
     {

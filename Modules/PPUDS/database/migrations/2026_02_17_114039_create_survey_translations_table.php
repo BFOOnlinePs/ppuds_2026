@@ -11,10 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create(config('ppuds.table_prefix') . 'survey_translations', function (Blueprint $table) {
+        Schema::create(config('ppuds.table_prefix').'survey_translations', function (Blueprint $table) {
             $table->id();
-            
-            $table->foreignId('survey_id')->constrained(config('ppuds.table_prefix') . 'surveys')->cascadeOnDelete();
+
+            $table->foreignId('survey_id')->constrained(config('ppuds.table_prefix').'surveys')->cascadeOnDelete();
             $table->string('locale')->index();
             $table->string('title');
             $table->text('description')->nullable();
@@ -28,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists(config('ppuds.table_prefix') . 'survey_translations');
+        Schema::dropIfExists(config('ppuds.table_prefix').'survey_translations');
     }
 };

@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\PPUDS\Livewire\Pages\Student\Details;
+namespace Modules\PPUDS\Livewire\Pages\Student\Details\StudentAttendance;
 
 use App\View\Components\AppLayout;
 use Filament\Forms\Components\FileUpload;

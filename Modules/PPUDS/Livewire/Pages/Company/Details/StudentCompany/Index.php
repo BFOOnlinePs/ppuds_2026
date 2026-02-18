@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\PPUDS\Livewire\Pages\Student\Details\StudentCompany;
+namespace Modules\PPUDS\Livewire\Pages\Company\Details\StudentCompany;
 
 use App\View\Components\AppLayout;
 use Filament\Forms\Components\Grid;

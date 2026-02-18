@@ -35,12 +35,8 @@ class Details extends Component implements HasForms, HasInfolists
 
     public function mount(User $user)
     {
-        $this->user = $user->load('studentProfile');
-        $data = $this->user->toArray();
-        $data['studentProfile'] = $this->user->studentProfile
-            ? $this->user->studentProfile->toArray()
-            : [];
-        $this->form->fill($data);
+        $this->user = $user->load(['studentProfile', 'studentProfile.media']);
+        $this->form->fill($this->user->toArray());
     }
 
     public function infolist(Infolist $infolist): Infolist
@@ -58,7 +54,7 @@ class Details extends Component implements HasForms, HasInfolists
 
                         TextEntry::make('email'),
 
-                        TextEntry::make('studentProfile.student_number'),
+                        TextEntry::make('student_profile.student_number'),
                     ])
             ]);
     }
@@ -130,42 +126,42 @@ class Details extends Component implements HasForms, HasInfolists
                                                         ->schema([
                                                             Grid::make(2)
                                                                 ->schema([
-                                                                    TextInput::make('studentProfile.student_number')
+                                                                    TextInput::make('student_profile.student_number')
                                                                         ->label(__('Student Number'))
                                                                         ->numeric()
                                                                         ->disabled()
                                                                         ->required(),
 
-                                                                    Select::make('studentProfile.major_id')
+                                                                    Select::make('student_profile.major_id')
                                                                         ->label(__('Major'))
                                                                         ->options(\Modules\PPUDS\Entities\Major::get()->pluck('name', 'id'))
                                                                         ->disabled()
                                                                         ->searchable(),
 
-                                                                    TextInput::make('studentProfile.enrollment_year')
+                                                                    TextInput::make('student_profile.enrollment_year')
                                                                         ->label(__('Enrollment Year'))
                                                                         ->numeric()
                                                                         ->disabled()
                                                                         ->minLength(4)
                                                                         ->maxLength(4),
 
-                                                                    TextInput::make('studentProfile.semester_level')
+                                                                    TextInput::make('student_profile.semester_level')
                                                                         ->label(__('Semester Level'))
                                                                         ->disabled()
                                                                         ->numeric(),
 
-                                                                    TextInput::make('studentProfile.tawjihi_gpa')
+                                                                    TextInput::make('student_profile.tawjihi_gpa')
                                                                         ->label(__('Tawjihi GPA'))
                                                                         ->numeric()
                                                                         ->disabled()
                                                                         ->step(0.1),
 
-                                                                    DatePicker::make('studentProfile.dob')
+                                                                    DatePicker::make('student_profile.dob')
                                                                         ->label(__('Date of Birth'))
                                                                         ->disabled()
                                                                         ->displayFormat('d/m/Y'),
 
-                                                                    Select::make('studentProfile.gender')
+                                                                    Select::make('student_profile.gender')
                                                                         ->label(__('Gender'))
                                                                         ->disabled()
                                                                         ->options([
@@ -173,7 +169,7 @@ class Details extends Component implements HasForms, HasInfolists
                                                                             'female' => __('Female'),
                                                                         ]),
 
-                                                                    Select::make('studentProfile.cv_status')
+                                                                    Select::make('student_profile.cv_status')
                                                                         ->label(__('CV Status'))
                                                                         ->disabled()
                                                                         ->options([

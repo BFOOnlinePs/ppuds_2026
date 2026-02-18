@@ -81,4 +81,11 @@ enum UserRole: string implements HasLabel, HasColor, HasIcon
             self::COMPANY_SUPERVISOR => 'heroicon-o-building-office',
         };
     }
+
+    public static function options(): array
+    {
+        return collect(self::cases())
+            ->mapWithKeys(fn(self $case) => [$case->value => $case->getLabel()])
+            ->toArray();
+    }
 }

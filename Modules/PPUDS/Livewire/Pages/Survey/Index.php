@@ -34,7 +34,7 @@ class Index extends Component implements HasForms, HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn () => Survey::query())
+            ->query(fn () => Survey::query()->with(['translations']))
             ->columns([
                 
                 TextColumn::make('title')
@@ -52,9 +52,9 @@ class Index extends Component implements HasForms, HasTable
             ->actions($this->getTableActions())
             ->headerActions([
                 \Modules\Core\Filament\Forms\Components\CreateAction::make('create')
-                    ->label(__('Add Field Visit'))
-                    ->url(route('field-visits.add'))
-                    ->visible(fn () => auth()->user()->can('FieldVisit Create')),
+                    ->label(__('Add Survey'))
+                    ->url(route('surveys.add'))
+                    ->visible(fn () => auth()->user()->can('Survey Create')),
             ])
             ->bulkActions($this->getTableBulkAction());
     }
@@ -62,59 +62,7 @@ class Index extends Component implements HasForms, HasTable
     protected function getTableFilters(): array
     {
         return [
-            \Filament\Tables\Filters\SelectFilter::make('student_id')
-                ->label(__('Student'))
-                ->relationship('studentCompany.student', 'name')
-                ->searchable()
-                ->preload(),
-
-            \Filament\Tables\Filters\SelectFilter::make('supervisor_id')
-                ->label(__('Supervisor'))
-                ->relationship('supervisor', 'name')
-                ->searchable()
-                ->preload(),
-
-            \Filament\Tables\Filters\SelectFilter::make('company')
-                ->label(__('Company'))
-                ->options(\Modules\PPUDS\Entities\Company::get()->pluck('name', 'id'))
-                ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data) {
-                    return $query->when($data['value'], function ($q, $companyId) {
-                        $q->whereHas('studentCompany', fn ($scQ) => $scQ->where('company_id', $companyId));
-                    });
-                })
-                ->searchable()
-                ->preload(),
-
-            \Filament\Tables\Filters\Filter::make('year')
-                ->form([
-                    TextInput::make('year')
-                        ->label(__('Academic Year'))
-                        ->numeric()
-                        ->default(app(\Modules\PPUDS\Settings\GeneralSettings::class)->year)
-                        ->placeholder(date('Y'))
-                        ->prefixIcon('solar-calendar-search-bold-duotone'),
-                ])
-                ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data): \Illuminate\Database\Eloquent\Builder {
-                    return $query->when(
-                        $data['year'],
-                        fn (\Illuminate\Database\Eloquent\Builder $q, $year) => $q->whereHas('studentCompany.registration', fn ($regQ) => $regQ->where('year', $year))
-                    );
-                }),
-
-            \Filament\Tables\Filters\Filter::make('semester_type')
-                ->form([
-                    \Filament\Forms\Components\Select::make('semester_type')
-                        ->label(__('Semester Type'))
-                        ->options(\SemesterType::options())
-                        ->default(app(\Modules\PPUDS\Settings\GeneralSettings::class)->semester_type->value)
-                        ->prefixIcon('solar-bookmark-circle-bold-duotone'),
-                ])
-                ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data): \Illuminate\Database\Eloquent\Builder {
-                    return $query->when(
-                        $data['semester_type'],
-                        fn (\Illuminate\Database\Eloquent\Builder $q, $semester_type) => $q->whereHas('studentCompany.registration', fn ($regQ) => $regQ->where('semester', $semester_type))
-                    );
-                }),
+            
         ];
     }
 
@@ -123,73 +71,22 @@ class Index extends Component implements HasForms, HasTable
         return [
             InfoAction::make('info')
                 ->label('')
-                ->visible(fn () => auth()->user()->can('Course Info')),
-
-            ViewAction::make('view')
-                ->label('')
-                ->tooltip(__('View Details'))
-                ->form(fn (FieldVisit $record) => [
-                    Grid::make(2)->schema([
-                        TextInput::make('student_name')
-                            ->label(__('Student'))
-                            ->default($record->studentCompany?->registration?->student?->name)
-                            ->disabled()
-                            ->prefixIcon('solar-user-id-bold-duotone'),
-
-                        TextInput::make('supervisor_name')
-                            ->label(__('Supervisor'))
-                            ->default($record->supervisor?->name)
-                            ->disabled()
-                            ->prefixIcon('solar-user-id-bold-duotone'),
-
-                        TextInput::make('visiting_place')
-                            ->label(__('Visiting Place'))
-                            ->default($record->visiting_place)
-                            ->disabled()
-                            ->prefixIcon('solar-map-point-bold-duotone'),
-
-                        DatePicker::make('visit_date')
-                            ->label(__('Visit Date'))
-                            ->default($record->visit_date)
-                            ->disabled()
-                            ->prefixIcon('solar-calendar-date-bold-duotone'),
-
-                        TimePicker::make('visit_time')
-                            ->label(__('Visit Time'))
-                            ->default($record->visit_time)
-                            ->disabled()
-                            ->prefixIcon('solar-clock-circle-bold-duotone'),
-
-                        TextInput::make('visit_duration')
-                            ->label(__('Duration'))
-                            ->default($record->visit_duration)
-                            ->disabled()
-                            ->suffix(__('Minutes')),
-
-                        Textarea::make('notes')
-                            ->label(__('Notes'))
-                            ->default($record->notes)
-                            ->disabled()
-                            ->columnSpanFull(),
-                    ]),
-                ])
-                ->modalSubmitAction(false)
-                ->visible(fn () => auth()->user()->can('FieldVisit View')),
-
+                ->visible(fn () => auth()->user()->can('Survey Info')),
+                
             EditAction::make('edit')
                 ->label('')
                 ->tooltip(__('Edit'))
-                ->url(fn (FieldVisit $record) => route('field-visits.edit', $record->id))
-                ->visible(fn () => auth()->user()->can('FieldVisit Update')),
+                ->url(fn (Survey $record) => route('surveys.edit', $record->id))
+                ->visible(fn () => auth()->user()->can('Survey Update')),
 
             DeleteAction::make('delete')
                 ->label('')
                 ->tooltip(__('Delete'))
                 ->action(function ($record) {
                     $record->delete();
-                    Toaster::success(__('Field visit record deleted successfully'));
+                    Toaster::success(__('Survey record deleted successfully'));
                 })
-                ->visible(fn () => auth()->user()->can('FieldVisit Delete')),
+                ->visible(fn () => auth()->user()->can('Survey Delete')),
         ];
     }
 
@@ -210,10 +107,10 @@ class Index extends Component implements HasForms, HasTable
 
     public function render()
     {
-        return view('ppuds::livewire.pages.field-visit.index')->layout(AppLayout::class, [
+        return view('ppuds::livewire.pages.survey.index')->layout(AppLayout::class, [
             'breadcrumbs' => [
                 ['title' => __('Home'), 'url' => route('home')],
-                ['title' => __('Field Visits'), 'url' => route('field-visits.index')],
+                ['title' => __('Surveys'), 'url' => route('surveys.index')],
             ],
         ]);
     }

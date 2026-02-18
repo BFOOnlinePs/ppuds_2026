@@ -6,6 +6,7 @@ use Astrotomic\Translatable\Contracts\Translatable as TranslatableContract;
 use Astrotomic\Translatable\Translatable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -79,5 +80,10 @@ class Survey extends Model implements TranslatableContract, HasMedia
                 $model->created_by = auth()->id();
             }
         });
+    }
+
+    public function questions(): HasMany
+    {
+        return $this->hasMany(SurveyQuestion::class, 'survey_id');
     }
 }
