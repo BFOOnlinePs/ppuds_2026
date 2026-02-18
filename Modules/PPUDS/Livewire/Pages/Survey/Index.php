@@ -3,11 +3,6 @@
 namespace Modules\PPUDS\Livewire\Pages\Survey;
 
 use App\View\Components\AppLayout;
-use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\Grid;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Tables\Actions\BulkAction;
@@ -19,12 +14,10 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
-use Modules\Clinic\Entities\Survey;
+use Modules\PPUDS\Entities\Survey;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
-use Modules\Core\Filament\Forms\Components\ViewAction;
-use Modules\PPUDS\Entities\FieldVisit;
 
 class Index extends Component implements HasForms, HasTable
 {
@@ -34,7 +27,7 @@ class Index extends Component implements HasForms, HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn () => Survey::query()->with(['translations']))
+            ->query(fn () => Survey::query()->with('translations'))
             ->columns([
                 
                 TextColumn::make('title')

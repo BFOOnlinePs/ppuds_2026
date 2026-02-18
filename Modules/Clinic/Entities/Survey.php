@@ -37,7 +37,7 @@ class Survey extends Model implements TranslatableContract
     {
         parent::__construct($attributes);
 
-        $this->setTable(config('ppuds.table_prefix') . 'surveys');
+        $this->setTable(config('clinic.table_prefix') . 'surveys');
     }
 
     protected $fillable = [

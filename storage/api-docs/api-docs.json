@@ -7743,6 +7743,394 @@
                 ]
             }
         },
+        "/api/v1/ppuds/survey-answers": {
+            "get": {
+                "tags": [
+                    "Survey Answers"
+                ],
+                "summary": "Get survey answers",
+                "description": "Retrieve answers filtered by survey or user",
+                "operationId": "3bfe3f4fbfcb29a26eb1403d204b9b9f",
+                "parameters": [
+                    {
+                        "name": "filter[survey_id]",
+                        "in": "query",
+                        "description": "Filter by Survey ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Answers retrieved successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Survey Answers"
+                ],
+                "summary": "Submit survey answers",
+                "operationId": "92dafe4a506e6531ad780dbab459e0e5",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "survey_id",
+                                    "answers"
+                                ],
+                                "properties": {
+                                    "survey_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "answers": {
+                                        "type": "array",
+                                        "items": {
+                                            "required": [
+                                                "question_id",
+                                                "value"
+                                            ],
+                                            "properties": {
+                                                "question_id": {
+                                                    "type": "integer",
+                                                    "example": 10
+                                                },
+                                                "value": {
+                                                    "type": "string",
+                                                    "example": "Excellent"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Submitted"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/surveys": {
+            "get": {
+                "tags": [
+                    "Surveys"
+                ],
+                "summary": "Get all surveys",
+                "description": "Retrieve a list of all surveys with pagination",
+                "operationId": "95be160844b969c5671a59f51ca83e58",
+                "parameters": [
+                    {
+                        "name": "Accept-Language",
+                        "in": "header",
+                        "description": "Language header (ar or en)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "default": "ar",
+                            "example": "en"
+                        }
+                    },
+                    {
+                        "name": "include",
+                        "in": "query",
+                        "description": "Include relations (e.g. questions, questions.options)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "questions"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Surveys retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Surveys retrieved successfully"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "title": {
+                                                        "type": "string",
+                                                        "example": "Student Satisfaction Survey"
+                                                    },
+                                                    "description": {
+                                                        "type": "string",
+                                                        "example": "Survey about university services"
+                                                    },
+                                                    "serve_group": {
+                                                        "type": "string",
+                                                        "example": "students"
+                                                    },
+                                                    "is_active": {
+                                                        "type": "boolean",
+                                                        "example": true
+                                                    },
+                                                    "created_at": {
+                                                        "type": "string",
+                                                        "format": "date-time"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Surveys"
+                ],
+                "summary": "Create a new survey",
+                "description": "Creates a survey with nested questions and options.",
+                "operationId": "a959277495b553420d9a7f20fc8ece5b",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "title",
+                                    "serve_group",
+                                    "questions"
+                                ],
+                                "properties": {
+                                    "title": {
+                                        "type": "string",
+                                        "example": "General Survey"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "example": "Description here..."
+                                    },
+                                    "serve_group": {
+                                        "type": "string",
+                                        "example": "students"
+                                    },
+                                    "start_date": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "example": "2023-10-01 00:00:00"
+                                    },
+                                    "end_date": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "example": "2023-12-31 23:59:59"
+                                    },
+                                    "is_active": {
+                                        "type": "boolean",
+                                        "example": true
+                                    },
+                                    "questions": {
+                                        "type": "array",
+                                        "items": {
+                                            "required": [
+                                                "content",
+                                                "type"
+                                            ],
+                                            "properties": {
+                                                "content": {
+                                                    "type": "string",
+                                                    "example": "How satisfied are you?"
+                                                },
+                                                "type": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "text",
+                                                        "radio",
+                                                        "checkbox",
+                                                        "textarea"
+                                                    ],
+                                                    "example": "radio"
+                                                },
+                                                "is_required": {
+                                                    "type": "boolean",
+                                                    "example": true
+                                                },
+                                                "sort_order": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "options": {
+                                                    "description": "Required if type is radio or checkbox",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "required": [
+                                                            "content"
+                                                        ],
+                                                        "properties": {
+                                                            "content": {
+                                                                "type": "string",
+                                                                "example": "Very Satisfied"
+                                                            },
+                                                            "sort_order": {
+                                                                "type": "integer",
+                                                                "example": 1
+                                                            }
+                                                        },
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Survey created successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/surveys/{survey}": {
+            "get": {
+                "tags": [
+                    "Surveys"
+                ],
+                "summary": "Get a single survey",
+                "description": "Retrieve details of a specific survey including questions and options",
+                "operationId": "fad42f0c0ca40de138903eac5767d775",
+                "parameters": [
+                    {
+                        "name": "survey",
+                        "in": "path",
+                        "description": "Survey ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "Accept-Language",
+                        "in": "header",
+                        "description": "Language header (ar or en)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "default": "ar",
+                            "example": "en"
+                        }
+                    },
+                    {
+                        "name": "include",
+                        "in": "query",
+                        "description": "Include relations (e.g. questions, questions.options)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "questions,questions.options"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Survey retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Survey retrieved successfully"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "title": {
+                                                    "type": "string",
+                                                    "example": "Survey Title"
+                                                },
+                                                "questions": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "description": "Question Object",
+                                                        "type": "object"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Survey not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/reels/reels": {
             "get": {
                 "tags": [
@@ -8602,6 +8990,14 @@
         {
             "name": "Student Companies",
             "description": "Student Companies"
+        },
+        {
+            "name": "Survey Answers",
+            "description": "Survey Answers"
+        },
+        {
+            "name": "Surveys",
+            "description": "Surveys"
         },
         {
             "name": "Reels",

@@ -9,6 +9,8 @@ use Modules\PPUDS\Http\Controllers\Api\V1\PaymentController;
 use Modules\PPUDS\Http\Controllers\Api\V1\StudentAttendanceController;
 use Modules\PPUDS\Http\Controllers\Api\V1\StudentAttendanceReportController;
 use Modules\PPUDS\Http\Controllers\Api\V1\StudentCompanyController;
+use Modules\PPUDS\Http\Controllers\Api\V1\SurveyAnswerController;
+use Modules\PPUDS\Http\Controllers\Api\V1\SurveyController;
 
 
 Route::prefix('v1')->as('api.v1.')->group(function () {
@@ -87,6 +89,23 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
                     Route::get('/', 'index')->name('index');
                     Route::post('/', 'store')->name('store');
                     Route::get('/{announcement}', 'show')->name('show');
+                });
+
+            Route::controller(SurveyController::class)
+                ->prefix('surveys')
+                ->as('surveys.')
+                ->group(function () {
+                    Route::get('/', 'index')->name('index');
+                    Route::post('/', 'store')->name('store');
+                    Route::get('/{survey}', 'show')->name('show');
+                });
+
+            Route::controller(SurveyAnswerController::class)
+                ->prefix('survey-answers')
+                ->as('survey-answers.')
+                ->group(function () {
+                    Route::get('/', 'index')->name('index');
+                    Route::post('/', 'store')->name('store');
                 });
         });
 

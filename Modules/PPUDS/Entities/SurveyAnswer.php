@@ -22,7 +22,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class SurveyAnswer extends Model implements HasMedia
 {
-    use LogsActivity, SoftDeletes, InteractsWithMedia;
+    use LogsActivity, InteractsWithMedia;
 
     public function __construct(array $attributes = [])
     {
@@ -32,8 +32,8 @@ class SurveyAnswer extends Model implements HasMedia
 
     protected $fillable = [
         'id',
-        'servey_id',
-        'servey_question_id',
+        'survey_id',
+        'survey_question_id',
         'text_answer',
         'selected_option_id',
         'created_by',
@@ -55,17 +55,17 @@ class SurveyAnswer extends Model implements HasMedia
 
     public function survey(): BelongsTo
     {
-        return $this->belongsTo(Survey::class, 'servey_id');
+        return $this->belongsTo(Survey::class, 'survey_id');
     }
 
 
     public function question(): BelongsTo
     {
-        return $this->belongsTo(SurveyQuestion::class, 'servey_question_id');
+        return $this->belongsTo(SurveyQuestion::class, 'survey_question_id');
     }
 
     public function option(): BelongsTo
     {
-        return $this->belongsTo(SurveyQuestionOption::class, 'survey_question_option_id');
+        return $this->belongsTo(SurveyQuestionOption::class, 'selected_option_id');
     }
 }
