@@ -3,21 +3,25 @@
 namespace Modules\PPUDS\Livewire\Pages\Survey;
 
 use App\View\Components\AppLayout;
+use Doctrine\DBAL\Schema\View;
+use Dom\Text;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
-use Modules\PPUDS\Entities\Survey;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
+use Modules\Core\Filament\Forms\Components\ViewAction;
+use Modules\PPUDS\Entities\Survey;
 
 class Index extends Component implements HasForms, HasTable
 {
@@ -32,8 +36,25 @@ class Index extends Component implements HasForms, HasTable
                 
                 TextColumn::make('title')
                     ->label(__('Title'))
-                    ->searchable()
-                    ->sortable(),
+                    ->searchable(),
+
+                TextColumn::make('serve_group')
+                    ->label(__('Target Group'))
+                    ->formatStateUsing(fn ($state) => $state ? \Modules\Core\Enums\UserRole::from($state)->getLabel() : '-')
+                    ->searchable(),
+
+                TextColumn::make('start_date')
+                    ->label(__('Start Date'))
+                    ->dateTime('Y-m-d')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('end_date')
+                    ->label(__('End Date'))
+                    ->dateTime('Y-m-d')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                ToggleColumn::make('is_active')
+                    ->label(__('Active')),
 
                 TextColumn::make('created_at')
                     ->label(__('Created At'))
@@ -65,6 +86,115 @@ class Index extends Component implements HasForms, HasTable
             InfoAction::make('info')
                 ->label('')
                 ->visible(fn () => auth()->user()->can('Survey Info')),
+
+            ViewAction::make('view')
+                ->label('')
+                ->tooltip(__('View'))
+                ->modalHeading(__('Survey Details'))
+                ->mountUsing(function (\Filament\Forms\Form $form, \Modules\PPUDS\Entities\Survey $record) {
+                    $record->load('questions.options');
+
+                    $data = $record->toArray();
+
+                    $data['questions'] = $record->questions->map(function ($question) {
+                        return [
+                            'type' => $question->type,
+                            'content' => $question->content,
+                            'is_required' => $question->is_required,
+                            'options' => $question->options->map(function ($option) {
+                                return [
+                                    'text' => $option->text,
+                                ];
+                            })->toArray(),
+                        ];
+                    })->toArray();
+
+                    $form->fill($data);
+                })
+                ->form(function ($record) {
+                    return [
+                        \Filament\Forms\Components\Section::make(__('Basic Information'))
+                            ->schema([
+                                \Filament\Forms\Components\Grid::make(['default' => 1, 'md' => 2])->schema([
+                                    \Filament\Forms\Components\TextInput::make('title')
+                                        ->label(__('Survey Title'))
+                                        ->disabled(), // تعطيل
+
+                                    \Filament\Forms\Components\Select::make('serve_group')
+                                        ->label(__('Target Audience'))
+                                        ->options(\Modules\Core\Enums\UserRole::options())
+                                        ->disabled(), // تعطيل
+
+                                    \Filament\Forms\Components\DatePicker::make('start_date')
+                                        ->label(__('Start Date'))
+                                        ->disabled(), // تعطيل
+
+                                    \Filament\Forms\Components\DatePicker::make('end_date')
+                                        ->label(__('End Date'))
+                                        ->disabled(), // تعطيل
+
+                                    \Filament\Forms\Components\Toggle::make('is_active')
+                                        ->label(__('Published & Active'))
+                                        ->inline(false)
+                                        ->onColor('success')
+                                        ->disabled(), // تعطيل
+                                ]),
+
+                                \Filament\Forms\Components\Textarea::make('description')
+                                    ->label(__('Description & Instructions'))
+                                    ->columnSpanFull()
+                                    ->disabled(), // تعطيل
+                            ]),
+
+                        \Filament\Forms\Components\Section::make(__('Questions & Options'))
+                            ->schema([
+                                \Filament\Forms\Components\Repeater::make('questions')
+                                    ->relationship('questions') 
+                                    ->label(__('Questions List'))
+                                    ->schema([
+                                        \Filament\Forms\Components\Grid::make(12)->schema([
+                                            \Filament\Forms\Components\Select::make('type')
+                                                ->label(__('Type'))
+                                                ->options(\Modules\PPUDS\Enums\SurveyQuestionType::options())
+                                                ->columnSpan(3)
+                                                ->disabled(), // تعطيل
+
+                                            \Filament\Forms\Components\TextInput::make('content')
+                                                ->label(__('Question Text'))
+                                                ->columnSpan(7)
+                                                ->disabled(), // تعطيل
+
+                                            \Filament\Forms\Components\Toggle::make('is_required')
+                                                ->label(__('Required'))
+                                                ->inline(false)
+                                                ->columnSpan(2)
+                                                ->disabled(), // تعطيل
+                                        ]),
+
+                                        // عرض الخيارات
+                                        \Filament\Forms\Components\Repeater::make('options')
+                                            ->relationship('options') 
+                                            ->label(__('Answer Options'))
+                                            ->schema([
+                                                \Filament\Forms\Components\TextInput::make('text') 
+                                                    ->label(__('Option Text'))
+                                                    ->disabled(), // تعطيل
+                                            ])
+                                            ->grid(2)
+                                            ->addable(false) 
+                                            ->deletable(false) 
+                                            ->reorderable(false) 
+                                            ->columnSpanFull(),
+                                    ])
+                                    ->addable(false)
+                                    ->deletable(false)
+                                    ->reorderable(false)
+                                    ->collapsible(),
+                            ]),
+                    ];
+                })
+                ->modalSubmitAction(false) 
+                ->visible(fn () => auth()->user()->can('Survey View')),
                 
             EditAction::make('edit')
                 ->label('')

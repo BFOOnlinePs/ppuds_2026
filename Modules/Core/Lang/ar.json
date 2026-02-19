@@ -159,5 +159,20 @@
     "Open": "مفتوح",
     "Closed": "مغلق",
     "Internal System": "النظام الداخلي",
-    "University SSO (PPU)": "نظام الجامعة (SSO)"
+    "University SSO (PPU)": "نظام الجامعة (SSO)",
+
+    "Super Admin": "مدير النظام",
+    "Admin": "مدير",
+    "User": "مستخدم",
+    "Customer": "عميل",
+    
+    "Student": "الطالب",
+    
+    "Head of Department": "رئيس القسم",
+    "Administrative Assistant": "مساعد إداري",
+    "M&E Officer": "مسؤول المتابعة والتقييم",
+    "Corporate Relations Officer": "مسؤول العلاقات مع الشركات",
+    "Practical Training Supervisor": "مشرف التدريب العملي",
+    
+    "Company Supervisor": "مشرف الشركة"
 }
