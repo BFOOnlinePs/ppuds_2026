@@ -111,6 +111,8 @@ class SurveyAnswerController extends Controller
                         $data['text_answer'] = $value;
                     }
 
+                    $data['submitted_by'] = $userId;
+
                     SurveyAnswer::create($data);
                 }
             }
