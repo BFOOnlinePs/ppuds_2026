@@ -147,7 +147,7 @@ class Add extends Component implements HasActions, HasForms
                                         return $typeVal && SurveyQuestionType::tryFrom($typeVal)?->hasOptions();
                                     })
                                     ->schema([
-                                        TextInput::make('content')
+                                        TextInput::make('text')
                                             ->label(__('Option Text'))
                                             ->required(),
                                     ])
@@ -190,7 +190,6 @@ class Add extends Component implements HasActions, HasForms
                 'type' => $qData['type'],
                 'is_required' => $qData['is_required'],
                 'sort_order' => $questionOrder++,
-                
             ]);
 
             $enumType = SurveyQuestionType::tryFrom($qData['type']);
@@ -201,7 +200,7 @@ class Add extends Component implements HasActions, HasForms
 
                 foreach ($qData['options'] as $optData) {
                     $question->options()->create([
-                        'content' => $optData['content'],
+                        'text' => $optData['text'],
                         'sort_order' => $optionOrder++,
                     ]);
                 }

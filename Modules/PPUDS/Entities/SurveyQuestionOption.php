@@ -14,7 +14,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 
 class SurveyQuestionOption extends Model implements TranslatableContract, HasMedia
 {
-    use LogsActivity, Translatable, SoftDeletes, InteractsWithMedia;
+    use LogsActivity, Translatable, InteractsWithMedia;
 
     public function __construct(array $attributes = [])
     {
@@ -28,8 +28,10 @@ class SurveyQuestionOption extends Model implements TranslatableContract, HasMed
     ];
 
     public $translatedAttributes = [
-        'content',
+        'text',
     ];
+
+    
 
     public $useTranslationFallback = true;
 
@@ -40,11 +42,6 @@ class SurveyQuestionOption extends Model implements TranslatableContract, HasMed
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()
             ->useLogName(class_basename($this));
-    }
-
-    public function createdBy()
-    {
-        return $this->belongsTo(User::class, 'created_by');
     }
 
     protected static function booted()
@@ -58,12 +55,6 @@ class SurveyQuestionOption extends Model implements TranslatableContract, HasMed
             if (!empty($translationData)) {
                 $model->translateOrNew($locale)->fill($translationData);
                 $model->save();
-            }
-        });
-
-        static::creating(function ($model) {
-            if (!$model->created_by) {
-                $model->created_by = auth()->id();
             }
         });
     }

@@ -13,7 +13,7 @@ class SurveyQuestionOptionTranslation extends Model
     }
 
     protected $fillable = [
-        'content',
+        'text',
         'locale',
     ];
 
