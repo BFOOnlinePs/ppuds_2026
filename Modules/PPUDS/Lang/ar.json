@@ -289,6 +289,8 @@
     "Discrepancy": "تعارض / غير مطابق",
     "Undetermined": "غير محدد",
 
+    "Student Attendance": "حضور الطلاب",
+    "Leave Requests List": "قائمة طلبات الإذن والمغادرة",
     "StudentAttendance View List": "عرض سجلات الحضور",
     "StudentAttendance Create": "تسجيل حضور جديد",
     "StudentAttendance Update": "تعديل سجل حضور",
@@ -321,6 +323,7 @@
     
     "Surveys": "الاستبيانات",
     "Survey": "الاستبيان",
+    "Surveys List": "قائمة الاستبيانات",
     "Target Group": "الفئة المستهدفة",
     "Active": "فعال",
     "Created At": "تاريخ الإنشاء",

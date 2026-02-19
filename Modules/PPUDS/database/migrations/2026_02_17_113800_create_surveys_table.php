@@ -19,6 +19,8 @@ return new class extends Migration
             $table->dateTime('start_date')->nullable();
             $table->dateTime('end_date')->nullable();
             $table->boolean('is_active')->default(false);
+            $table->integer('semester')->nullable();
+            $table->year('year')->nullable();
             $table->foreignId('created_by')->constrained('users')->cascadeOnDelete();
 
             $table->softDeletes();

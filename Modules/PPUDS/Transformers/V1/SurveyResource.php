@@ -22,6 +22,8 @@ class SurveyResource extends JsonResource
             'start_date'            => $this->start_date,
             'end_date'              => $this->end_date,
             'is_active'             => $this->is_active,
+            'semester'              => $this->semester,
+            'year'                  => $this->year,
             'questions'             => SurveyQuestionResource::collection($this->whenLoaded('questions')),
 
             'created_at'            => $this->created_at,
@@ -32,7 +34,7 @@ class SurveyResource extends JsonResource
     {
         return [
                 'id', 'title', 'description',
-                'serve_group', 'start_date', 'end_date', 'is_active', 'created_at'
+                'serve_group', 'start_date', 'end_date', 'is_active', 'semester', 'year', 'created_at'
         ];
     }
 
@@ -42,6 +44,8 @@ class SurveyResource extends JsonResource
             AllowedFilter::callback('title', fn (Builder $query, $value) => $query->whereTranslationLike('title', "%{$value}%")),
             AllowedFilter::exact('serve_group'),
             AllowedFilter::exact('is_active'),
+            AllowedFilter::exact('semester'),
+            AllowedFilter::exact('year'),
         ];
     }
 

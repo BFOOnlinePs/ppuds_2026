@@ -16,6 +16,7 @@ return new class extends Migration
             
             $table->foreignId('survey_id')->constrained(config('ppuds.table_prefix') . 'surveys')->cascadeOnDelete();
             $table->foreignId('survey_question_id')->constrained(config('ppuds.table_prefix') . 'survey_questions')->cascadeOnDelete();
+            $table->foreignId('submitted_by')->constrained('users')->cascadeOnDelete();
 
             $table->text('text_answer')->nullable();
 

@@ -3,6 +3,8 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Modules\PPUDS\Enums\LeaveRequestStatus;
+use Modules\PPUDS\Enums\LeaveRequestType;
 
 return new class extends Migration
 {

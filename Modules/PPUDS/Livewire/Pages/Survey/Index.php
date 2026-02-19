@@ -43,6 +43,15 @@ class Index extends Component implements HasForms, HasTable
                     ->formatStateUsing(fn ($state) => $state ? \Modules\Core\Enums\UserRole::from($state)->getLabel() : '-')
                     ->searchable(),
 
+                TextColumn::make('semester')
+                    ->label(__('Semester'))
+                    ->badge()
+                    ->searchable(),
+
+                TextColumn::make('year')
+                    ->label(__('Year'))
+                    ->searchable(),
+                    
                 TextColumn::make('start_date')
                     ->label(__('Start Date'))
                     ->dateTime('Y-m-d')

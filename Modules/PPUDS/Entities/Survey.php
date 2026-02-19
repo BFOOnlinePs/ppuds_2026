@@ -15,6 +15,7 @@ use Modules\Core\Enums\ImageQuality;
 use Modules\Core\Enums\ImageSize;
 use Modules\Core\Enums\UserRole;
 use Modules\Core\Services\ImageService;
+use Modules\PPUDS\Enums\SemesterType;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Image\Enums\Fit;
@@ -37,7 +38,17 @@ class Survey extends Model implements TranslatableContract, HasMedia
         'start_date',
         'end_date',
         'is_active',
+        'semester',
+        'year',
         'created_by',
+    ];
+
+    protected $casts = [
+        'semester' => SemesterType::class,
+        'year' => 'integer',
+        'is_active' => 'boolean',
+        'start_date' => 'datetime',
+        'end_date' => 'datetime',
     ];
 
     public $translatedAttributes = [

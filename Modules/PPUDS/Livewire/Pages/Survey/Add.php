@@ -24,6 +24,7 @@ use Modules\Core\Enums\UserRole;
 use Modules\PPUDS\Entities\Survey;
 use Modules\PPUDS\Entities\SurveyQuestion;
 use Modules\PPUDS\Enums\SurveyQuestionType;
+use Modules\PPUDS\Settings\GeneralSettings;
 
 class Add extends Component implements HasActions, HasForms
 {
@@ -51,7 +52,6 @@ class Add extends Component implements HasActions, HasForms
         return $form
             ->model(Survey::class)
             ->schema([
-                // --- Section 1: Survey Basic Details ---
                 Section::make(__('Survey Details'))
                     ->description(__('Basic information about the survey context.'))
                     ->schema([
@@ -94,7 +94,6 @@ class Add extends Component implements HasActions, HasForms
                             ->columnSpanFull(),
                     ]),
 
-                // --- Section 2: Questions Builder ---
                 Section::make(__('Questions Builder'))
                     ->description(__('Define your questions. Options will appear based on the question type.'))
                     ->schema([
@@ -102,7 +101,6 @@ class Add extends Component implements HasActions, HasForms
                             ->label(__('Questions List'))
                             ->schema([
                                 Grid::make(12)->schema([
-                                    // 1. Question Type
                                     Select::make('type')
                                         ->label(__('Type'))
                                         ->options(SurveyQuestionType::options())
@@ -113,32 +111,29 @@ class Add extends Component implements HasActions, HasForms
                                         )
                                         ->columnSpan(3),
 
-                                    // 2. Question Text
                                     TextInput::make('content')
                                         ->label(__('Question Text'))
                                         ->required()
                                         ->columnSpan(7),
 
-                                    // 3. Is Required
                                     Toggle::make('is_required')
                                         ->label(__('Required'))
                                         ->default(true)
                                         ->inline(false)
                                         ->columnSpan(2),
 
-                                    FileUpload::make('attachment')
-                                        ->label(__('Attachment (Image/File)'))
-                                        ->disk('public')
-                                        ->directory('survey-attachments-temp')
-                                        ->image()
-                                        ->imageEditor()
-                                        ->visible(function (Get $get) {
-                                            return $get('type') == SurveyQuestionType::FILE->value;
-                                        })
-                                        ->columnSpanFull(),
+                                    // FileUpload::make('attachment')
+                                    //     ->label(__('Attachment (Image/File)'))
+                                    //     ->disk('public')
+                                    //     ->directory('survey-attachments-temp')
+                                    //     ->image()
+                                    //     ->imageEditor()
+                                    //     ->visible(function (Get $get) {
+                                    //         return $get('type') == SurveyQuestionType::FILE->value;
+                                    //     })
+                                    //     ->columnSpanFull(),
                                 ]),
 
-                                // --- Options Repeater (Nested) ---
                                 Repeater::make('options')
                                     ->label(__('Answer Options'))
                                     ->visible(function (Get $get) {
@@ -175,7 +170,9 @@ class Add extends Component implements HasActions, HasForms
 
         $state = $this->data;
 
-        $state['created_by'] = auth()->id();
+        $state['created_by']    = auth()->id();
+        $state['semester']      = app(GeneralSettings::class)->semester_type->value;
+        $state['year']          = app(GeneralSettings::class)->year;
 
         $survey = Survey::create($state);
 

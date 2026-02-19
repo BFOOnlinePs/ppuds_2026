@@ -36,8 +36,10 @@ class SurveyAnswer extends Model implements HasMedia
         'survey_question_id',
         'text_answer',
         'selected_option_id',
+        'submitted_by',
         'created_by',
     ];
+
 
     public function getActivitylogOptions(): LogOptions
     {
@@ -67,5 +69,10 @@ class SurveyAnswer extends Model implements HasMedia
     public function option(): BelongsTo
     {
         return $this->belongsTo(SurveyQuestionOption::class, 'selected_option_id');
+    }
+
+    public function submittedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'submitted_by');
     }
 }

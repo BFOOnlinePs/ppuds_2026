@@ -121,16 +121,16 @@ class Edit extends Component implements HasActions, HasForms
                                         ->inline(false)
                                         ->columnSpan(2),
 
-                                    FileUpload::make('attachment')
-                                        ->label(__('Attachment (Image/File)'))
-                                        ->disk('public')
-                                        ->directory('survey-attachments-temp')
-                                        ->image()
-                                        ->imageEditor()
-                                        ->visible(function (Get $get) {
-                                            return $get('type') == SurveyQuestionType::FILE->value;
-                                        })
-                                        ->columnSpanFull(),
+                                    // FileUpload::make('attachment')
+                                    //     ->label(__('Attachment (Image/File)'))
+                                    //     ->disk('public')
+                                    //     ->directory('survey-attachments-temp')
+                                    //     ->image()
+                                    //     ->imageEditor()
+                                    //     ->visible(function (Get $get) {
+                                    //         return $get('type') == SurveyQuestionType::FILE->value;
+                                    //     })
+                                    //     ->columnSpanFull(),
                                 ]),
 
                                 // --- Options Repeater (Nested) ---

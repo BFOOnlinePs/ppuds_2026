@@ -23,7 +23,7 @@ enum SemesterType : int implements HasLabel, HasColor
     public function getColor(): ?string
     {
         return match ($this) {
-            self::FIRST  => 'info',
+            self::FIRST  => 'primary',
             self::SECOND => 'info',
             self::SUMMER => 'warning',
         };

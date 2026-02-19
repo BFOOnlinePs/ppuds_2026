@@ -2,9 +2,11 @@
 
 namespace Modules\PPUDS\Transformers\V1;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Database\Eloquent\Builder;
+use Modules\Core\Transformers\V1\UserResource;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
 
@@ -23,7 +25,9 @@ class SurveyAnswerResource extends JsonResource
             'selected_option'       => new SurveyQuestionOptionResource($this->whenLoaded('option')),
             'question'              => new SurveyQuestionResource($this->whenLoaded('question')),
             'survey'                => new SurveyResource($this->whenLoaded('survey')),
-            
+
+            'submitted_by'          => new UserResource($this->whenLoaded('submittedBy')),
+
             'created_by'            => $this->created_by,
             'created_at'            => $this->created_at,
         ];
@@ -32,7 +36,7 @@ class SurveyAnswerResource extends JsonResource
     public static function allowedFields(): array
     {
         return [
-                'id', 'content', 'survey_id', 'type', 'is_required', 'sort_order', 'created_at'
+                'id', 'survey_id', 'survey_question_id', 'text_answer', 'selected_option_id', 'submitted_by', 'created_by', 'created_at'
         ];
     }
 
@@ -50,7 +54,7 @@ class SurveyAnswerResource extends JsonResource
     {
         return [
             AllowedSort::field('id'),
-            AllowedSort::field('content'),
+            AllowedSort::field('text_answer'),
             AllowedSort::field('sort_order'),
             AllowedSort::field('created_at'),
         ];
@@ -63,6 +67,7 @@ class SurveyAnswerResource extends JsonResource
             'survey',
             'options',
             'question',
+            'submittedBy',
         ];
     }
 }
