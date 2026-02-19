@@ -15,7 +15,7 @@ class SurveyQuestionOptionResource extends JsonResource
     {
         return [
             'id'            => $this->id,
-            'content'       => $this->content,
+            'text'          => $this->text,
             'sort_order'    => $this->sort_order,
         ];
     }
@@ -23,14 +23,14 @@ class SurveyQuestionOptionResource extends JsonResource
     public static function allowedFields(): array
     {
         return [
-                'id', 'content', 'survey_id', 'type', 'is_required', 'sort_order', 'created_at'
+                'id', 'text', 'survey_id', 'type', 'is_required', 'sort_order', 'created_at'
         ];
     }
 
     public static function allowedFilters(): array
     {
         return [
-            AllowedFilter::callback('content', fn (Builder $query, $value) => $query->whereTranslationLike('content', "%{$value}%")),
+            AllowedFilter::callback('text', fn (Builder $query, $value) => $query->whereTranslationLike('text', "%{$value}%")),
             AllowedFilter::exact('survey_id'),
             AllowedFilter::exact('type'),
             AllowedFilter::exact('is_required'),
@@ -41,7 +41,7 @@ class SurveyQuestionOptionResource extends JsonResource
     {
         return [
             AllowedSort::field('id'),
-            AllowedSort::field('content'),
+            AllowedSort::field('text'),
             AllowedSort::field('sort_order'),
             AllowedSort::field('created_at'),
         ];
