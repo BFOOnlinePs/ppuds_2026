@@ -136,6 +136,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     Route::get('/add', Add::class)->name('add')->can('Survey Create');
                     Route::get('/{survey}/edit', Edit::class)->name('edit')->can('Survey Update');
                 });
+
+                Route::group([
+                    'prefix' => 'chat-messages',
+                    'as' => 'chat-messages.',
+                    'namespace' => 'Modules\PPUDS\Livewire\Pages\ChatMessage',
+                ], function () {
+                    Route::get('/', Index::class )->name('index');
+                    Route::get('/{conversation}', Chat::class)->name('chat');
+
+                    // Route::get('/', Wirechat\Wirechat\Livewire\Chats\Chats::class)->name('index'); 
+
+                    // Route::get('/{conversation}', Wirechat\Wirechat\Livewire\Chat\Chat::class)->name('show'); 
+                });
             });
         }
     );

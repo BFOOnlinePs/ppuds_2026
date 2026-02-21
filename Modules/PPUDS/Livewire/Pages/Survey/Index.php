@@ -17,11 +17,14 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
+use Modules\Core\Entities\User;
+use Modules\Core\Filament\Forms\Components\CreateAction;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\Survey;
+use Wirechat\Wirechat\Livewire\Chat\Chat;
 
 class Index extends Component implements HasForms, HasTable
 {
@@ -77,6 +80,27 @@ class Index extends Component implements HasForms, HasTable
                 \Modules\Core\Filament\Forms\Components\CreateAction::make('create')
                     ->label(__('Add Survey'))
                     ->url(route('surveys.add'))
+                    ->visible(fn () => auth()->user()->can('Survey Create')),
+
+                CreateAction::make('create')
+                    ->label(__('asdasd'))
+                    ->form([
+                        \Filament\Forms\Components\Select::make('receiver_id')
+                            ->label(__('Select User to Chat With'))
+                            ->options(fn () => User::pluck('name', 'id'))
+                            ->searchable()
+                            ->required(),
+                    ])
+                    ->action(function ($data) {
+                        $receiver = User::findOrFail($data['receiver_id']);
+                        $currentUser = auth()->user();
+
+                        // 2. إنشاء محادثة (أو جلبها إذا كانت موجودة مسبقاً بينهما)
+                        $conversation = $currentUser->createConversationWith($receiver);
+
+                        // 3. توجيه المستخدم إلى صفحة المحادثة التي قمنا بتعريفها سابقاً
+                        return redirect()->route('admin.chats.show', $conversation->id);
+                    })
                     ->visible(fn () => auth()->user()->can('Survey Create')),
             ])
             ->bulkActions($this->getTableBulkAction());

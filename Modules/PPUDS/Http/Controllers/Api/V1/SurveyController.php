@@ -70,7 +70,8 @@ class SurveyController extends Controller
             ->allowedFilters(SurveyResource::allowedFilters())
             ->allowedSorts(SurveyResource::allowedSorts())
             ->allowedIncludes(SurveyResource::allowedIncludes())
-            ->with(['translations']) // تحميل الترجمات دائماً
+            ->with(['translations'])
+            ->where('is_active', true)
             ->paginate($perPage)
             ->appends(request()->query());
 
