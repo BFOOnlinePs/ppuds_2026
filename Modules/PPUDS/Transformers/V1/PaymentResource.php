@@ -4,8 +4,6 @@ namespace Modules\PPUDS\Transformers\V1;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Modules\Core\Transformers\V1\CurrencyResource; // تأكد من وجود هذا المسار
-use Modules\Core\Transformers\V1\UserResource; // تأكد من وجود هذا المسار
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
 

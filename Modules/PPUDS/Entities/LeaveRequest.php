@@ -5,16 +5,26 @@ namespace Modules\PPUDS\Entities;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use LeaveRequestStatus;
-use LeaveRequestType;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Modules\Core\Entities\User;
+use Modules\Core\Enums\ImageQuality;
+use Modules\Core\Enums\ImageSize;
+use Modules\Core\Services\ImageService;
+use Modules\PPUDS\Enums\LeaveRequestStatus;
+use Modules\PPUDS\Enums\LeaveRequestType;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Image\Enums\Fit;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-class LeaveRequest extends Model
+class LeaveRequest extends Model implements HasMedia
 {
     use LogsActivity;
     use SoftDeletes;
+    use InteractsWithMedia;
 
     public function __construct(array $attributes = [])
     {
@@ -32,7 +42,6 @@ class LeaveRequest extends Model
         'reason',
         'company_approval',
         'university_approval',
-        'status',
         'rejection_reason',
         'created_by',
     ];
@@ -53,6 +62,57 @@ class LeaveRequest extends Model
             ->dontSubmitEmptyLogs()
             ->setDescriptionForEvent(fn(string $eventName) => "This field visit has been {$eventName}")
             ->useLogName(class_basename($this));
+    }
+
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        $this
+            ->addMediaConversion('attachment_file')
+            ->fit(Fit::Contain, 300, 300)
+            ->nonQueued();
+    }
+
+    public function addImage($file)
+    {
+        if (is_array($file)) {
+            $file = reset($file);
+        }
+
+        if (
+            !$file instanceof \Illuminate\Http\UploadedFile &&
+            !($file instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile)
+        ) {
+            return null;
+        }
+
+        $this->clearMediaCollection('attachment_file');
+
+        try {
+            $originalName = $file->getClientOriginalName();
+            $extension = $file->getClientOriginalExtension();
+            $fileName = time() . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $extension;
+
+            $media = $this
+                ->addMedia($file)
+                ->usingFileName($fileName)
+                ->toMediaCollection('attachment_file', 'leave_requests');
+
+            $size = ImageSize::MEDIUM;
+
+            ImageService::optimize($media->getPath() , ImageQuality::HIGH->value);
+            ImageService::resize($media->getPath() , $size->width(), $size->height());
+
+            return $media;
+        } catch (\Exception $e) {
+            Log::error('Error uploading attachment file: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+
+    public function getAttachmentFileAttribute()
+    {
+        return $this->getFirstMediaUrl('attachment_file');
     }
 
     public function createdBy(): BelongsTo

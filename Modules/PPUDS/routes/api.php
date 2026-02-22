@@ -5,6 +5,7 @@ use Modules\PPUDS\Http\Controllers\Api\V1\AnnouncementController;
 use Modules\PPUDS\Http\Controllers\Api\V1\CompanyCategoryController;
 use Modules\PPUDS\Http\Controllers\Api\V1\CompanyController;
 use Modules\PPUDS\Http\Controllers\Api\V1\CompanyDepartmentController;
+use Modules\PPUDS\Http\Controllers\Api\V1\LeaveRequestController;
 use Modules\PPUDS\Http\Controllers\Api\V1\PaymentController;
 use Modules\PPUDS\Http\Controllers\Api\V1\StudentAttendanceController;
 use Modules\PPUDS\Http\Controllers\Api\V1\StudentAttendanceReportController;
@@ -107,8 +108,17 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
                     Route::get('/', 'index')->name('index');
                     Route::post('/', 'store')->name('store');
                 });
-        });
 
+            Route::controller(LeaveRequestController::class)
+                ->prefix('leave-requests')
+                ->as('leave-requests.')
+                ->group(function () {
+                    Route::get('/', 'index')->name('index');
+                    Route::post('/', 'store')->name('store');
+                    Route::get('/{leaveRequest}', 'show')->name('show');
+                    Route::patch('/{leaveRequest}', 'update')->name('update');
+                });
+        });
     });
 
 });

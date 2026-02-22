@@ -62,56 +62,56 @@ return [
 
         'media' => [
             'driver' => 'local',
-            'root'   => storage_path('app/public/media'),
-            'url'    => env('APP_URL').'/storage/media',
+            'root' => storage_path('app/public/media'),
+            'url' => env('APP_URL').'/storage/media',
             'visibility' => 'public',
             'throw' => false,
         ],
 
         'items' => [
             'driver' => 'local',
-            'root'   => storage_path('app/public/items'),
-            'url'    => env('APP_URL').'/storage/items',
+            'root' => storage_path('app/public/items'),
+            'url' => env('APP_URL').'/storage/items',
             'visibility' => 'public',
             'throw' => false,
         ],
 
         'customers' => [
             'driver' => 'local',
-            'root'   => storage_path('app/public/customers'),
-            'url'    => env('APP_URL').'/storage/customers',
+            'root' => storage_path('app/public/customers'),
+            'url' => env('APP_URL').'/storage/customers',
             'visibility' => 'public',
             'throw' => false,
         ],
 
         'content' => [
             'driver' => 'local',
-            'root'   => storage_path('app/public/content'),
-            'url'    => env('APP_URL').'/storage/content',
+            'root' => storage_path('app/public/content'),
+            'url' => env('APP_URL').'/storage/content',
             'visibility' => 'public',
             'throw' => false,
         ],
 
         'banners' => [
             'driver' => 'local',
-            'root'   => storage_path('app/public/content/banners'),
-            'url'    => env('APP_URL').'/storage/content/banners',
+            'root' => storage_path('app/public/content/banners'),
+            'url' => env('APP_URL').'/storage/content/banners',
             'visibility' => 'public',
             'throw' => false,
         ],
 
         'offers' => [
             'driver' => 'local',
-            'root'   => storage_path('app/public/items/offers'),
-            'url'    => env('APP_URL').'/storage/items/offers',
+            'root' => storage_path('app/public/items/offers'),
+            'url' => env('APP_URL').'/storage/items/offers',
             'visibility' => 'public',
             'throw' => false,
         ],
 
         'addon_option' => [
             'driver' => 'local',
-            'root'   => storage_path('app/public/items/addon_option'),
-            'url'    => env('APP_URL').'/storage/items/addon_option',
+            'root' => storage_path('app/public/items/addon_option'),
+            'url' => env('APP_URL').'/storage/items/addon_option',
             'visibility' => 'public',
             'throw' => false,
         ],
@@ -119,40 +119,48 @@ return [
         // PPU DS
         'companies' => [
             'driver' => 'local',
-            'root'   => storage_path('app/public/ppuds/companies'),
-            'url'    => env('APP_URL').'/storage/ppuds/companies',
+            'root' => storage_path('app/public/ppuds/companies'),
+            'url' => env('APP_URL').'/storage/ppuds/companies',
             'visibility' => 'public',
             'throw' => false,
         ],
 
         'student_reports' => [
             'driver' => 'local',
-            'root'   => storage_path('app/public/ppuds/student_reports'),
-            'url'    => env('APP_URL').'/storage/ppuds/student_reports',
+            'root' => storage_path('app/public/ppuds/student_reports'),
+            'url' => env('APP_URL').'/storage/ppuds/student_reports',
             'visibility' => 'public',
             'throw' => false,
         ],
 
         'student_profiles' => [
             'driver' => 'local',
-            'root'   => storage_path('app/public/ppuds/student_profiles'),
-            'url'    => env('APP_URL').'/storage/ppuds/student_profiles',
+            'root' => storage_path('app/public/ppuds/student_profiles'),
+            'url' => env('APP_URL').'/storage/ppuds/student_profiles',
             'visibility' => 'public',
             'throw' => false,
         ],
 
         'payments' => [
             'driver' => 'local',
-            'root'   => storage_path('app/public/ppuds/student_payments'),
-            'url'    => env('APP_URL').'/storage/ppuds/student_payments',
+            'root' => storage_path('app/public/ppuds/student_payments'),
+            'url' => env('APP_URL').'/storage/ppuds/student_payments',
             'visibility' => 'public',
             'throw' => false,
         ],
 
         'announcements' => [
             'driver' => 'local',
-            'root'   => storage_path('app/public/ppuds/announcements'),
-            'url'    => env('APP_URL').'/storage/ppuds/announcements',
+            'root' => storage_path('app/public/ppuds/announcements'),
+            'url' => env('APP_URL').'/storage/ppuds/announcements',
+            'visibility' => 'public',
+            'throw' => false,
+        ],
+
+        'leave_requests' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public/ppuds/leave_requests'),
+            'url' => env('APP_URL').'/storage/ppuds/leave_requests',
             'visibility' => 'public',
             'throw' => false,
         ],

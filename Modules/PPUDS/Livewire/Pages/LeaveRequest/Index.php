@@ -19,8 +19,6 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
-use LeaveRequestStatus;
-use LeaveRequestType;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Core\Filament\Forms\Components\CreateAction;
@@ -30,6 +28,8 @@ use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\LeaveRequest;
 use Modules\PPUDS\Entities\StudentCompany;
+use Modules\PPUDS\Enums\LeaveRequestStatus;
+use Modules\PPUDS\Enums\LeaveRequestType;
 
 class Index extends Component implements HasTable, HasForms
 {
@@ -69,7 +69,7 @@ class Index extends Component implements HasTable, HasForms
                 CreateAction::make('create')
                     ->label(__('New Request'))
                     ->icon('heroicon-o-plus')
-                    ->form($this->getFormSchema(isCreate: true)) // نستخدم دالة لتوحيد الفورم
+                    ->form($this->getFormSchema(isCreate: true))
                     ->action(function (array $data) {
                         $data['created_by'] = auth()->id();
 
@@ -208,7 +208,7 @@ class Index extends Component implements HasTable, HasForms
                             ->label(__('Company Approval'))
                             ->options(LeaveRequestStatus::class)
                             ->native(false)
-                            ->disabled($isView), // يمكن تعديله في Edit فقط
+                            ->disabled($isView),
 
                         Select::make('university_approval')
                             ->label(__('University Approval'))

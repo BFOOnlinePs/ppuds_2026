@@ -6611,6 +6611,215 @@
                 ]
             }
         },
+        "/api/v1/ppuds/leave-requests": {
+            "get": {
+                "tags": [
+                    "Leave Requests"
+                ],
+                "summary": "List all leave requests",
+                "description": "Retrieve a list of leave requests with filtering and sorting",
+                "operationId": "d6287af9f3239642f24ae262385f4490",
+                "parameters": [
+                    {
+                        "name": "filter[student_company_id]",
+                        "in": "query",
+                        "description": "Filter by Student Company ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "filter[type]",
+                        "in": "query",
+                        "description": "Filter by type (leave, absence)",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Leave requests retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/LeaveRequestResource"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Leave Requests"
+                ],
+                "summary": "Create a new leave request",
+                "description": "Submit a new request for absence or hourly leave",
+                "operationId": "0767407c9c7b1790b67ff6a081b0adc9",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "student_company_id",
+                                    "type",
+                                    "start_at",
+                                    "end_at",
+                                    "reason"
+                                ],
+                                "properties": {
+                                    "student_company_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "enum": [
+                                            "leave",
+                                            "absence"
+                                        ],
+                                        "example": "leave"
+                                    },
+                                    "start_at": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "example": "2024-05-20 08:00:00"
+                                    },
+                                    "end_at": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "example": "2024-05-20 10:00:00"
+                                    },
+                                    "reason": {
+                                        "type": "string",
+                                        "example": "Medical appointment"
+                                    },
+                                    "attachment_file": {
+                                        "description": "Optional supporting document (e.g., medical certificate)",
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "attachment": {
+                                        "description": "Optional supporting document",
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/leave-requests/{leaveRequest}": {
+            "get": {
+                "tags": [
+                    "Leave Requests"
+                ],
+                "summary": "Get leave request details",
+                "operationId": "bccc8e741a05086266b6d541ebafe736",
+                "parameters": [
+                    {
+                        "name": "leaveRequest",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Leave Requests"
+                ],
+                "summary": "Update leave request",
+                "description": "Update details. Use _method=PUT for multipart support.",
+                "operationId": "e843c177f0e4f2ca7ac19e89984e5452",
+                "parameters": [
+                    {
+                        "name": "leaveRequest",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "_method": {
+                                        "type": "string",
+                                        "example": "PUT"
+                                    },
+                                    "reason": {
+                                        "type": "string"
+                                    },
+                                    "attachment": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/ppuds/payments": {
             "get": {
                 "tags": [
@@ -8853,6 +9062,70 @@
                     "name": "AnnouncementResource"
                 }
             },
+            "LeaveRequestResource": {
+                "title": "Leave Request Resource",
+                "description": "Leave Request details",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "student_company_id": {
+                        "type": "integer",
+                        "example": 5
+                    },
+                    "type": {
+                        "type": "string",
+                        "example": "leave"
+                    },
+                    "start_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-05-20 08:00:00"
+                    },
+                    "end_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "example": "2024-05-20 10:00:00"
+                    },
+                    "reason": {
+                        "type": "string",
+                        "example": "Medical appointment"
+                    },
+                    "company_approval": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "university_approval": {
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "status": {
+                        "type": "string",
+                        "example": "approved"
+                    },
+                    "rejection_reason": {
+                        "type": "string",
+                        "example": null
+                    },
+                    "attachment_file": {
+                        "type": "string",
+                        "example": "/uploads/attachment_1.jpg"
+                    },
+                    "created_by": {
+                        "type": "integer",
+                        "example": 123
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object",
+                "xml": {
+                    "name": "LeaveRequestResource"
+                }
+            },
             "StudentAttendanceReportResource": {
                 "title": "Student Attendance Report Resource",
                 "description": "Student Attendance Report details",
@@ -8915,6 +9188,10 @@
         }
     },
     "tags": [
+        {
+            "name": "Leave Requests",
+            "description": "API Endpoints for managing student leave requests (Absence & Hourly Leave)"
+        },
         {
             "name": "Student Attendances",
             "description": "API Endpoints for managing student check-ins and check-outs"
