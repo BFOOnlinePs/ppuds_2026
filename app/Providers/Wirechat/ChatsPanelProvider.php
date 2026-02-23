@@ -11,8 +11,8 @@ class ChatsPanelProvider extends PanelProvider
     {
         return $panel
              ->id('chats')
-             ->path('chats')
-             ->middleware(['web'])
+             ->path('admin/chats')
+             ->middleware(['web', 'auth'])
              ->default();
     }
 }

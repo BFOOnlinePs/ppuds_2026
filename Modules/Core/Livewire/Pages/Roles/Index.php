@@ -19,10 +19,13 @@ use Livewire\Component;
 use Modules\Core\Filament\Forms\Components\CreateAction;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Modules\Core\Filament\Forms\Components\EditAction;
+use Illuminate\Database\Eloquent\Model;
 
 class Index extends Component implements HasTable, HasForms
 {
     use InteractsWithTable, InteractsWithForms;
+
     protected function getTableQuery(): Builder
     {
         return Role::with('permissions');
@@ -34,7 +37,22 @@ class Index extends Component implements HasTable, HasForms
             ->query($this->getTableQuery())
             ->columns($this->getTableColumns())
             ->headerActions($this->getTableHeaderActions())
-            ->actions([])
+            ->actions([
+                EditAction::make('edit') 
+                    ->label(__('Edit'))
+                    ->form($this->getFormSchema())
+                    ->slideOver()
+                    ->mountUsing(function (\Filament\Forms\Form $form, Model $record) {
+                        $form->fill([
+                            'name' => $record->name,
+                            'permissions' => $record->permissions->pluck('id')->toArray(),
+                        ]);
+                    })
+                    ->action(function (Model $record, array $data) {
+                        $record->update(['name' => $data['name']]);
+                        $record->permissions()->sync($data['permissions'] ?? []);
+                    }),
+            ])
             ->filters([])
             ->bulkActions([]);
     }
@@ -42,11 +60,15 @@ class Index extends Component implements HasTable, HasForms
     protected function getTableColumns(): array
     {
         return [
-            TextColumn::make('name')->label(__('Role Name'))->sortable(),
+            TextColumn::make('name')
+                ->label(__('Role Name'))
+                ->sortable()
+                ->searchable(), // إضافة البحث قد تكون مفيدة هنا
+            
             TextColumn::make('permissions.name')
                 ->label(__('Permissions'))
-                // ->formatStateUsing(fn($state) => implode(', ', $state->pluck('name', 'id')->toArray()))
-                ->wrap(),
+                ->wrap()
+                ->badge(), // عرض الصلاحيات كشريط (Badge) يعطي مظهر أفضل (اختياري)
         ];
     }
 
@@ -56,24 +78,68 @@ class Index extends Component implements HasTable, HasForms
             CreateAction::make()
                 ->label(__('Create Role'))
                 ->form($this->getFormSchema())
-                ->action(fn(array $data) => $this->saveRole($data)),
+                ->action(fn(array $data) => $this->saveRole($data))
+                ->slideOver(), // فتح الفورم من الجانب يعطي تجربة مستخدم أفضل (اختياري)
         ];
     }
 
+    // ==========================================
+    // Form & Actions Logic
+    // ==========================================
+
     protected function getFormSchema(): array
     {
-        $allPermissions   = Permission::all();
-        $allPermissionIds = $allPermissions->pluck('id')->toArray();
-        $grouped          = $allPermissions->groupBy('module_name');
+        $allPermissionIds = Permission::pluck('id')->toArray();
 
-        // إنشاء الـ sections بجانب بعضها البعض
-        $sections = $grouped->map(function ($permissions, $module) {
+        return [
+            // القسم الأول: تفاصيل الصلاحية
+            Section::make(__('Role Details'))
+                ->schema([
+                    TextInput::make('name')
+                        ->label(__('Role Name'))
+                        ->required()
+                        ->maxLength(50)
+                        ->columnSpan(1),
+
+                    Checkbox::make('select_all')
+                        ->label(__('Select All Permissions'))
+                        ->reactive()
+                        ->afterStateUpdated(
+                            fn(bool $state, callable $set) =>
+                            $set('permissions', $state ? $allPermissionIds : [])
+                        )
+                        ->columnSpan(1),
+                ])->columns(2), // ترتيب الحقول بجانب بعضها
+
+            // القسم الثاني: شبكة الصلاحيات
+            Section::make(__('Assign Permissions'))
+                ->schema([
+                    Grid::make([
+                        'default' => 1,
+                        'sm'      => 2,
+                        'md'      => 2,
+                        'lg'      => 2,
+                        'xl'      => 2,
+                    ])->schema($this->getPermissionSections()),
+                ]),
+        ];
+    }
+
+    /**
+     * استخراج وبناء أقسام الصلاحيات بناءً على الموديول
+     */
+    private function getPermissionSections(): array
+    {
+        $allPermissions = Permission::all();
+        $grouped        = $allPermissions->groupBy('module_name');
+
+        return $grouped->map(function ($permissions, $module) {
             $opts = $permissions->pluck('name', 'id')->toArray();
             $ids  = array_keys($opts);
             $key  = 'select_all_' . str_replace(' ', '_', strtolower($module));
 
             return Section::make(__($module))
-                ->columnSpan(1) // كل section يأخذ عمود واحد
+                ->columnSpan(1)
                 ->schema([
                     Checkbox::make($key)
                         ->label(__('Select All in ' . $module))
@@ -94,43 +160,23 @@ class Index extends Component implements HasTable, HasForms
                         ->columns(2),
                 ]);
         })->values()->toArray();
-
-        return [
-            TextInput::make('name')
-                ->label(__('Role Name'))
-                ->required()
-                ->maxLength(50),
-
-            Checkbox::make('select_all')
-                ->label(__('Select All Permissions'))
-                ->reactive()
-                ->afterStateUpdated(
-                    fn(bool $state, callable $set) =>
-                    $set('permissions', $state ? $allPermissionIds : [])
-                ),
-
-            Grid::make([
-                'default' => 1,
-                'sm' => 2,
-                'md' => 2,
-                'lg' => 2,
-                'xl' => 2,
-            ])->schema($sections),
-        ];
     }
-
 
     protected function saveRole(array $data): void
     {
-        // ✔️ الآن $data['name'] و $data['permissions'] موجودين
         $role = Role::create([
             'name' => $data['name'],
         ]);
 
-        $role->permissions()->sync($data['permissions'] ?? []);
+        if (!empty($data['permissions'])) {
+            $role->permissions()->sync($data['permissions']);
+        }
 
-        // اختياري: إشعار نجاح
-        // session()->flash('success', 'Role created successfully.');
+        // Filament يتعامل مع إشعارات الـ Actions تلقائياً إذا استخدمت Notification::make()
+        // \Filament\Notifications\Notification::make()
+        //     ->title('Role created successfully')
+        //     ->success()
+        //     ->send();
     }
 
     public function render()

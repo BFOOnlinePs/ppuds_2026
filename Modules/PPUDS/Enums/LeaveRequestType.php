@@ -6,8 +6,6 @@ use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasIcon;
 use Filament\Support\Contracts\HasLabel;
 
-// إضافة مفيدة للعرض
-
 enum LeaveRequestType: int implements HasLabel, HasColor, HasIcon
 {
     case ANNUAL         = 1;

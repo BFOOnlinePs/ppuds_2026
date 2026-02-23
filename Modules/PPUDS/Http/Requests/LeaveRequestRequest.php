@@ -19,7 +19,6 @@ class LeaveRequestRequest extends FormRequest
             'start_at'           => ['required', 'date'],
             'end_at'             => ['required', 'date', 'after_or_equal:start_at'],
             'reason'             => ['required', 'string', 'max:1000'],
-            'rejection_reason'   => ['nullable', 'string', 'max:1000'],
         ];
     }
 

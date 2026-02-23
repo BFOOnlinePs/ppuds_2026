@@ -271,6 +271,8 @@ class Details extends Component implements HasForms, HasInfolists
 
     public function save()
     {
+        $this->authorize('update');
+        
         $this->validate();
 
         $data = $this->form->getState();
@@ -291,7 +293,8 @@ class Details extends Component implements HasForms, HasInfolists
         });
 
         // إعادة التوجيه بعد الحفظ
-        return redirect()->route('students.index');
+        // return redirect()->route('students.index');
+
     }
 
     public function render()

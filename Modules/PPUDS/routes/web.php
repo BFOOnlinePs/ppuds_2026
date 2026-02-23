@@ -18,14 +18,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 'prefix' => 'admin',
                 'as' => '',
             ], function () {
+                
+                // ... (جميع الـ Routes الأخرى الخاصة بك مثل الطلاب والشركات وغيرها) ...
                 Route::group([
                     'prefix' => '',
                     'as' => '',
                     'namespace' => 'Modules\PPUDS\Livewire\Pages\Student',
                 ], function () {
                     Route::get('/students', Index::class)->name('students.index')->can('Student View List');
-//                    Route::get('/students/add', Add::class)->name('students.add')->can('Student Create');
-//                    Route::get('/students/{user}/edit', Edit::class)->name('students.edit')->can('Student Update');
                     Route::get('/students/{user}/details', Details\Details::class)->name('students.details')->can('Student Details List');
                 });
 
@@ -140,16 +140,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 Route::group([
                     'prefix' => 'chat-messages',
                     'as' => 'chat-messages.',
-                    'namespace' => 'Modules\PPUDS\Livewire\Pages\ChatMessage',
                 ], function () {
-                    Route::get('/', Index::class )->name('index');
-                    Route::get('/{conversation}', Chat::class)->name('chat');
 
-                    // Route::get('/', Wirechat\Wirechat\Livewire\Chats\Chats::class)->name('index'); 
+                    Route::group([
+                        'namespace' => 'Modules\PPUDS\Livewire\Pages\ChatMessage',
+                    ], function () {
+                        Route::get('/', Index::class)->name('index');
+                    });
 
-                    // Route::get('/{conversation}', Wirechat\Wirechat\Livewire\Chat\Chat::class)->name('show'); 
-                });
-            });
+                    // Route::get('/chats', \Wirechat\Wirechat\Livewire\Chats\Chats::class)->name('chats'); 
+                    Route::get('/{conversation}', \Wirechat\Wirechat\Livewire\Chat\Chat::class)->name('show'); 
+                    
+                }); 
+            }); 
         }
-    );
-});
+    ); 
+}); 
