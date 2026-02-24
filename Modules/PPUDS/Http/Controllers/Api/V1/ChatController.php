@@ -177,11 +177,10 @@ class ChatController extends Controller
      * )
      * )
      */
-    public function markAsRead($conversationId)
+    public function markAsRead(Conversation $conversation)
     {
-        $conversation = Conversation::findOrFail($conversationId);
-        auth()->user()->readConversation($conversation);
-        
+        $conversation->markAsRead(auth()->user());
+
         return $this->successResponse(null, __('Marked as read'));
     }
 }
