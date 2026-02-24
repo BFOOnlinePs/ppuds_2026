@@ -23,9 +23,9 @@ class SidebarServiceProvider extends ServiceProvider
     {
         $sidebar = $this->app->make(SidebarService::class);
 
-        $sidebar->add(
-            (new SidebarItem('Profile', 'solar-users-group-rounded-bold-duotone', [] ,  'students.details' , 1))
-        );
+        // $sidebar->add(
+        //     (new SidebarItem('Profile', 'solar-users-group-rounded-bold-duotone', [] ,  'students.details' , 1))
+        // );
 
         $sidebar->add(
             (new SidebarGroup('Students', 'solar-users-group-rounded-bold-duotone', ['Student View']))
