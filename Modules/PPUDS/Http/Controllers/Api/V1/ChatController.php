@@ -117,7 +117,8 @@ class ChatController extends Controller
      * name="conversation",
      * in="path",
      * required=true,
-     * @OA\Schema(type="integer")
+     * description="Conversation UUID",
+     * @OA\Schema(type="string", format="uuid", example="019c7fb7-8447-7263-a53d-a88d85768f73")
      * ),
      * @OA\RequestBody(
      * required=true,
@@ -163,7 +164,8 @@ class ChatController extends Controller
      * name="conversation",
      * in="path",
      * required=true,
-     * @OA\Schema(type="integer")
+     * description="Conversation UUID",
+     * @OA\Schema(type="string", format="uuid", example="019c7fb7-8447-7263-a53d-a88d85768f73")
      * ),
      * @OA\Response(
      * response=200,

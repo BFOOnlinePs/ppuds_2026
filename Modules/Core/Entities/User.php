@@ -158,6 +158,16 @@ class User extends Authenticatable implements HasMedia, WirechatUser
         return true;
     }
 
+    public function getWirechatAvatarUrlAttribute(): string
+    {
+        return $this->getAvatarUrlAttribute();
+    }
+
+    public function getWirechatNameAttribute(): string
+    {
+        return $this->name;
+    }
+
     public function getAvatarUrlAttribute(): string
     {
         $mediaUrl = $this->getFirstMediaUrl('avatar');

@@ -5808,9 +5808,12 @@
                     {
                         "name": "conversation",
                         "in": "path",
+                        "description": "Conversation UUID",
                         "required": true,
                         "schema": {
-                            "type": "integer"
+                            "type": "string",
+                            "format": "uuid",
+                            "example": "019c7fb7-8447-7263-a53d-a88d85768f73"
                         }
                     }
                 ],
@@ -5878,9 +5881,12 @@
                     {
                         "name": "conversation",
                         "in": "path",
+                        "description": "Conversation UUID",
                         "required": true,
                         "schema": {
-                            "type": "integer"
+                            "type": "string",
+                            "format": "uuid",
+                            "example": "019c7fb7-8447-7263-a53d-a88d85768f73"
                         }
                     }
                 ],

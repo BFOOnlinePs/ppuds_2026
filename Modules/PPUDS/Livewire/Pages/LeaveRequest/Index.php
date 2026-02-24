@@ -153,7 +153,11 @@ class Index extends Component implements HasTable, HasForms
                     Grid::make(2)->schema([
                         Select::make('student_company_id')
                             ->label(__('Student Training'))
-                            ->options(StudentCompany::with('student', 'company')->get()->mapWithKeys(function ($item) {
+                            ->options(StudentCompany::with('student', 'company')->when(auth()->user()->hasRole('Student'), function ($query) {
+                                $query->whereHas('student', function ($q) {
+                                    $q->where('id', auth()->id());
+                                });
+                            })->get()->mapWithKeys(function ($item) {
                                 return [$item->id => $item->student->name . ' - ' . $item->company->name];
                             }))
                             ->searchable()
