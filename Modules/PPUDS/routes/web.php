@@ -26,7 +26,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     'namespace' => 'Modules\PPUDS\Livewire\Pages\Student',
                 ], function () {
                     Route::get('/students', Index::class)->name('students.index')->can('Student View List');
-                    Route::get('/students/details', Details\Details::class)->name('students.details')->can('Student Details List');
+                    Route::get('/students/{user}/details', Details\Details::class)->name('students.details')->can('Student Details List');
                 });
 
                 Route::group([

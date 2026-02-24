@@ -124,6 +124,7 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
                 ->as('chats.')
                 ->group(function () {
                     Route::get('/', 'index')->name('index');
+                    Route::post('/', 'store')->name('store');
                     Route::get('/{conversation}/messages', 'messages')->name('messages');
                     Route::post('/{conversation}/send', 'sendMessage')->name('send');
                     Route::patch('/{conversation}/read', 'markAsRead')->name('read');

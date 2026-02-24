@@ -4,7 +4,9 @@ namespace Modules\PPUDS\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Modules\Core\Entities\User;
 use Modules\Core\Traits\ApiResponse;
+use Modules\PPUDS\Http\Requests\ConversationRequest;
 use Modules\PPUDS\Transformers\V1\ConversationResource;
 use Modules\PPUDS\Transformers\V1\MessageResource;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -70,6 +72,49 @@ class ChatController extends Controller
         return $this->successResponse(
             ConversationResource::collection($conversations),
             __('Conversations retrieved successfully')
+        );
+    }
+
+    /**
+     * @OA\Post(
+     * path="/api/v1/ppuds/chats",
+     * summary="Create or get a private conversation",
+     * description="Creates a new private conversation with a specific user, or returns the existing one if it already exists.",
+     * tags={"Chat"},
+     * security={{"sanctum": {}}},
+     * @OA\RequestBody(
+     * required=true,
+     * @OA\JsonContent(
+     * required={"receiver_id"},
+     * @OA\Property(property="receiver_id", type="integer", example=2, description="The ID of the user you want to chat with")
+     * )
+     * ),
+     * @OA\Response(
+     * response=200,
+     * description="Conversation created or retrieved successfully",
+     * @OA\JsonContent(
+     * @OA\Property(property="status", type="boolean", example=true),
+     * @OA\Property(property="message", type="string", example="Conversation created successfully"),
+     * @OA\Property(property="data", type="object")
+     * )
+     * )
+     * )
+     */
+    public function store(ConversationRequest $request)
+    {
+        $request->validated();
+
+        $receiver = User::findOrFail($request->receiver_id);
+
+        abort_if(auth()->id() === $receiver->id, 400, __('You cannot create a conversation with yourself.'));
+
+        $conversation = auth()->user()->createChatWith($receiver);
+
+        $conversation->load(['participants', 'lastMessage']);
+
+        return $this->successResponse(
+            new ConversationResource($conversation),
+            __('Conversation created successfully')
         );
     }
 
