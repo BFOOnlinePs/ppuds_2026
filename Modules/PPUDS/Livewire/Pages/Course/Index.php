@@ -3,7 +3,6 @@
 namespace Modules\PPUDS\Livewire\Pages\Course;
 
 use App\View\Components\AppLayout;
-use CourseType;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -26,6 +25,7 @@ use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\Textarea;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\Course;
+use Modules\PPUDS\Enums\CourseType;
 
 class Index extends Component implements HasTable, HasForms
 {

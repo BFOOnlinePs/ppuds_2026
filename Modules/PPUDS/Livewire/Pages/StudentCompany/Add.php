@@ -155,8 +155,6 @@ class Add extends Component implements HasForms, HasActions
         $registration = Registration::findOrFail($data['registration_id']);
         $data['student_id'] = $registration->student_id;
 
-        dd($data);
-
         StudentCompany::create($data);
 
         Toaster::success(__('Student company record created successfully'));

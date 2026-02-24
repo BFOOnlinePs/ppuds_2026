@@ -24,6 +24,10 @@ class SidebarServiceProvider extends ServiceProvider
         $sidebar = $this->app->make(SidebarService::class);
 
         $sidebar->add(
+            (new SidebarItem('Profile', 'solar-users-group-rounded-bold-duotone', [] ,  'students.details' , 1))
+        );
+
+        $sidebar->add(
             (new SidebarGroup('Students', 'solar-users-group-rounded-bold-duotone', ['Student View']))
                 ->add(new SidebarItem('Students List', 'solar-users-group-rounded-bold-duotone', ['Student Create'], 'students.index'))
         );
@@ -54,8 +58,8 @@ class SidebarServiceProvider extends ServiceProvider
 
         $sidebar->add(
             (new SidebarGroup('Student Companies', 'solar-users-group-rounded-bold-duotone', ['StudentCompany View']))
-                ->add(new SidebarItem('Add Student Company', 'solar-users-group-rounded-bold-duotone', ['StudentCompany View'], 'student-companies.add'))
-                ->add(new SidebarItem('Student Companies List', 'solar-users-group-rounded-bold-duotone', ['StudentCompany Create'], 'student-companies.index'))
+                ->add(new SidebarItem('Add Student Company', 'solar-users-group-rounded-bold-duotone', ['StudentCompany Create'], 'student-companies.add'))
+                ->add(new SidebarItem('Student Companies List', 'solar-users-group-rounded-bold-duotone', ['StudentCompany View List'], 'student-companies.index'))
         );
 
         $sidebar->add(

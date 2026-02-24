@@ -20,6 +20,13 @@ class PermissionSeeder extends Seeder
 
 
         $permissions = [
+            [
+                'name' => 'Content View List',
+                'guard_name' => 'web',
+                'module_name' => 'Content',
+            ],
+
+
             // TODO Banner
             [
                 'name' => 'Banner View List',

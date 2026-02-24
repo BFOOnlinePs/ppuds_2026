@@ -5,6 +5,7 @@ namespace Modules\PPUDS\Entities;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Modules\Branch\Entities\Branch;
 use Modules\Core\Entities\User;
@@ -109,7 +110,7 @@ class StudentCompany extends Model implements HasMedia
 
             return $media;
         } catch (\Exception $e) {
-            \Log::error('Error uploading student company file: ' . $e->getMessage());
+            Log::error('Error uploading student company file: ' . $e->getMessage());
             return null;
         }
     }

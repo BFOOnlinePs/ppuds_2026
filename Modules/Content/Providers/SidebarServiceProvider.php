@@ -22,7 +22,7 @@ class SidebarServiceProvider extends ServiceProvider
         $sidebar = $this->app->make(SidebarService::class);
 
         $sidebar->add(
-            (new SidebarGroup('Content Management', 'solar-document-text-bold-duotone' , [] )) // قيمة sort 3
+            (new SidebarGroup('Content Management', 'solar-document-text-bold-duotone' , ['Content View List'] ))
             ->add(new SidebarItem('Banners List' , 'solar-users-group-rounded-bold-duotone' , ['Banner View'] ,  'banners.index' ))
             ->add(new SidebarItem('Pages List' , 'solar-users-group-rounded-bold-duotone' , ['Page View'] ,  'pages.index' ))
             ->add(new SidebarItem('Faqs List' , 'solar-users-group-rounded-bold-duotone' , ['Faq View'] ,  'faqs.index' ))

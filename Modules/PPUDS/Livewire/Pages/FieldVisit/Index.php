@@ -24,6 +24,7 @@ use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\FieldVisit;
+use Modules\PPUDS\Enums\SemesterType;
 
 class Index extends Component implements HasForms, HasTable
 {
@@ -136,7 +137,7 @@ class Index extends Component implements HasForms, HasTable
                 ->form([
                     \Filament\Forms\Components\Select::make('semester_type')
                         ->label(__('Semester Type'))
-                        ->options(\SemesterType::options())
+                        ->options(SemesterType::options())
                         ->default(app(\Modules\PPUDS\Settings\GeneralSettings::class)->semester_type->value)
                         ->prefixIcon('solar-bookmark-circle-bold-duotone'),
                 ])

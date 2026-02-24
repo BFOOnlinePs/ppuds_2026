@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\PPUDS\Http\Controllers\Api\V1\ChatController;
 use Modules\PPUDS\Http\Controllers\Api\V1\AnnouncementController;
 use Modules\PPUDS\Http\Controllers\Api\V1\CompanyCategoryController;
 use Modules\PPUDS\Http\Controllers\Api\V1\CompanyController;
@@ -12,7 +13,6 @@ use Modules\PPUDS\Http\Controllers\Api\V1\StudentAttendanceReportController;
 use Modules\PPUDS\Http\Controllers\Api\V1\StudentCompanyController;
 use Modules\PPUDS\Http\Controllers\Api\V1\SurveyAnswerController;
 use Modules\PPUDS\Http\Controllers\Api\V1\SurveyController;
-
 
 Route::prefix('v1')->as('api.v1.')->group(function () {
     Route::middleware(['auth:sanctum', 'api.localize'])->group(function () {
@@ -117,6 +117,16 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
                     Route::post('/', 'store')->name('store');
                     Route::get('/{leaveRequest}', 'show')->name('show');
                     Route::patch('/{leaveRequest}', 'update')->name('update');
+                });
+
+            Route::controller(ChatController::class)
+                ->prefix('chats')
+                ->as('chats.')
+                ->group(function () {
+                    Route::get('/', 'index')->name('index');
+                    Route::get('/{conversation}/messages', 'messages')->name('messages');
+                    Route::post('/{conversation}/send', 'sendMessage')->name('send');
+                    Route::patch('/{conversation}/read', 'markAsRead')->name('read');
                 });
         });
     });

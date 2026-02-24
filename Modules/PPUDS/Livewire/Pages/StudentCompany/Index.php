@@ -40,7 +40,11 @@ class Index extends Component implements HasForms, HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn () => StudentCompany::query()->with(['registration.student', 'registration.course', 'company', 'branch']))
+            ->query(fn () => StudentCompany::query()->with(['registration.student', 'registration.course', 'company', 'branch'])->when(auth()->user()->hasRole('Student'), function (Builder $query){
+                $query->whereHas('registration.student', function (Builder $q) {
+                    $q->where('id', auth()->id());
+                });
+            }))
             ->columns([
                 TextColumn::make('registration.student.name')
                     ->label(__('Student'))
@@ -215,7 +219,8 @@ class Index extends Component implements HasForms, HasTable
                     ->color('danger')
                     ->requiresConfirmation()
                     ->action(fn (Collection $records) => $records->each->delete())
-                    ->after(fn () => Toaster::success(__('Selected records deleted successfully'))),
+                    ->after(fn () => Toaster::success(__('Selected records deleted successfully')))
+                    ->visible(fn() => auth()->user()->can('StudentCompany Delete')),
             ]),
         ];
     }

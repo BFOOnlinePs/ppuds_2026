@@ -5,6 +5,7 @@ namespace Modules\PPUDS\Entities;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Modules\Core\Entities\User;
 use Modules\Core\Enums\ImageQuality;
@@ -104,7 +105,7 @@ class Registration extends Model implements HasMedia
 
             return $media;
         } catch (\Exception $e) {
-            \Log::error('Error uploading registration image: ' . $e->getMessage());
+            Log::error('Error uploading registration image: ' . $e->getMessage());
             return null;
         }
     }

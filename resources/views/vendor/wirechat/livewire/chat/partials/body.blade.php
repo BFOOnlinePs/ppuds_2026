@@ -68,8 +68,17 @@
 
 
     x-cloak
-     class='flex flex-col h-full  relative gap-2 gap-y-4 p-4 md:p-5 lg:p-8  grow  overscroll-contain overflow-x-hidden w-full my-auto'
-    style="contain: content" >
+     class='wc-chat-body flex flex-col h-full  relative gap-2 gap-y-4 p-4 md:p-5 lg:p-8  grow  overscroll-contain overflow-y-auto overflow-x-hidden w-full my-auto'
+    style="contain: content"
+    x-effect="
+        $nextTick(() => {
+            if (window.__wirechat_scroll_locked) {
+                $el.scrollTop = window.__wirechat_saved_scroll ?? $el.scrollHeight;
+                window.__wirechat_scroll_locked = false;
+            }
+        });
+    "
+    >
 
 
 

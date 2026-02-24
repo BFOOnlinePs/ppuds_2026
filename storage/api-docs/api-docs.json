@@ -5676,6 +5676,243 @@
                 ]
             }
         },
+        "/api/v1/ppuds/chats": {
+            "get": {
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Get all user conversations",
+                "description": "Retrieve a list of all conversations for the authenticated user",
+                "operationId": "c525eeb318450712b14440c3db9e87c9",
+                "parameters": [
+                    {
+                        "name": "Accept-Language",
+                        "in": "header",
+                        "description": "Language header (ar or en)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "default": "ar",
+                            "example": "en"
+                        }
+                    },
+                    {
+                        "name": "include",
+                        "in": "query",
+                        "description": "Include relations (last_message, participants)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "last_message"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Conversations retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Conversations retrieved successfully"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "type": {
+                                                        "type": "string",
+                                                        "example": "private"
+                                                    },
+                                                    "unread_count": {
+                                                        "type": "integer",
+                                                        "example": 5
+                                                    },
+                                                    "last_message_at": {
+                                                        "type": "string",
+                                                        "format": "date-time"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/chats/{conversation}/messages": {
+            "get": {
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Get conversation messages",
+                "description": "Retrieve paginated messages for a specific conversation using UUID",
+                "operationId": "12dcc0b86fb112c99ef288fcbe267616",
+                "parameters": [
+                    {
+                        "name": "conversation",
+                        "in": "path",
+                        "description": "Conversation UUID",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "example": "019c7fb7-8447-7263-a53d-a88d85768f73"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Messages retrieved successfully"
+                    },
+                    "403": {
+                        "description": "Forbidden - User not in conversation"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/chats/{conversation}/send": {
+            "post": {
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Send a new message",
+                "description": "Sends a text message to a specific conversation",
+                "operationId": "d7b6ee4270a31a130fd923d868e1ee27",
+                "parameters": [
+                    {
+                        "name": "conversation",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "body"
+                                ],
+                                "properties": {
+                                    "body": {
+                                        "type": "string",
+                                        "example": "Hello, how are you?"
+                                    },
+                                    "attachment": {
+                                        "description": "Optional file attachment",
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Message sent successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/chats/{conversation}/read": {
+            "patch": {
+                "tags": [
+                    "Chat"
+                ],
+                "summary": "Mark conversation as read",
+                "description": "Sets all unread messages in this conversation to read for the current user",
+                "operationId": "f9de9662352fb3a6aca24710d158f398",
+                "parameters": [
+                    {
+                        "name": "conversation",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Conversation marked as read",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Marked as read"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/ppuds/company-categories": {
             "get": {
                 "tags": [
@@ -9100,10 +9337,6 @@
                         "type": "boolean",
                         "example": false
                     },
-                    "status": {
-                        "type": "string",
-                        "example": "approved"
-                    },
                     "rejection_reason": {
                         "type": "string",
                         "example": null
@@ -9247,6 +9480,10 @@
         {
             "name": "Announcements",
             "description": "Announcements"
+        },
+        {
+            "name": "Chat",
+            "description": "Chat"
         },
         {
             "name": "Company Categories",

@@ -66,7 +66,8 @@ class Index extends Component implements HasForms, HasTable
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 ToggleColumn::make('is_active')
-                    ->label(__('Active')),
+                    ->label(__('Active'))
+                    ->visible(fn() => !auth()->user()->hasRole('Student')),
 
                 TextColumn::make('created_at')
                     ->label(__('Created At'))
@@ -256,7 +257,8 @@ class Index extends Component implements HasForms, HasTable
                     ->color('danger')
                     ->requiresConfirmation()
                     ->action(fn (Collection $records) => $records->each->delete())
-                    ->after(fn () => Toaster::success(__('Selected records deleted successfully'))),
+                    ->after(fn () => Toaster::success(__('Selected records deleted successfully')))
+                    ->visible(fn() => auth()->user()->can('Survey Delete')),
             ]),
         ];
     }

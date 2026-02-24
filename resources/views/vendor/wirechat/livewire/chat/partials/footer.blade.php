@@ -561,6 +561,26 @@
 
             @script
                 <script>
+                    // ─── Fix: prevent page scroll-to-top on Livewire re-render ───────────────
+                    document.addEventListener('livewire:before-update', () => {
+                        const chatBody = document.querySelector('main.wc-chat-body, main[style*="contain"]');
+                        if (chatBody) {
+                            window.__wirechat_saved_scroll = chatBody.scrollTop;
+                            window.__wirechat_scroll_locked = true;
+                        }
+                        // Save & restore window scroll to prevent page jump
+                        window.__wirechat_window_scrollY = window.scrollY;
+                    });
+
+                    document.addEventListener('livewire:update', () => {
+                        if (window.__wirechat_window_scrollY !== undefined) {
+                            requestAnimationFrame(() => {
+                                window.scrollTo(0, window.__wirechat_window_scrollY);
+                            });
+                        }
+                    });
+                    // ─────────────────────────────────────────────────────────────────────────
+
                     Alpine.data('attachments', (type = "media") => ({
                         // State variables
                         isDropping: false, // Tracks if a file is being dragged over the drop area
