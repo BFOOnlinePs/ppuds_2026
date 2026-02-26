@@ -108,7 +108,7 @@ class ChatController extends Controller
 
         abort_if(auth()->id() === $receiver->id, 400, __('You cannot create a conversation with yourself.'));
 
-        $conversation = auth()- >user()->createConversationWith($receiver);
+        $conversation = auth()->user()->createConversationWith($receiver);
 
         $conversation->load(['participants', 'lastMessage']);
 
