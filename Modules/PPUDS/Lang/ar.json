@@ -366,5 +366,20 @@
     "Multi Select": "قائمة منسدلة (عدة خيارات)",
     "Date": "تاريخ",
     "File": "رفع ملف",
-    "Rating": "تقييم (نجوم)"
+    "Rating": "تقييم (نجوم)",
+    "Message": "رسالة",
+    "New Message": "رسالة جديدة",
+    "New Conversation": "محادثة جديدة",
+    "Please select the chat type and choose the recipients.": "يرجى تحديد نوع المحادثة واختيار المستلمين.",
+    "Chat Type": "نوع المحادثة",
+    "Single Student": "طالب واحد",
+    "Students Group": "مجموعة طلاب",
+    "Select Student": "اختر الطالب",
+    "Select Students Group": "اختر مجموعة الطلاب",
+    "Group Name": "اسم المجموعة",
+    "e.g., Team Alpha": "مثال: فريق ألفا",
+    "Group Description": "وصف المجموعة",
+    "Brief description of the group...": "وصف مختصر للمجموعة...",
+    "Group Chat": "دردشة جماعية",
+    "Chat Messages": "رسائل المحادثة"
 }

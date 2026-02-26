@@ -25,6 +25,7 @@ class ChatsPanelProvider extends PanelProvider
                 'success' => Color::Emerald,
                 'warning' => Color::Orange,
             ])
+            // ->createGroupAction()
             // ->createChatAction()
             // ->searchUsersUsing(function (string $needle) {
             //     return WireChatUserResource::collection(
