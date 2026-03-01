@@ -10,6 +10,7 @@ use Modules\PPUDS\Http\Requests\ConversationRequest;
 use Modules\PPUDS\Transformers\V1\ConversationResource;
 use Modules\PPUDS\Transformers\V1\MessageResource;
 use Spatie\QueryBuilder\QueryBuilder;
+use Wirechat\Wirechat\Events\MessageCreated;
 use Wirechat\Wirechat\Models\Conversation;
 
 class ChatController extends Controller
@@ -190,6 +191,8 @@ class ChatController extends Controller
 
         // البكج يستخدم sendMessageTo داخلياً للتعامل مع جدول wirechat_messages
         $message = auth()->user()->sendMessageTo($conversation, $request->body);
+
+        broadcast(new MessageCreated($message));
 
         return $this->successResponse(
             new MessageResource($message),
