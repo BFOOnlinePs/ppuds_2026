@@ -366,13 +366,11 @@ class User extends Authenticatable implements HasMedia, WirechatUser
         return $this->belongsTo(LoyaltyTier::class , 'loyalty_tier_id');
     }
 
-/*************  ✨ Windsurf Command ⭐  *************/
 /**
  * Get the addresses associated with the customer.
  *
  * @return \Illuminate\Database\Eloquent\Relations\HasMany
  */
-/*******  3330dc38-a5df-4714-8e1c-41e49d9ae75e  *******/
     public function customerAddresses(): HasMany
     {
         return $this->hasMany(CustomerAddress::class, 'user_id');
