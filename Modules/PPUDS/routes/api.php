@@ -7,6 +7,7 @@ use Modules\PPUDS\Http\Controllers\Api\V1\CompanyCategoryController;
 use Modules\PPUDS\Http\Controllers\Api\V1\CompanyController;
 use Modules\PPUDS\Http\Controllers\Api\V1\CompanyDepartmentController;
 use Modules\PPUDS\Http\Controllers\Api\V1\LeaveRequestController;
+use Modules\PPUDS\Http\Controllers\Api\V1\NoteController;
 use Modules\PPUDS\Http\Controllers\Api\V1\PaymentController;
 use Modules\PPUDS\Http\Controllers\Api\V1\StudentAttendanceController;
 use Modules\PPUDS\Http\Controllers\Api\V1\StudentAttendanceReportController;
@@ -128,6 +129,15 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
                     Route::get('/{conversation}/messages', 'messages')->name('messages');
                     Route::post('/{conversation}/send', 'sendMessage')->name('send');
                     Route::patch('/{conversation}/read', 'markAsRead')->name('read');
+                });
+
+            Route::controller(NoteController::class)
+                ->prefix('notes')
+                ->as('notes.')
+                ->group(function () {
+                    Route::get('/', 'index')->name('index');
+                    Route::post('/', 'store')->name('store');
+                    Route::get('/{note}', 'show')->name('show');
                 });
         });
     });

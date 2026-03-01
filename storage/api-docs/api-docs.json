@@ -7121,6 +7121,189 @@
                 ]
             }
         },
+        "/api/v1/ppuds/notes": {
+            "get": {
+                "tags": [
+                    "Notes"
+                ],
+                "summary": "Get all notes",
+                "description": "Retrieve a list of all notes with filtering and sorting. Usually filtered by the authenticated user.",
+                "operationId": "09ce64f52b5372a5c160391fc106b96e",
+                "parameters": [
+                    {
+                        "name": "filter[name]",
+                        "in": "query",
+                        "description": "Filter by note title",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filter[is_pinned]",
+                        "in": "query",
+                        "description": "Filter by pinned status",
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Notes retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Notes retrieved successfully"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/NoteResource"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Notes"
+                ],
+                "summary": "Create a new note",
+                "operationId": "ff8acf44677258fba50f4f4f64518207",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "content",
+                                    "note_date"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "اجتماع التدريب الميداني"
+                                    },
+                                    "content": {
+                                        "type": "string",
+                                        "example": "تم مناقشة خطة العمل للأسبوع القادم"
+                                    },
+                                    "note_date": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2026-03-01"
+                                    },
+                                    "is_pinned": {
+                                        "type": "boolean",
+                                        "example": false
+                                    },
+                                    "note_image": {
+                                        "description": "Optional image for the note",
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Note created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Note created successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/NoteResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/notes/{id}": {
+            "get": {
+                "tags": [
+                    "Notes"
+                ],
+                "summary": "Get note details",
+                "operationId": "e8142a07cd7de73d3039e2b103e32af6",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Note ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Note retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/NoteResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/ppuds/payments": {
             "get": {
                 "tags": [
@@ -9423,6 +9606,41 @@
                     "name": "LeaveRequestResource"
                 }
             },
+            "NoteResource": {
+                "title": "Note Resource",
+                "description": "Note details",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "ملاحظة تدريبية"
+                    },
+                    "content": {
+                        "type": "string",
+                        "example": "تفاصيل الملاحظة هنا..."
+                    },
+                    "note_date": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2026-03-01"
+                    },
+                    "is_pinned": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "image": {
+                        "type": "string",
+                        "example": "https://site.com/storage/1/note.png"
+                    }
+                },
+                "type": "object",
+                "xml": {
+                    "name": "NoteResource"
+                }
+            },
             "StudentAttendanceReportResource": {
                 "title": "Student Attendance Report Resource",
                 "description": "Student Attendance Report details",
@@ -9488,6 +9706,10 @@
         {
             "name": "Leave Requests",
             "description": "API Endpoints for managing student leave requests (Absence & Hourly Leave)"
+        },
+        {
+            "name": "Notes",
+            "description": "API Endpoints for Student Notes"
         },
         {
             "name": "Student Attendances",

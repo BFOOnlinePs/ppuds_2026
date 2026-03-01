@@ -104,23 +104,11 @@ class Edit extends Component implements HasForms, HasActions
 
     public function save()
     {
-        // $this->authorize("Note Update");
+        $this->authorize("Note Update");
 
         $this->validate();
 
-        $noteData = $this->data;
-        $currentLocale = app()->getLocale();
-
-        // تحديث البيانات الأساسية والترجمة
-        $this->record->update([
-            'is_pinned' => $noteData['is_pinned'],
-            'note_date' => $noteData['note_date'],
-            // التعامل مع الحقول المترجمة بناءً على اللغة الحالية
-            $currentLocale => [
-                'name' => $noteData['name'],
-                'content' => $noteData['content'],
-            ]
-        ]);
+        $this->record->update($this->data);
 
         Toaster::success(__('Note updated successfully'));
 
