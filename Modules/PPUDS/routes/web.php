@@ -152,6 +152,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     Route::get('/{conversation}', \Wirechat\Wirechat\Livewire\Chat\Chat::class)->name('show'); 
                     
                 }); 
+                
+                Route::group([
+                    'prefix' => 'notes',
+                    'as' => 'notes.',
+                    'namespace' => 'Modules\PPUDS\Livewire\Pages\Note',
+                ], function () {
+                    Route::get('/', Index::class)->name('index')->can('Note View List');
+                    Route::get('/add', Add::class)->name('add')->can('Note Create');
+                    Route::get('/{note}/edit', Edit::class)->name('edit')->can('Note Update');
+                });
             }); 
         }
     ); 

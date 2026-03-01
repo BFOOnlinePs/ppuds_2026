@@ -189,7 +189,6 @@ class ChatController extends Controller
         $conversation = Conversation::findOrFail($conversationId);
         $request->validate(['body' => 'required|string']);
 
-        // البكج يستخدم sendMessageTo داخلياً للتعامل مع جدول wirechat_messages
         $message = auth()->user()->sendMessageTo($conversation, $request->body);
 
         broadcast(new MessageCreated($message));

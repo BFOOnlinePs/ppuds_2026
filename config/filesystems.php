@@ -164,6 +164,14 @@ return [
             'visibility' => 'public',
             'throw' => false,
         ],
+
+        'ppuds_notes' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public/ppuds/ppuds_notes'),
+            'url' => env('APP_URL').'/storage/ppuds/ppuds_notes',
+            'visibility' => 'public',
+            'throw' => false,
+        ],
     ],
 
     /*

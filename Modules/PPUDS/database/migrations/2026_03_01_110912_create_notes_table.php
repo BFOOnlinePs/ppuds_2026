@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             
             $table->foreignId('user_id')->index('user_id')->constrained('users')->cascadeOnDelete();
+            $table->date('note_date')->nullable();
             $table->boolean('is_pinned')->default(false);
             $table->foreignId('created_by')->index('created_by')->constrained('users')->cascadeOnDelete();
 

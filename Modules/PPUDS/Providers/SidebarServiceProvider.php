@@ -90,6 +90,12 @@ class SidebarServiceProvider extends ServiceProvider
         );
 
         $sidebar->add(
+            (new SidebarGroup('Notes', 'solar-users-group-rounded-bold-duotone', ['Note View List']))
+                ->add(new SidebarItem('Notes List', 'solar-users-group-rounded-bold-duotone', ['Note View List'], 'notes.index'))
+                ->add(new SidebarItem('Add Note', 'solar-users-group-rounded-bold-duotone', ['Note Create'], 'notes.add'))
+        );
+
+        $sidebar->add(
             (new SidebarGroup('Chat Messages', 'solar-users-group-rounded-bold-duotone', ['Survey View List']))
                 ->add(new SidebarItem('Chat Messages List', 'solar-users-group-rounded-bold-duotone', ['Survey View List'], 'chat-messages.index'))
                 ->add(new SidebarItem('Add Chat Message', 'solar-users-group-rounded-bold-duotone', ['Survey View Create'], 'chat-messages.add'))

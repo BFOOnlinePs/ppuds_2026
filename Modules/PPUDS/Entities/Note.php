@@ -4,15 +4,14 @@ namespace Modules\PPUDS\Entities;
 
 use Astrotomic\Translatable\Contracts\Translatable as TranslatableContract;
 use Astrotomic\Translatable\Translatable;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Modules\Core\Entities\User;
 use Modules\Core\Enums\ImageQuality;
 use Modules\Core\Enums\ImageSize;
-use Modules\Core\Enums\UserRole;
 use Modules\Core\Services\ImageService;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -21,9 +20,9 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-class Announcement extends Model implements TranslatableContract, HasMedia
+class Note extends Model implements TranslatableContract, HasMedia
 {
-    use LogsActivity, Translatable, SoftDeletes, InteractsWithMedia;
+    use LogsActivity, Translatable, InteractsWithMedia;
 
     public function __construct(array $attributes = [])
     {
@@ -33,6 +32,7 @@ class Announcement extends Model implements TranslatableContract, HasMedia
 
     protected $fillable = [
         'user_id',
+        'note_date',
         'is_pinned',
         'created_by',
     ];
@@ -43,10 +43,7 @@ class Announcement extends Model implements TranslatableContract, HasMedia
     ];
 
     protected $casts = [
-        'target_roles' => 'array',
-        'filters' => 'array',
-        'published_at' => 'datetime',
-        'expires_at' => 'datetime',
+        'note_date' => 'date',
         'is_pinned' => 'boolean',
     ];
 
@@ -64,33 +61,6 @@ class Announcement extends Model implements TranslatableContract, HasMedia
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');
-    }
-
-    public function scopeActive(Builder $query)
-    {
-        return $query->where('published_at', '<=', now())
-            ->where(function ($q) {
-                $q->whereNull('expires_at')
-                    ->orWhere('expires_at', '>=', now());
-            });
-    }
-
-    // السكوب المصحح للتعامل مع JSON
-    public function scopeForUser(Builder $query, User $user)
-    {
-        return $query->active()->where(function ($q) use ($user) {
-            // 1. هل دور المستخدم موجود داخل مصفوفة الأدوار المستهدفة؟
-            // نستخدم whereJsonContains بدلاً من where العادية
-            $q->whereJsonContains('target_roles', $user->role->value);
-
-            // 2. فلترة خاصة للطلاب (التخصص)
-            if ($user->role === UserRole::STUDENT) {
-                $q->where(function ($subQ) use ($user) {
-                    $subQ->whereNull('filters->major_id')
-                        ->orWhere('filters->major_id', $user->major_id);
-                });
-            }
-        });
     }
 
     protected static function booted()
@@ -117,7 +87,7 @@ class Announcement extends Model implements TranslatableContract, HasMedia
     public function registerMediaConversions(?Media $media = null): void
     {
         $this
-            ->addMediaConversion('announcement_image')
+            ->addMediaConversion('note_image')
             ->fit(Fit::Contain, 300, 300)
             ->nonQueued();
     }
@@ -145,7 +115,7 @@ class Announcement extends Model implements TranslatableContract, HasMedia
             $media = $this
                 ->addMedia($file)
                 ->usingFileName($fileName)
-                ->toMediaCollection('announcement_image', 'announcements');
+                ->toMediaCollection('note_image', 'ppuds_notes');
 
             $size = ImageSize::MEDIUM;
 
@@ -162,6 +132,11 @@ class Announcement extends Model implements TranslatableContract, HasMedia
 
     public function getImageAttribute()
     {
-        return $this->getFirstMediaUrl('announcement_image');
+        return $this->getFirstMediaUrl('ppuds_notes');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 }

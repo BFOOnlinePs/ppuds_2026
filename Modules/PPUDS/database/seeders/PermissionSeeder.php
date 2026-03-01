@@ -463,6 +463,39 @@ class PermissionSeeder extends Seeder
                 'guard_name' => 'web',
                 'module_name' => 'Survey',
             ],
+
+
+            // TODO Note
+            [
+                'name' => 'Note View List',
+                'guard_name' => 'web',
+                'module_name' => 'Note',
+            ],
+            [
+                'name' => 'Note Create',
+                'guard_name' => 'web',
+                'module_name' => 'Note',
+            ],
+            [
+                'name' => 'Note Update',
+                'guard_name' => 'web',
+                'module_name' => 'Note',
+            ],
+            [
+                'name' => 'Note Delete',
+                'guard_name' => 'web',
+                'module_name' => 'Note',
+            ],
+            [
+                'name' => 'Note View',
+                'guard_name' => 'web',
+                'module_name' => 'Note',
+            ],
+            [
+                'name' => 'Note Info',
+                'guard_name' => 'web',
+                'module_name' => 'Note',
+            ],
         ];
 
         foreach ($permissions as $perm) {

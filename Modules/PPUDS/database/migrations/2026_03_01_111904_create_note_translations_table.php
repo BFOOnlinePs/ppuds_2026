@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             
             $table->foreignId('note_id')->index('note_id')->constrained(config('ppuds.table_prefix') . 'notes')->cascadeOnDelete();
+            $table->string('locale', 5)->index('locale');
             $table->string('name');
             $table->text('content');
 
