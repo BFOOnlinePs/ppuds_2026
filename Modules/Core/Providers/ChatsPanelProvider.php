@@ -16,7 +16,8 @@ class ChatsPanelProvider extends PanelProvider
         return $panel
              ->id('chats')
              ->path('admin/chat-messages')
-             ->middleware(['web', 'auth'])
+             ->middleware(['web', 'sanctum', 'auth'])
+             ->guards(['sanctum', 'web'])
              ->colors([
                 'primary' => Color::Orange,
                 'danger' => Color::Rose,
