@@ -7,6 +7,7 @@ use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Group;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -36,10 +37,10 @@ use Modules\PPUDS\Entities\CompanyCategory;
 use Modules\PPUDS\Entities\CompanyDepartment;
 use Modules\PPUDS\Enums\CompanyStatus;
 
-class Add extends Component implements HasForms, HasActions
+class Add extends Component implements HasActions, HasForms
 {
-    use InteractsWithForms;
     use InteractsWithActions;
+    use InteractsWithForms;
 
     public ?array $data = [];
 
@@ -75,6 +76,67 @@ class Add extends Component implements HasForms, HasActions
                                                             ->required()
                                                             ->prefixIcon('solar-pen-new-square-linear') // Solar Icon
                                                             ->placeholder(__('e.g. Acme Corporation'))
+                                                            ->live(debounce: 500)
+                                                            ->datalist(fn () => Company::get()->pluck('name'))
+                                                            ->columnSpan(1),
+                                                        Placeholder::make('company_suggestions')
+                                                            ->label(__('Suggestions & Similar Companies'))
+                                                            ->hidden(fn (Get $get) => blank($get('name'))) // إخفاء الحقل إذا كان الاسم فارغاً
+                                                            ->content(function (Get $get) {
+                                                                $search = $get('name');
+
+                                                                // جلب الشركات التي تحتوي على نفس النص
+                                                                $similarCompanies = Company::whereTranslationLike('name', "%{$search}%")
+                                                                    ->limit(5)
+                                                                    ->get();
+
+                                                                // 1. حالة عدم وجود شركات مشابهة (الاسم متاح)
+                                                                if ($similarCompanies->isEmpty()) {
+                                                                    return new HtmlString('
+                <div class="p-3 rounded-lg bg-success-50 dark:bg-success-500/10 text-success-600 dark:text-success-400 border border-success-200 dark:border-success-500/20">
+                    <span class="flex items-center gap-2 text-sm font-medium">
+                        <x-icon name="solar-check-circle-bold" class="w-100" />
+                        هذا الاسم متاح ولا يوجد شركات مشابهة في النظام.
+                    </span>
+                </div>
+            ');
+                                                                }
+
+                                                                $categoryLabel = __('Category');
+                                                                $statusLabel = __('Status');
+
+                                                                $html = '<div class="flex flex-col gap-3 mt-1">';
+                                                                $html .= '  <span class="text-sm font-medium text-warning-600 dark:text-warning-400 flex items-center gap-2">
+                        <x-icon name="solar-info-circle-bold" class="w-100" />
+                        انتبه، وجدنا شركات بأسماء مشابهة:
+                    </span>';
+                                                                $html .= '  <div class="grid gap-2">';
+
+                                                                foreach ($similarCompanies as $company) {
+                                                                    $categoryName = $company->category?->name ?? '-';
+
+                                                                    $statusName = $company->status?->getLabel() ?? $company->status->value;
+
+                                                                    $html .= '
+                <div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                    <div>
+                        <strong class="text-sm text-gray-900 dark:text-white">'.$company->name.'</strong>
+                        <div class="text-xs text-gray-500 mt-1">
+                            '.$categoryLabel.': '.$categoryName.'
+                        </div>
+                    </div>
+                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-500/20">
+                        '.$statusLabel.': '.$statusName.'
+                    </span>
+                </div>
+            ';
+                                                                }
+
+                                                                $html .= '  </div>';
+                                                                $html .= '</div>';
+
+                                                                return new HtmlString($html);
+                                                            })
                                                             ->columnSpan(1),
                                                         TextInput::make('website')
                                                             ->label(__('Website URL'))
@@ -226,7 +288,7 @@ class Add extends Component implements HasForms, HasActions
                                                                             ->reorderable(false)  // منع تغيير الترتيب
                                                                             ->defaultItems(7)     // عرض 7 أيام دائماً
                                                                             // دالة لملء الأيام السبعة تلقائياً عند فتح الفورم الجديد
-                                                                            ->default(function() {
+                                                                            ->default(function () {
                                                                                 $days = [];
                                                                                 foreach (\Modules\Branch\Enums\WeekDay::cases() as $day) {
                                                                                     $days[] = [
@@ -236,6 +298,7 @@ class Add extends Component implements HasForms, HasActions
                                                                                         'end_time' => '16:00',
                                                                                     ];
                                                                                 }
+
                                                                                 return $days;
                                                                             }),
                                                                     ])
@@ -263,7 +326,10 @@ class Add extends Component implements HasForms, HasActions
                                                                     ->label(__('City'))
                                                                     ->options(function (Get $get) {
                                                                         $countryId = $get('country_id');
-                                                                        if (! $countryId) return [];
+                                                                        if (! $countryId) {
+                                                                            return [];
+                                                                        }
+
                                                                         return City::whereHas('governorate', function (Builder $query) use ($countryId) {
                                                                             $query->where('country_id', $countryId);
                                                                         })->get()->pluck('name', 'id');
@@ -317,7 +383,7 @@ class Add extends Component implements HasForms, HasActions
                                                                             ->searchable()
                                                                             ->preload()
                                                                             ->prefixIcon('solar-user-id-linear') // Solar Icon
-                                                                            ->options(fn() => User::role('Company Supervisor')->pluck('name', 'id'))
+                                                                            ->options(fn () => User::role('Company Supervisor')->pluck('name', 'id'))
                                                                             ->getSearchResultsUsing(fn (string $search) => User::role('Company Supervisor')
                                                                                 ->where('name', 'like', "%{$search}%")
                                                                                 ->limit(50)
@@ -332,12 +398,13 @@ class Add extends Component implements HasForms, HasActions
                                                                                     TextInput::make('phone')->required()->numeric(),
                                                                                     TextInput::make('password')->required()->password()->confirmed(),
                                                                                     TextInput::make('password_confirmation')->required()->password(),
-                                                                                ])
+                                                                                ]),
                                                                             ])
                                                                             ->createOptionUsing(function (array $data) {
                                                                                 $data['password'] = bcrypt($data['password']);
                                                                                 $user = User::create($data);
                                                                                 $user->assignRole('Company Supervisor');
+
                                                                                 return $user->id;
                                                                             })
                                                                             ->required(),
@@ -350,14 +417,14 @@ class Add extends Component implements HasForms, HasActions
                                                                 ->reorderableWithButtons()
                                                                 ->extraAttributes(['class' => 'border-l-4 border-primary-500 pl-4']), // تمييز بصري لقائمة الأقسام
                                                         ]),
-                                                ])
-                                        ])
+                                                ]),
+                                        ]),
                                 ]),
                         ]),
                 ])
                     ->columnSpan('full')
 
-                    ->submitAction(new HtmlString(Blade::render(<<<BLADE
+                    ->submitAction(new HtmlString(Blade::render(<<<'BLADE'
                         <x-filament::button
                             wire:click="save"
                             type="button"
@@ -365,7 +432,7 @@ class Add extends Component implements HasForms, HasActions
                         >
                             {{ __('Save') }}
                         </x-filament::button>
-                    BLADE)))
+                    BLADE))),
             ])
             ->statePath('data');
     }
@@ -399,7 +466,7 @@ class Add extends Component implements HasForms, HasActions
 
     public function save()
     {
-        $this->authorize("Company Create");
+        $this->authorize('Company Create');
 
         $this->validate();
 
@@ -416,7 +483,7 @@ class Add extends Component implements HasForms, HasActions
         }
 
         // 4. معالجة الفروع
-        if (!empty($this->data['branches'])) {
+        if (! empty($this->data['branches'])) {
 
             foreach ($this->data['branches'] as $branchData) {
 
@@ -435,13 +502,13 @@ class Add extends Component implements HasForms, HasActions
                 $company->branches()->attach($branch->id, ['is_main' => false]);
 
                 // --- أ. حفظ ساعات العمل (الجديد) ---
-                if (!empty($workingHoursData)) {
+                if (! empty($workingHoursData)) {
                     foreach ($workingHoursData as $wh) {
                         $branch->workingHours()->create([
-                            'day'        => $wh['day'],
-                            'is_closed'  => $wh['is_closed'],
+                            'day' => $wh['day'],
+                            'is_closed' => $wh['is_closed'],
                             'start_time' => $wh['is_closed'] ? null : $wh['start_time'],
-                            'end_time'   => $wh['is_closed'] ? null : $wh['end_time'],
+                            'end_time' => $wh['is_closed'] ? null : $wh['end_time'],
                         ]);
                     }
                 }
@@ -456,7 +523,7 @@ class Add extends Component implements HasForms, HasActions
 
                     if (! $department) {
                         $department = CompanyDepartment::create([
-                            'name'       => $deptName,
+                            'name' => $deptName,
                             'created_by' => auth()->id(),
                         ]);
                     }
@@ -464,8 +531,8 @@ class Add extends Component implements HasForms, HasActions
                     // ربط القسم بالفرع مع المشرف
                     $branch->departments()->syncWithoutDetaching([
                         $department->id => [
-                            'user_id' => $supervisorId
-                        ]
+                            'user_id' => $supervisorId,
+                        ],
                     ]);
                 }
             }
@@ -482,7 +549,7 @@ class Add extends Component implements HasForms, HasActions
                 ['title' => __('Home'), 'url' => route('home')],
                 ['title' => __('Companies'), 'url' => route('companies.index')],
                 ['title' => __('New Company'), 'url' => route('companies.add')],
-            ]
+            ],
         ]);
     }
 }

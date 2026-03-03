@@ -258,14 +258,12 @@
     "M&E Officer": "مسؤول المتابعة والتقييم",
     "Corporate Relations Officer": "مسؤول العلاقات مع الشركات",
     "Practical Training Supervisor": "مشرف التدريب العملي",
-
     "Annual Leave": "إجازة سنوية",
     "Sick Leave": "إجازة مرضية",
     "Remote Work": "عمل عن بعد",
     "Travel Abroad": "سفر للخارج",
     "Work From Home": "عمل من المنزل",
     "Business Trip": "رحلة عمل",
-
     "Leave Requests": "طلبات الإذن والمغادرة",
     "Leave Request": "طلب إذن",
     "New Request": "طلب جديد",
@@ -284,11 +282,9 @@
     "Leave Request deleted successfully": "تم حذف طلب الإذن بنجاح",
     "Student Training": "تدريب الطالب",
     "Overall Status": "الحالة العامة",
-
     "Approved": "مقبول",
     "Discrepancy": "تعارض / غير مطابق",
     "Undetermined": "غير محدد",
-
     "Student Attendance": "حضور الطلاب",
     "Leave Requests List": "قائمة طلبات الإذن والمغادرة",
     "StudentAttendance View List": "عرض سجلات الحضور",
@@ -316,11 +312,9 @@
     "Out Latitude": "خط العرض (مغادرة)",
     "Out Longitude": "خط الطول (مغادرة)",
     "View Map": "عرض الخريطة",
-
     "Personal Information": "المعلومات الشخصية",
     "Student Trainings": "تدريبات الطلاب",
     "Company Details": "تفاصيل الشركة",
-    
     "Surveys": "الاستبيانات",
     "Survey": "الاستبيان",
     "Surveys List": "قائمة الاستبيانات",
@@ -344,7 +338,6 @@
     "Delete": "حذف",
     "Survey record deleted successfully": "تم حذف الاستبيان بنجاح",
     "Selected records deleted successfully": "تم حذف السجلات المحددة بنجاح",
-
     "Basic information about the survey context.": "معلومات أساسية حول سياق الاستبيان.",
     "Survey Title": "عنوان الاستبيان",
     "Questions Builder": "بناء الأسئلة",
@@ -357,7 +350,6 @@
     "New Survey": "استبيان جديد",
     "Edit Survey": "تعديل الاستبيان",
     "Survey updated successfully": "تم تحديث الاستبيان بنجاح",
-
     "Text": "إجابة نصية قصيرة",
     "Textarea": "إجابة نصية طويلة",
     "Radio": "خيار واحد (دوائر)",
@@ -381,5 +373,36 @@
     "Group Description": "وصف المجموعة",
     "Brief description of the group...": "وصف مختصر للمجموعة...",
     "Group Chat": "دردشة جماعية",
-    "Chat Messages": "رسائل المحادثة"
+    "Chat Messages": "رسائل المحادثة",
+    
+    "Note Content": "محتوى الملاحظة",
+    "Note Title": "عنوان الملاحظة",
+    "Enter a brief title for your note...": "أدخل عنواناً مختصراً لملاحظتك...",
+    "Details": "التفاصيل",
+    "Write your notes here...": "اكتب ملاحظاتك هنا...",
+    "Image": "الصورة",
+    "Note Image": "صورة الملاحظة",
+    "Settings": "الإعدادات",
+    "Note Date": "تاريخ الملاحظة",
+    "Pin this note": "تثبيت هذه الملاحظة",
+    "Pinned notes appear at the top.": "الملاحظات المثبتة تظهر في الأعلى.",
+    "Please enter a title for the note.": "يرجى إدخال عنوان للملاحظة.",
+    "The note content cannot be empty.": "محتوى الملاحظة لا يمكن أن يكون فارغاً.",
+    "Please select a date.": "يرجى اختيار تاريخ.",
+    "Note created successfully": "تم إنشاء الملاحظة بنجاح",
+    "Note updated successfully": "تم تحديث الملاحظة بنجاح",
+    "My Notes": "ملاحظاتي",
+    "New Note": "ملاحظة جديدة",
+    "Edit Note": "تعديل الملاحظة",
+    "Date": "التاريخ",
+    "Add Note": "إضافة ملاحظة",
+    "Academic": "أكاديمي",
+    "Training": "تدريب",
+    "Personal": "شخصي",
+    "Pinned Only": "المثبتة فقط",
+    "From Date": "من تاريخ",
+    "Until Date": "إلى تاريخ",
+    "Selected notes deleted successfully": "تم حذف الملاحظات المحددة بنجاح",
+    "View Note": "عرض الملاحظة",
+    "Note deleted successfully": "تم حذف الملاحظة بنجاح"
 }

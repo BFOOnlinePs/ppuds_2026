@@ -17,7 +17,7 @@ use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Modules\Core\Entities\User;
 use Modules\Core\Filament\Forms\Components\Textarea;
-use Modules\PPUDS\Entities\StudnetProfile;
+use Modules\PPUDS\Entities\StudentProfile;
 use Modules\PPUDS\Entities\Major;
 
 class Edit extends Component implements HasForms
@@ -196,7 +196,7 @@ class Edit extends Component implements HasForms
                 ->toArray();
 
             // استخدام updateOrCreate لضمان عدم حدوث أخطاء
-            StudnetProfile::updateOrCreate(
+            StudentProfile::updateOrCreate(
                 ['user_id' => $this->user->id], // شرط البحث
                 $profileData // البيانات للتحديث
             );

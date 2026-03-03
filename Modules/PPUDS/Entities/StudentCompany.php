@@ -4,6 +4,7 @@ namespace Modules\PPUDS\Entities;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -143,5 +144,10 @@ class StudentCompany extends Model implements HasMedia
      public function department(): BelongsTo
      {
          return $this->belongsTo(CompanyDepartment::class, 'department_id');
+     }
+
+     public function attendances(): HasMany
+     {
+         return $this->hasMany(StudentAttendance::class, 'student_company_id');
      }
 }

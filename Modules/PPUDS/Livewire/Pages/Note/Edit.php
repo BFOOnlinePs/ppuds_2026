@@ -10,6 +10,7 @@ use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Group;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Section;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -29,16 +30,9 @@ class Edit extends Component implements HasForms, HasActions
 
     public function mount($note)
     {
-        // جلب الملاحظة أو إرجاع 404
         $this->record = Note::findOrFail($note);
 
-        // تعبئة البيانات (بما فيها الحقول المترجمة)
-        $this->form->fill([
-            'name' => $this->record->name,
-            'content' => $this->record->content,
-            'note_date' => $this->record->note_date?->format('Y-m-d'),
-            'is_pinned' => $this->record->is_pinned,
-        ]);
+        $this->form->fill($this->record->toArray());
     }
 
     public function form(Form $form): Form
@@ -72,6 +66,14 @@ class Edit extends Component implements HasForms, HasActions
                     Group::make()
                         ->columnSpan(['lg' => 1])
                         ->schema([
+                            Section::make(__('Image'))
+                                ->schema([
+                                    SpatieMediaLibraryFileUpload::make('note_image')
+                                        ->collection('note_image')
+                                        ->disk('ppuds_notes')
+                                        ->label(__('Note Image'))
+                                ]),
+                                
                             Section::make(__('Settings'))
                                 ->icon('solar-settings-bold-duotone')
                                 ->schema([
@@ -109,6 +111,10 @@ class Edit extends Component implements HasForms, HasActions
         $this->validate();
 
         $this->record->update($this->data);
+
+        if ($this->data['note_image']) {
+            $this->record->addImage($this->data['note_image']);
+        }
 
         Toaster::success(__('Note updated successfully'));
 

@@ -19,7 +19,7 @@ use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
-use Modules\PPUDS\Entities\StudnetProfile;
+use Modules\PPUDS\Entities\StudentProfile;
 use Modules\PPUDS\Enums\StudentGender;
 use Modules\PPUDS\Services\PpuApiService;
 use Modules\PPUDS\Settings\GeneralSettings;
@@ -32,7 +32,7 @@ class Index extends Component implements HasTable, HasForms
     public function table(Table $table)
     {
         return $table
-            ->query(fn() => StudnetProfile::query())
+            ->query(fn() => StudentProfile::query())
             ->columns([
                 TextColumn::make('user.name')
                     ->label(__('Arabic Name'))
@@ -222,7 +222,7 @@ class Index extends Component implements HasTable, HasForms
                 ->visible(fn() => auth()->user()->can('Student Details List')),
 
 //            EditAction::make('edit')
-//                ->url(fn(StudnetProfile $record) => route('students.edit', $record->user_id))
+//                ->url(fn(StudentProfile $record) => route('students.edit', $record->user_id))
 //                ->visible(fn() => auth()->user()->can('Student Update')),
             DeleteAction::make('delete')
                 ->visible(fn() => auth()->user()->can('Student Delete'))

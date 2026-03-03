@@ -463,6 +463,11 @@ class PermissionSeeder extends Seeder
                 'guard_name' => 'web',
                 'module_name' => 'Survey',
             ],
+            [
+                'name' => 'Survey Submit',
+                'guard_name' => 'web',
+                'module_name' => 'Survey',
+            ],
 
 
             // TODO Note
@@ -495,6 +500,39 @@ class PermissionSeeder extends Seeder
                 'name' => 'Note Info',
                 'guard_name' => 'web',
                 'module_name' => 'Note',
+            ],
+
+
+            // TODO Report
+            [
+                'name' => 'Report View List',
+                'guard_name' => 'web',
+                'module_name' => 'Report',
+            ],
+            [
+                'name' => 'Report Create',
+                'guard_name' => 'web',
+                'module_name' => 'Report',
+            ],
+            [
+                'name' => 'Report Update',
+                'guard_name' => 'web',
+                'module_name' => 'Report',
+            ],
+            [
+                'name' => 'Report Delete',
+                'guard_name' => 'web',
+                'module_name' => 'Report',
+            ],
+            [
+                'name' => 'Report View',
+                'guard_name' => 'web',
+                'module_name' => 'Report',
+            ],
+            [
+                'name' => 'Report Info',
+                'guard_name' => 'web',
+                'module_name' => 'Report',
             ],
         ];
 

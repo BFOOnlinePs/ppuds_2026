@@ -162,6 +162,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     Route::get('/add', Add::class)->name('add')->can('Note Create');
                     Route::get('/{note}/edit', Edit::class)->name('edit')->can('Note Update');
                 });
+
+                Route::group([
+                    'prefix' => 'reports',
+                    'as' => 'reports.',
+                    'namespace' => 'Modules\PPUDS\Livewire\Pages\Report',
+                ], function () {
+                    Route::get('/', Index::class)->name('index')->can('Report View List');
+                });
             }); 
         }
     ); 

@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Hash;
 use Livewire\Component;
 use Modules\Core\Entities\User;
 use Modules\Core\Filament\Forms\Components\Textarea;
-use Modules\PPUDS\Entities\StudnetProfile; // انتبه: الاسم كما في ملفك المرفق
+use Modules\PPUDS\Entities\StudentProfile; // انتبه: الاسم كما في ملفك المرفق
 use Modules\PPUDS\Entities\Major; // تأكد من وجود موديل للتخصصات
 use Spatie\Permission\Models\Role;
 
@@ -183,7 +183,7 @@ class Add extends Component implements HasForms
                 ->except(['name', 'email', 'password', 'password_confirmation', 'roles'])
                 ->toArray();
 
-            StudnetProfile::create(array_merge($profileData, [
+            StudentProfile::create(array_merge($profileData, [
                 'user_id' => $user->id,
                 'cv_status' => 1,
             ]));

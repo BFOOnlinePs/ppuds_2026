@@ -32,7 +32,7 @@ use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\CompanyCategory;
 use Modules\PPUDS\Entities\CompanyDepartment;
-use Modules\PPUDS\Entities\StudnetProfile;
+use Modules\PPUDS\Entities\StudentProfile;
 use View;
 
 class Index extends Component implements HasTable, HasForms

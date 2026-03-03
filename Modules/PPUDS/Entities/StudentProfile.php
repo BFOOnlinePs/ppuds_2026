@@ -2,8 +2,6 @@
 
 namespace Modules\PPUDS\Entities;
 
-use Astrotomic\Translatable\Translatable;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -13,12 +11,13 @@ use Modules\Core\Entities\User;
 use Modules\Core\Enums\ImageQuality;
 use Modules\Core\Enums\ImageSize;
 use Modules\Core\Services\ImageService;
+use Modules\PPUDS\Enums\StudentGender;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
-class StudnetProfile extends Model implements HasMedia
+class StudentProfile extends Model implements HasMedia
 {
     use InteractsWithMedia;
     use SoftDeletes;
@@ -39,7 +38,8 @@ class StudnetProfile extends Model implements HasMedia
     ];
 
     protected $casts = [
-        'dob' => 'date',
+        'dob'       => 'date',
+        'gender'    => StudentGender::class,
     ];
 
     public function getActivitylogOptions(): LogOptions

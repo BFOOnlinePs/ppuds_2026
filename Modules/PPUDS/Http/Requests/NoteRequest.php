@@ -23,15 +23,6 @@ class NoteRequest extends FormRequest
         ];
     }
 
-/*************  ✨ Windsurf Command ⭐  *************/
-    /**
-     * Return custom messages for validation errors.
-     *
-     * This method should be overridden in Resource classes to specify custom validation messages.
-     *
-     * @return array
-     */
-/*******  d1d47fb0-cc16-4a0a-86a8-ee4cd8649dd0  *******/
     public function messages(): array
     {
         return [

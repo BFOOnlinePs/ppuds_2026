@@ -3,6 +3,8 @@
 namespace Modules\Core\Livewire\Pages\Settings;
 
 use App\View\Components\AppLayout;
+use Carbon\Carbon;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -28,6 +30,7 @@ class Index extends Component implements HasForms
     use InteractsWithForms;
 
     public ?array $data = [];
+
     public Settings $settingsModel;
 
     public function mount()
@@ -39,15 +42,17 @@ class Index extends Component implements HasForms
         $ppudsSettings = app(PPUDSGeneralSettings::class);
 
         $this->form->fill([
-            'site_name'                     => $generalSettings->site_name,
-            'email_address_for_contact'     => $generalSettings->email_address_for_contact,
-            'site_description'              => $generalSettings->site_description,
+            'site_name' => $generalSettings->site_name,
+            'email_address_for_contact' => $generalSettings->email_address_for_contact,
+            'site_description' => $generalSettings->site_description,
 
-            'semester_type'                 => $ppudsSettings->semester_type->value,
-            'year'                          => $ppudsSettings->year,
-            'report_status'                 => $ppudsSettings->report_status->value,
-            'login_method'                  => $ppudsSettings->login_method->value,
-            'giz_evaluation_status'         => $ppudsSettings->giz_evaluation_status->value,
+            'semester_type' => $ppudsSettings->semester_type->value,
+            'year' => $ppudsSettings->year,
+            'report_status' => $ppudsSettings->report_status->value,
+            'login_method' => $ppudsSettings->login_method->value,
+            'giz_evaluation_status' => $ppudsSettings->giz_evaluation_status->value,
+            'start_semester' => $ppudsSettings->start_semester,
+            'end_semester' => $ppudsSettings->end_semester,
         ]);
     }
 
@@ -57,7 +62,6 @@ class Index extends Component implements HasForms
             ->schema([
                 Tabs::make('Settings')
                     ->tabs([
-                        // التبويب الأول: إعدادات الموقع
                         Tabs\Tab::make(__('General Site Info'))
                             ->icon('solar-global-bold-duotone')
                             ->schema([
@@ -91,7 +95,6 @@ class Index extends Component implements HasForms
                                 ]),
                             ]),
 
-                        // التبويب الثاني: الإعدادات الأكاديمية (PPUDS)
                         Tabs\Tab::make(__('Academic Settings'))
                             ->icon('solar-diploma-bold-duotone')
                             ->schema([
@@ -104,8 +107,18 @@ class Index extends Component implements HasForms
 
                                     TextInput::make('year')
                                         ->label(__('Academic Year'))
-                                        ->prefixIcon('solar-calendar-search-bold-duotone') // أيقونة Solar
+                                        ->prefixIcon('solar-calendar-search-bold-duotone')
                                         ->numeric()
+                                        ->required(),
+
+                                    DatePicker::make('start_semester')
+                                        ->label(__('Start Semester'))
+                                        ->prefixIcon('solar-calendar-search-bold-duotone')
+                                        ->required(),
+
+                                    DatePicker::make('end_semester')
+                                        ->label(__('End Semester'))
+                                        ->prefixIcon('solar-calendar-search-bold-duotone')
                                         ->required(),
 
                                     Select::make('report_status')
@@ -137,36 +150,35 @@ class Index extends Component implements HasForms
         $validatedData = $this->form->validate();
         $data = $validatedData['data'];
 
-        // 1. حفظ إعدادات الموقع العامة
         $generalSettings = app(GeneralSettings::class);
         $generalSettings->site_name = $data['site_name'];
         $generalSettings->email_address_for_contact = $data['email_address_for_contact'];
         $generalSettings->site_description = $data['site_description'];
         $generalSettings->save();
 
-        // 2. حفظ إعدادات PPUDS الأكاديمية
         $ppudsSettings = app(PPUDSGeneralSettings::class);
         $ppudsSettings->semester_type = SemesterType::from($data['semester_type']);
         $ppudsSettings->year = (int) $data['year'];
         $ppudsSettings->report_status = ReportStatus::from($data['report_status']);
         $ppudsSettings->login_method = LoginMethod::from($data['login_method']);
         $ppudsSettings->giz_evaluation_status = GigEvaluationStatus::from($data['giz_evaluation_status']);
+        $ppudsSettings->start_semester = Carbon::parse($data['start_semester']);
+        $ppudsSettings->end_semester = Carbon::parse($data['end_semester']);
         $ppudsSettings->save();
 
-        // 3. التعامل مع الشعار
         if (isset($data['logo'])) {
             $this->settingsModel->handleLogoUpload($data['logo']);
         }
 
-//        auth()->user()->notify(new GeneralNotification(
-//            __('Settings Updated'),
-//            __('System settings have been updated successfully'),
-//            route('settings'),
-//            icon: 'welcome',
-//            color: 'success',
-//        ));
+        //        auth()->user()->notify(new GeneralNotification(
+        //            __('Settings Updated'),
+        //            __('System settings have been updated successfully'),
+        //            route('settings'),
+        //            icon: 'welcome',
+        //            color: 'success',
+        //        ));
 
-//        event(new RefreshNotificationEvent());
+        //        event(new RefreshNotificationEvent());
 
         LivewireAlert::title(__('Saved Successfully'))->success()->toast()->show();
     }
@@ -177,7 +189,7 @@ class Index extends Component implements HasForms
             'breadcrumbs' => [
                 ['title' => __('Home'), 'url' => route('home')],
                 ['title' => __('Settings'), 'url' => route('settings')],
-            ]
+            ],
         ]);
     }
 }

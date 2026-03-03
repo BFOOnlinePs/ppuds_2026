@@ -5,6 +5,7 @@ namespace Modules\Branch\Entities;
 use ArPHP\I18N\Arabic;
 use Astrotomic\Translatable\Translatable;
 use Astrotomic\Translatable\Contracts\Translatable as TranslatableContract;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -30,6 +31,7 @@ use Modules\PPUDS\Entities\CompanyDepartment;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Modules\PPUDS\Settings\GeneralSettings;
 
 // use Modules\Items\Database\Factories\AttributeFactory;
 
@@ -137,4 +139,49 @@ class Branch extends Model implements TranslatableContract
     {
         return $this->hasMany(BranchWorkingHour::class);
     }
+
+    public function getRequiredTrainingDaysAttribute(): int
+    {
+        $settings   = app(GeneralSettings::class);
+
+        $start      = $settings->start_semester;
+        $end        = $settings->end_semester;
+
+        if (! $start || ! $end) {
+            return 0;
+        }
+
+        $openDays = $this->workingHours()->where('is_closed', false)
+            ->pluck('day')
+            ->map(fn ($dayEnum) => $dayEnum->value)
+            ->toArray();
+
+        return $start->diffInDaysFiltered(function (Carbon $date) use ($openDays) {
+            return in_array($date->dayOfWeek, $openDays);
+        }, $end);
+    }
+
+    public function getAttendedTrainingDaysAttribute(): int
+{
+    $settings = app(GeneralSettings::class);
+    
+    $start = $settings->start_semester;
+    $end = $settings->end_semester;
+
+    if (! $start || ! $end || now()->lt($start)) {
+        return 0;
+    }
+
+    $cutoffDate = now()->min($end);
+
+    $openDays = $this->workingHours
+        ->where('is_closed', false)
+        ->pluck('day')
+        ->map(fn ($dayEnum) => $dayEnum->value)
+        ->toArray();
+
+    return $start->diffInDaysFiltered(function (Carbon $date) use ($openDays) {
+        return in_array($date->dayOfWeek, $openDays);
+    }, $cutoffDate);
+}
 }

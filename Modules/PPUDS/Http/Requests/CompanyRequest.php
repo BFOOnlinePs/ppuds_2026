@@ -3,7 +3,7 @@
 namespace Modules\PPUDS\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Modules\PPUDS\Enums\Enums\CompanyStatus;
+use Modules\PPUDS\Enums\CompanyStatus;
 
 class CompanyRequest extends FormRequest
 {
@@ -13,7 +13,7 @@ class CompanyRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name'                  => ['required', 'string', 'max:255'],
+            'name'                  => ['required', 'string', 'max:255', 'unique:' . config('ppuds.table_prefix') . 'companies,name'],            
             'website'               => ['nullable', 'url', 'max:255'],
             'description'           => ['nullable', 'string'],
             'company_category_id'   => ['required', 'integer', 'exists:ppu_ds_company_categories,id'],
@@ -23,7 +23,7 @@ class CompanyRequest extends FormRequest
             // Branch Validation
             'branches'                => ['required', 'array', 'min:1'],
             'branches.*.name'         => ['required', 'string', 'max:255'],
-            'branches.*.email'        => ['nullable', 'email', 'max:255'],
+            'branches.*.email'        => ['nullable', 'email', 'max:255', 'distinct', 'unique:branch_table_name,email'],            
             'branches.*.phone'        => ['nullable', 'string', 'max:50'],
             'branches.*.country_id'   => ['required', 'integer', 'exists:geolocation_countries,id'],
             'branches.*.city_id'      => ['required', 'integer', 'exists:geolocation_cities,id'],

@@ -11,6 +11,7 @@ use Filament\Forms\Components\Group;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -64,13 +65,18 @@ class Add extends Component implements HasForms, HasActions
                                 ]),
                         ]),
 
-                    // --- العمود الجانبي (يمين - يأخذ مساحة 1) ---
                     Group::make()
                         ->columnSpan(['lg' => 1])
                         ->schema([
-                            // قسم التصنيف والتاريخ
+                            Section::make(__('Image'))
+                                ->schema([
+                                    SpatieMediaLibraryFileUpload::make('note_image')
+                                        ->collection('note_images')
+                                        ->disk('ppuds_notes')
+                                        ->label(__('Note Image'))
+                                ]),
+
                             Section::make(__('Settings'))
-                                ->icon('solar-settings-bold-duotone')
                                 ->schema([
                                     DatePicker::make('note_date')
                                         ->label(__('Note Date'))
@@ -103,14 +109,18 @@ class Add extends Component implements HasForms, HasActions
 
     public function save()
     {
-        // $this->authorize("Note Create");
+        $this->authorize("Note Create");
 
         $this->validate();
 
         $noteData = $this->data;
-        $noteData['user_id'] = auth()->id(); // ربط الملاحظة بالمستخدم الحالي
+        $noteData['user_id'] = auth()->id();
 
-        Note::create($noteData);
+        $note = Note::create($noteData);
+
+        if ($this->data['note_image']) {
+            $note->addImage($this->data['note_image']);
+        }
 
         Toaster::success(__('Note created successfully'));
 

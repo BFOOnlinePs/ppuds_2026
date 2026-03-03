@@ -18,7 +18,7 @@ use Modules\Customer\Entities\Customer;
 use Modules\Delivery\Entities\CustomerAddress;
 use Modules\Items\Entities\Order;
 use Modules\Marketing\Entities\LoyaltyTier;
-use Modules\PPUDS\Entities\StudnetProfile;
+use Modules\PPUDS\Entities\StudentProfile;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\Permission\Traits\HasRoles;
@@ -383,7 +383,7 @@ class User extends Authenticatable implements HasMedia, WirechatUser
 
     public function studentProfile(): HasOne
     {
-        return $this->hasOne(StudnetProfile::class , 'user_id');
+        return $this->hasOne(StudentProfile::class , 'user_id');
     }
 
 

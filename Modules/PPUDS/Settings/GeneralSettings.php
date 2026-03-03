@@ -2,6 +2,7 @@
 
 namespace Modules\PPUDS\Settings;
 
+use Carbon\Carbon;
 use Modules\PPUDS\Enums\GigEvaluationStatus;
 use Modules\PPUDS\Enums\LoginMethod;
 use Modules\PPUDS\Enums\ReportStatus;
@@ -15,6 +16,8 @@ class GeneralSettings extends Settings
     public ReportStatus $report_status;
     public LoginMethod $login_method;
     public GigEvaluationStatus $giz_evaluation_status;
+    public Carbon $start_semester;
+    public Carbon $end_semester;
 
     public static function group(): string
     {

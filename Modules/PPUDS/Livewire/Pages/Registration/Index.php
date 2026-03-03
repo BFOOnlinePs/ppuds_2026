@@ -98,22 +98,17 @@ class Index extends Component implements HasTable, HasForms
     protected function getTableFilters(): array
     {
         return [
-            // 1. فلتر المساق (تم الإصلاح)
             SelectFilter::make('course_id')
                 ->label(__('Course'))
-                // ❌ لا تستخدم relationship هنا لأنها تطلب SQL مباشر
-                // ✅ استخدم options مع get() لجلب الترجمات عبر المودل
                 ->options(Course::get()->pluck('name', 'id'))
                 ->searchable()
                 ->preload(),
 
-            // 2. فلتر الفصل الدراسي
             SelectFilter::make('semester')
                 ->label(__('Semester'))
                 ->options(SemesterType::class)
                 ->native(false),
 
-            // 3. فلتر السنة
             Filter::make('year')
                 ->form([
                     TextInput::make('year')->label(__('Year'))->numeric()

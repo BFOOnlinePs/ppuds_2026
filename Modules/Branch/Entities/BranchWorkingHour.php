@@ -27,10 +27,10 @@ class BranchWorkingHour extends Model
     ];
 
     protected $casts = [
-        'day' => WeekDay::class,
-        'is_closed' => 'boolean',
-        'start_time' => 'datetime:H:i',
-        'end_time'   => 'datetime:H:i',
+        'day'           => WeekDay::class,
+        'is_closed'     => 'boolean',
+        'start_time'    => 'datetime:H:i',
+        'end_time'      => 'datetime:H:i',
     ];
 
     public function getActivitylogOptions(): LogOptions

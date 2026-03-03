@@ -41,7 +41,7 @@ class Index extends Component implements HasTable, HasForms
     public function table(Table $table)
     {
         return $table
-            ->query(fn() => Note::query()->with(['user'])) // نفترض وجود علاقة user
+            ->query(fn() => Note::query()->where('user_id', auth()->id())->with(['user']))
             ->columns([
                 TextColumn::make('name')
                     ->label(__('Note Title'))
@@ -66,8 +66,7 @@ class Index extends Component implements HasTable, HasForms
                     ->dateTime('Y-m-d H:i')
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->filters($this->getTableFilters(), layout: FiltersLayout::AboveContent)
-            ->filtersFormColumns(3)
+            ->filters($this->getTableFilters())
             ->actions($this->getTableActions())
             ->headerActions([
                 CreateAction::make('create')
@@ -81,15 +80,6 @@ class Index extends Component implements HasTable, HasForms
     protected function getTableFilters(): array
     {
         return [
-            // فلتر النوع/التصنيف
-            SelectFilter::make('category')
-                ->label(__('Category'))
-                ->options([
-                    'academic' => __('Academic'),
-                    'training' => __('Training'),
-                    'personal' => __('Personal'),
-                ]),
-
             // فلتر الملاحظات المثبتة
             Filter::make('is_pinned')
                 ->label(__('Pinned Only'))

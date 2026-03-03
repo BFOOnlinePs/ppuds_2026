@@ -5,8 +5,12 @@ namespace Modules\PPUDS\Livewire\Pages\Survey;
 use App\View\Components\AppLayout;
 use Doctrine\DBAL\Schema\View;
 use Dom\Text;
+use Filament\Actions\Action;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Support\Enums\MaxWidth;
+use Filament\Tables\Actions\Action as ActionsAction;
 use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Columns\TextColumn;
@@ -81,27 +85,6 @@ class Index extends Component implements HasForms, HasTable
                 \Modules\Core\Filament\Forms\Components\CreateAction::make('create')
                     ->label(__('Add Survey'))
                     ->url(route('surveys.add'))
-                    ->visible(fn () => auth()->user()->can('Survey Create')),
-
-                CreateAction::make('create')
-                    ->label(__('asdasd'))
-                    ->form([
-                        \Filament\Forms\Components\Select::make('receiver_id')
-                            ->label(__('Select User to Chat With'))
-                            ->options(fn () => User::pluck('name', 'id'))
-                            ->searchable()
-                            ->required(),
-                    ])
-                    ->action(function ($data) {
-                        $receiver = User::findOrFail($data['receiver_id']);
-                        $currentUser = auth()->user();
-
-                        // 2. إنشاء محادثة (أو جلبها إذا كانت موجودة مسبقاً بينهما)
-                        $conversation = $currentUser->createConversationWith($receiver);
-
-                        // 3. توجيه المستخدم إلى صفحة المحادثة التي قمنا بتعريفها سابقاً
-                        return redirect()->route('admin.chats.show', $conversation->id);
-                    })
                     ->visible(fn () => auth()->user()->can('Survey Create')),
             ])
             ->bulkActions($this->getTableBulkAction());
@@ -229,7 +212,21 @@ class Index extends Component implements HasForms, HasTable
                 })
                 ->modalSubmitAction(false) 
                 ->visible(fn () => auth()->user()->can('Survey View')),
-                
+
+            ActionsAction::make('survey_submit')
+                ->label(__('Submit'))
+                ->color('success')
+                ->icon('heroicon-s-check')
+                ->form([
+                    TextInput::make('title')
+                ])
+                ->action(function ($record) {
+                    dd($record->questions);
+                    $record->update(['is_submitted' => true]);
+                    Toaster::success(__('Survey submitted successfully'));
+                })
+                ->visible(fn () => auth()->user()->can('Survey Submit')),
+
             EditAction::make('edit')
                 ->label('')
                 ->tooltip(__('Edit'))
