@@ -70,6 +70,8 @@ class ReportResource extends JsonResource
     public static function allowedFilters(): array
     {
         return [
+            AllowedFilter::exact('id'),
+
             AllowedFilter::callback('student_number', function (Builder $query, $value) {
                 $query->whereHas('student.studentProfile', fn ($sq) => $sq->where('student_number', 'like', "%{$value}%"))
                       ->orWhereHas('student', fn ($sq) => $sq->where('name', 'like', "%{$value}%"));
