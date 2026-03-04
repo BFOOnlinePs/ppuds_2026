@@ -37,27 +37,27 @@ class ReportResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
+            'id'                        => $this->id,
 
-            'student_number' => $this->student?->studentProfile?->student_number,
-            'student_name' => $this->student?->name,
-            'gender' => $this->student?->studentProfile?->gender,
-            'company_name' => $this->company?->name,
+            'student_number'            => $this->student?->studentProfile?->student_number,
+            'student_name'              => $this->student?->name,
+            'gender'                    => $this->student?->studentProfile?->gender,
+            'company_name'              => $this->company?->name,
 
             // Computed/Appended Attributes
-            'attendance_days' => $this->attendance_days,
-            'required_training_days' => $this->branch?->required_training_days,
-            'attended_training_days' => $this->branch?->attended_training_days,
-            'actual_working_hours' => $this->actual_working_hours,
+            'attendance_days'           => $this->attendance_days,
+            'required_training_days'    => $this->branch?->required_training_days,
+            'attended_training_days'    => $this->branch?->attended_training_days,
+            'actual_working_hours'      => $this->actual_working_hours,
 
             // Registration Details
-            'semester' => $this->registration?->semester->getLabel(),
-            'year' => $this->registration?->year,
+            'semester'                  => $this->registration?->semester->getLabel(),
+            'year'                      => $this->registration?->year,
 
-            'created_at' => $this->created_at,
+            'created_at'                => $this->created_at,
 
-            'student' => new UserResource($this->whenLoaded('student')),
-            'company' => new CompanyResource($this->whenLoaded('company')),
+            'student'                   => new UserResource($this->whenLoaded('student')),
+            'company'                   => new CompanyResource($this->whenLoaded('company')),
         ];
     }
 
