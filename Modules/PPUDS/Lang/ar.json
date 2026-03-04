@@ -408,8 +408,8 @@
 
     "Student Name": "اسم الطالب",
     "Attendance Days": "أيام الحضور",
-    "Required Training Days": "أيام التدريب المطلوبة",
-    "Attended Days": "أيام الحضور الفعلية",
+    "Required Training Days (Until Training End)": "أيام التدريب المطلوبة (حتى نهاية التدريب)",
+    "Attended Days (Until Today)": "أيام الحضور المطلوبة (حتى اليوم)",
     "Actual Working Hours": "ساعات العمل الفعلية",
     "Year": "السنة",
     "Number / Name": "الرقم / الاسم",

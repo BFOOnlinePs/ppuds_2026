@@ -2,21 +2,22 @@
 
 namespace Modules\PPUDS\Transformers\V1;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Database\Eloquent\Builder;
 use Modules\Core\Transformers\V1\UserResource;
 use Modules\PPUDS\Enums\AttendanceStatus;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
-
 
 /**
  * @OA\Schema(
  * schema="ReportResource",
  * title="Report Resource",
  * description="Student Company Attendance Report details",
+ *
  * @OA\Xml(name="ReportResource"),
+ *
  * @OA\Property(property="id", type="integer", example=1),
  * @OA\Property(property="student_number", type="string", example="123456"),
  * @OA\Property(property="student_name", type="string", example="أحمد محمد"),
@@ -36,34 +37,34 @@ class ReportResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'                => $this->id,
-            
-            'student_number'    => $this->student?->studentProfile?->student_number,
-            'student_name'      => $this->student?->name,
-            'gender'            => $this->student?->studentProfile?->gender,
-            'company_name'           => $this->company?->name,
+            'id' => $this->id,
+
+            'student_number' => $this->student?->studentProfile?->student_number,
+            'student_name' => $this->student?->name,
+            'gender' => $this->student?->studentProfile?->gender,
+            'company_name' => $this->company?->name,
 
             // Computed/Appended Attributes
-            'attendance_days'        => $this->attendance_days,
+            'attendance_days' => $this->attendance_days,
             'required_training_days' => $this->branch?->required_training_days,
             'attended_training_days' => $this->branch?->attended_training_days,
-            'actual_working_hours'   => $this->actual_working_hours,
+            'actual_working_hours' => $this->actual_working_hours,
 
             // Registration Details
-            'semester'               => $this->registration?->semester,
-            'year'                   => $this->registration?->year,
+            'semester' => $this->registration?->semester->getLabel(),
+            'year' => $this->registration?->year,
 
-            'created_at'        => $this->created_at,
+            'created_at' => $this->created_at,
 
-            'student'                => new UserResource($this->whenLoaded('student')),
-            'company'                => new CompanyResource($this->whenLoaded('company')),
+            'student' => new UserResource($this->whenLoaded('student')),
+            'company' => new CompanyResource($this->whenLoaded('company')),
         ];
     }
 
     public static function allowedFields(): array
     {
         return [
-            'id','created_at'
+            'id', 'created_at',
         ];
     }
 
@@ -74,7 +75,7 @@ class ReportResource extends JsonResource
 
             AllowedFilter::callback('student_number', function (Builder $query, $value) {
                 $query->whereHas('student.studentProfile', fn ($sq) => $sq->where('student_number', 'like', "%{$value}%"))
-                      ->orWhereHas('student', fn ($sq) => $sq->where('name', 'like', "%{$value}%"));
+                    ->orWhereHas('student', fn ($sq) => $sq->where('name', 'like', "%{$value}%"));
             }),
 
             AllowedFilter::exact('student_gender', 'student.studentProfile.gender'),
@@ -83,16 +84,16 @@ class ReportResource extends JsonResource
             AllowedFilter::exact('semester_type', 'registration.semester'),
 
             // فلتر أيام الحضور (من - إلى)
-            AllowedFilter::callback('attendance_days_from', function (Builder $query, $value){
+            AllowedFilter::callback('attendance_days_from', function (Builder $query, $value) {
                 $query->whereHas('attendances', function ($subQ) {
                     $subQ->where('status', AttendanceStatus::UNDETERMINED);
                 }, '>=', $value);
             }),
-            AllowedFilter::callback('attendance_days_to', function (Builder $query, $value){
+            AllowedFilter::callback('attendance_days_to', function (Builder $query, $value) {
                 $query->whereHas('attendances', function ($subQ) {
                     $subQ->where('status', AttendanceStatus::UNDETERMINED);
                 }, '<=', $value);
-            })
+            }),
         ];
     }
 
