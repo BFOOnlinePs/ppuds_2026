@@ -3,6 +3,7 @@
 namespace Modules\Core\Entities;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use ArPHP\I18N\Arabic;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -18,11 +19,11 @@ use Modules\Customer\Entities\Customer;
 use Modules\Delivery\Entities\CustomerAddress;
 use Modules\Items\Entities\Order;
 use Modules\Marketing\Entities\LoyaltyTier;
+use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Entities\StudentProfile;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\Permission\Traits\HasRoles;
-use ArPHP\I18N\Arabic;
 use Wirechat\Wirechat\Contracts\WirechatUser;
 use Wirechat\Wirechat\Panel;
 use Wirechat\Wirechat\Traits\InteractsWithWirechat;
@@ -386,6 +387,10 @@ class User extends Authenticatable implements HasMedia, WirechatUser
         return $this->hasOne(StudentProfile::class , 'user_id');
     }
 
+    public function studentCompanies(): HasMany
+    {
+        return $this->hasMany(StudentCompany::class , 'student_id');
+    }
 
 //    public function routeNotificationForFcm()
 //    {

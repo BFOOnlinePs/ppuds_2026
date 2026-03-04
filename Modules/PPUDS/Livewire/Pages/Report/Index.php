@@ -9,6 +9,8 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Columns\Summarizers\Count;
+use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
@@ -50,7 +52,8 @@ class Index extends Component implements HasForms, HasTable
                     ->weight('bold'),
 
                 TextColumn::make('student.name')
-                    ->label(__('Student Name')),
+                    ->label(__('Student Name'))
+                    ->summarize(Count::make('student.name')),
 
                 TextColumn::make('student.studentProfile.gender')
                     ->label(__('Gender')),
@@ -59,7 +62,8 @@ class Index extends Component implements HasForms, HasTable
                     ->label(__('Company')),
 
                 TextColumn::make('attendance_days')
-                    ->label(__('Attendance Days')),
+                    ->label(__('Attendance Days'))
+                    ->summarize(Sum::make('attendance_days')),
 
                 TextColumn::make('branch.required_training_days')
                     ->label(__('Required Training Days (Until Training End)'))
@@ -71,6 +75,7 @@ class Index extends Component implements HasForms, HasTable
 
                 TextColumn::make('actual_working_hours')
                     ->label(__('Actual Working Hours'))
+                    ->summarize(Sum::make('actual_working_hours'))
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('registration.semester')
