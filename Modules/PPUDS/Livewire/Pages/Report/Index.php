@@ -24,7 +24,6 @@ use Modules\Core\Filament\Forms\Components\CreateAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\Note;
-use Modules\PPUDS\Entities\StudentAttendance;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\AttendanceStatus;
 use Modules\PPUDS\Enums\SemesterType;
@@ -38,13 +37,13 @@ class Index extends Component implements HasForms, HasTable
 
     public function table(Table $table)
     {
-        $mainTable = (new StudentCompany())->getTable();
+        $mainTable = (new StudentCompany)->getTable();
+
         return $table
-            ->query(fn () => StudentCompany::query()->with(['registration', 'student', 'student.studentProfile', 'company', 'branch', 'branch.workingHours', 'department', 'attendances'])->addSelect([
-                    'attendance_days' => StudentAttendance::selectRaw('COUNT(DISTINCT attendance_date)')
-                        ->whereColumn('student_company_id', $mainTable . '.id')
-                        ->where('status', AttendanceStatus::UNDETERMINED)
-                ]))
+            ->query(fn () => StudentCompany::query()->with(['registration', 'student', 'student.studentProfile', 'company', 'branch', 'branch.workingHours', 'department', 'attendances'])
+                ->withAttendanceDays()
+                ->withActualWorkingHours())
+
             ->columns([
                 TextColumn::make('student.studentProfile.student_number')
                     ->label(__('Student Number'))
@@ -167,24 +166,14 @@ class Index extends Component implements HasForms, HasTable
                     }
 
                     return $query
-                        ->when($from !== null, function (Builder $q) use ($from) {
-                            $q->where(
-                                StudentAttendance::selectRaw('COUNT(DISTINCT attendance_date)')
-                                    ->whereColumn('student_company_id', $q->getModel()->getTable().'.id')
-                                    ->where('status', AttendanceStatus::UNDETERMINED),
-                                '>=',
-                                $from
-                            );
-                        })
-                        ->when($to !== null, function (Builder $q) use ($to) {
-                            $q->where(
-                                StudentAttendance::selectRaw('COUNT(DISTINCT attendance_date)')
-                                    ->whereColumn('student_company_id', $q->getModel()->getTable().'.id')
-                                    ->where('status', AttendanceStatus::UNDETERMINED),
-                                '<=',
-                                $to
-                            );
-                        });
+                        ->when($from !== null, fn ($q) => $q->whereHas('attendances', function (Builder $subQ) {
+                            $subQ->where('status', AttendanceStatus::UNDETERMINED);
+                        }, '>=', $from)
+                        )
+                        ->when($to !== null, fn ($q) => $q->whereHas('attendances', function (Builder $subQ) {
+                            $subQ->where('status', AttendanceStatus::UNDETERMINED);
+                        }, '<=', $to)
+                        );
                 }),
 
             Filter::make('year')

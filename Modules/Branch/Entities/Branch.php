@@ -2,50 +2,36 @@
 
 namespace Modules\Branch\Entities;
 
-use ArPHP\I18N\Arabic;
-use Astrotomic\Translatable\Translatable;
 use Astrotomic\Translatable\Contracts\Translatable as TranslatableContract;
+use Astrotomic\Translatable\Translatable;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Str;
-use Intervention\Image\Encoders\PngEncoder;
-use Laravolt\Avatar\Avatar;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\Branch\Enums\BranchStatus;
-use Modules\Clinic\Enums\RoomStatus;
 use Modules\Core\Entities\User;
-use Modules\Core\Enums\ImageQuality;
-use Modules\Core\Enums\ImageSize;
-use Modules\Core\Services\ImageService;
-use Modules\Customer\Enums\GenderType;
-use Modules\Customer\Enums\Language;
-use Modules\Customer\Enums\Status;
 use Modules\GeoLocation\Entities\City;
 use Modules\GeoLocation\Entities\Country;
-use Modules\Items\Enums\AttributeType;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\CompanyDepartment;
+use Modules\PPUDS\Settings\GeneralSettings;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Modules\PPUDS\Settings\GeneralSettings;
 
 // use Modules\Items\Database\Factories\AttributeFactory;
 
 class Branch extends Model implements TranslatableContract
 {
     use LogsActivity;
-    use Translatable;
     use softDeletes;
+    use Translatable;
 
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
 
-        $this->setTable(config('branch.table_prefix') . 'branches');
+        $this->setTable(config('branch.table_prefix').'branches');
     }
 
     protected $fillable = [
@@ -81,7 +67,7 @@ class Branch extends Model implements TranslatableContract
             ->logOnly($this->getFillable())
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()
-            ->setDescriptionForEvent(fn(string $eventName) => "This model has been {$eventName} and value ")
+            ->setDescriptionForEvent(fn (string $eventName) => "This model has been {$eventName} and value ")
             ->useLogName(class_basename($this));
     }
 
@@ -104,7 +90,7 @@ class Branch extends Model implements TranslatableContract
             $locale = app()->getLocale();
             $translationData = request()->only($model->translatedAttributes);
 
-            if (!empty($translationData)) {
+            if (! empty($translationData)) {
                 $model->translateOrNew($locale)->fill($translationData);
                 $model->save();
             }
@@ -128,24 +114,25 @@ class Branch extends Model implements TranslatableContract
             ->withTimestamps();
     }
 
-        public function departments(): BelongsToMany
-        {
-            return $this->belongsToMany(CompanyDepartment::class, 'ppu_ds_branch_department', 'branch_id', 'company_department_id')
-                ->withPivot('user_id')
-                ->withTimestamps();
-        }
+    public function departments(): BelongsToMany
+    {
+        return $this->belongsToMany(CompanyDepartment::class, 'ppu_ds_branch_department', 'branch_id', 'company_department_id')
+            ->withPivot('user_id')
+            ->withTimestamps();
+    }
 
     public function workingHours()
     {
         return $this->hasMany(BranchWorkingHour::class);
     }
 
+    // جلب عدد الايام التي يجب الحضور فيها
     public function getRequiredTrainingDaysAttribute(): int
     {
-        $settings   = app(GeneralSettings::class);
+        $settings = app(GeneralSettings::class);
 
-        $start      = $settings->start_semester;
-        $end        = $settings->end_semester;
+        $start = $settings->start_semester;
+        $end = $settings->end_semester;
 
         if (! $start || ! $end) {
             return 0;
@@ -161,27 +148,28 @@ class Branch extends Model implements TranslatableContract
         }, $end);
     }
 
+    // جلب عدد الايام التي تم الحضور فيها
     public function getAttendedTrainingDaysAttribute(): int
-{
-    $settings = app(GeneralSettings::class);
-    
-    $start = $settings->start_semester;
-    $end = $settings->end_semester;
+    {
+        $settings = app(GeneralSettings::class);
 
-    if (! $start || ! $end || now()->lt($start)) {
-        return 0;
+        $start = $settings->start_semester;
+        $end = $settings->end_semester;
+
+        if (! $start || ! $end || now()->lt($start)) {
+            return 0;
+        }
+
+        $cutoffDate = now()->min($end);
+
+        $openDays = $this->workingHours
+            ->where('is_closed', false)
+            ->pluck('day')
+            ->map(fn ($dayEnum) => $dayEnum->value)
+            ->toArray();
+
+        return $start->diffInDaysFiltered(function (Carbon $date) use ($openDays) {
+            return in_array($date->dayOfWeek, $openDays);
+        }, $cutoffDate);
     }
-
-    $cutoffDate = now()->min($end);
-
-    $openDays = $this->workingHours
-        ->where('is_closed', false)
-        ->pluck('day')
-        ->map(fn ($dayEnum) => $dayEnum->value)
-        ->toArray();
-
-    return $start->diffInDaysFiltered(function (Carbon $date) use ($openDays) {
-        return in_array($date->dayOfWeek, $openDays);
-    }, $cutoffDate);
-}
 }

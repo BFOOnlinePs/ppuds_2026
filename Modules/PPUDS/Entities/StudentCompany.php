@@ -2,6 +2,7 @@
 
 namespace Modules\PPUDS\Entities;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -13,6 +14,7 @@ use Modules\Core\Entities\User;
 use Modules\Core\Enums\ImageQuality;
 use Modules\Core\Enums\ImageSize;
 use Modules\Core\Services\ImageService;
+use Modules\PPUDS\Enums\AttendanceStatus;
 use Modules\PPUDS\Enums\TrainingStatus;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -23,15 +25,15 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class StudentCompany extends Model implements HasMedia
 {
+    use InteractsWithMedia;
     use LogsActivity;
     use SoftDeletes;
-    use InteractsWithMedia;
 
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
 
-        $this->setTable(config('ppuds.table_prefix') . 'students_companies');
+        $this->setTable(config('ppuds.table_prefix').'students_companies');
     }
 
     protected $fillable = [
@@ -46,7 +48,7 @@ class StudentCompany extends Model implements HasMedia
     ];
 
     protected $casts = [
-        'status' => TrainingStatus::class
+        'status' => TrainingStatus::class,
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -55,7 +57,7 @@ class StudentCompany extends Model implements HasMedia
             ->logOnly($this->getFillable())
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()
-            ->setDescriptionForEvent(fn(string $eventName) => "This student company record has been {$eventName}")
+            ->setDescriptionForEvent(fn (string $eventName) => "This student company record has been {$eventName}")
             ->useLogName(class_basename($this));
     }
 
@@ -80,8 +82,8 @@ class StudentCompany extends Model implements HasMedia
 
         // التحقق من نوع الملف
         if (
-            !$file instanceof \Illuminate\Http\UploadedFile &&
-            !($file instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile)
+            ! $file instanceof \Illuminate\Http\UploadedFile &&
+            ! ($file instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile)
         ) {
             return null;
         }
@@ -93,7 +95,7 @@ class StudentCompany extends Model implements HasMedia
         try {
             $originalName = $file->getClientOriginalName();
             $extension = $file->getClientOriginalExtension();
-            $fileName = time() . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $extension;
+            $fileName = time().'_'.Str::slug(pathinfo($originalName, PATHINFO_FILENAME)).'.'.$extension;
 
             $media = $this
                 ->addMedia($file)
@@ -111,7 +113,8 @@ class StudentCompany extends Model implements HasMedia
 
             return $media;
         } catch (\Exception $e) {
-            Log::error('Error uploading student company file: ' . $e->getMessage());
+            Log::error('Error uploading student company file: '.$e->getMessage());
+
             return null;
         }
     }
@@ -141,13 +144,38 @@ class StudentCompany extends Model implements HasMedia
         return $this->belongsTo(Branch::class, 'branch_id');
     }
 
-     public function department(): BelongsTo
-     {
-         return $this->belongsTo(CompanyDepartment::class, 'department_id');
-     }
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(CompanyDepartment::class, 'department_id');
+    }
 
-     public function attendances(): HasMany
-     {
-         return $this->hasMany(StudentAttendance::class, 'student_company_id');
-     }
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(StudentAttendance::class, 'student_company_id');
+    }
+
+    public function scopeWithAttendanceDays($query)
+    {
+        return $query->withCount([
+            'attendances as attendance_days' => function (Builder $query) {
+                $query->where('status', AttendanceStatus::UNDETERMINED)
+                    ->distinct('attendance_date');
+            },
+        ]);
+    }
+
+    public function scopeWithActualWorkingHours($query)
+    {
+        $table = $this->getTable();
+
+        return $query->addSelect([
+            'actual_working_hours' => StudentAttendance::selectRaw(
+
+                'ROUND(COALESCE(SUM(TIMESTAMPDIFF(MINUTE, check_in, check_out)), 0) / 60, 2)'
+            )
+                ->whereColumn('student_company_id', "{$table}.id")
+                ->whereNotNull('check_in')
+                ->whereNotNull('check_out'),
+        ]);
+    }
 }

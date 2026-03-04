@@ -41,7 +41,7 @@ class StudentAttendanceReportController extends Controller
      * Create a new daily report for a specific attendance record.
      *
      * @OA\Post(
-     * path="/api/v1/ppuds/reports",
+     * path="/api/v1/ppuds/attendances/reports",
      * summary="Create a new report",
      * tags={"Student Reports"},
      * security={{"sanctum": {}}},
@@ -114,7 +114,7 @@ class StudentAttendanceReportController extends Controller
      * Retrieve details of a specific report by its ID.
      *
      * @OA\Get(
-     * path="/api/v1/ppuds/reports/{report}",
+     * path="/api/v1/ppuds/attendances/reports/{report}",
      * summary="Get a single report",
      * tags={"Student Reports"},
      * security={{"sanctum": {}}},

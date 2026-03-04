@@ -7302,6 +7302,92 @@
                         "sanctum": []
                     }
                 ]
+            },
+            "post": {
+                "tags": [
+                    "Notes"
+                ],
+                "summary": "Update an existing note",
+                "description": "Update note details. Use _method=PUT in form-data if uploading a new image.",
+                "operationId": "3ddd3b943a3f62ecd661e61cbbcac979",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Note ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "_method": {
+                                        "type": "string",
+                                        "example": "PUT"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "example": "تحديث عنوان الملاحظة"
+                                    },
+                                    "content": {
+                                        "type": "string",
+                                        "example": "تحديث التفاصيل..."
+                                    },
+                                    "note_date": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2026-03-05"
+                                    },
+                                    "is_pinned": {
+                                        "type": "boolean",
+                                        "example": true
+                                    },
+                                    "note_image": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Note updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Note updated successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/NoteResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             }
         },
         "/api/v1/ppuds/payments": {
@@ -7634,6 +7720,175 @@
                     },
                     "404": {
                         "description": "Payment not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/reports": {
+            "get": {
+                "tags": [
+                    "Reports"
+                ],
+                "summary": "Get all student company reports",
+                "description": "Retrieve a list of all student company attendance reports with filtering and sorting",
+                "operationId": "cf10ca89287d0c6de35e92dce568fab1",
+                "parameters": [
+                    {
+                        "name": "Accept-Language",
+                        "in": "header",
+                        "description": "Language header (ar or en)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "default": "ar",
+                            "example": "en"
+                        }
+                    },
+                    {
+                        "name": "filter[student_number]",
+                        "in": "query",
+                        "description": "Filter by student name or number",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filter[student_gender]",
+                        "in": "query",
+                        "description": "Filter by gender (Male, Female)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filter[company_id]",
+                        "in": "query",
+                        "description": "Filter by company ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "filter[year]",
+                        "in": "query",
+                        "description": "Filter by academic year",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "filter[semester_type]",
+                        "in": "query",
+                        "description": "Filter by semester type",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filter[attendance_days_from]",
+                        "in": "query",
+                        "description": "Filter attendance days from",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "filter[attendance_days_to]",
+                        "in": "query",
+                        "description": "Filter attendance days to",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Reports retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Reports retrieved successfully"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/ReportResource"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/reports/{id}": {
+            "get": {
+                "tags": [
+                    "Reports"
+                ],
+                "summary": "Get single report details",
+                "operationId": "f89ed8836367796690127e8328e3236b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Student Company ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Report retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Report retrieved successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/ReportResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 },
                 "security": [
@@ -7984,14 +8239,14 @@
                 ]
             }
         },
-        "/api/v1/ppuds/reports": {
+        "/api/v1/ppuds/attendances/reports": {
             "post": {
                 "tags": [
                     "Student Reports"
                 ],
                 "summary": "Create a new report",
                 "description": "Create Student Report\n\nCreate a new daily report for a specific attendance record.",
-                "operationId": "9bbde7b3ee6e41113f29863e37a1a7fe",
+                "operationId": "f0d5483cf37923beb1ead3e2476e545e",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -8093,14 +8348,14 @@
                 ]
             }
         },
-        "/api/v1/ppuds/reports/{report}": {
+        "/api/v1/ppuds/attendances/reports/{report}": {
             "get": {
                 "tags": [
                     "Student Reports"
                 ],
                 "summary": "Get a single report",
                 "description": "Get Student Report Details\n\nRetrieve details of a specific report by its ID.",
-                "operationId": "6899f2165e79d391f653619378d4fd6d",
+                "operationId": "63265366243f2f8e9f02933a044c64fb",
                 "parameters": [
                     {
                         "name": "report",
@@ -9641,6 +9896,65 @@
                     "name": "NoteResource"
                 }
             },
+            "ReportResource": {
+                "title": "Report Resource",
+                "description": "Student Company Attendance Report details",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "student_number": {
+                        "type": "string",
+                        "example": "123456"
+                    },
+                    "student_name": {
+                        "type": "string",
+                        "example": "أحمد محمد"
+                    },
+                    "gender": {
+                        "type": "string",
+                        "example": "Male"
+                    },
+                    "company_name": {
+                        "type": "string",
+                        "example": "شركة الأمل"
+                    },
+                    "attendance_days": {
+                        "type": "integer",
+                        "example": 15
+                    },
+                    "required_training_days": {
+                        "type": "integer",
+                        "example": 40
+                    },
+                    "attended_training_days": {
+                        "type": "integer",
+                        "example": 15
+                    },
+                    "actual_working_hours": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 120.5
+                    },
+                    "semester": {
+                        "type": "string",
+                        "example": "First Semester"
+                    },
+                    "year": {
+                        "type": "integer",
+                        "example": 2024
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object",
+                "xml": {
+                    "name": "ReportResource"
+                }
+            },
             "StudentAttendanceReportResource": {
                 "title": "Student Attendance Report Resource",
                 "description": "Student Attendance Report details",
@@ -9786,6 +10100,10 @@
         {
             "name": "Payments",
             "description": "Payments"
+        },
+        {
+            "name": "Reports",
+            "description": "Reports"
         },
         {
             "name": "Student Companies",

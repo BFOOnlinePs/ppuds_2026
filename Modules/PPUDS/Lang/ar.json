@@ -404,5 +404,16 @@
     "Until Date": "إلى تاريخ",
     "Selected notes deleted successfully": "تم حذف الملاحظات المحددة بنجاح",
     "View Note": "عرض الملاحظة",
-    "Note deleted successfully": "تم حذف الملاحظة بنجاح"
+    "Note deleted successfully": "تم حذف الملاحظة بنجاح",
+
+    "Student Name": "اسم الطالب",
+    "Attendance Days": "أيام الحضور",
+    "Required Training Days": "أيام التدريب المطلوبة",
+    "Attended Days": "أيام الحضور الفعلية",
+    "Actual Working Hours": "ساعات العمل الفعلية",
+    "Year": "السنة",
+    "Number / Name": "الرقم / الاسم",
+    "Attendance Days From": "أيام الحضور من",
+    "To Attendance Days": "أيام الحضور إلى",
+    "Semester Type": "نوع الفصل الدراسي"
 }

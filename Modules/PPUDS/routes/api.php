@@ -1,14 +1,15 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Modules\PPUDS\Http\Controllers\Api\V1\ChatController;
 use Modules\PPUDS\Http\Controllers\Api\V1\AnnouncementController;
+use Modules\PPUDS\Http\Controllers\Api\V1\ChatController;
 use Modules\PPUDS\Http\Controllers\Api\V1\CompanyCategoryController;
 use Modules\PPUDS\Http\Controllers\Api\V1\CompanyController;
 use Modules\PPUDS\Http\Controllers\Api\V1\CompanyDepartmentController;
 use Modules\PPUDS\Http\Controllers\Api\V1\LeaveRequestController;
 use Modules\PPUDS\Http\Controllers\Api\V1\NoteController;
 use Modules\PPUDS\Http\Controllers\Api\V1\PaymentController;
+use Modules\PPUDS\Http\Controllers\Api\V1\ReportController;
 use Modules\PPUDS\Http\Controllers\Api\V1\StudentAttendanceController;
 use Modules\PPUDS\Http\Controllers\Api\V1\StudentAttendanceReportController;
 use Modules\PPUDS\Http\Controllers\Api\V1\StudentCompanyController;
@@ -63,6 +64,15 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
                     Route::get('/', 'index')->name('index');
                     Route::post('/check-in', 'checkIn')->name('check-in');
                     Route::post('/check-out', 'checkOut')->name('check-out');
+
+                    Route::controller(StudentAttendanceReportController::class)
+                        ->prefix('reports')
+                        ->as('reports.')
+                        ->group(function () {
+                            Route::get('/', 'index')->name('index');
+                            Route::post('/', 'store')->name('store');
+                            Route::get('/{report}', 'show')->name('show');
+                        });
                 });
 
             Route::controller(PaymentController::class)
@@ -73,15 +83,6 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
                     Route::post('/', 'store')->name('store');
                     Route::patch('/{payment}', 'update')->name('update');
                     Route::get('/{payment}', 'show')->name('show');
-                });
-
-            Route::controller(StudentAttendanceReportController::class)
-                ->prefix('reports')
-                ->as('reports.')
-                ->group(function () {
-                    Route::get('/', 'index')->name('index');
-                    Route::post('/', 'store')->name('store');
-                    Route::get('/{report}', 'show')->name('show');
                 });
 
             Route::controller(AnnouncementController::class)
@@ -138,6 +139,14 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
                     Route::get('/', 'index')->name('index');
                     Route::post('/', 'store')->name('store');
                     Route::get('/{note}', 'show')->name('show');
+                });
+
+            Route::controller(ReportController::class)
+                ->prefix('reports')
+                ->as('reports.')
+                ->group(function () {
+                    Route::get('/', 'index')->name('index');
+                    Route::get('/{report}', 'show')->name('show');
                 });
         });
     });
