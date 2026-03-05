@@ -67,10 +67,12 @@ class Index extends Component implements HasForms, HasTable
 
                 TextColumn::make('branch.required_training_days')
                     ->label(__('Required Training Days (Until Training End)'))
+                    ->wrapHeader()
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('branch.attended_training_days')
                     ->label(__('Attended Days (Until Today)'))
+                    ->wrapHeader()
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('actual_working_hours')

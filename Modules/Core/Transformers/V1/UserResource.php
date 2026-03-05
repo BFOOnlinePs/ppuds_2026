@@ -32,9 +32,6 @@ class UserResource extends JsonResource
             'profile'           => $this->whenLoaded('studentProfile', function () {
                 return new StudentProfileResource($this->studentProfile);
             }),
-             'orders'           => OrderResource::collection($this->whenLoaded('orders')),
-             'created_at'        => $this->created_at,
-             'updated_at'        => $this->updated_at,
             'created_at'        => $this->created_at,
             'updated_at'        => $this->updated_at,
         ];
@@ -64,6 +61,6 @@ class UserResource extends JsonResource
 
     public static function allowedIncludes(): array
     {
-        return ['media', 'orders', 'roles', 'studentProfile', 'studentProfile.major'];
+        return ['media', 'roles', 'studentProfile', 'studentProfile.major'];
     }
 }

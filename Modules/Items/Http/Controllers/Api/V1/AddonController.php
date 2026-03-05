@@ -76,7 +76,7 @@ class AddonController extends Controller
         $defaultPerPage = config('core.pagination.per_page', 15);
         $maxPerPage = config('core.pagination.max_per_page', 100);
         $perPage = min(request('per_page', $defaultPerPage), $maxPerPage);
-
+        
         $addons = QueryBuilder::for(Addon::class)
             ->allowedFilters(['name'])
             ->with(['addonOptions'])

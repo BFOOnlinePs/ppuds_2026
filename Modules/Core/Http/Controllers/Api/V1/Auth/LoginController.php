@@ -5,10 +5,11 @@ namespace Modules\Core\Http\Controllers\Api\V1\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Modules\Core\Entities\DeviceToken;
+use Modules\Core\Entities\User;
 use Modules\Core\Http\Requests\Auth\LoginRequest;
 use Modules\Core\Traits\ApiResponse;
 use Modules\Core\Transformers\V1\UserResource;
+use Spatie\QueryBuilder\QueryBuilder;
 
 class LoginController extends Controller
 {
@@ -56,30 +57,42 @@ class LoginController extends Controller
      */
     public function login(LoginRequest $request)
     {
-        $credentials = $request->only('email', 'password');
+        $loginField = $request->filled('email') ? 'email' : 'phone';
+
+        $credentials = [
+            $loginField => $request->input($loginField),
+            'password'  => $request->password,
+        ];
 
         if (!Auth::attempt($credentials)) {
             return $this->errorResponse(__('The provided credentials do not match our records.'), 401);
         }
 
-        $user  = Auth::user();
-        $token = $user->createToken('auth-token-for-' . $user->name)->plainTextToken;
+        $user = Auth::user();
 
-        if ($request->has('fcm_token')){
-            DeviceToken::firstOrCreate([
-                'token' => $request->fcm_token,
-                'user_id' => $user->id,
-                'device_name' => $request->device_name
-            ]);
+        $user = QueryBuilder::for(User::class)
+            ->where('id', $user->id)
+            ->allowedIncludes(UserResource::allowedIncludes())
+            ->first();
+
+        $tokenName = $request->device_name ?: ($request->header('User-Agent') ?: 'Unknown Device');
+        $token = $user->createToken($tokenName)->plainTextToken;
+
+        if ($request->filled('fcm_token')) {
+            $user->deviceTokens()->updateOrCreate(
+                ['token' => $request->fcm_token],
+                [
+                    'device_name' => $tokenName,
+                    'updated_at'  => now()
+                ]
+            );
         }
 
-        $data = [
+        return $this->successResponse([
             'token'      => $token,
             'token_type' => 'Bearer',
             'user'       => new UserResource($user),
-        ];
-
-        return $this->successResponse($data, __('User logged in successfully'));
+        ], __('User logged in successfully'));
     }
 
     /**
