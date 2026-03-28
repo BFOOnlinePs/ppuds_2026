@@ -821,3 +821,16 @@ textarea,
     margin: 0;
 }
 .fi-fo-field-wrp.money-xl input[type=number] { -moz-appearance: textfield; }
+
+.custom-repeater {
+    border-width: 4px;
+}
+
+.fi-fo-repeater-item {
+    border-width: 2px !important;
+    border-style: solid !important;
+    border-color: var(--color-primary) !important;
+    
+    border-radius: 0.5rem !important; /* لتنعيم الحواف (rounded-lg) */
+    overflow: hidden !important; /* لمنع خروج المحتوى عن الإطار */
+}
