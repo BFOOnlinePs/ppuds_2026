@@ -120,7 +120,7 @@ class Index extends Component implements HasForms, HasTable
 
             SelectFilter::make('company_id')
                 ->label(__('Company'))
-                ->options(Company::get()->pluck('name', 'id'))
+                ->options(Company::with('translations')->get()->pluck('name', 'id'))
                 ->searchable()
                 ->preload(),
 
