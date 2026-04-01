@@ -32,7 +32,7 @@ class Index extends Component implements HasTable, HasForms
     public function table(Table $table)
     {
         return $table
-            ->query(fn() => StudentProfile::query())
+            ->query(fn() => StudentProfile::query()->with('user'))
             ->columns([
                 TextColumn::make('user.name')
                     ->label(__('Arabic Name'))
