@@ -35,8 +35,9 @@ class Details extends Component implements HasForms, HasInfolists
 
     public function mount($user)
     {
-        $this->data = User::with(['studentProfile', 'studentProfile.media', 'roles', 'media'])->findOrFail($user);
-        $this->form->fill($this->data);
+        $this->userId = $user->id;
+        $userModel = $user->load(['studentProfile', 'studentProfile.media', 'roles', 'media']);
+        $this->form->fill($userModel->toArray());
     }
 
     public function infolist(Infolist $infolist): Infolist
