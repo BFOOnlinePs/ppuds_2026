@@ -35,7 +35,7 @@ class Details extends Component implements HasForms, HasInfolists
 
     public function mount(User $user)
     {
-        $this->user = $user->load(['studentProfile', 'studentProfile.media', 'roles']);
+        $this->user = $user->load(['studentProfile', 'studentProfile.media', 'roles', 'media']);
         $this->form->fill($this->user->toArray());
     }
 
