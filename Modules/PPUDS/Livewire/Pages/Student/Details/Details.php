@@ -116,83 +116,83 @@ class Details extends Component implements HasForms, HasInfolists
                                                 ])
                                         ]),
 
-                                    Tabs\Tab::make('Student Profile')
-                                        ->icon('heroicon-o-academic-cap')
-                                        ->schema([
-                                            Grid::make(3)
-                                                ->schema([
-                                                    Section::make()
-                                                        ->columnSpan(2)
-                                                        ->schema([
-                                                            Grid::make(2)
-                                                                ->schema([
-                                                                    TextInput::make('student_profile.student_number')
-                                                                        ->label(__('Student Number'))
-                                                                        ->numeric()
-                                                                        ->disabled()
-                                                                        ->required(),
+                                    // Tabs\Tab::make('Student Profile')
+                                    //     ->icon('heroicon-o-academic-cap')
+                                    //     ->schema([
+                                    //         Grid::make(3)
+                                    //             ->schema([
+                                    //                 Section::make()
+                                    //                     ->columnSpan(2)
+                                    //                     ->schema([
+                                    //                         Grid::make(2)
+                                    //                             ->schema([
+                                    //                                 TextInput::make('student_profile.student_number')
+                                    //                                     ->label(__('Student Number'))
+                                    //                                     ->numeric()
+                                    //                                     ->disabled()
+                                    //                                     ->required(),
 
-                                                                    Select::make('student_profile.major_id')
-                                                                        ->label(__('Major'))
-                                                                        ->options(\Modules\PPUDS\Entities\Major::get()->pluck('name', 'id'))
-                                                                        ->disabled()
-                                                                        ->searchable(),
+                                    //                                 Select::make('student_profile.major_id')
+                                    //                                     ->label(__('Major'))
+                                    //                                     ->options(\Modules\PPUDS\Entities\Major::get()->pluck('name', 'id'))
+                                    //                                     ->disabled()
+                                    //                                     ->searchable(),
 
-                                                                    TextInput::make('student_profile.enrollment_year')
-                                                                        ->label(__('Enrollment Year'))
-                                                                        ->numeric()
-                                                                        ->disabled()
-                                                                        ->minLength(4)
-                                                                        ->maxLength(4),
+                                    //                                 TextInput::make('student_profile.enrollment_year')
+                                    //                                     ->label(__('Enrollment Year'))
+                                    //                                     ->numeric()
+                                    //                                     ->disabled()
+                                    //                                     ->minLength(4)
+                                    //                                     ->maxLength(4),
 
-                                                                    TextInput::make('student_profile.semester_level')
-                                                                        ->label(__('Semester Level'))
-                                                                        ->disabled()
-                                                                        ->numeric(),
+                                    //                                 TextInput::make('student_profile.semester_level')
+                                    //                                     ->label(__('Semester Level'))
+                                    //                                     ->disabled()
+                                    //                                     ->numeric(),
 
-                                                                    TextInput::make('student_profile.tawjihi_gpa')
-                                                                        ->label(__('Tawjihi GPA'))
-                                                                        ->numeric()
-                                                                        ->disabled()
-                                                                        ->step(0.1),
+                                    //                                 TextInput::make('student_profile.tawjihi_gpa')
+                                    //                                     ->label(__('Tawjihi GPA'))
+                                    //                                     ->numeric()
+                                    //                                     ->disabled()
+                                    //                                     ->step(0.1),
 
-                                                                    DatePicker::make('student_profile.dob')
-                                                                        ->label(__('Date of Birth'))
-                                                                        ->disabled()
-                                                                        ->displayFormat('d/m/Y'),
+                                    //                                 DatePicker::make('student_profile.dob')
+                                    //                                     ->label(__('Date of Birth'))
+                                    //                                     ->disabled()
+                                    //                                     ->displayFormat('d/m/Y'),
 
-                                                                    Select::make('student_profile.gender')
-                                                                        ->label(__('Gender'))
-                                                                        ->disabled()
-                                                                        ->options([
-                                                                            'male' => __('Male'),
-                                                                            'female' => __('Female'),
-                                                                        ]),
+                                    //                                 Select::make('student_profile.gender')
+                                    //                                     ->label(__('Gender'))
+                                    //                                     ->disabled()
+                                    //                                     ->options([
+                                    //                                         'male' => __('Male'),
+                                    //                                         'female' => __('Female'),
+                                    //                                     ]),
 
-                                                                    Select::make('student_profile.cv_status')
-                                                                        ->label(__('CV Status'))
-                                                                        ->disabled()
-                                                                        ->options([
-                                                                            'pending' => __('Pending'),
-                                                                            'approved' => __('Approved'),
-                                                                            'rejected' => __('Rejected'),
-                                                                        ]),
-                                                                ])
-                                                        ]),
+                                    //                                 Select::make('student_profile.cv_status')
+                                    //                                     ->label(__('CV Status'))
+                                    //                                     ->disabled()
+                                    //                                     ->options([
+                                    //                                         'pending' => __('Pending'),
+                                    //                                         'approved' => __('Approved'),
+                                    //                                         'rejected' => __('Rejected'),
+                                    //                                     ]),
+                                    //                             ])
+                                    //                     ]),
 
-                                                    Section::make()
-                                                        ->columnSpan(1)
-                                                        ->schema([
-                                                            SpatieMediaLibraryFileUpload::make('cv')
-                                                                ->label(__('CV'))
-                                                                ->disk('student_profiles')
-                                                                ->collection('cv')
-                                                                ->image()
-                                                                ->imageEditor()
-                                                                ->alignCenter(),
-                                                        ]),
-                                                ]),
-                                        ]),
+                                    //                 Section::make()
+                                    //                     ->columnSpan(1)
+                                    //                     ->schema([
+                                    //                         SpatieMediaLibraryFileUpload::make('cv')
+                                    //                             ->label(__('CV'))
+                                    //                             ->disk('student_profiles')
+                                    //                             ->collection('cv')
+                                    //                             ->image()
+                                    //                             ->imageEditor()
+                                    //                             ->alignCenter(),
+                                    //                     ]),
+                                    //             ]),
+                                    //     ]),
 
                                     Tabs\Tab::make('Work Experience')
                                         ->icon('heroicon-o-academic-cap')
@@ -203,65 +203,65 @@ class Details extends Component implements HasForms, HasInfolists
                                                 ]),
                                         ]),
 
-                                    Tabs\Tab::make('Training History')
-                                        ->icon('heroicon-o-academic-cap')
-                                        ->schema([
-                                            Grid::make(2)
-                                                ->schema([
-                                                    Livewire::make(\Modules\PPUDS\Livewire\Pages\Student\Details\StudentCompany\Index::class ,
-                                                        [
-                                                            'studentId' => $this->user->id,
-                                                        ]
-                                                    )
-                                                        ->columnSpanFull()
-                                                    ->lazy()
-                                                ]),
-                                        ]),
+                                    // Tabs\Tab::make('Training History')
+                                    //     ->icon('heroicon-o-academic-cap')
+                                    //     ->schema([
+                                    //         Grid::make(2)
+                                    //             ->schema([
+                                    //                 Livewire::make(\Modules\PPUDS\Livewire\Pages\Student\Details\StudentCompany\Index::class ,
+                                    //                     [
+                                    //                         'studentId' => $this->user->id,
+                                    //                     ]
+                                    //                 )
+                                    //                     ->columnSpanFull()
+                                    //                 ->lazy()
+                                    //             ]),
+                                    //     ]),
 
-                                    Tabs\Tab::make('Registration')
-                                        ->icon('heroicon-o-academic-cap')
-                                        ->schema([
-                                            Grid::make(2)
-                                                ->schema([
-                                                    Livewire::make(\Modules\PPUDS\Livewire\Pages\Student\Details\Registration\Index::class ,
-                                                        [
-                                                            'studentId' => $this->user->id,
-                                                        ]
-                                                    )
-                                                        ->columnSpanFull()
-                                                        ->lazy()
-                                                ]),
-                                        ]),
+                                    // Tabs\Tab::make('Registration')
+                                    //     ->icon('heroicon-o-academic-cap')
+                                    //     ->schema([
+                                    //         Grid::make(2)
+                                    //             ->schema([
+                                    //                 Livewire::make(\Modules\PPUDS\Livewire\Pages\Student\Details\Registration\Index::class ,
+                                    //                     [
+                                    //                         'studentId' => $this->user->id,
+                                    //                     ]
+                                    //                 )
+                                    //                     ->columnSpanFull()
+                                    //                     ->lazy()
+                                    //             ]),
+                                    //     ]),
 
-                                    Tabs\Tab::make('Attendance')
-                                        ->icon('heroicon-o-academic-cap')
-                                        ->schema([
-                                            Grid::make(2)
-                                                ->schema([
-                                                    Livewire::make(\Modules\PPUDS\Livewire\Pages\Student\Details\StudentAttendance\Index::class ,
-                                                        [
-                                                            'studentId' => $this->user->id,
-                                                        ]
-                                                    )
-                                                        ->columnSpanFull()
-                                                        ->lazy()
-                                                ]),
-                                        ]),
+                                    // Tabs\Tab::make('Attendance')
+                                    //     ->icon('heroicon-o-academic-cap')
+                                    //     ->schema([
+                                    //         Grid::make(2)
+                                    //             ->schema([
+                                    //                 Livewire::make(\Modules\PPUDS\Livewire\Pages\Student\Details\StudentAttendance\Index::class ,
+                                    //                     [
+                                    //                         'studentId' => $this->user->id,
+                                    //                     ]
+                                    //                 )
+                                    //                     ->columnSpanFull()
+                                    //                     ->lazy()
+                                    //             ]),
+                                    //     ]),
 
-                                    Tabs\Tab::make('Payment')
-                                        ->icon('heroicon-o-academic-cap')
-                                        ->schema([
-                                            Grid::make(2)
-                                                ->schema([
-                                                    Livewire::make(\Modules\PPUDS\Livewire\Pages\Student\Details\Payment\Index::class ,
-                                                        [
-                                                            'studentId' => $this->user->id,
-                                                        ]
-                                                    )
-                                                        ->columnSpanFull()
-                                                        ->lazy()
-                                                ]),
-                                        ]),
+                                    // Tabs\Tab::make('Payment')
+                                    //     ->icon('heroicon-o-academic-cap')
+                                    //     ->schema([
+                                    //         Grid::make(2)
+                                    //             ->schema([
+                                    //                 Livewire::make(\Modules\PPUDS\Livewire\Pages\Student\Details\Payment\Index::class ,
+                                    //                     [
+                                    //                         'studentId' => $this->user->id,
+                                    //                     ]
+                                    //                 )
+                                    //                     ->columnSpanFull()
+                                    //                     ->lazy()
+                                    //             ]),
+                                    //     ]),
                                 ])
                             ->columnSpanFull()
                 ]),
