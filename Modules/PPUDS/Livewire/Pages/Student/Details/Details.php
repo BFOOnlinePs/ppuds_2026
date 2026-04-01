@@ -23,6 +23,7 @@ use Filament\Infolists\Infolist;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Component;
+use Livewire\Attributes\Computed; // استيراد ضروري
 use Modules\Core\Entities\User;
 
 class Details extends Component implements HasForms, HasInfolists
@@ -35,15 +36,29 @@ class Details extends Component implements HasForms, HasInfolists
 
     public function mount($user)
     {
-        $this->userId = $user;
-        $userModel = User::with(['studentProfile', 'studentProfile.media', 'roles', 'media'])->find($user);
-        $this->form->fill($userModel->toArray());
+        // استخراج الـ ID
+        $this->userId = is_object($user) ? $user->id : (int) $user;
+        
+        // تعبئة الفورم باستخدام الدالة المحسوبة
+        $this->form->fill($this->userRecord->toArray());
+    }
+
+    // هذه الدالة المحسوبة ستجلب الموديل مرة واحدة فقط عند الحاجة إليه
+    #[Computed]
+    public function userRecord()
+    {
+        return User::with([
+            'studentProfile', 
+            'studentProfile.media', 
+            'roles', 
+            'media'
+        ])->findOrFail($this->userId);
     }
 
     public function infolist(Infolist $infolist): Infolist
     {
         return $infolist
-            ->record($this->user)
+            ->record($this->userRecord) // استخدم الدالة المحسوبة هنا
             ->schema([
                 \Filament\Infolists\Components\Grid::make(5)
                     ->schema([
@@ -63,7 +78,7 @@ class Details extends Component implements HasForms, HasInfolists
     public function form(Form $form): Form
     {
         return $form
-            ->model($this->user)
+            ->model($this->userRecord) // استخدم الدالة المحسوبة هنا
             ->schema([
                 Grid::make(3)
                 ->schema([
@@ -86,14 +101,14 @@ class Details extends Component implements HasForms, HasInfolists
                                                                 ->label(__('Email'))
                                                                 ->email()
                                                                 ->disabled()
-                                                                ->unique(ignoreRecord: true,ignorable: $this->user)
+                                                                ->unique(ignoreRecord: true, ignorable: $this->userRecord) // استخدم الدالة المحسوبة هنا
                                                                 ->required(),
 
                                                             TextInput::make('password')
                                                                 ->label(__('Password'))
                                                                 ->password()
-                                                                ->dehydrated(fn ($state) => filled($state)) // حفظ الباسورد فقط اذا تم تغييره
-                                                                ->required(fn (string $context): bool => $context === 'create'), // مطلوب فقط عند الانشاء
+                                                                ->dehydrated(fn ($state) => filled($state))
+                                                                ->required(fn (string $context): bool => $context === 'create'),
                                                         ])
                                                         ->columnSpan(2),
 
@@ -117,84 +132,6 @@ class Details extends Component implements HasForms, HasInfolists
                                                 ])
                                         ]),
 
-                                    // Tabs\Tab::make('Student Profile')
-                                    //     ->icon('heroicon-o-academic-cap')
-                                    //     ->schema([
-                                    //         Grid::make(3)
-                                    //             ->schema([
-                                    //                 Section::make()
-                                    //                     ->columnSpan(2)
-                                    //                     ->schema([
-                                    //                         Grid::make(2)
-                                    //                             ->schema([
-                                    //                                 TextInput::make('student_profile.student_number')
-                                    //                                     ->label(__('Student Number'))
-                                    //                                     ->numeric()
-                                    //                                     ->disabled()
-                                    //                                     ->required(),
-
-                                    //                                 Select::make('student_profile.major_id')
-                                    //                                     ->label(__('Major'))
-                                    //                                     ->options(\Modules\PPUDS\Entities\Major::get()->pluck('name', 'id'))
-                                    //                                     ->disabled()
-                                    //                                     ->searchable(),
-
-                                    //                                 TextInput::make('student_profile.enrollment_year')
-                                    //                                     ->label(__('Enrollment Year'))
-                                    //                                     ->numeric()
-                                    //                                     ->disabled()
-                                    //                                     ->minLength(4)
-                                    //                                     ->maxLength(4),
-
-                                    //                                 TextInput::make('student_profile.semester_level')
-                                    //                                     ->label(__('Semester Level'))
-                                    //                                     ->disabled()
-                                    //                                     ->numeric(),
-
-                                    //                                 TextInput::make('student_profile.tawjihi_gpa')
-                                    //                                     ->label(__('Tawjihi GPA'))
-                                    //                                     ->numeric()
-                                    //                                     ->disabled()
-                                    //                                     ->step(0.1),
-
-                                    //                                 DatePicker::make('student_profile.dob')
-                                    //                                     ->label(__('Date of Birth'))
-                                    //                                     ->disabled()
-                                    //                                     ->displayFormat('d/m/Y'),
-
-                                    //                                 Select::make('student_profile.gender')
-                                    //                                     ->label(__('Gender'))
-                                    //                                     ->disabled()
-                                    //                                     ->options([
-                                    //                                         'male' => __('Male'),
-                                    //                                         'female' => __('Female'),
-                                    //                                     ]),
-
-                                    //                                 Select::make('student_profile.cv_status')
-                                    //                                     ->label(__('CV Status'))
-                                    //                                     ->disabled()
-                                    //                                     ->options([
-                                    //                                         'pending' => __('Pending'),
-                                    //                                         'approved' => __('Approved'),
-                                    //                                         'rejected' => __('Rejected'),
-                                    //                                     ]),
-                                    //                             ])
-                                    //                     ]),
-
-                                    //                 Section::make()
-                                    //                     ->columnSpan(1)
-                                    //                     ->schema([
-                                    //                         SpatieMediaLibraryFileUpload::make('cv')
-                                    //                             ->label(__('CV'))
-                                    //                             ->disk('student_profiles')
-                                    //                             ->collection('cv')
-                                    //                             ->image()
-                                    //                             ->imageEditor()
-                                    //                             ->alignCenter(),
-                                    //                     ]),
-                                    //             ]),
-                                    //     ]),
-
                                     Tabs\Tab::make('Work Experience')
                                         ->icon('heroicon-o-academic-cap')
                                         ->schema([
@@ -203,66 +140,6 @@ class Details extends Component implements HasForms, HasInfolists
 
                                                 ]),
                                         ]),
-
-                                    // Tabs\Tab::make('Training History')
-                                    //     ->icon('heroicon-o-academic-cap')
-                                    //     ->schema([
-                                    //         Grid::make(2)
-                                    //             ->schema([
-                                    //                 Livewire::make(\Modules\PPUDS\Livewire\Pages\Student\Details\StudentCompany\Index::class ,
-                                    //                     [
-                                    //                         'studentId' => $this->user->id,
-                                    //                     ]
-                                    //                 )
-                                    //                     ->columnSpanFull()
-                                    //                 ->lazy()
-                                    //             ]),
-                                    //     ]),
-
-                                    // Tabs\Tab::make('Registration')
-                                    //     ->icon('heroicon-o-academic-cap')
-                                    //     ->schema([
-                                    //         Grid::make(2)
-                                    //             ->schema([
-                                    //                 Livewire::make(\Modules\PPUDS\Livewire\Pages\Student\Details\Registration\Index::class ,
-                                    //                     [
-                                    //                         'studentId' => $this->user->id,
-                                    //                     ]
-                                    //                 )
-                                    //                     ->columnSpanFull()
-                                    //                     ->lazy()
-                                    //             ]),
-                                    //     ]),
-
-                                    // Tabs\Tab::make('Attendance')
-                                    //     ->icon('heroicon-o-academic-cap')
-                                    //     ->schema([
-                                    //         Grid::make(2)
-                                    //             ->schema([
-                                    //                 Livewire::make(\Modules\PPUDS\Livewire\Pages\Student\Details\StudentAttendance\Index::class ,
-                                    //                     [
-                                    //                         'studentId' => $this->user->id,
-                                    //                     ]
-                                    //                 )
-                                    //                     ->columnSpanFull()
-                                    //                     ->lazy()
-                                    //             ]),
-                                    //     ]),
-
-                                    // Tabs\Tab::make('Payment')
-                                    //     ->icon('heroicon-o-academic-cap')
-                                    //     ->schema([
-                                    //         Grid::make(2)
-                                    //             ->schema([
-                                    //                 Livewire::make(\Modules\PPUDS\Livewire\Pages\Student\Details\Payment\Index::class ,
-                                    //                     [
-                                    //                         'studentId' => $this->user->id,
-                                    //                     ]
-                                    //                 )
-                                    //                     ->columnSpanFull()
-                                    //                     ->lazy()
-                                    //             ]),
-                                    //     ]),
                                 ])
                             ->columnSpanFull()
                 ]),
@@ -278,15 +155,22 @@ class Details extends Component implements HasForms, HasInfolists
 
         $data = $this->form->getState();
 
-        DB::transaction(function () {
+        DB::transaction(function () use ($data) { // أضف use ($data) هنا
+            
+            // بما أننا نقوم بالتحديث، الأفضل استخدام update بدلاً من firstOrCreate
+            $user = $this->userRecord;
+            
+            $updateData = [
+                'name' => $data['name'],
+                'email' => $data['email'],
+            ];
 
-            $user = User::firstOrCreate([
-                'email' => $this->data['email'],
-            ], [
-                'name' => $this->data['name'],
-                'email' => $this->data['email'],
-                'password' => Hash::make($this->data['password']),
-            ]);
+            // تحديث الباسورد فقط إذا تم إدخال باسورد جديد
+            if (!empty($data['password'])) {
+                $updateData['password'] = Hash::make($data['password']);
+            }
+
+            $user->update($updateData);
 
             $this->form->model($user)->saveRelationships();
 
@@ -295,7 +179,6 @@ class Details extends Component implements HasForms, HasInfolists
 
         // إعادة التوجيه بعد الحفظ
         // return redirect()->route('students.index');
-
     }
 
     public function render()
@@ -304,7 +187,7 @@ class Details extends Component implements HasForms, HasInfolists
             'breadcrumbs' => [
                 ['title' => __('Home'), 'url' => route('home')],
                 ['title' => __('Students List'), 'url' => route('students.index')],
-                ['title' => __('Student Details'), 'url' => route('students.details', $this->user)],
+                ['title' => __('Student Details'), 'url' => route('students.details', $this->userId)], // استخدمنا userId هنا بدلاً من الموديل
             ]
         ]);
     }
