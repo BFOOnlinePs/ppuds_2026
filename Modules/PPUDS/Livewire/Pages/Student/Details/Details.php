@@ -31,11 +31,12 @@ class Details extends Component implements HasForms, HasInfolists
     use InteractsWithInfolists;
 
     public ?array $data = [];
-    public User $user;
+    public int $userId;
 
-    public function mount(User $user)
+    public function mount($user)
     {
-        $this->user = $user->load(['studentProfile', 'studentProfile.media', 'roles', 'media']);
+        dd($user);
+        $this->data = $user->load(['studentProfile', 'studentProfile.media', 'roles', 'media']);
         $this->form->fill($this->user->toArray());
     }
 
