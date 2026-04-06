@@ -5,6 +5,7 @@ namespace Modules\PPUDS\Transformers\V1;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Arr;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
 
@@ -64,7 +65,7 @@ class AnnouncementResource extends JsonResource
             AllowedFilter::exact('is_pinned'),
             AllowedFilter::scope('active'),
             AllowedFilter::callback('target_roles', function (Builder $query, $value) {
-                $roles = is_array($value) ? $value : [$value];
+                $roles = Arr::wrap($value);
 
                 $query->where(function ($q) use ($roles) {
                     foreach ($roles as $role) {
