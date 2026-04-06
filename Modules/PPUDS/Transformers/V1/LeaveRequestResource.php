@@ -34,17 +34,19 @@ class LeaveRequestResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'                        => $this->id,
-            'student_company_id'        => $this->student_company_id,
-            'type'                      => $this->type,
-            'start_at'                  => $this->start_at,
-            'end_at'                    => $this->end_at,
-            'reason'                    => $this->reason,
-            'company_approval'          => $this->company_approval,
-            'university_approval'       => $this->university_approval,
-            'rejection_reason'          => $this->rejection_reason,
-            'attachment_file'           => $this->getAttachmentFileAttribute(),
-            'created_by'                => $this->whenLoaded('createdBy'),
+            'id'                            => $this->id,
+            'student_company_id'            => $this->student_company_id,
+            'type'                          => $this->type,
+            'start_at'                      => $this->start_at,
+            'end_at'                        => $this->end_at,
+            'reason'                        => $this->reason,
+            'company_approval'              => $this->company_approval,
+            'university_approval'           => $this->university_approval,
+            'company_supervisor_comment'    => $this->company_supervisor_comment,
+            'university_supervisor_comment' => $this->university_supervisor_comment,
+            'rejection_reason'              => $this->rejection_reason,
+            'attachment_file'               => $this->getAttachmentFileAttribute(),
+            'created_by'                    => $this->whenLoaded('createdBy'),
         ];
     }
 
