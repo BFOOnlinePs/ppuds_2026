@@ -5,6 +5,7 @@ namespace Modules\PPUDS\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\LeaveRequest;
+use Modules\PPUDS\Enums\LeaveRequestStatus;
 use Modules\PPUDS\Http\Requests\LeaveRequestRequest;
 use Modules\PPUDS\Http\Requests\LeaveRequestUpdate;
 use Modules\PPUDS\Transformers\V1\LeaveRequestResource;
@@ -107,6 +108,9 @@ class LeaveRequestController extends Controller
         $data = $request->validated();
         $data['created_by'] = auth()->id();
         $data['status'] = 'pending';
+
+        $data['company_approval'] = LeaveRequestStatus::PENDING ?? LeaveRequestStatus::APPROVED;
+        $data['university_approval'] = LeaveRequestStatus::PENDING ?? LeaveRequestStatus::APPROVED;
 
         $leaveRequest = LeaveRequest::create($data);
 
