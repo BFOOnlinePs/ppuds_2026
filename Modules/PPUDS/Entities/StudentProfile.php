@@ -34,7 +34,15 @@ class StudentProfile extends Model implements HasMedia
      * The attributes that are mass assignable.
      */
     protected $fillable = [
-        'user_id','dob','gender','cv_status','tawjihi_gpa','student_number','enrollment_year','semester_level','major_id'
+        'user_id',
+        'dob',
+        'gender',
+        'cv_status',
+        'tawjihi_gpa',
+        'student_number',
+        'enrollment_year',
+        'semester_level',
+        'major_id'
     ];
 
     protected $casts = [

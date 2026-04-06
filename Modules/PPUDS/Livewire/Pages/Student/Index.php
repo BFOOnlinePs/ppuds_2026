@@ -71,17 +71,17 @@ class Index extends Component implements HasTable, HasForms
                 Action::make('sync_student')
                     ->label(__('Sync Student'))
                     ->icon('heroicon-o-arrow-path')
-                    ->action(function (PpuApiService $service){
+                    ->action(function (PpuApiService $service) {
                         $status = $service->syncStudents(app(GeneralSettings::class)->year, app(GeneralSettings::class)->semester_type->value);
                         if ($status) {
                             Toaster::success(__('Sync Major') . ' ' . ($status ? __('Success') : __('Failed')));
                         }
                     }),
 
-//                CreateAction::make('create')
-//                    ->label(__('Add Student'))
-//                    ->url(route('students.add'))
-//                    ->visible(fn() => auth()->user()->can('Student Create'))
+                //                CreateAction::make('create')
+                //                    ->label(__('Add Student'))
+                //                    ->url(route('students.add'))
+                //                    ->visible(fn() => auth()->user()->can('Student Create'))
             ])
             ->bulkActions([]);
     }
@@ -90,10 +90,10 @@ class Index extends Component implements HasTable, HasForms
     {
         return [
             Filter::make('user_email')
-            ->form([
-                Forms\Components\TextInput::make('email')
-                    ->label(__('Email')),
-            ])
+                ->form([
+                    Forms\Components\TextInput::make('email')
+                        ->label(__('Email')),
+                ])
                 ->query(function ($query, array $data) {
                     if (empty($data['email'])) {
                         return $query;
@@ -221,9 +221,9 @@ class Index extends Component implements HasTable, HasForms
                 ->url(fn($record) => route('students.details', $record->user_id))
                 ->visible(fn() => auth()->user()->can('Student Details List')),
 
-//            EditAction::make('edit')
-//                ->url(fn(StudentProfile $record) => route('students.edit', $record->user_id))
-//                ->visible(fn() => auth()->user()->can('Student Update')),
+            //            EditAction::make('edit')
+            //                ->url(fn(StudentProfile $record) => route('students.edit', $record->user_id))
+            //                ->visible(fn() => auth()->user()->can('Student Update')),
             DeleteAction::make('delete')
                 ->visible(fn() => auth()->user()->can('Student Delete'))
         ];

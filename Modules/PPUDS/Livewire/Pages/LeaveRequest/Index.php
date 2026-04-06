@@ -5,12 +5,14 @@ namespace Modules\PPUDS\Livewire\Pages\LeaveRequest;
 use App\View\Components\AppLayout;
 use Filament\Forms;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Fieldset;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Tables\Actions\Action; // تم إضافة هذا الكلاس
 use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Columns\TextColumn;
@@ -60,6 +62,17 @@ class Index extends Component implements HasTable, HasForms
                     ->label(__('End Date'))
                     ->dateTime('Y-m-d H:i')
                     ->sortable(),
+
+                // يمكنك إضافة أعمدة لحالة الطلب هنا إذا أردت
+                TextColumn::make('company_approval')
+                    ->label(__('Company Status'))
+                    ->badge()
+                    ->sortable(),
+
+                TextColumn::make('university_approval')
+                    ->label(__('University Status'))
+                    ->badge()
+                    ->sortable(),
             ])
             ->filters($this->getTableFilters())
             ->actions(
@@ -73,8 +86,9 @@ class Index extends Component implements HasTable, HasForms
                     ->action(function (array $data) {
                         $data['created_by'] = auth()->id();
 
-                        $data['company_approval'] = LeaveRequestStatus::APPROVED;
-                        $data['university_approval'] = LeaveRequestStatus::APPROVED;
+                        // الحالة المبدئية عند الإنشاء (يمكنك جعلها قيد الانتظار PENDING مثلاً بناءً على الانيمز لديك)
+                        $data['company_approval'] = LeaveRequestStatus::PENDING ?? LeaveRequestStatus::APPROVED;
+                        $data['university_approval'] = LeaveRequestStatus::PENDING ?? LeaveRequestStatus::APPROVED;
 
                         LeaveRequest::create($data);
                         Toaster::success(__('Leave Request created successfully'));
@@ -109,6 +123,58 @@ class Index extends Component implements HasTable, HasForms
     protected function getTableActions(): array
     {
         return [
+            // --- أكشن قرار الشركة ---
+            Action::make('company_decision')
+                ->label(__('Company Decision'))
+                ->icon('heroicon-o-building-office')
+                ->color('primary')
+                ->form([
+                    Select::make('company_approval')
+                        ->label(__('Status'))
+                        ->options(LeaveRequestStatus::class)
+                        ->required()
+                        ->native(false),
+                    Textarea::make('company_supervisor_comment')
+                        ->label(__('Supervisor Comment'))
+                        ->rows(3),
+                ])
+                ->action(function (LeaveRequest $record, array $data) {
+                    $record->update([
+                        'company_approval' => $data['company_approval'],
+                        'company_supervisor_comment' => $data['company_supervisor_comment'],
+                        'company_supervisor_id' => auth()->id(), // توثيق تلقائي للشخص
+                    ]);
+                    Toaster::success(__('Company decision recorded successfully'));
+                })
+                // يظهر فقط إذا كان المستخدم يملك هذه الصلاحية
+                ->visible(fn() => auth()->user()->can('LeaveRequest CompanyApprove')),
+
+            // --- أكشن قرار الجامعة ---
+            Action::make('university_decision')
+                ->label(__('University Decision'))
+                ->icon('heroicon-o-academic-cap')
+                ->color('success')
+                ->form([
+                    Select::make('university_approval')
+                        ->label(__('Status'))
+                        ->options(LeaveRequestStatus::class)
+                        ->required()
+                        ->native(false),
+                    Textarea::make('university_supervisor_comment')
+                        ->label(__('Supervisor Comment'))
+                        ->rows(3),
+                ])
+                ->action(function (LeaveRequest $record, array $data) {
+                    $record->update([
+                        'university_approval' => $data['university_approval'],
+                        'university_supervisor_comment' => $data['university_supervisor_comment'],
+                        'university_supervisor_id' => auth()->id(), // توثيق تلقائي للشخص
+                    ]);
+                    Toaster::success(__('University decision recorded successfully'));
+                })
+                // يظهر فقط إذا كان المستخدم يملك هذه الصلاحية
+                ->visible(fn() => auth()->user()->can('LeaveRequest UniversityApprove')),
+
             InfoAction::make('info')
                 ->label('')
                 ->visible(fn() => auth()->user()->can('LeaveRequest Info')),
@@ -129,7 +195,6 @@ class Index extends Component implements HasTable, HasForms
                 })
                 ->action(function (LeaveRequest $record, array $data) {
                     $record->update($data);
-
                     Toaster::success(__('Leave Request updated successfully'));
                 })
                 ->visible(fn() => auth()->user()->can('LeaveRequest Update')),
@@ -144,7 +209,6 @@ class Index extends Component implements HasTable, HasForms
         ];
     }
 
-    // دالة مساعدة لبناء الفورم (لتجنب التكرار بين الإضافة والتعديل والعرض)
     protected function getFormSchema(bool $isCreate = false, bool $isEdit = false, bool $isView = false): array
     {
         return [
@@ -162,7 +226,7 @@ class Index extends Component implements HasTable, HasForms
                             }))
                             ->searchable()
                             ->required()
-                            ->disabled($isView) // معطل في وضع العرض
+                            ->disabled($isView)
                             ->columnSpanFull(),
 
                         Select::make('type')
@@ -192,38 +256,58 @@ class Index extends Component implements HasTable, HasForms
                             ->required()
                             ->columnSpanFull()
                             ->disabled($isView),
-
-//                        SpatieMediaLibraryFileUpload::make('attachment')
-//                            ->label(__('Attachment'))
-//                            ->collection('leave_requests')
-//                            ->downloadable()
-//                            ->openable()
-//                            ->disabled($isView)
-//                            ->columnSpanFull(),
                     ]),
                 ]),
 
-            // قسم الموافقات (يظهر فقط في التعديل والعرض، وليس عند الإنشاء الجديد)
-            Section::make(__('Approvals & Status'))
-                ->visible(!$isCreate)
+            // قسم التوثيق والموافقات (للقراءة فقط لتأكيد الرسمية)
+            Section::make(__('Approvals & Documentation'))
+                ->visible(!$isCreate) // لا يظهر عند إنشاء طلب جديد
                 ->schema([
                     Grid::make(2)->schema([
-                        Select::make('company_approval')
-                            ->label(__('Company Approval'))
-                            ->options(LeaveRequestStatus::class)
-                            ->native(false)
-                            ->disabled($isView),
 
-                        Select::make('university_approval')
-                            ->label(__('University Approval'))
-                            ->options(LeaveRequestStatus::class)
-                            ->native(false)
-                            ->disabled($isView),
+                        // --- توثيق الشركة ---
+                        Fieldset::make(__('Company Documentation'))
+                            ->columnSpan(1)
+                            ->schema([
+                                Select::make('company_approval')
+                                    ->label(__('Status'))
+                                    ->options(LeaveRequestStatus::class)
+                                    ->disabled() // معطل لأنه يعتمد على زر القرار فقط
+                                    ->columnSpanFull(),
 
-                        Textarea::make('rejection_reason')
-                            ->label(__('Rejection Reason (if any)'))
-                            ->columnSpanFull()
-                            ->disabled($isView),
+                                Select::make('company_supervisor_id')
+                                    ->label(__('Authorized By'))
+                                    ->relationship('companySupervisor', 'name') // استدعاء اسم المستخدم من العلاقة
+                                    ->disabled()
+                                    ->columnSpanFull(),
+
+                                Textarea::make('company_supervisor_comment')
+                                    ->label(__('Official Comment'))
+                                    ->disabled()
+                                    ->columnSpanFull(),
+                            ]),
+
+                        // --- توثيق الجامعة ---
+                        Fieldset::make(__('University Documentation'))
+                            ->columnSpan(1)
+                            ->schema([
+                                Select::make('university_approval')
+                                    ->label(__('Status'))
+                                    ->options(LeaveRequestStatus::class)
+                                    ->disabled() // معطل لأنه يعتمد على زر القرار فقط
+                                    ->columnSpanFull(),
+
+                                Select::make('university_supervisor_id')
+                                    ->label(__('Authorized By'))
+                                    ->relationship('universitySupervisor', 'name') // استدعاء اسم المستخدم من العلاقة
+                                    ->disabled()
+                                    ->columnSpanFull(),
+
+                                Textarea::make('university_supervisor_comment')
+                                    ->label(__('Official Comment'))
+                                    ->disabled()
+                                    ->columnSpanFull(),
+                            ]),
                     ]),
                 ]),
         ];

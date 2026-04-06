@@ -42,12 +42,12 @@ class Index extends Component implements HasTable, HasForms
         return $table
             ->query(fn() => Registration::query()->with(['student', 'course', 'supervisor']))
             ->columns([
-//                TextColumn::make('student.name')
-//                    ->label(__('Student'))
-//                    ->searchable()
-//                    ->sortable()
-//                    ->icon('solar-user-id-bold-duotone')
-//                    ->weight('bold'),
+                //                TextColumn::make('student.name')
+                //                    ->label(__('Student'))
+                //                    ->searchable()
+                //                    ->sortable()
+                //                    ->icon('solar-user-id-bold-duotone')
+                //                    ->weight('bold'),
 
                 TextColumn::make('course.name')
                     ->label(__('Course'))
@@ -55,7 +55,7 @@ class Index extends Component implements HasTable, HasForms
                     ->color('info'),
 
                 TextColumn::make('registration.semester') // أو اسم الحقل لديك
-                ->label(__('Term'))
+                    ->label(__('Term'))
                     ->formatStateUsing(function ($state, $record) {
                         // نتحقق إذا كان $state كائن Enum أم قيمة خام
                         $semesterLabel = ($state instanceof SemesterType)
@@ -81,12 +81,12 @@ class Index extends Component implements HasTable, HasForms
                     ->label(__('Year')),
 
                 // 5. عمود العلامة
-//                TextColumn::make('grade')
-//                    ->label(__('Grade'))
-//                    ->placeholder('-')
-//                    ->badge()
-//                    ->color(fn ($state) => $state >= 60 ? 'success' : ($state === null ? 'gray' : 'danger'))
-//                    ->sortable(),
+                //                TextColumn::make('grade')
+                //                    ->label(__('Grade'))
+                //                    ->placeholder('-')
+                //                    ->badge()
+                //                    ->color(fn ($state) => $state >= 60 ? 'success' : ($state === null ? 'gray' : 'danger'))
+                //                    ->sortable(),
 
                 TextColumn::make('created_at')
                     ->label(__('Registered At'))
@@ -95,13 +95,13 @@ class Index extends Component implements HasTable, HasForms
             ])
             ->filters($this->getTableFilters(), layout: FiltersLayout::AboveContent)
             ->filtersFormColumns(4)
-//            ->actions($this->getTableActions())
-//            ->headerActions([
-//                CreateAction::make('create')
-//                    ->label(__('Add Registration'))
-//                    ->url(route('registrations.add'))
-//                    ->visible(fn() => auth()->user()->can('Registration Create'))
-//            ])
+            //            ->actions($this->getTableActions())
+            //            ->headerActions([
+            //                CreateAction::make('create')
+            //                    ->label(__('Add Registration'))
+            //                    ->url(route('registrations.add'))
+            //                    ->visible(fn() => auth()->user()->can('Registration Create'))
+            //            ])
             ->bulkActions($this->getTableBulkAction());
     }
 
@@ -131,7 +131,7 @@ class Index extends Component implements HasTable, HasForms
                 ->query(function (Builder $query, array $data): Builder {
                     return $query->when(
                         $data['year'],
-                        fn (Builder $query, $year) => $query->where('year', $year)
+                        fn(Builder $query, $year) => $query->where('year', $year)
                     );
                 }),
 
@@ -153,7 +153,8 @@ class Index extends Component implements HasTable, HasForms
                     ->color('danger')
                     ->requiresConfirmation()
                     ->action(fn(Collection $records) => $records->each->delete())
-                    ->after(fn() => Toaster::success(__('Selected registrations deleted successfully'))),
+                    ->after(fn() => Toaster::success(__('Selected registrations deleted successfully')))
+                    ->visible(fn() => auth()->user()->can('Registration Delete')),
             ])
         ];
     }

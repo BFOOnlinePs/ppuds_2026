@@ -17,6 +17,7 @@ use Livewire\Component;
 use Filament\Forms;
 use Filament\Forms\Components\TextInput;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Masmerise\Toaster\Toaster;
 use Modules\Core\Filament\Forms\Components\CreateAction;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
@@ -25,6 +26,7 @@ use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\Textarea;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\Company;
+use Modules\PPUDS\Enums\CompanyStatus;
 use View;
 
 class Index extends Component implements HasTable, HasForms
@@ -69,7 +71,12 @@ class Index extends Component implements HasTable, HasForms
 
     protected function getTableFilters(): array
     {
-        return [];
+        return [
+            SelectFilter::make('status')
+                ->label(__('Company Status'))
+                ->options(CompanyStatus::options())
+                ->searchable()
+        ];
     }
 
     public function getTableBulkAction(): array

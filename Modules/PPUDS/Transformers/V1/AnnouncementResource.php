@@ -29,7 +29,7 @@ class AnnouncementResource extends JsonResource
         return [
             'id'            => $this->id,
             'name'          => $this->name,
-            'content'       => $this->content,  
+            'content'       => $this->content,
             'target_roles'  => $this->target_roles,
             'filters'       => $this->filters,
             'published_at'  => $this->published_at,
@@ -44,18 +44,34 @@ class AnnouncementResource extends JsonResource
     public static function allowedFields(): array
     {
         return [
-            'id', 'name', 'content', 'target_roles',
-            'filters', 'published_at', 'expires_at', 'is_pinned', 'created_at'
+            'id',
+            'name',
+            'content',
+            'target_roles',
+            'filters',
+            'published_at',
+            'expires_at',
+            'is_pinned',
+            'created_at'
         ];
     }
 
     public static function allowedFilters(): array
     {
         return [
-            AllowedFilter::callback('name', fn (Builder $query, $value) => $query->whereTranslationLike('name', "%{$value}%")),
-            AllowedFilter::callback('content', fn (Builder $query, $value) => $query->whereTranslationLike('content', "%{$value}%")),
+            AllowedFilter::callback('name', fn(Builder $query, $value) => $query->whereTranslationLike('name', "%{$value}%")),
+            AllowedFilter::callback('content', fn(Builder $query, $value) => $query->whereTranslationLike('content', "%{$value}%")),
             AllowedFilter::exact('is_pinned'),
-            AllowedFilter::scope('active'), // للاستفادة من scopeActive الموجود في الموديل
+            AllowedFilter::scope('active'),
+            AllowedFilter::callback('target_roles', function (Builder $query, $value) {
+                $roles = is_array($value) ? $value : [$value];
+
+                $query->where(function ($q) use ($roles) {
+                    foreach ($roles as $role) {
+                        $q->orWhereJsonContains('target_roles', $role);
+                    }
+                });
+            })
         ];
     }
 

@@ -46,7 +46,7 @@ class Index extends Component implements HasForms, HasTable
     public function table(Table $table)
     {
         return $table
-            ->query(fn () => StudentAttendance::query()->whereHas('studentCompany', fn ($query) => $query->where('student_id', $this->studentId))->with(['studentCompany', 'studentReport']))
+            ->query(fn() => StudentAttendance::query()->whereHas('studentCompany', fn($query) => $query->where('student_id', $this->studentId))->with(['studentCompany', 'studentReport']))
             ->columns([
                 TextColumn::make('studentCompany.student.name')
                     ->label(__('Student Name'))
@@ -75,15 +75,15 @@ class Index extends Component implements HasForms, HasTable
                 TextColumn::make('status')
                     ->label(__('Status'))
                     ->badge()
-                    ->formatStateUsing(fn (AttendanceStatus $state): string => $state->getLabel())
+                    ->formatStateUsing(fn(AttendanceStatus $state): string => $state->getLabel())
                     ->color(AttendanceStatus::class),
 
                 TextColumn::make('check_in_latitude')
                     ->label(__('Location'))
                     ->icon('heroicon-m-map-pin')
                     ->color('primary')
-                    ->formatStateUsing(fn () => __('View Map'))
-                    ->url(fn ($record) => "https://www.google.com/maps?q={$record->check_in_latitude},{$record->check_in_longitude}")
+                    ->formatStateUsing(fn() => __('View Map'))
+                    ->url(fn($record) => "https://www.google.com/maps?q={$record->check_in_latitude},{$record->check_in_longitude}")
                     ->openUrlInNewTab(),
 
                 TextColumn::make('description')
@@ -151,7 +151,6 @@ class Index extends Component implements HasForms, HasTable
                         ]);
 
                         Toaster::success('Checked In Successfully');
-
                     }),
 
                 //                CreateAction::make('create')
@@ -237,8 +236,8 @@ class Index extends Component implements HasForms, HasTable
                 BulkAction::make('delete')
                     ->label(__('Delete'))
                     ->requiresConfirmation()
-                    ->visible(fn () => auth()->user()->can('Major Delete'))
-                    ->action(fn (Collection $records) => $records->each->delete()),
+                    ->visible(fn() => auth()->user()->can('StudentAttendance Delete'))
+                    ->action(fn(Collection $records) => $records->each->delete()),
             ]),
         ];
     }
@@ -271,18 +270,18 @@ class Index extends Component implements HasForms, HasTable
 
                     Toaster::success('Checked Out Successfully');
                 })
-                ->visible(fn ($record) => $record->check_out === null),
+                ->visible(fn($record) => $record->check_out === null),
             Action::make('report')
-                    // Removed ->model() as it was causing confusion
+                // Removed ->model() as it was causing confusion
                 ->button()
                 ->label(__('Report'))
                 ->url(fn($record) => route('student-attendances.report', $record))
-                ->visible(fn (StudentAttendance $record) =>
-                    ($record->check_out !== null && $record->studentReport === null) && (auth()->user()->can('StudentAttendance Report List'))
+                ->visible(
+                    fn(StudentAttendance $record) => ($record->check_out !== null && $record->studentReport === null) && (auth()->user()->can('StudentAttendance Report List'))
                 ),
             InfoAction::make('info')
                 ->label('')
-                ->visible(fn () => auth()->user()->can('Major Info')),
+                ->visible(fn() => auth()->user()->can('Major Info')),
             ViewAction::make('view')
                 ->form(function (Forms\Form $form, $record) {
                     return $form->schema([
@@ -304,7 +303,7 @@ class Index extends Component implements HasForms, HasTable
                     ]);
                 })
                 ->modalSubmitAction(false)
-                ->visible(fn () => auth()->user()->can('Major View')),
+                ->visible(fn() => auth()->user()->can('Major View')),
             EditAction::make('edit')
                 ->form(function (Major $record) {
                     return [
@@ -330,7 +329,7 @@ class Index extends Component implements HasForms, HasTable
                     $record->update($data);
                     Toaster::success(__('Major updated successfully'));
                 })
-                ->visible(fn () => auth()->user()->can('Major Update')),
+                ->visible(fn() => auth()->user()->can('Major Update')),
 
             DeleteAction::make('delete')
                 ->action(function ($record) {
@@ -338,7 +337,7 @@ class Index extends Component implements HasForms, HasTable
                     $record->delete();
                     Toaster::success(__('Major deleted successfully'));
                 })
-                ->visible(fn () => auth()->user()->can('Major Delete')),
+                ->visible(fn() => auth()->user()->can('Major Delete')),
         ];
     }
 

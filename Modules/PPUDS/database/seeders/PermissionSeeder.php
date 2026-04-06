@@ -391,6 +391,16 @@ class PermissionSeeder extends Seeder
                 'guard_name' => 'web',
                 'module_name' => 'Leave Request',
             ],
+            [
+                'name' => 'LeaveRequest CompanyApprove',
+                'guard_name' => 'web',
+                'module_name' => 'Leave Request',
+            ],
+            [
+                'name' => 'LeaveRequest UniversityApprove',
+                'guard_name' => 'web',
+                'module_name' => 'Leave Request',
+            ],
 
 
             // TODO StudentAttendance

@@ -415,5 +415,7 @@
     "Number / Name": "الرقم / الاسم",
     "Attendance Days From": "أيام الحضور من",
     "To Attendance Days": "أيام الحضور إلى",
-    "Semester Type": "نوع الفصل الدراسي"
+    "Semester Type": "نوع الفصل الدراسي",
+
+    "Pending": "قيد الانتظار"
 }

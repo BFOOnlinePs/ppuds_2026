@@ -20,10 +20,9 @@ class Edit extends Component implements HasForms
 
     public Coupon $record;
     public ?array $data = [];
-
+    
     public function mount($coupon)
     {
-        // جلب الكوبون وتعبئة الفورم بالبيانات
         $this->record = Coupon::findOrFail($coupon);
         $this->form->fill($this->record->toArray());
     }
@@ -44,7 +43,6 @@ class Edit extends Component implements HasForms
                                             ->required()
                                             ->label(__('Code'))
                                             ->columnSpanFull()
-                                            // هام جداً: تجاهل السجل الحالي عند التحقق من التكرار
                                             ->unique(Coupon::class, 'code', ignoreRecord: true),
 
                                         Select::make('type')
@@ -96,20 +94,15 @@ class Edit extends Component implements HasForms
 
     public function save()
     {
-        // التحقق من صحة البيانات بناءً على الـ schema
         $this->validate();
 
-        // تحديث السجل
         $this->record->update($this->data);
 
-        // إعادة التوجيه لقائمة الكوبونات
         $this->redirectRoute('coupons.index');
     }
 
     public function render()
     {
-        // تأكد من مسار ملف الـ blade، قمت بتعديله ليتناسب مع الكوبونات
-        // غالباً ستستخدم نفس ملف blade الخاص بالإضافة إذا كان موحداً، أو ملف خاص بالتعديل
         return view('coupon::livewire.pages.coupon.edit')->layout(AppLayout::class, [
             'breadcrumbs' => [
                 ['title' => __('Home'), 'url' => route('home')],

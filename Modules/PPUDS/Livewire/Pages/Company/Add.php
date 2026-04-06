@@ -77,11 +77,11 @@ class Add extends Component implements HasActions, HasForms
                                                             ->prefixIcon('solar-pen-new-square-linear') // Solar Icon
                                                             ->placeholder(__('e.g. Acme Corporation'))
                                                             ->live(debounce: 500)
-                                                            ->datalist(fn () => Company::get()->pluck('name'))
+                                                            ->datalist(fn() => Company::get()->pluck('name'))
                                                             ->columnSpan(1),
                                                         Placeholder::make('company_suggestions')
                                                             ->label(__('Suggestions & Similar Companies'))
-                                                            ->hidden(fn (Get $get) => blank($get('name'))) // إخفاء الحقل إذا كان الاسم فارغاً
+                                                            ->hidden(fn(Get $get) => blank($get('name'))) // إخفاء الحقل إذا كان الاسم فارغاً
                                                             ->content(function (Get $get) {
                                                                 $search = $get('name');
 
@@ -120,13 +120,13 @@ class Add extends Component implements HasActions, HasForms
                                                                     $html .= '
                 <div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex justify-between items-center">
                     <div>
-                        <strong class="text-sm text-gray-900 dark:text-white">'.$company->name.'</strong>
+                        <strong class="text-sm text-gray-900 dark:text-white">' . $company->name . '</strong>
                         <div class="text-xs text-gray-500 mt-1">
-                            '.$categoryLabel.': '.$categoryName.'
+                            ' . $categoryLabel . ': ' . $categoryName . '
                         </div>
                     </div>
                     <span class="px-2 py-1 text-xs font-medium rounded-full bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-500/20">
-                        '.$statusLabel.': '.$statusName.'
+                        ' . $statusLabel . ': ' . $statusName . '
                     </span>
                 </div>
             ';
@@ -201,7 +201,7 @@ class Add extends Component implements HasActions, HasForms
                                 ->defaultItems(1)
                                 ->collapsible()
                                 ->cloneable()
-                                ->itemLabel(fn (array $state): ?string => $state['name'] ?? __('New Branch'))
+                                ->itemLabel(fn(array $state): ?string => $state['name'] ?? __('New Branch'))
                                 ->addActionLabel(__('Add New Branch'))
                                 ->grid(1)
                                 ->extraAttributes([
@@ -270,15 +270,15 @@ class Add extends Component implements HasActions, HasForms
                                                                                             ->label(__('Start'))
                                                                                             ->seconds(false)
                                                                                             ->default('08:00')
-                                                                                            ->required(fn (Get $get) => ! $get('is_closed')),
+                                                                                            ->required(fn(Get $get) => ! $get('is_closed')),
 
                                                                                         TimePicker::make('end_time')
                                                                                             ->label(__('End'))
                                                                                             ->seconds(false)
                                                                                             ->default('16:00')
-                                                                                            ->required(fn (Get $get) => ! $get('is_closed')),
+                                                                                            ->required(fn(Get $get) => ! $get('is_closed')),
                                                                                     ])
-                                                                                        ->visible(fn (Get $get) => ! $get('is_closed'))
+                                                                                        ->visible(fn(Get $get) => ! $get('is_closed'))
                                                                                         ->columnSpan(2)
                                                                                         ->columns(2),
                                                                                 ]),
@@ -315,12 +315,12 @@ class Add extends Component implements HasActions, HasForms
                                                                 Select::make('country_id')
                                                                     ->label(__('Country'))
                                                                     ->options(Country::all()->pluck('name', 'id'))
-                                                                    ->default(fn () => Country::whereTranslation('name', 'فلسطين')->orWhereTranslation('name', 'Palestine')->first()?->id)
+                                                                    ->default(fn() => Country::whereTranslation('name', 'فلسطين')->orWhereTranslation('name', 'Palestine')->first()?->id)
                                                                     ->searchable()
                                                                     ->required()
                                                                     ->live()
                                                                     ->prefixIcon('solar-flag-linear') // Solar Icon
-                                                                    ->afterStateUpdated(fn (Set $set) => $set('city_id', null)),
+                                                                    ->afterStateUpdated(fn(Set $set) => $set('city_id', null)),
 
                                                                 Select::make('city_id')
                                                                     ->label(__('City'))
@@ -334,7 +334,7 @@ class Add extends Component implements HasActions, HasForms
                                                                             $query->where('country_id', $countryId);
                                                                         })->get()->pluck('name', 'id');
                                                                     })
-                                                                    ->default(fn () => City::whereTranslation('name', 'الخليل')->orWhereTranslation('name', 'Hebron')->first()?->id)
+                                                                    ->default(fn() => City::whereTranslation('name', 'الخليل')->orWhereTranslation('name', 'Hebron')->first()?->id)
                                                                     ->searchable()
                                                                     ->prefixIcon('solar-city-linear') // Solar Icon
                                                                     ->required(),
@@ -349,7 +349,7 @@ class Add extends Component implements HasActions, HasForms
                                                     // 3. تبويب الأقسام
                                                     Tabs\Tab::make(__('Departments & Staff'))
                                                         ->icon('solar-users-group-rounded-bold-duotone') // Solar Icon
-                                                        ->badge(fn (Get $get) => count($get('departments') ?? []))
+                                                        ->badge(fn(Get $get) => count($get('departments') ?? []))
                                                         ->schema([
                                                             Repeater::make('departments')
                                                                 ->hiddenLabel()
@@ -383,13 +383,14 @@ class Add extends Component implements HasActions, HasForms
                                                                             ->searchable()
                                                                             ->preload()
                                                                             ->prefixIcon('solar-user-id-linear') // Solar Icon
-                                                                            ->options(fn () => User::role('Company Supervisor')->pluck('name', 'id'))
-                                                                            ->getSearchResultsUsing(fn (string $search) => User::role('Company Supervisor')
-                                                                                ->where('name', 'like', "%{$search}%")
-                                                                                ->limit(50)
-                                                                                ->pluck('name', 'id')
+                                                                            ->options(fn() => User::role('Company Supervisor')->pluck('name', 'id'))
+                                                                            ->getSearchResultsUsing(
+                                                                                fn(string $search) => User::role('Company Supervisor')
+                                                                                    ->where('name', 'like', "%{$search}%")
+                                                                                    ->limit(50)
+                                                                                    ->pluck('name', 'id')
                                                                             )
-                                                                            ->getOptionLabelUsing(fn ($value): ?string => User::find($value)?->name)
+                                                                            ->getOptionLabelUsing(fn($value): ?string => User::find($value)?->name)
                                                                             ->createOptionForm([
                                                                                 Grid::make(2)->schema([
                                                                                     TextInput::make('name')->required(),
@@ -412,7 +413,7 @@ class Add extends Component implements HasActions, HasForms
                                                                 ])
                                                                 ->defaultItems(0)
                                                                 ->collapsible()
-                                                                ->itemLabel(fn (array $state): ?string => $state['name'] ?? null)
+                                                                ->itemLabel(fn(array $state): ?string => $state['name'] ?? null)
                                                                 ->addActionLabel(__('Add Department'))
                                                                 ->reorderableWithButtons()
                                                                 ->extraAttributes(['class' => 'border-l-4 border-primary-500 pl-4']), // تمييز بصري لقائمة الأقسام
@@ -472,6 +473,11 @@ class Add extends Component implements HasActions, HasForms
 
         // 1. فصل بيانات الشركة الأساسية عن الفروع والشعار
         $companyData = Arr::except($this->data, ['branches', 'logo']);
+
+        if (auth()->user()->hasRole('Student')) {
+            $companyData['status']  =   CompanyStatus::PENDING->value;
+        }
+
         $companyData['created_by'] = auth()->id();
 
         // 2. إنشاء الشركة

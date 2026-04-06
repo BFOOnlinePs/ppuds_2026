@@ -343,7 +343,8 @@ class Index extends Component implements HasForms, HasTable
                     ->color('danger')
                     ->requiresConfirmation()
                     ->action(fn(Collection $records) => $records->each->delete())
-                    ->after(fn() => Toaster::success(__('Selected records deleted successfully'))),
+                    ->after(fn() => Toaster::success(__('Selected records deleted successfully')))
+                    ->visible(fn() => auth()->user()->can('StudentAttendance Delete')),
             ]),
         ];
     }

@@ -14,9 +14,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 return Route::post('/livewire/update', $handle);
             });
 
-            Route::get('/' , Modules\Core\Livewire\Pages\Home\Index::class)->name('dashboard');
+            Route::get('/', Modules\Core\Livewire\Pages\Home\Index::class)->name('dashboard');
 
-            Route::get('/select-module' , \Modules\Core\Livewire\ModuleSelector::class)->name('module-selector');
+            Route::get('/select-module', \Modules\Core\Livewire\ModuleSelector::class)->name('module-selector');
 
             Route::group([
                 'prefix' => 'admin',
@@ -36,6 +36,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     'namespace' => 'Modules\Core\Livewire\Pages\Settings',
                 ], function () {
                     Route::get('/settings', Index::class)->name('settings');
+                });
+
+                Route::group([
+                    'prefix' => 'profile',
+                    'as' => 'profile.',
+                    'namespace' => 'Modules\Core\Livewire\Pages\Profile',
+                ], function () {
+                    Route::get('/', Index::class)->name('index');
                 });
 
                 Route::group([

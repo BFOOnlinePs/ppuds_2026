@@ -43,6 +43,10 @@ class LeaveRequest extends Model implements HasMedia
         'company_approval',
         'university_approval',
         'rejection_reason',
+        'company_supervisor_id',
+        'university_supervisor_id',
+        'company_supervisor_comment',
+        'university_supervisor_comment',
         'created_by',
     ];
 
@@ -99,8 +103,8 @@ class LeaveRequest extends Model implements HasMedia
 
             $size = ImageSize::MEDIUM;
 
-            ImageService::optimize($media->getPath() , ImageQuality::HIGH->value);
-            ImageService::resize($media->getPath() , $size->width(), $size->height());
+            ImageService::optimize($media->getPath(), ImageQuality::HIGH->value);
+            ImageService::resize($media->getPath(), $size->width(), $size->height());
 
             return $media;
         } catch (\Exception $e) {
@@ -134,5 +138,15 @@ class LeaveRequest extends Model implements HasMedia
     {
         return $this->company_approval === LeaveRequestStatus::APPROVED
             && $this->university_approval === LeaveRequestStatus::APPROVED;
+    }
+
+    public function companySupervisor()
+    {
+        return $this->belongsTo(User::class, 'company_supervisor_id');
+    }
+
+    public function universitySupervisor()
+    {
+        return $this->belongsTo(User::class, 'university_supervisor_id');
     }
 }

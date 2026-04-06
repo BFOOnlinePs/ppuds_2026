@@ -26,6 +26,45 @@ class Index extends Component implements HasForms, HasInfolists
     use InteractsWithForms;
     use InteractsWithInfolists;
 
+    /**
+     * دالة مساعدة لجلب قائمة المستخدمين المتاحين للمحادثة بناءً على الصلاحية
+     */
+    private function getAvailableContacts(): array
+    {
+        $user = auth()->user();
+        $userIds = [];
+
+        if ($user->hasRole('Student')) {
+            // صلاحية الطالب
+            $registration = Registration::where('student_id', $user->id)->latest()->first();
+            if ($registration) {
+                $userIds[] = $registration->supervisor_id; // مشرف الجامعة
+                $userIds[] = $registration->company_supervisor_id ?? null; // مشرف الشركة
+            }
+        } elseif ($user->hasRole('Practical Training Supervisor')) {
+            // صلاحية مشرف الجامعة (التدريب العملي)
+            $registrations = Registration::where('supervisor_id', $user->id)->get();
+            $userIds = array_merge(
+                $userIds,
+                $registrations->pluck('student_id')->toArray(),           // طلابه
+                $registrations->pluck('company_supervisor_id')->toArray() // مشرفي الشركات لطلابه
+            );
+        } elseif ($user->hasRole('Company Supervisor')) {
+            // صلاحية مشرف الشركة
+            $registrations = Registration::where('company_supervisor_id', $user->id)->get();
+            $userIds = array_merge(
+                $userIds,
+                $registrations->pluck('student_id')->toArray(), // طلابه
+                $registrations->pluck('supervisor_id')->toArray() // مشرفي الجامعة لطلابه
+            );
+        }
+
+        // إزالة القيم الفارغة (null) وإزالة المعرفات المكررة
+        $userIds = array_filter(array_unique($userIds));
+
+        return User::whereIn('id', $userIds)->pluck('name', 'id')->toArray();
+    }
+
     public function infolist(Infolist $infolist): Infolist
     {
         return $infolist
@@ -33,21 +72,28 @@ class Index extends Component implements HasForms, HasInfolists
             ->schema([
                 Actions::make([
                     Action::make('test')
-                        ->label(__('New Message')) // محادثة / رسالة جديدة
-                        ->icon('heroicon-o-chat-bubble-left-ellipsis') // غيرت الأيقونة لتناسب الرسائل
+                        ->label(__('New Message'))
+                        ->icon('heroicon-o-chat-bubble-left-ellipsis')
                         ->color('primary')
                         ->form([
-                            FormSection::make(__('New Conversation')) // محادثة جديدة بدلاً من تفاصيل التسجيل
-                                ->description(__('Please select the chat type and choose the recipients.')) // وصف مناسب للرسائل
+                            FormSection::make(__('New Conversation'))
+                                ->description(__('Please select the chat type and choose the recipients.'))
                                 ->icon('heroicon-o-chat-bubble-bottom-center-text')
                                 ->schema([
 
                                     Radio::make('type')
-                                        ->label(__('Chat Type')) // نوع المحادثة
-                                        ->options([
-                                            'single' => __('Single Student'),
-                                            'group' => __('Students Group'),
-                                        ])
+                                        ->label(__('Chat Type'))
+                                        ->options(function () {
+                                            $options = [
+                                                'single' => __('Single Chat'),
+                                            ];
+
+                                            if (!auth()->user()->hasRole('Student')) {
+                                                $options['group'] = __('Group Chat');
+                                            }
+
+                                            return $options;
+                                        })
                                         ->default('single')
                                         ->inline()
                                         ->inlineLabel(false)
@@ -57,60 +103,40 @@ class Index extends Component implements HasForms, HasInfolists
                                     FormGrid::make(2)
                                         ->schema([
 
-                                            Select::make('student_id')
-                                                ->label(__('Select Student'))
+                                            Select::make('student_id') // يمكنك تغيير اسم الحقل لاحقاً ليصبح user_id ليكون أدق
+                                                ->label(__('Select Contact'))
                                                 ->prefixIcon('heroicon-m-user')
-                                                ->options(function () {
-                                                    $user = auth()->user();
-                                                    if ($user->hasRole('Student')) {
-                                                        $registration = Registration::where('student_id', $user->id)->latest()->first();
-                                                        if ($registration) {
-                                                            return User::whereIn('id', [$registration->supervisor_id])->pluck('name', 'id');
-                                                        }
-                                                    }
-
-                                                    return [];
-                                                })
+                                                ->options(fn() => $this->getAvailableContacts()) // استدعاء الدالة هنا
                                                 ->searchable()
                                                 ->preload()
-                                                ->visible(fn (Get $get) => $get('type') === 'single')
-                                                ->required(fn (Get $get) => $get('type') === 'single')
+                                                ->visible(fn(Get $get) => $get('type') === 'single')
+                                                ->required(fn(Get $get) => $get('type') === 'single')
                                                 ->columnSpanFull(),
 
                                             Select::make('student_ids')
-                                                ->label(__('Select Students Group'))
+                                                ->label(__('Select Contacts for Group'))
                                                 ->prefixIcon('heroicon-m-users')
-                                                ->options(function () {
-                                                    $user = auth()->user();
-                                                    if ($user->hasRole('Student')) {
-                                                        $registration = Registration::where('student_id', $user->id)->latest()->first();
-                                                        if ($registration) {
-                                                            return User::whereIn('id', [$registration->supervisor_id])->pluck('name', 'id');
-                                                        }
-                                                    }
-
-                                                    return [];
-                                                })
+                                                ->options(fn() => $this->getAvailableContacts()) // استدعاء الدالة هنا
                                                 ->multiple()
                                                 ->searchable()
                                                 ->preload()
-                                                ->visible(fn (Get $get) => $get('type') === 'group')
-                                                ->required(fn (Get $get) => $get('type') === 'group')
+                                                ->visible(fn(Get $get) => $get('type') === 'group')
+                                                ->required(fn(Get $get) => $get('type') === 'group')
                                                 ->columnSpanFull(),
 
                                             TextInput::make('name')
                                                 ->label(__('Group Name'))
                                                 ->prefixIcon('heroicon-m-user-group')
                                                 ->placeholder(__('e.g., Team Alpha'))
-                                                ->visible(fn (Get $get) => $get('type') === 'group')
-                                                ->required(fn (Get $get) => $get('type') === 'group')
+                                                ->visible(fn(Get $get) => $get('type') === 'group')
+                                                ->required(fn(Get $get) => $get('type') === 'group')
                                                 ->columnSpan(1),
 
                                             TextInput::make('description')
                                                 ->label(__('Group Description'))
                                                 ->prefixIcon('heroicon-m-document-text')
                                                 ->placeholder(__('Brief description of the group...'))
-                                                ->visible(fn (Get $get) => $get('type') === 'group')
+                                                ->visible(fn(Get $get) => $get('type') === 'group')
                                                 ->columnSpan(1),
 
                                         ]),
@@ -134,8 +160,8 @@ class Index extends Component implements HasForms, HasInfolists
 
                                 if ($receiver) {
                                     $conversation = $currentUser->createGroup(
-                                        name: $data['name'] ?? __('Group Chat'), // استخدمت اسم المجموعة المدخل من الفورم
-                                        description: $data['description'] ?? __('Group Chat'), // استخدمت الوصف المدخل
+                                        name: $data['name'] ?? __('Group Chat'),
+                                        description: $data['description'] ?? __('Group Chat'),
                                     );
 
                                     foreach ($receiver as $participant) {

@@ -55,7 +55,7 @@ class Index extends Component implements HasTable, HasForms
                 Action::make('sync_major')
                     ->label(__('Sync Major'))
                     ->icon('heroicon-o-arrow-path')
-                    ->action(function (PpuApiService $service){
+                    ->action(function (PpuApiService $service) {
                         $status = $service->syncMajors();
                         if ($status) {
                             Toaster::success(__('Sync Major') . ' ' . ($status ? __('Success') : __('Failed')));
@@ -72,6 +72,13 @@ class Index extends Component implements HasTable, HasForms
                         Textarea::make('description')
                             ->label(__('Description')),
                     ])
+                    ->action(function (array $data) {
+                        $data['created_by'] = auth()->id();
+
+                        $major = Major::create($data);
+
+                        Toaster::success(__('Major created successfully'));
+                    })
                     ->visible(fn() => auth()->user()->can('Major Create'))
             ])
             ->bulkActions($this->getTableBulkAction());
@@ -83,8 +90,7 @@ class Index extends Component implements HasTable, HasForms
             Filter::make('reference_code')
                 ->label(__('Reference Code')),
             Filter::make('name')
-                ->label(__('Name'))
-                ,
+                ->label(__('Name')),
         ];
     }
 
@@ -108,29 +114,29 @@ class Index extends Component implements HasTable, HasForms
                 ->label('')
                 ->visible(fn() => auth()->user()->can('Major Info')),
             ViewAction::make('view')
-            ->form(function (Forms\Form $form, $record) {
-                return $form->schema([
-                    TextInput::make('name')
-                        ->label(__('Name'))
-                        ->default($record->name)
-                        ->disabled(),
-                    TextInput::make('website')
-                        ->label(__('Website'))
-                        ->default($record->website)
-                        ->disabled(),
-                    TextInput::make('category.name')
-                        ->label(__('Category'))
-                        ->default($record->category->name)
-                        ->disabled(),
-                    Textarea::make('description')
-                        ->default($record->description)
-                        ->disabled(),
-                ]);
-            })
-            ->modalSubmitAction(false)
-            ->visible(fn() => auth()->user()->can('Major View')),
+                ->form(function (Forms\Form $form, $record) {
+                    return $form->schema([
+                        TextInput::make('name')
+                            ->label(__('Name'))
+                            ->default($record->name)
+                            ->disabled(),
+                        TextInput::make('website')
+                            ->label(__('Website'))
+                            ->default($record->website)
+                            ->disabled(),
+                        TextInput::make('category.name')
+                            ->label(__('Category'))
+                            ->default($record->category->name)
+                            ->disabled(),
+                        Textarea::make('description')
+                            ->default($record->description)
+                            ->disabled(),
+                    ]);
+                })
+                ->modalSubmitAction(false)
+                ->visible(fn() => auth()->user()->can('Major View')),
             EditAction::make('edit')
-                ->form(function (Major $record){
+                ->form(function (Major $record) {
                     return [
                         TextInput::make('reference_code')
                             ->label(__('Reference Code'))
