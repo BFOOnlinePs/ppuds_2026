@@ -56,7 +56,7 @@ class Index extends Component implements HasForms, HasInfolists
                             ->grid(3) // عرض الإعلانات في 3 أعمدة (بطاقات)
                             ->schema([
                                 // 1. صورة الإعلان
-                                ImageEntry::make('announcement_image')
+                                ImageEntry::make('image')
                                     ->hiddenLabel()
                                     ->width('100%')
                                     ->height(180)
