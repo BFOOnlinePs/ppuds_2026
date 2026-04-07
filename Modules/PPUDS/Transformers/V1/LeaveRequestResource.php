@@ -80,7 +80,7 @@ class LeaveRequestResource extends JsonResource
                 $query->whereHas('studentCompany', function ($query) use ($value) {
                     $query->whereHas('branch', function ($branchQuery) use ($value) {
                         $branchQuery->whereHas('departments', function ($departmentQuery) use ($value) {
-                            $departmentQuery->wherePivot('user_id', $value);
+                            $departmentQuery->where('user_id', $value);
                         });
                     });
                 });
