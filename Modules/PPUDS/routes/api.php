@@ -150,5 +150,4 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
                 });
         });
     });
-
 });

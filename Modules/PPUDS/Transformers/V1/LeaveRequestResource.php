@@ -2,6 +2,8 @@
 
 namespace Modules\PPUDS\Transformers\V1;
 
+use Doctrine\DBAL\Query;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -74,6 +76,11 @@ class LeaveRequestResource extends JsonResource
             AllowedFilter::partial('reason'),
             AllowedFilter::exact('company_approval'),
             AllowedFilter::exact('university_approval'),
+            AllowedFilter::callback('company_id', function (Builder $query, $value) {
+                $query->whereHas('studentCompany', function (Builder $query) use ($value) {
+                    $query->where('company_id', $value);
+                });
+            }),
             AllowedFilter::exact('created_by'),
             AllowedFilter::exact('created_at'),
         ];
