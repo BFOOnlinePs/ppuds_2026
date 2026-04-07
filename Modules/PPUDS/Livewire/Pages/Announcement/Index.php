@@ -56,8 +56,8 @@ class Index extends Component implements HasTable, HasForms
                     ->badge()
                     ->separator(',') // يفصل بينهم إذا لم تستخدم badge، لكن مع badge يرتبهم بجانب بعض
                     // دالة لعرض الاسم واللون الصحيح لكل دور داخل المصفوفة
-                    ->formatStateUsing(fn (string $state): string => UserRole::tryFrom($state)?->getLabel() ?? $state)
-                    ->color(fn (string $state): string => UserRole::tryFrom($state)?->getColor() ?? 'gray')
+                    ->formatStateUsing(fn(string $state): string => UserRole::tryFrom($state)?->getLabel() ?? $state)
+                    ->color(fn(string $state): string => UserRole::tryFrom($state)?->getColor() ?? 'gray')
                     ->searchable(),
 
                 TextColumn::make('published_at')
@@ -141,7 +141,7 @@ class Index extends Component implements HasTable, HasForms
                                 // عرض الأدوار كنص مفصول بفواصل
                                 TextInput::make('target_roles_display')
                                     ->label(__('Target Roles'))
-                                    ->default(function() use ($record) {
+                                    ->default(function () use ($record) {
                                         if (empty($record->target_roles)) return '';
                                         return collect($record->target_roles)
                                             ->map(fn($role) => UserRole::tryFrom($role)?->getLabel())
@@ -151,8 +151,8 @@ class Index extends Component implements HasTable, HasForms
 
                                 TextInput::make('major_name')
                                     ->label(__('Specific Major'))
-                                    ->default(function() use ($record) {
-                                        if(isset($record->filters['major_id'])) {
+                                    ->default(function () use ($record) {
+                                        if (isset($record->filters['major_id'])) {
                                             return Major::find($record->filters['major_id'])?->name;
                                         }
                                         return __('All Majors');
@@ -205,7 +205,13 @@ class Index extends Component implements HasTable, HasForms
                     if (!isset($data['target_roles']) || !in_array(UserRole::STUDENT->value, $data['target_roles'])) {
                         $data['filters'] = null;
                     }
+
                     $record->update($data);
+
+                    if (isset($data['announcement_image'])) {
+                        $record->addMedia($data['announcement_image'])->toMediaCollection('announcements');
+                    }
+
                     Toaster::success(__('Announcement updated successfully'));
                 })
                 ->visible(fn() => auth()->user()->can('Announcement Update')),
@@ -237,7 +243,7 @@ class Index extends Component implements HasTable, HasForms
                             ->required()
                             ->rows(5),
 
-                        SpatieMediaLibraryFileUpload::make('image')
+                        SpatieMediaLibraryFileUpload::make('announcement_image')
                             ->label(__('Attachment / Image'))
                             ->collection('announcements')
                             ->image(),
@@ -253,7 +259,7 @@ class Index extends Component implements HasTable, HasForms
                             ->required()
                             ->multiple() // السماح باختيار أكثر من دور
                             ->live()
-                            ->afterStateUpdated(fn (Forms\Set $set) => $set('filters.major_id', null)),
+                            ->afterStateUpdated(fn(Forms\Set $set) => $set('filters.major_id', null)),
 
                         // تعديل: شرط الظهور يعتمد على وجود "Student" داخل المصفوفة
                         Select::make('filters.major_id')
