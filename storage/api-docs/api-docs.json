@@ -6912,6 +6912,223 @@
                 ]
             }
         },
+        "/api/v1/ppuds/field-visits": {
+            "get": {
+                "tags": [
+                    "Field Visits"
+                ],
+                "summary": "List all field visits",
+                "description": "Retrieve a list of field visits with filtering and sorting",
+                "operationId": "f160b14b296d0ee2f832feb2df405f8a",
+                "parameters": [
+                    {
+                        "name": "filter[student_company_id]",
+                        "in": "query",
+                        "description": "Filter by Student Company ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "filter[supervisor_id]",
+                        "in": "query",
+                        "description": "Filter by Supervisor ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "filter[visit_date]",
+                        "in": "query",
+                        "description": "Filter by Visit Date",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Field visits retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/FieldVisitResource"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Field Visits"
+                ],
+                "summary": "Create a new field visit",
+                "description": "Submit a new field visit record",
+                "operationId": "028c7f22ccec8d74ae34f98d30ca8ff4",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "student_company_id",
+                                    "supervisor_id",
+                                    "visit_date",
+                                    "visit_time",
+                                    "visit_duration"
+                                ],
+                                "properties": {
+                                    "student_company_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "supervisor_id": {
+                                        "type": "integer",
+                                        "example": 3
+                                    },
+                                    "visiting_place": {
+                                        "type": "string",
+                                        "example": "Main Office"
+                                    },
+                                    "visit_date": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2024-05-20"
+                                    },
+                                    "visit_time": {
+                                        "type": "string",
+                                        "format": "time",
+                                        "example": "09:00:00"
+                                    },
+                                    "visit_duration": {
+                                        "type": "integer",
+                                        "example": 60
+                                    },
+                                    "notes": {
+                                        "type": "string",
+                                        "example": "Everything went well"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/field-visits/{fieldVisit}": {
+            "get": {
+                "tags": [
+                    "Field Visits"
+                ],
+                "summary": "Get field visit details",
+                "operationId": "12a3425bce2b18be27e13d1476d874f4",
+                "parameters": [
+                    {
+                        "name": "fieldVisit",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Field Visits"
+                ],
+                "summary": "Update field visit",
+                "description": "Update field visit details. Use _method=PUT for multipart support.",
+                "operationId": "d9418a4b65db72b87f017c3755b0e3a1",
+                "parameters": [
+                    {
+                        "name": "fieldVisit",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "_method": {
+                                        "type": "string",
+                                        "example": "PUT"
+                                    },
+                                    "visiting_place": {
+                                        "type": "string",
+                                        "example": "Branch Office"
+                                    },
+                                    "notes": {
+                                        "type": "string",
+                                        "example": "Updated notes"
+                                    },
+                                    "visit_duration": {
+                                        "type": "integer",
+                                        "example": 90
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/ppuds/leave-requests": {
             "get": {
                 "tags": [
@@ -7588,7 +7805,7 @@
                     "Payments"
                 ],
                 "summary": "Update an existing payment",
-                "description": "Update payment details including receipt image. \r\n     * **Note:** You must use `POST` method with `_method` parameter set to `PUT` or `PATCH` to support file uploads in PHP.",
+                "description": "Update payment details including receipt image. \n     * **Note:** You must use `POST` method with `_method` parameter set to `PUT` or `PATCH` to support file uploads in PHP.",
                 "operationId": "8e132416760fa38a27d236f7a05a3a25",
                 "parameters": [
                     {
@@ -9801,6 +10018,58 @@
                     "name": "AnnouncementResource"
                 }
             },
+            "FieldVisitResource": {
+                "title": "Field Visit Resource",
+                "description": "Field Visit details",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "student_company_id": {
+                        "type": "integer",
+                        "example": 5
+                    },
+                    "supervisor_id": {
+                        "type": "integer",
+                        "example": 3
+                    },
+                    "visiting_place": {
+                        "type": "string",
+                        "example": "Main Office"
+                    },
+                    "visit_date": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2024-05-20"
+                    },
+                    "visit_time": {
+                        "type": "string",
+                        "format": "time",
+                        "example": "09:00:00"
+                    },
+                    "visit_duration": {
+                        "type": "integer",
+                        "example": 60
+                    },
+                    "notes": {
+                        "type": "string",
+                        "example": "Everything went well"
+                    },
+                    "created_by": {
+                        "type": "integer",
+                        "example": 123
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object",
+                "xml": {
+                    "name": "FieldVisitResource"
+                }
+            },
             "LeaveRequestResource": {
                 "title": "Leave Request Resource",
                 "description": "Leave Request details",
@@ -10017,6 +10286,10 @@
         }
     },
     "tags": [
+        {
+            "name": "Field Visits",
+            "description": "API Endpoints for managing student field visits"
+        },
         {
             "name": "Leave Requests",
             "description": "API Endpoints for managing student leave requests (Absence & Hourly Leave)"

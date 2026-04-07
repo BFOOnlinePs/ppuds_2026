@@ -6,6 +6,7 @@ use Modules\PPUDS\Http\Controllers\Api\V1\ChatController;
 use Modules\PPUDS\Http\Controllers\Api\V1\CompanyCategoryController;
 use Modules\PPUDS\Http\Controllers\Api\V1\CompanyController;
 use Modules\PPUDS\Http\Controllers\Api\V1\CompanyDepartmentController;
+use Modules\PPUDS\Http\Controllers\Api\V1\FieldVisitController;
 use Modules\PPUDS\Http\Controllers\Api\V1\LeaveRequestController;
 use Modules\PPUDS\Http\Controllers\Api\V1\NoteController;
 use Modules\PPUDS\Http\Controllers\Api\V1\PaymentController;
@@ -119,6 +120,16 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
                     Route::post('/', 'store')->name('store');
                     Route::get('/{leaveRequest}', 'show')->name('show');
                     Route::patch('/{leaveRequest}', 'update')->name('update');
+                });
+
+            Route::controller(FieldVisitController::class)
+                ->prefix('field-visits')
+                ->as('field-visits.')
+                ->group(function () {
+                    Route::get('/', 'index')->name('index');
+                    Route::post('/', 'store')->name('store');
+                    Route::get('/{fieldVisit}', 'show')->name('show');
+                    Route::patch('/{fieldVisit}', 'update')->name('update');
                 });
 
             Route::controller(ChatController::class)

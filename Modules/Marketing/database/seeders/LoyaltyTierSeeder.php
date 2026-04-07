@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\Marketing\Database\Seeders;
+namespace Modules\Marketing\database\seeders;
 
 use Illuminate\Database\Seeder;
 use Modules\Marketing\Entities\LoyaltyTier;
