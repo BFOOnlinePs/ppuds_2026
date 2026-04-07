@@ -59,6 +59,7 @@ class Index extends Component implements HasForms, HasInfolists
                                 ImageEntry::make('image')
                                     ->hiddenLabel()
                                     ->width('100%')
+                                    ->columnSpanFull()
                                     ->height(180)
                                     ->extraImgAttributes([
                                         'class' => 'object-cover w-full rounded-t-xl',
