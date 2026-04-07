@@ -86,7 +86,6 @@ class Index extends Component implements HasTable, HasForms
                     ->action(function (array $data) {
                         $data['created_by'] = auth()->id();
 
-                        // الحالة المبدئية عند الإنشاء (يمكنك جعلها قيد الانتظار PENDING مثلاً بناءً على الانيمز لديك)
                         $data['company_approval'] = LeaveRequestStatus::PENDING ?? LeaveRequestStatus::APPROVED;
                         $data['university_approval'] = LeaveRequestStatus::PENDING ?? LeaveRequestStatus::APPROVED;
 

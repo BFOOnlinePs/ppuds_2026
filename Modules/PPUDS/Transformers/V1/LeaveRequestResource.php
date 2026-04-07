@@ -76,9 +76,13 @@ class LeaveRequestResource extends JsonResource
             AllowedFilter::partial('reason'),
             AllowedFilter::exact('company_approval'),
             AllowedFilter::exact('university_approval'),
-            AllowedFilter::callback('company_id', function (Builder $query, $value) {
-                $query->whereHas('studentCompany', function (Builder $query) use ($value) {
-                    $query->where('company_id', $value);
+            AllowedFilter::callback('company_supervisor', function (Builder $query, $value) {
+                $query->whereHas('studentCompany', function ($query) use ($value) {
+                    $query->whereHas('branch', function ($branchQuery) use ($value) {
+                        $branchQuery->whereHas('departments', function ($departmentQuery) use ($value) {
+                            $departmentQuery->wherePivot('user_id', $value);
+                        });
+                    });
                 });
             }),
             AllowedFilter::exact('created_by'),

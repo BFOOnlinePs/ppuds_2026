@@ -31,7 +31,7 @@ class Branch extends Model implements TranslatableContract
     {
         parent::__construct($attributes);
 
-        $this->setTable(config('branch.table_prefix').'branches');
+        $this->setTable(config('branch.table_prefix') . 'branches');
     }
 
     protected $fillable = [
@@ -67,7 +67,7 @@ class Branch extends Model implements TranslatableContract
             ->logOnly($this->getFillable())
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()
-            ->setDescriptionForEvent(fn (string $eventName) => "This model has been {$eventName} and value ")
+            ->setDescriptionForEvent(fn(string $eventName) => "This model has been {$eventName} and value ")
             ->useLogName(class_basename($this));
     }
 
@@ -140,7 +140,7 @@ class Branch extends Model implements TranslatableContract
 
         $openDays = $this->workingHours()->where('is_closed', false)
             ->pluck('day')
-            ->map(fn ($dayEnum) => $dayEnum->value)
+            ->map(fn($dayEnum) => $dayEnum->value)
             ->toArray();
 
         return $start->diffInDaysFiltered(function (Carbon $date) use ($openDays) {
@@ -165,7 +165,7 @@ class Branch extends Model implements TranslatableContract
         $openDays = $this->workingHours
             ->where('is_closed', false)
             ->pluck('day')
-            ->map(fn ($dayEnum) => $dayEnum->value)
+            ->map(fn($dayEnum) => $dayEnum->value)
             ->toArray();
 
         return $start->diffInDaysFiltered(function (Carbon $date) use ($openDays) {
