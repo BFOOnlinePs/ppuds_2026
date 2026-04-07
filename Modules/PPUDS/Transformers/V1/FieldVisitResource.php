@@ -86,6 +86,8 @@ class FieldVisitResource extends JsonResource
     {
         return [
             'createdBy',
+            'studentCompany',
+            'supervisor'
         ];
     }
 }
