@@ -30,11 +30,8 @@ class Index extends Component implements HasForms, HasInfolists
             ->get()
             ->map(fn($ad) => [
                 'name'         => $ad->name,
-                // نستخدم strip_tags لإزالة أي تنسيقات HTML ليظهر النص كمقتطف نظيف في البطاقة
                 'content'      => strip_tags($ad->content),
-                // جلب الصورة من الموديل، مع وضع صورة افتراضية في حال لم يتم رفع صورة للإعلان
                 'image'        => $ad->image ?? 'https://ui-avatars.com/api/?name=' . urlencode($ad->name) . '&color=7F9CF5&background=EBF4FF&size=600',
-                // سنستخدم الأدوار كـ وسوم (Tags) في التصميم
                 'roles'        => $ad->target_roles ?? [],
                 // تنسيق التاريخ ليطابق الصورة (مثال: Oct 30, 2023)
                 'published_at' => $ad->published_at ? $ad->published_at->format('M d, Y') : '',
@@ -59,7 +56,7 @@ class Index extends Component implements HasForms, HasInfolists
                             ->grid(3) // عرض الإعلانات في 3 أعمدة (بطاقات)
                             ->schema([
                                 // 1. صورة الإعلان
-                                ImageEntry::make('image')
+                                ImageEntry::make('announcement_image')
                                     ->hiddenLabel()
                                     ->width('100%')
                                     ->height(180)

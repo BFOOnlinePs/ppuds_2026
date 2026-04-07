@@ -83,7 +83,12 @@ class Index extends Component implements HasTable, HasForms
                         if (!isset($data['target_roles']) || !in_array(UserRole::STUDENT->value, $data['target_roles'])) {
                             $data['filters'] = null;
                         }
-                        Announcement::create($data);
+                        $announcement = Announcement::create($data);
+
+                        if (isset($data['announcement_image'])) {
+                            $announcement->addMedia($data['announcement_image'])->toMediaCollection('announcement_image');
+                        }
+
                         Toaster::success(__('Announcement created successfully'));
                     })
                     ->visible(fn() => auth()->user()->can('Announcement Create'))
@@ -245,7 +250,7 @@ class Index extends Component implements HasTable, HasForms
 
                         SpatieMediaLibraryFileUpload::make('announcement_image')
                             ->label(__('Attachment / Image'))
-                            ->collection('announcements')
+                            ->collection('announcement_image')
                             ->image(),
                     ]),
 
