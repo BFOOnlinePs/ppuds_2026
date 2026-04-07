@@ -24,7 +24,9 @@ class AnnouncementTarget extends Model implements TranslatableContract, HasMedia
     }
 
     protected $fillable = [
-        'id', 'announcement_id', 'user_role'
+        'id',
+        'announcement_id',
+        'user_role'
     ];
 
     protected $casts = [

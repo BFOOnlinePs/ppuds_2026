@@ -5,48 +5,39 @@ namespace Modules\Core\Livewire\Pages\Home;
 use App\View\Components\AppLayout;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Infolists\Components\Actions;
-use Filament\Infolists\Components\Actions\Action;
-use Filament\Infolists\Components\Grid;
-use Filament\Infolists\Components\Livewire;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Concerns\InteractsWithInfolists;
 use Filament\Infolists\Contracts\HasInfolists;
 use Filament\Infolists\Infolist;
-use Illuminate\Support\Facades\Route;
 use Livewire\Component;
-use Modules\Clinic\Livewire\Pages\Appointment\Index as AppointmentIndex;
 use Modules\PPUDS\Entities\Announcement;
-use Nwidart\Modules\Facades\Module;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
-use Modules\Core\Livewire\Pages\Home\Widget\CalendarWidget;
+use Filament\Infolists\Components\ImageEntry;
+use Filament\Infolists\Components\Split;
 
 class Index extends Component implements HasForms, HasInfolists
 {
     use InteractsWithInfolists;
     use InteractsWithForms;
 
-    public function mount()
-    {
-        // $userRoles = auth()->user()->getRoleNames();
-
-        // $announcements = Announcement::whereJsonContains('target_roles', $userRoles)->get();
-
-        // dd($announcements);
-    }
-
     public function getAnnouncements(): array
     {
-        $roles = auth()->user()->getRoleNames(); // ترجع Collection من Spatie
+        $roles = auth()->user()->getRoleNames();
 
         return Announcement::active()
             ->where(fn($query) => $roles->each(fn($role) => $query->orWhereJsonContains('target_roles', $role)))
             ->get()
             ->map(fn($ad) => [
                 'name'         => $ad->name,
-                'content'      => $ad->content,
-                'published_at' => $ad->published_at,
+                // نستخدم strip_tags لإزالة أي تنسيقات HTML ليظهر النص كمقتطف نظيف في البطاقة
+                'content'      => strip_tags($ad->content),
+                // جلب الصورة من الموديل، مع وضع صورة افتراضية في حال لم يتم رفع صورة للإعلان
+                'image'        => $ad->image ?? 'https://ui-avatars.com/api/?name=' . urlencode($ad->name) . '&color=7F9CF5&background=EBF4FF&size=600',
+                // سنستخدم الأدوار كـ وسوم (Tags) في التصميم
+                'roles'        => $ad->target_roles ?? [],
+                // تنسيق التاريخ ليطابق الصورة (مثال: Oct 30, 2023)
+                'published_at' => $ad->published_at ? $ad->published_at->format('M d, Y') : '',
             ])
             ->toArray();
     }
@@ -65,26 +56,60 @@ class Index extends Component implements HasForms, HasInfolists
                         RepeatableEntry::make('announcements')
                             ->hiddenLabel()
                             ->visible(fn() => !empty($this->getAnnouncements()))
+                            ->grid(3) // عرض الإعلانات في 3 أعمدة (بطاقات)
                             ->schema([
+                                // 1. صورة الإعلان
+                                ImageEntry::make('image')
+                                    ->hiddenLabel()
+                                    ->width('100%')
+                                    ->height(180)
+                                    ->extraImgAttributes([
+                                        'class' => 'object-cover w-full rounded-t-xl',
+                                    ])
+                                    ->columnSpanFull(),
+
+                                // 2. عنوان الإعلان
                                 TextEntry::make('name')
-                                    ->label('العنوان')
+                                    ->hiddenLabel()
                                     ->weight('bold')
                                     ->size('lg')
-                                    ->color('primary'),
-
-                                TextEntry::make('published_at')
-                                    ->label('تاريخ النشر')
-                                    ->since()
-                                    ->badge(),
-
-                                TextEntry::make('content')
-                                    ->label('التفاصيل')
-                                    ->html()
                                     ->columnSpanFull(),
-                            ])
-                            ->columns(2)
-                            ->grid(2),
 
+                                // 3. تفاصيل الإعلان (مقتطف)
+                                TextEntry::make('content')
+                                    ->hiddenLabel()
+                                    ->color('gray')
+                                    ->lineClamp(3) // الاكتفاء بـ 3 أسطر فقط
+                                    ->columnSpanFull(),
+
+                                // 4. الفئات المستهدفة (تظهر كوسوم Tags)
+                                TextEntry::make('roles')
+                                    ->hiddenLabel()
+                                    ->badge()
+                                    ->color('gray')
+                                    ->columnSpanFull(),
+
+                                // 5. الفوتر (التاريخ وأيقونة الإعلان)
+                                Split::make([
+                                    TextEntry::make('published_at')
+                                        ->hiddenLabel()
+                                        ->weight('bold')
+                                        ->size('sm'),
+
+                                    TextEntry::make('type_label')
+                                        ->default('إعلان') // نص ثابت كبديل لتصنيف المقال
+                                        ->hiddenLabel()
+                                        ->icon('heroicon-m-megaphone') // أيقونة للإعلان
+                                        ->weight('bold')
+                                        ->size('sm')
+                                        ->color('gray')
+                                        ->alignEnd(),
+                                ])
+                                    ->columnSpanFull()
+                                    ->extraAttributes(['class' => 'mt-4 pt-4 border-t border-gray-100']),
+                            ]),
+
+                        // رسالة في حال عدم وجود إعلانات
                         TextEntry::make('empty_message')
                             ->hiddenLabel()
                             ->default('لا توجد إعلانات حالياً.')
