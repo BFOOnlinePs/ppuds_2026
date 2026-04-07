@@ -21,6 +21,8 @@ class LeaveRequestUpdate extends FormRequest
             'end_at'             => ['sometimes', 'date', 'after_or_equal:start_at'],
             'reason'             => ['sometimes', 'string', 'max:1000'],
             'rejection_reason'   => ['sometimes', 'string', 'max:1000'],
+            'company_supervisor_comment' => ['sometimes', 'string', 'max:1000'],
+            'university_supervisor_comment' => ['sometimes', 'string', 'max:1000'],
         ];
     }
 
