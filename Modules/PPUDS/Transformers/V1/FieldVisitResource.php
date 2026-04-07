@@ -35,7 +35,6 @@ class FieldVisitResource extends JsonResource
             'id'                 => $this->id,
             'student_company_id' => $this->student_company_id,
             'supervisor_id'      => $this->supervisor_id,
-            'student_name'       => $this->with('studentCompany')->whenLoaded('studentCompany', fn() => $this->studentCompany->name),
             'visiting_place'     => $this->visiting_place,
             'visit_date'         => $this->visit_date,
             'visit_time'         => $this->visit_time,
@@ -90,6 +89,7 @@ class FieldVisitResource extends JsonResource
         return [
             'createdBy',
             'studentCompany',
+            'studentCompany.student',
             'supervisor'
         ];
     }
