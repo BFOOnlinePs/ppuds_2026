@@ -40,6 +40,8 @@ class FieldVisitResource extends JsonResource
             'visit_time'         => $this->visit_time,
             'visit_duration'     => $this->visit_duration,
             'notes'              => $this->notes,
+            'student_company'    => $this->whenLoaded('studentCompany'),
+            'supervisor'         => $this->whenLoaded('supervisor'),
             'created_by'         => $this->whenLoaded('createdBy'),
         ];
     }
