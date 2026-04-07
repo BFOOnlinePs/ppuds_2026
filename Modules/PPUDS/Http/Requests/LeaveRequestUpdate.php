@@ -15,12 +15,12 @@ class LeaveRequestUpdate extends FormRequest
     {
         return [
             'student_company_id' => ['required', 'exists:' . config('ppuds.table_prefix') . 'students_companies,id'],
-            'type'               => ['required', 'in:' . implode(',', array_column(LeaveRequestType::cases(), 'value'))],
-            'status'             => ['required', 'in:' . implode(',', array_column(LeaveRequestStatus::cases(), 'value'))],
-            'start_at'           => ['required', 'date'],
-            'end_at'             => ['required', 'date', 'after_or_equal:start_at'],
-            'reason'             => ['required', 'string', 'max:1000'],
-            'rejection_reason'   => ['nullable', 'string', 'max:1000'],
+            'type'               => ['sometimes', 'in:' . implode(',', array_column(LeaveRequestType::cases(), 'value'))],
+            'status'             => ['sometimes', 'in:' . implode(',', array_column(LeaveRequestStatus::cases(), 'value'))],
+            'start_at'           => ['sometimes', 'date'],
+            'end_at'             => ['sometimes', 'date', 'after_or_equal:start_at'],
+            'reason'             => ['sometimes', 'string', 'max:1000'],
+            'rejection_reason'   => ['sometimes', 'string', 'max:1000'],
         ];
     }
 
