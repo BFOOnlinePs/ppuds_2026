@@ -8,11 +8,8 @@
                 @foreach ($this->getAnnouncements() as $announcement)
                     <div class="flex flex-col h-full group">
 
-                        <div
-                            class="relative flex items-center justify-center w-full overflow-hidden border border-gray-100 rounded-lg aspect-video bg-gray-50 dark:bg-gray-800 dark:border-gray-700">
-                            <img class="object-contain w-full h-full p-2 transition-transform duration-300 group-hover:scale-105"
-                                src="{{ $announcement->getImageAttribute() }}" alt="{{ $announcement->name }}">
-                        </div>
+                        <img class="object-cover object-center w-full h-64 rounded-lg lg:h-80"
+                            src="{{ $announcement->getImageAttribute() }}" alt="">
 
                         <div class="flex flex-col flex-grow mt-4">
                             {{-- <span class="text-sm font-medium tracking-wider uppercase text-primary-600 dark:text-primary-400">category</span> --}}
