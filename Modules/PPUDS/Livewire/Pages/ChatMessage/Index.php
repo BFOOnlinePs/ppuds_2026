@@ -35,12 +35,34 @@ class Index extends Component implements HasForms, HasInfolists
         $userIds = [];
 
         if ($user->hasRole('Student')) {
-            // صلاحية الطالب
+            // 1. جلب أحدث تسجيل للطالب
             $registration = Registration::where('student_id', $user->id)->latest()->first();
+
             if ($registration) {
-                $userIds[] = $registration->supervisor_id; // مشرف الجامعة
-                $userIds[] = $registration->company_supervisor_id ?? null; // مشرف الشركة
+                // إضافة مشرف الجامعة
+                if ($registration->supervisor_id) {
+                    $userIds[] = $registration->supervisor_id;
+                }
+
+                // 2. جلب بيانات تدريب الطالب في الشركة
+                $studentCompany = \Modules\PPUDS\Entities\StudentCompany::where('registration_id', $registration->id)->latest()->first();
+
+                if ($studentCompany && $studentCompany->branch_id && $studentCompany->department_id) {
+
+                    $branch = \Modules\Branch\Entities\Branch::find($studentCompany->branch_id);
+
+                    if ($branch) {
+
+                        $department = $branch->departments()
+                            ->first();
+
+                        $userIds[] = $department->pivot->user_id;
+                    }
+                }
             }
+
+            // تنظيف المصفوفة من القيم الفارغة أو المكررة وإعادة ترتيب الـ Keys
+            $userIds = array_values(array_unique(array_filter($userIds ?? [])));
         } elseif ($user->hasRole('Practical Training Supervisor')) {
             // صلاحية مشرف الجامعة (التدريب العملي)
             $registrations = Registration::where('supervisor_id', $user->id)->get();

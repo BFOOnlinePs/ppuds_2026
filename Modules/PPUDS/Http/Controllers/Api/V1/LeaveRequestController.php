@@ -114,6 +114,7 @@ class LeaveRequestController extends Controller
 
         $leaveRequest = LeaveRequest::create($data);
 
+
         if ($request->hasFile('attachment_file')) {
             $leaveRequest->addImage($request->file('attachment_file'));
         }

@@ -100,8 +100,8 @@ class Registration extends Model implements HasMedia
 
             $size = ImageSize::MEDIUM;
 
-            ImageService::optimize($media->getPath() , ImageQuality::HIGH->value);
-            ImageService::resize($media->getPath() , $size->width(), $size->height());
+            ImageService::optimize($media->getPath(), ImageQuality::HIGH->value);
+            ImageService::resize($media->getPath(), $size->width(), $size->height());
 
             return $media;
         } catch (\Exception $e) {
