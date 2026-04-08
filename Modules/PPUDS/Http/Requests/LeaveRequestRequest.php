@@ -14,11 +14,12 @@ class LeaveRequestRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'student_company_id' => ['required', 'exists:' . config('ppuds.table_prefix') . 'students_companies,id'],
-            'type'               => ['required', 'in:' . implode(',', array_column(LeaveRequestType::cases(), 'value'))],
-            'start_at'           => ['required', 'date'],
-            'end_at'             => ['required', 'date', 'after_or_equal:start_at'],
-            'reason'             => ['required', 'string', 'max:1000'],
+            'student_company_id'        => ['required', 'exists:' . config('ppuds.table_prefix') . 'students_companies,id'],
+            'type'                      => ['required', 'in:' . implode(',', array_column(LeaveRequestType::cases(), 'value'))],
+            'start_at'                  => ['required', 'date'],
+            'end_at'                    => ['required', 'date', 'after_or_equal:start_at'],
+            'reason'                    => ['required', 'string', 'max:1000'],
+            'attachment_file'           => ['nullable', 'file', 'max:2048'],
         ];
     }
 

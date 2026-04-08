@@ -357,7 +357,11 @@ class PermissionSeeder extends Seeder
                 'guard_name' => 'web',
                 'module_name' => 'Announcement',
             ],
-
+            [
+                'name' => 'Announcement Details',
+                'guard_name' => 'web',
+                'module_name' => 'Announcement',
+            ],
 
 
             // TODO LeaveRequest

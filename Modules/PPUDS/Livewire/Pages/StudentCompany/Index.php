@@ -40,7 +40,7 @@ class Index extends Component implements HasForms, HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn () => StudentCompany::query()->with(['registration.student', 'registration.course', 'company', 'branch'])->when(auth()->user()->hasRole('Student'), function (Builder $query){
+            ->query(fn() => StudentCompany::query()->with(['registration.student', 'registration.course', 'company', 'branch'])->when(auth()->user()->hasRole('Student'), function (Builder $query) {
                 $query->whereHas('registration.student', function (Builder $q) {
                     $q->where('id', auth()->id());
                 });
@@ -52,12 +52,12 @@ class Index extends Component implements HasForms, HasTable
                     ->sortable()
                     ->weight('bold')
                     ->color('primary')
-                    ->url(fn (StudentCompany $record) => route('student-companies.edit', $record))
-                    ->description(fn (StudentCompany $record) => $record->registration?->student?->email),
+                    ->url(fn(StudentCompany $record) => route('student-companies.edit', $record))
+                    ->description(fn(StudentCompany $record) => $record->registration?->student?->email),
 
                 TextColumn::make('company.name')
                     ->label(__('Company'))
-                    ->url(fn (StudentCompany $record) => route('companies.edit', $record->company_id))
+                    ->url(fn(StudentCompany $record) => route('companies.edit', $record->company_id))
                     ->searchable()
                     ->placeholder('—')
                     ->color('primary'),
@@ -91,7 +91,7 @@ class Index extends Component implements HasForms, HasTable
                 \Modules\Core\Filament\Forms\Components\CreateAction::make('create')
                     ->label(__('Add Student Company'))
                     ->url(route('student-companies.add'))
-                    ->visible(fn () => auth()->user()->can('StudentCompany Create')),
+                    ->visible(fn() => auth()->user()->can('StudentCompany Create')),
             ])
             ->bulkActions($this->getTableBulkAction());
     }
@@ -116,7 +116,7 @@ class Index extends Component implements HasForms, HasTable
                 ->options(Course::get()->pluck('name', 'id'))
                 ->query(function (Builder $query, array $data) {
                     return $query->when($data['value'], function ($q, $courseId) {
-                        $q->whereHas('registration', fn ($regQ) => $regQ->where('course_id', $courseId));
+                        $q->whereHas('registration', fn($regQ) => $regQ->where('course_id', $courseId));
                     });
                 })
                 ->searchable(),
@@ -133,7 +133,7 @@ class Index extends Component implements HasForms, HasTable
                 ->query(function (Builder $query, array $data): Builder {
                     return $query->when(
                         $data['year'],
-                        fn (Builder $q, $year) => $q->whereHas('registration', fn ($regQ) => $regQ->where('year', $year))
+                        fn(Builder $q, $year) => $q->whereHas('registration', fn($regQ) => $regQ->where('year', $year))
                     );
                 }),
 
@@ -147,7 +147,7 @@ class Index extends Component implements HasForms, HasTable
                 ->query(function (Builder $query, array $data): Builder {
                     return $query->when(
                         $data['semester_type'],
-                        fn (Builder $q, $semester_type) => $q->whereHas('registration', fn ($regQ) => $regQ->where('semester', $semester_type))
+                        fn(Builder $q, $semester_type) => $q->whereHas('registration', fn($regQ) => $regQ->where('semester', $semester_type))
                     );
                 }),
         ];
@@ -158,11 +158,11 @@ class Index extends Component implements HasForms, HasTable
         return [
             InfoAction::make('info')
                 ->label('')
-                ->visible(fn () => auth()->user()->can('Major Info')),
+                ->visible(fn() => auth()->user()->can('Major Info')),
             ViewAction::make('view')
                 ->label('')
                 ->tooltip(__('View Details'))
-                ->form(fn (StudentCompany $record) => [
+                ->form(fn(StudentCompany $record) => [
                     Grid::make(2)->schema([
                         TextInput::make('student_name')
                             ->label(__('Student'))
@@ -190,13 +190,13 @@ class Index extends Component implements HasForms, HasTable
                     ]),
                 ])
                 ->modalSubmitAction(false)
-                ->visible(fn () => auth()->user()->can('StudentCompany View')), // تأكد من اسم الصلاحية
+                ->visible(fn() => auth()->user()->can('StudentCompany View')), // تأكد من اسم الصلاحية
 
             EditAction::make('edit')
                 ->label('')
                 ->tooltip(__('Edit'))
-                ->url(fn (StudentCompany $record) => route('student-companies.edit', $record->id)) // تأكد من اسم الراوت
-                ->visible(fn () => auth()->user()->can('StudentCompany Update')),
+                ->url(fn(StudentCompany $record) => route('student-companies.edit', $record->id)) // تأكد من اسم الراوت
+                ->visible(fn() => auth()->user()->can('StudentCompany Update')),
 
             DeleteAction::make('delete')
                 ->label('')
@@ -205,7 +205,7 @@ class Index extends Component implements HasForms, HasTable
                     $record->delete();
                     Toaster::success(__('Student company record deleted successfully'));
                 })
-                ->visible(fn () => auth()->user()->can('StudentCompany Delete')),
+                ->visible(fn() => auth()->user()->can('StudentCompany Delete')),
         ];
     }
 
@@ -218,8 +218,8 @@ class Index extends Component implements HasForms, HasTable
                     ->icon('solar-trash-bin-trash-bold-duotone')
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->action(fn (Collection $records) => $records->each->delete())
-                    ->after(fn () => Toaster::success(__('Selected records deleted successfully')))
+                    ->action(fn(Collection $records) => $records->each->delete())
+                    ->after(fn() => Toaster::success(__('Selected records deleted successfully')))
                     ->visible(fn() => auth()->user()->can('StudentCompany Delete')),
             ]),
         ];

@@ -41,7 +41,7 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => env('APP_URL').'/storage',
+            'url' => env('APP_URL') . '/storage',
             'visibility' => 'public',
             'throw' => false,
             'report' => false,
@@ -63,7 +63,7 @@ return [
         'media' => [
             'driver' => 'local',
             'root' => storage_path('app/public/media'),
-            'url' => env('APP_URL').'/storage/media',
+            'url' => env('APP_URL') . '/storage/media',
             'visibility' => 'public',
             'throw' => false,
         ],
@@ -71,7 +71,7 @@ return [
         'items' => [
             'driver' => 'local',
             'root' => storage_path('app/public/items'),
-            'url' => env('APP_URL').'/storage/items',
+            'url' => env('APP_URL') . '/storage/items',
             'visibility' => 'public',
             'throw' => false,
         ],
@@ -79,7 +79,7 @@ return [
         'customers' => [
             'driver' => 'local',
             'root' => storage_path('app/public/customers'),
-            'url' => env('APP_URL').'/storage/customers',
+            'url' => env('APP_URL') . '/storage/customers',
             'visibility' => 'public',
             'throw' => false,
         ],
@@ -87,7 +87,7 @@ return [
         'content' => [
             'driver' => 'local',
             'root' => storage_path('app/public/content'),
-            'url' => env('APP_URL').'/storage/content',
+            'url' => env('APP_URL') . '/storage/content',
             'visibility' => 'public',
             'throw' => false,
         ],
@@ -95,7 +95,7 @@ return [
         'banners' => [
             'driver' => 'local',
             'root' => storage_path('app/public/content/banners'),
-            'url' => env('APP_URL').'/storage/content/banners',
+            'url' => env('APP_URL') . '/storage/content/banners',
             'visibility' => 'public',
             'throw' => false,
         ],
@@ -103,7 +103,7 @@ return [
         'offers' => [
             'driver' => 'local',
             'root' => storage_path('app/public/items/offers'),
-            'url' => env('APP_URL').'/storage/items/offers',
+            'url' => env('APP_URL') . '/storage/items/offers',
             'visibility' => 'public',
             'throw' => false,
         ],
@@ -111,7 +111,7 @@ return [
         'addon_option' => [
             'driver' => 'local',
             'root' => storage_path('app/public/items/addon_option'),
-            'url' => env('APP_URL').'/storage/items/addon_option',
+            'url' => env('APP_URL') . '/storage/items/addon_option',
             'visibility' => 'public',
             'throw' => false,
         ],
@@ -120,7 +120,7 @@ return [
         'companies' => [
             'driver' => 'local',
             'root' => storage_path('app/public/ppuds/companies'),
-            'url' => env('APP_URL').'/storage/ppuds/companies',
+            'url' => env('APP_URL') . '/storage/ppuds/companies',
             'visibility' => 'public',
             'throw' => false,
         ],
@@ -128,7 +128,7 @@ return [
         'student_reports' => [
             'driver' => 'local',
             'root' => storage_path('app/public/ppuds/student_reports'),
-            'url' => env('APP_URL').'/storage/ppuds/student_reports',
+            'url' => env('APP_URL') . '/storage/ppuds/student_reports',
             'visibility' => 'public',
             'throw' => false,
         ],
@@ -136,7 +136,7 @@ return [
         'student_profiles' => [
             'driver' => 'local',
             'root' => storage_path('app/public/ppuds/student_profiles'),
-            'url' => env('APP_URL').'/storage/ppuds/student_profiles',
+            'url' => env('APP_URL') . '/storage/ppuds/student_profiles',
             'visibility' => 'public',
             'throw' => false,
         ],
@@ -144,7 +144,7 @@ return [
         'payments' => [
             'driver' => 'local',
             'root' => storage_path('app/public/ppuds/student_payments'),
-            'url' => env('APP_URL').'/storage/ppuds/student_payments',
+            'url' => env('APP_URL') . '/storage/ppuds/student_payments',
             'visibility' => 'public',
             'throw' => false,
         ],
@@ -152,7 +152,7 @@ return [
         'announcements' => [
             'driver' => 'local',
             'root' => storage_path('app/public/ppuds/announcements'),
-            'url' => env('APP_URL').'/storage/ppuds/announcements',
+            'url' => env('APP_URL') . '/storage/ppuds/announcements',
             'visibility' => 'public',
             'throw' => false,
         ],
@@ -160,7 +160,7 @@ return [
         'leave_requests' => [
             'driver' => 'local',
             'root' => storage_path('app/public/ppuds/leave_requests'),
-            'url' => env('APP_URL').'/storage/ppuds/leave_requests',
+            'url' => env('APP_URL') . '/storage/ppuds/leave_requests',
             'visibility' => 'public',
             'throw' => false,
         ],
@@ -168,7 +168,7 @@ return [
         'ppuds_notes' => [
             'driver' => 'local',
             'root' => storage_path('app/public/ppuds/ppuds_notes'),
-            'url' => env('APP_URL').'/storage/ppuds/ppuds_notes',
+            'url' => env('APP_URL') . '/storage/ppuds/ppuds_notes',
             'visibility' => 'public',
             'throw' => false,
         ],

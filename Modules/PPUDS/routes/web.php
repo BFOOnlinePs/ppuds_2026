@@ -18,7 +18,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 'prefix' => 'admin',
                 'as' => '',
             ], function () {
-                
+
                 // ... (جميع الـ Routes الأخرى الخاصة بك مثل الطلاب والشركات وغيرها) ...
                 Route::group([
                     'prefix' => '',
@@ -108,6 +108,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     'namespace' => 'Modules\PPUDS\Livewire\Pages\Announcement',
                 ], function () {
                     Route::get('/announcements', Index::class)->name('index')->can('Announcement View List');
+                    Route::get('/{announcement}/details', Details::class)->name('details')->can('Announcement Details');
                 });
 
                 Route::group([
@@ -149,10 +150,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     });
 
                     // Route::get('/chats', \Wirechat\Wirechat\Livewire\Chats\Chats::class)->name('chats'); 
-                    Route::get('/{conversation}', \Wirechat\Wirechat\Livewire\Chat\Chat::class)->name('show'); 
-                    
-                }); 
-                
+                    Route::get('/{conversation}', \Wirechat\Wirechat\Livewire\Chat\Chat::class)->name('show');
+                });
+
                 Route::group([
                     'prefix' => 'notes',
                     'as' => 'notes.',
@@ -170,7 +170,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ], function () {
                     Route::get('/', Index::class)->name('index')->can('Report View List');
                 });
-            }); 
+            });
         }
-    ); 
-}); 
+    );
+});

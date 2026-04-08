@@ -3,6 +3,7 @@
 namespace Modules\PPUDS\Livewire\Pages\Company;
 
 use App\View\Components\AppLayout;
+use Closure;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Forms\Components\Grid;
@@ -35,6 +36,7 @@ use Modules\GeoLocation\Entities\Country;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\CompanyCategory;
 use Modules\PPUDS\Entities\CompanyDepartment;
+use Modules\PPUDS\Entities\CompanyTranslation;
 use Modules\PPUDS\Enums\CompanyStatus;
 
 class Add extends Component implements HasActions, HasForms
@@ -55,42 +57,39 @@ class Add extends Component implements HasActions, HasForms
             ->model(Company::class)
             ->schema([
                 Wizard::make([
-                    // --- الخطوة الأولى: معلومات الشركة ---
                     Wizard\Step::make(__('General Profile'))
                         ->label(__('Company Profile'))
-                        ->icon('solar-buildings-3-bold-duotone') // Solar Icon
+                        ->icon('solar-buildings-3-bold-duotone')
                         ->description(__('Basic identity and categorization'))
                         ->schema([
                             Grid::make(['default' => 1, 'lg' => 3])
                                 ->schema([
-                                    // العمود الأيمن (الرئيسي)
                                     Group::make()
                                         ->columnSpan(['lg' => 2])
                                         ->schema([
                                             Section::make(__('Company Identity'))
-                                                ->icon('solar-document-text-bold-duotone') // Solar Icon
+                                                ->icon('solar-document-text-bold-duotone')
                                                 ->schema([
                                                     Grid::make(2)->schema([
                                                         TextInput::make('name')
                                                             ->label(__('Company Name'))
                                                             ->required()
-                                                            ->prefixIcon('solar-pen-new-square-linear') // Solar Icon
+                                                            ->prefixIcon('solar-pen-new-square-linear')
                                                             ->placeholder(__('e.g. Acme Corporation'))
                                                             ->live(debounce: 500)
                                                             ->datalist(fn() => Company::get()->pluck('name'))
-                                                            ->columnSpan(1),
+                                                            ->columnSpan(1)
+                                                            ->unique(CompanyTranslation::class, 'name', ignoreRecord: true),
                                                         Placeholder::make('company_suggestions')
                                                             ->label(__('Suggestions & Similar Companies'))
-                                                            ->hidden(fn(Get $get) => blank($get('name'))) // إخفاء الحقل إذا كان الاسم فارغاً
+                                                            ->hidden(fn(Get $get) => blank($get('name')))
                                                             ->content(function (Get $get) {
                                                                 $search = $get('name');
 
-                                                                // جلب الشركات التي تحتوي على نفس النص
                                                                 $similarCompanies = Company::whereTranslationLike('name', "%{$search}%")
                                                                     ->limit(5)
                                                                     ->get();
 
-                                                                // 1. حالة عدم وجود شركات مشابهة (الاسم متاح)
                                                                 if ($similarCompanies->isEmpty()) {
                                                                     return new HtmlString('
                 <div class="p-3 rounded-lg bg-success-50 dark:bg-success-500/10 text-success-600 dark:text-success-400 border border-success-200 dark:border-success-500/20">

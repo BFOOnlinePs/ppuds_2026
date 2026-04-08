@@ -33,7 +33,7 @@ class StudentCompany extends Model implements HasMedia
     {
         parent::__construct($attributes);
 
-        $this->setTable(config('ppuds.table_prefix').'students_companies');
+        $this->setTable(config('ppuds.table_prefix') . 'students_companies');
     }
 
     protected $fillable = [
@@ -57,7 +57,7 @@ class StudentCompany extends Model implements HasMedia
             ->logOnly($this->getFillable())
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()
-            ->setDescriptionForEvent(fn (string $eventName) => "This student company record has been {$eventName}")
+            ->setDescriptionForEvent(fn(string $eventName) => "This student company record has been {$eventName}")
             ->useLogName(class_basename($this));
     }
 
@@ -95,7 +95,7 @@ class StudentCompany extends Model implements HasMedia
         try {
             $originalName = $file->getClientOriginalName();
             $extension = $file->getClientOriginalExtension();
-            $fileName = time().'_'.Str::slug(pathinfo($originalName, PATHINFO_FILENAME)).'.'.$extension;
+            $fileName = time() . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $extension;
 
             $media = $this
                 ->addMedia($file)
@@ -113,7 +113,7 @@ class StudentCompany extends Model implements HasMedia
 
             return $media;
         } catch (\Exception $e) {
-            Log::error('Error uploading student company file: '.$e->getMessage());
+            Log::error('Error uploading student company file: ' . $e->getMessage());
 
             return null;
         }
