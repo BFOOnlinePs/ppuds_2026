@@ -4,6 +4,7 @@ namespace Modules\Branch\Transformers\V1;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Modules\PPUDS\Transformers\V1\CompanyDepartmentResource;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
 
@@ -51,7 +52,7 @@ class BranchResource extends JsonResource
             AllowedFilter::exact('opening_time'),
             AllowedFilter::exact('closing_time'),
             AllowedFilter::exact('status'),
-            AllowedFilter::callback('name', fn ($q, $v) => $q->whereHas('translations', fn ($q) => $q->where('name', 'LIKE', "%{$v}%"))),
+            AllowedFilter::callback('name', fn($q, $v) => $q->whereHas('translations', fn($q) => $q->where('name', 'LIKE', "%{$v}%"))),
         ];
     }
 
@@ -67,7 +68,7 @@ class BranchResource extends JsonResource
                     $dir = $directionOrDescending ? 'asc' : 'desc';
                 } else {
                     $d = strtolower((string)$directionOrDescending);
-                    $dir = in_array($d, ['asc','desc'], true) ? $d : 'asc';
+                    $dir = in_array($d, ['asc', 'desc'], true) ? $d : 'asc';
                 }
                 $query->orderByTranslation('name', $dir);
             }),
@@ -78,6 +79,7 @@ class BranchResource extends JsonResource
     {
         return [
             'workingHours',
+            'departments',
             'translations'
         ];
     }
@@ -103,6 +105,7 @@ class BranchResource extends JsonResource
             'closing_time'  => $this->closing_time,
             'status'        => $this->status,
             'working_hours' => BranchWorkingHourResource::collection($this->whenLoaded('workingHours')),
+            'departments'   => CompanyDepartmentResource::collection($this->whenLoaded('departments')),
             'translations'   => $this->whenLoaded('translations')
         ];
     }

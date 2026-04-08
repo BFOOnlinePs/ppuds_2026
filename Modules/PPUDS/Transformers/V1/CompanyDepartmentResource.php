@@ -24,14 +24,16 @@ class CompanyDepartmentResource extends JsonResource
     public static function allowedFields(): array
     {
         return [
-            'id', 'name', 'created_at'
+            'id',
+            'name',
+            'created_at'
         ];
     }
 
     public static function allowedFilters(): array
     {
         return [
-            AllowedFilter::callback('name', fn (Builder $query, $value) => $query->whereTranslationLike('name', "%{$value}%")),
+            AllowedFilter::callback('name', fn(Builder $query, $value) => $query->whereTranslationLike('name', "%{$value}%")),
         ];
     }
 
