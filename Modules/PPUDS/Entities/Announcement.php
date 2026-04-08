@@ -14,6 +14,7 @@ use Modules\Core\Enums\ImageQuality;
 use Modules\Core\Enums\ImageSize;
 use Modules\Core\Enums\UserRole;
 use Modules\Core\Services\ImageService;
+use Modules\Core\Settings\GeneralSettings;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Image\Enums\Fit;
@@ -165,6 +166,6 @@ class Announcement extends Model implements TranslatableContract, HasMedia
 
     public function getImageAttribute()
     {
-        return $this->getFirstMediaUrl('announcement_image');
+        return $this->getFirstMediaUrl('announcement_image') ?: app(GeneralSettings::class)->site_logo_url;
     }
 }

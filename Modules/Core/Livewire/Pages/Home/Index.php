@@ -16,6 +16,8 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\Split;
 use Livewire\Attributes\Computed;
+use Modules\Core\Entities\Settings;
+use Modules\Core\Settings\GeneralSettings;
 
 class Index extends Component implements HasForms, HasInfolists
 {
@@ -24,6 +26,19 @@ class Index extends Component implements HasForms, HasInfolists
 
     public function mount() {}
 
+    #[Computed]
+    public function settings()
+    {
+        return app(GeneralSettings::class);
+    }
+
+    /*************  ✨ Windsurf Command ⭐  *************/
+    /**
+     * Get all active announcements.
+     *
+     * @return array
+     */
+    /*******  70941ca1-e800-4b6f-a43c-2b65318d8298  *******/
     #[Computed]
     public function getAnnouncements()
     {
