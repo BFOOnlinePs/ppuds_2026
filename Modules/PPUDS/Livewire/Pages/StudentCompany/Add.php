@@ -44,91 +44,93 @@ class Add extends Component implements HasForms, HasActions
             ->model(StudentCompany::class)
             ->schema([
                 Grid::make(['default' => 1, 'lg' => 3])
-                ->schema([
-                    Group::make()
-                        ->columnSpan(['lg' => 2])
-                        ->schema([
+                    ->schema([
+                        Group::make()
+                            ->columnSpan(['lg' => 2])
+                            ->schema([
 
-                            Section::make(__('Student & Registration Info'))
-                                ->icon('solar-user-id-bold-duotone')
-                                ->schema([
-                                    Select::make('registration_id')
-                                        ->label(__('Select Student Registration'))
-                                        ->required()
-                                        ->searchable()
-                                        ->preload()
-                                        ->prefixIcon('solar-document-text-linear')
-                                        ->options(function () {
-                                            return Registration::with(['student', 'course'])
-                                                ->where('semester', app(GeneralSettings::class)->semester_type->value)
-                                                ->where('year', app(GeneralSettings::class)->year)
-                                                ->get()
-                                                ->mapWithKeys(function ($reg) {
-                                                    $semesterLabel = $reg->semester?->getLabel() ?? $reg->semester?->value;
-
-                                                    return [$reg->id => "{$reg->student->studentProfile->student_number} - {$reg->student->name} - {$reg->course->name} ({$semesterLabel}/{$reg->year})"];
-                                                });
-                                        }),
-                                ]),
-
-                            Section::make(__('Placement Details'))
-                                ->icon('solar-buildings-2-bold-duotone')
-                                ->schema([
-                                    Grid::make(2)->schema([
-
-                                        Select::make('company_id')
-                                            ->label(__('Company'))
-                                            ->options(Company::get()->pluck('name', 'id'))
+                                Section::make(__('Student & Registration Info'))
+                                    ->icon('solar-user-id-bold-duotone')
+                                    ->schema([
+                                        Select::make('registration_id')
+                                            ->label(__('Select Student Registration'))
+                                            ->required()
                                             ->searchable()
                                             ->preload()
-                                            ->live()
-                                            ->afterStateUpdated(fn (Select $component) => $component->getContainer()->getComponent('branchSelect')->state(null)) // تصفير الفرع عند تغيير الشركة
-                                            ->prefixIcon('solar-city-linear'),
+                                            ->prefixIcon('solar-document-text-linear')
+                                            ->options(function () {
+                                                return Registration::with(['student', 'course'])
+                                                    ->where('semester', app(GeneralSettings::class)->semester_type->value)
+                                                    ->where('year', app(GeneralSettings::class)->year)
+                                                    ->get()
+                                                    ->mapWithKeys(function ($reg) {
+                                                        $semesterLabel = $reg->semester?->getLabel() ?? $reg->semester?->value;
 
-                                        Select::make('branch_id')
-                                            ->label(__('Branch'))
-                                            ->key('branchSelect')
-                                            ->searchable()
-                                            ->preload()
-                                            ->prefixIcon('solar-map-point-linear')
-                                            ->placeholder(fn (Get $get) => $get('company_id') ? __('Select Branch') : __('Select Company First'))
-                                            ->disabled(fn (Get $get) => ! $get('company_id'))
-                                            ->options(fn (Get $get) =>
-                                                Branch::whereHas('companies', function ($query) use ($get) {
-                                                    $query->where('company_id', $get('company_id'));
-                                                })->get()->pluck('name', 'id')
-                                            ),
-
-                                        Select::make('department_id')
-                                            ->label(__('Department'))
-                                            ->searchable()
-                                            ->preload()
-                                            ->prefixIcon('solar-users-group-two-rounded-linear')
-                                            ->disabled(fn (Get $get) => ! $get('company_id'))
-                                            ->options(fn (Get $get) =>
-                                                CompanyDepartment::get()->pluck('name', 'id')
-                                            )
-                                            ->columnSpanFull(),
+                                                        return [$reg->id => "{$reg->student->studentProfile->student_number} - {$reg->student->name} - {$reg->course->name} ({$semesterLabel}/{$reg->year})"];
+                                                    });
+                                            }),
                                     ]),
-                                ]),
-                        ]),
 
-                    Group::make()
-                        ->columnSpan(['lg' => 1])
-                        ->schema([
-                            Section::make(__('Status & Settings'))
-                                ->icon('solar-settings-bold-duotone')
-                                ->schema([
-                                    Select::make('status')
-                                        ->label(__('Training Status'))
-                                        ->required()
-                                        ->options(TrainingStatus::class) // يدعم الـ Enum مباشرة كما فعلنا سابقاً
-                                        ->default(TrainingStatus::AVAILABLE)
-                                        ->native(false)
-                                        ->prefixIcon('solar-flag-bold-duotone'),
-                                ]),
-                        ]),
-                ]),
+                                Section::make(__('Placement Details'))
+                                    ->icon('solar-buildings-2-bold-duotone')
+                                    ->schema([
+                                        Grid::make(2)->schema([
+
+                                            Select::make('company_id')
+                                                ->label(__('Company'))
+                                                ->options(Company::get()->pluck('name', 'id'))
+                                                ->searchable()
+                                                ->preload()
+                                                ->live()
+                                                ->afterStateUpdated(fn(Select $component) => $component->getContainer()->getComponent('branchSelect')->state(null)) // تصفير الفرع عند تغيير الشركة
+                                                ->prefixIcon('solar-city-linear'),
+
+                                            Select::make('branch_id')
+                                                ->label(__('Branch'))
+                                                ->key('branchSelect')
+                                                ->searchable()
+                                                ->preload()
+                                                ->prefixIcon('solar-map-point-linear')
+                                                ->placeholder(fn(Get $get) => $get('company_id') ? __('Select Branch') : __('Select Company First'))
+                                                ->disabled(fn(Get $get) => ! $get('company_id'))
+                                                ->options(
+                                                    fn(Get $get) =>
+                                                    Branch::whereHas('companies', function ($query) use ($get) {
+                                                        $query->where('company_id', $get('company_id'));
+                                                    })->get()->pluck('name', 'id')
+                                                ),
+
+                                            Select::make('department_id')
+                                                ->label(__('Department'))
+                                                ->searchable()
+                                                ->preload()
+                                                ->prefixIcon('solar-users-group-two-rounded-linear')
+                                                ->disabled(fn(Get $get) => ! $get('company_id'))
+                                                ->options(
+                                                    fn(Get $get) =>
+                                                    CompanyDepartment::get()->pluck('name', 'id')
+                                                )
+                                                ->columnSpanFull(),
+                                        ]),
+                                    ]),
+                            ]),
+
+                        Group::make()
+                            ->columnSpan(['lg' => 1])
+                            ->schema([
+                                Section::make(__('Status & Settings'))
+                                    ->icon('solar-settings-bold-duotone')
+                                    ->schema([
+                                        Select::make('status')
+                                            ->label(__('Training Status'))
+                                            ->required()
+                                            ->options(TrainingStatus::class)
+                                            ->default(TrainingStatus::AVAILABLE)
+                                            ->native(false)
+                                            ->prefixIcon('solar-flag-bold-duotone'),
+                                    ]),
+                            ]),
+                    ]),
             ])
             ->statePath('data');
     }
