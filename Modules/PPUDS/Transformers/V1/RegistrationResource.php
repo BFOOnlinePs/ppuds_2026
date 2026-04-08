@@ -41,7 +41,7 @@ class RegistrationResource extends JsonResource
             'supervisor_id'    => $this->supervisor_id,
             'university_score' => $this->university_score,
             'company_score'    => $this->company_score,
-            'image'            => $this->image, // تم استدعاء دالة getImageAttribute() من المودل
+            'final_file'       => $this->getFirtstMediaUrl('final_file'),
             'student'          => $this->whenLoaded('student'),
             'course'           => $this->whenLoaded('course'),
             'supervisor'       => $this->whenLoaded('supervisor'),
