@@ -41,7 +41,8 @@ class Index extends Component implements HasForms, HasInfolists
             Section::make(__('Student Companies'))
                 ->schema([
                     Livewire::make(\Modules\PPUDS\Livewire\Pages\StudentCompany\Index::class)
-                ]),
+                ])
+                ->visible(fn() => auth()->user()->hasRole('Student')),
 
             Section::make(__('Announcements'))
                 ->schema([
