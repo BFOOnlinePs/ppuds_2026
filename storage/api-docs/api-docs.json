@@ -7946,6 +7946,245 @@
                 ]
             }
         },
+        "/api/v1/ppuds/registrations": {
+            "get": {
+                "tags": [
+                    "Registrations"
+                ],
+                "summary": "List all registrations",
+                "description": "Retrieve a list of registrations with filtering and sorting",
+                "operationId": "255b666efe31adf58ba82ac1b599cdf5",
+                "parameters": [
+                    {
+                        "name": "filter[student_id]",
+                        "in": "query",
+                        "description": "Filter by Student ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "filter[course_id]",
+                        "in": "query",
+                        "description": "Filter by Course ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "filter[semester]",
+                        "in": "query",
+                        "description": "Filter by Semester (e.g., First, Second, Summer)",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filter[year]",
+                        "in": "query",
+                        "description": "Filter by Year",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Registrations retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/RegistrationResource"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Registrations"
+                ],
+                "summary": "Create a new registration",
+                "description": "Submit a new registration record with optional image upload",
+                "operationId": "0ea152f3b88d9086d6ce15d8e584e4a5",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "student_id",
+                                    "course_id",
+                                    "semester",
+                                    "year"
+                                ],
+                                "properties": {
+                                    "student_id": {
+                                        "type": "integer",
+                                        "example": 10
+                                    },
+                                    "course_id": {
+                                        "type": "integer",
+                                        "example": 2
+                                    },
+                                    "grade": {
+                                        "type": "string",
+                                        "example": "A"
+                                    },
+                                    "semester": {
+                                        "type": "string",
+                                        "example": "First"
+                                    },
+                                    "year": {
+                                        "type": "string",
+                                        "example": "2024"
+                                    },
+                                    "supervisor_id": {
+                                        "type": "integer",
+                                        "example": 5
+                                    },
+                                    "university_score": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 85.5
+                                    },
+                                    "company_score": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 90
+                                    },
+                                    "image": {
+                                        "description": "Upload registration file/image",
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/registrations/{registration}": {
+            "get": {
+                "tags": [
+                    "Registrations"
+                ],
+                "summary": "Get registration details",
+                "operationId": "e2e535ce80e1497a95921fde77f1821a",
+                "parameters": [
+                    {
+                        "name": "registration",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Registrations"
+                ],
+                "summary": "Update registration",
+                "description": "Update registration details. Use _method=PUT for multipart form-data to update image.",
+                "operationId": "c3c05c028087f89a548b5af203adfd52",
+                "parameters": [
+                    {
+                        "name": "registration",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "_method": {
+                                        "type": "string",
+                                        "example": "PUT"
+                                    },
+                                    "grade": {
+                                        "type": "string",
+                                        "example": "A+"
+                                    },
+                                    "university_score": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 95
+                                    },
+                                    "company_score": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 98
+                                    },
+                                    "image": {
+                                        "description": "Upload new registration file/image",
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/ppuds/reports": {
             "get": {
                 "tags": [
@@ -10165,6 +10404,67 @@
                     "name": "NoteResource"
                 }
             },
+            "RegistrationResource": {
+                "title": "Registration Resource",
+                "description": "Registration details",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "student_id": {
+                        "type": "integer",
+                        "example": 10
+                    },
+                    "course_id": {
+                        "type": "integer",
+                        "example": 2
+                    },
+                    "grade": {
+                        "type": "string",
+                        "example": "A"
+                    },
+                    "semester": {
+                        "type": "string",
+                        "example": "First"
+                    },
+                    "year": {
+                        "type": "string",
+                        "example": "2024"
+                    },
+                    "supervisor_id": {
+                        "type": "integer",
+                        "example": 5
+                    },
+                    "university_score": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 85.5
+                    },
+                    "company_score": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 90
+                    },
+                    "image": {
+                        "type": "string",
+                        "format": "url",
+                        "example": "https://example.com/media/file.png"
+                    },
+                    "created_by": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object",
+                "xml": {
+                    "name": "RegistrationResource"
+                }
+            },
             "ReportResource": {
                 "title": "Report Resource",
                 "description": "Student Company Attendance Report details",
@@ -10297,6 +10597,10 @@
         {
             "name": "Notes",
             "description": "API Endpoints for Student Notes"
+        },
+        {
+            "name": "Registrations",
+            "description": "API Endpoints for managing student registrations"
         },
         {
             "name": "Student Attendances",

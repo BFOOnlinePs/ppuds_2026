@@ -48,6 +48,7 @@ class Registration extends Model implements HasMedia
     public $casts = [
         'semester' => SemesterType::class,
     ];
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
