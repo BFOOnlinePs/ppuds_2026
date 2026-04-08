@@ -6,12 +6,15 @@
         <div class="px-6 py-10 mx-auto">
             <div class="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-4">
                 @foreach ($this->getAnnouncements() as $announcement)
-                    <div class="flex flex-col h-full group">
+                    <div
+                        class="flex flex-col h-full overflow-hidden transition-all duration-300 bg-white border border-gray-200 rounded-2xl shadow-sm group hover:shadow-lg hover:border-primary-500 dark:bg-gray-900 dark:border-gray-800 dark:hover:border-primary-500">
 
-                        <img class="object-cover object-center w-full h-64 rounded-lg lg:h-80"
-                            src="{{ $announcement->getImageAttribute() }}" alt="">
+                        <div class="relative overflow-hidden aspect-[4/3] sm:aspect-[3/2] lg:aspect-video">
+                            <img class="object-cover object-center w-full h-full transition-transform duration-500 group-hover:scale-105"
+                                src="{{ $announcement->getImageAttribute() }}" alt="{{ $announcement->name }}">
+                        </div>
 
-                        <div class="flex flex-col flex-grow mt-4">
+                        <div class="flex flex-col flex-grow p-6">
                             {{-- <span class="text-sm font-medium tracking-wider uppercase text-primary-600 dark:text-primary-400">category</span> --}}
 
                             <h1
@@ -28,14 +31,14 @@
                                         {{ $announcement->createdBy->name ?? 'Admin' }}
                                     </a>
 
-                                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                                         {{ $announcement->created_at->format('F j, Y') }}
                                     </p>
                                 </div>
 
                                 <a href="{{ route('announcements.details', $announcement->id) }}"
-                                    class="inline-block font-medium text-primary-600 dark:text-primary-400 transition-colors hover:text-primary-500 dark:hover:text-primary-300">
-                                    {{ __('Read more') }} &rarr;
+                                    class="inline-flex items-center gap-1 font-medium text-primary-600 dark:text-primary-400 transition-colors hover:text-primary-500 dark:hover:text-primary-300">
+                                    {{ __('Read more') }} <span aria-hidden="true">&rarr;</span>
                                 </a>
                             </div>
 
