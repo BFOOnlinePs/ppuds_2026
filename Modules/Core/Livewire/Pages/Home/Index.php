@@ -3,6 +3,7 @@
 namespace Modules\Core\Livewire\Pages\Home;
 
 use App\View\Components\AppLayout;
+use Filament\Forms\Components\Livewire;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\ViewField;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -37,7 +38,11 @@ class Index extends Component implements HasForms, HasInfolists
     public function form(Form $form): Form
     {
         return $form->schema([
-            Section::make(__('Student Companies')),
+            Section::make(__('Student Companies'))
+                ->schema([
+                    Livewire::make(\Modules\PPUDS\Livewire\Pages\StudentCompany\Index::class)
+                ]),
+
             Section::make(__('Announcements'))
                 ->schema([
                     ViewField::make('announcements_list')
