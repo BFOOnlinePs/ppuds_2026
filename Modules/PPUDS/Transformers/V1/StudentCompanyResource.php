@@ -34,7 +34,15 @@ class StudentCompanyResource extends JsonResource
     public static function allowedFields(): array
     {
         return [
-            'id', 'registration_id', 'student_id', 'company_id', 'branch_id', 'department_id', 'status', 'created_by', 'created_at'
+            'id',
+            'registration_id',
+            'student_id',
+            'company_id',
+            'branch_id',
+            'department_id',
+            'status',
+            'created_by',
+            'created_at'
         ];
     }
 
@@ -62,6 +70,7 @@ class StudentCompanyResource extends JsonResource
     {
         return [
             'registration',
+            'registration.course',
             'student',
             'company',
             'branch',
