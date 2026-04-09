@@ -834,3 +834,38 @@ textarea,
     border-radius: 0.5rem !important; /* لتنعيم الحواف (rounded-lg) */
     overflow: hidden !important; /* لمنع خروج المحتوى عن الإطار */
 }
+
+
+.choices__list--dropdown, 
+.fi-select-dropdown {
+    z-index: 9999 !important;
+}
+
+.fi-fo-group,
+.fi-fo-grid {
+    overflow: visible !important;
+}
+
+.fi-section, 
+.fi-section-content {
+    overflow: visible !important;
+}
+
+/* رفع مستوى الشريط العلوي بالكامل ليكون دائماً فوق محتوى الصفحة */
+.fi-topbar {
+    z-index: 60 !important;
+    position: relative;
+}
+
+/* التأكد من أن لوحة القائمة المنسدلة نفسها في أعلى مستوى وقابلة للنقر */
+.fi-dropdown-panel {
+    z-index: 9999 !important;
+    pointer-events: auto !important;
+}
+
+/* التأكد من أن محتوى الصفحة الأساسي لا يغطي الشريط العلوي */
+.fi-main {
+    z-index: 10 !important;
+    position: relative;
+}
+
