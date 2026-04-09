@@ -13,7 +13,7 @@ class RegistrationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'student_id'       => ['required', 'exists:users,id'], // بفرض أن جدول المستخدمين اسمه users
+            'student_id'       => ['required', 'exists:users,id'],
             'course_id'        => ['required', 'exists:' . config('ppuds.table_prefix') . 'courses,id'],
             'semester'         => ['required', 'in:' . implode(',', array_column(SemesterType::cases(), 'value'))],
             'year'             => ['required', 'integer', 'min:2000', 'max:' . (date('Y') + 1)],

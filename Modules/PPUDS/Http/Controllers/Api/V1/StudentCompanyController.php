@@ -7,6 +7,7 @@ use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Entities\StudentCompany; // تأكدنا من استخدام هذا الكلاس
 use Modules\PPUDS\Http\Requests\CompanyRequest;
+use Modules\PPUDS\Http\Requests\StudentCompanyRequest;
 use Modules\PPUDS\Transformers\V1\StudentCompanyResource;
 use Spatie\QueryBuilder\QueryBuilder;
 
@@ -128,7 +129,7 @@ class StudentCompanyController extends Controller
      * @OA\Response(response=201, description="Created successfully")
      * )
      */
-    public function store(CompanyRequest $request)
+    public function store(StudentCompanyRequest $request)
     {
         $data = $request->validated();
 

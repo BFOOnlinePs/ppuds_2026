@@ -13,10 +13,10 @@ class StudentCompanyRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'registration_id' => ['required', 'integer', 'exists:ppu_ds_registrations,id'],
-            'company_id'      => ['required', 'integer', 'exists:ppu_ds_companies,id'],
-            'branch_id'       => ['nullable', 'integer', 'exists:geolocation_branches,id'],
-            'department_id'   => ['nullable', 'integer', 'exists:ppu_ds_company_departments,id'],
+            'registration_id' => ['required', 'integer', 'exists:' . config('ppuds.table_prefix') . 'registrations,id'],
+            'company_id'      => ['required', 'integer', 'exists:' . config('ppuds.table_prefix') . 'companies,id'],
+            'branch_id'       => ['nullable', 'integer', 'exists:' . config('branch.table_prefix') . 'branches,id'],
+            'department_id'   => ['nullable', 'integer', 'exists:' . config('ppuds.table_prefix') . 'company_departments,id'],
             'status'          => ['required', 'integer', 'in:' . implode(',', array_column(TrainingStatus::cases(), 'value'))],
         ];
     }
