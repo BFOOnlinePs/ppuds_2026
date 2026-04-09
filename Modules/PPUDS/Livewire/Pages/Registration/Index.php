@@ -31,8 +31,6 @@ use Modules\PPUDS\Entities\Course;
 use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Enums\SemesterType;
 
-// ✅ تأكد من استدعاء مودل الكورس
-
 class Index extends Component implements HasTable, HasForms
 {
     use InteractsWithTable;
@@ -41,7 +39,13 @@ class Index extends Component implements HasTable, HasForms
     public function table(Table $table)
     {
         return $table
-            ->query(fn() => Registration::query()->with(['student', 'course', 'supervisor']))
+            ->query(
+                fn() => Registration::query()
+                    ->with(['student', 'course', 'supervisor'])
+                    ->when(auth()->user()->hasRole('student'), function ($query) {
+                        $query->where('student_id', auth()->user()->id);
+                    })
+            )
             ->columns([
                 // 1. عمود الطالب
                 TextColumn::make('student.name')
@@ -71,12 +75,12 @@ class Index extends Component implements HasTable, HasForms
                     ->toggleable(),
 
                 // 5. عمود العلامة
-//                TextColumn::make('grade')
-//                    ->label(__('Grade'))
-//                    ->placeholder('-')
-//                    ->badge()
-//                    ->color(fn ($state) => $state >= 60 ? 'success' : ($state === null ? 'gray' : 'danger'))
-//                    ->sortable(),
+                //                TextColumn::make('grade')
+                //                    ->label(__('Grade'))
+                //                    ->placeholder('-')
+                //                    ->badge()
+                //                    ->color(fn ($state) => $state >= 60 ? 'success' : ($state === null ? 'gray' : 'danger'))
+                //                    ->sortable(),
 
                 TextColumn::make('created_at')
                     ->label(__('Registered At'))
@@ -116,7 +120,7 @@ class Index extends Component implements HasTable, HasForms
                 ->query(function (Builder $query, array $data): Builder {
                     return $query->when(
                         $data['year'],
-                        fn (Builder $query, $year) => $query->where('year', $year)
+                        fn(Builder $query, $year) => $query->where('year', $year)
                     );
                 }),
 

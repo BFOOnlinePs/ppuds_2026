@@ -63,7 +63,7 @@ class StudentCompanyResource extends JsonResource
             }),
             AllowedFilter::callback('company_name', function (Builder $query, $value) {
                 $query->whereHas('company', function (Builder $q) use ($value) {
-                    $q->where('name', 'like', '%' . $value . '%');
+                    $q->whereTranslationLike('name', '%' . $value . '%');
                 });
             })
         ];
