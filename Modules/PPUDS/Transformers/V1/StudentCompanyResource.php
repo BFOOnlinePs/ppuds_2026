@@ -56,6 +56,14 @@ class StudentCompanyResource extends JsonResource
             AllowedFilter::exact('company_id'),
             AllowedFilter::exact('status'),
 
+            AllowedFilter::callback('compony_supervisor', function (Builder $query, $value) {
+                $query->whereHas('branch', function ($query) use ($value) {
+                    $query->whereHas('departments', function ($query) use ($value) {
+                        $query->where('user_id', $value);
+                    });
+                });
+            }),
+
             AllowedFilter::callback('student_name', function (Builder $query, $value) {
                 $query->whereHas('student', function (Builder $q) use ($value) {
                     $q->where('name', 'like', '%' . $value . '%');
