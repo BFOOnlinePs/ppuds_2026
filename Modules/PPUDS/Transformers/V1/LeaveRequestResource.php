@@ -76,6 +76,9 @@ class LeaveRequestResource extends JsonResource
             AllowedFilter::partial('reason'),
             AllowedFilter::exact('company_approval'),
             AllowedFilter::exact('university_approval'),
+            AllowedFilter::exact('created_by'),
+            AllowedFilter::exact('created_at'),
+
             AllowedFilter::callback('company_supervisor', function (Builder $query, $value) {
                 $query->whereHas('studentCompany', function ($query) use ($value) {
                     $query->whereHas('branch', function ($branchQuery) use ($value) {
@@ -85,8 +88,17 @@ class LeaveRequestResource extends JsonResource
                     });
                 });
             }),
-            AllowedFilter::exact('created_by'),
-            AllowedFilter::exact('created_at'),
+
+            AllowedFilter::callback('student_name', function (Builder $query, $value) {
+                $query->whereHas('studentCompany.student', function (Builder $q) use ($value) {
+                    $q->where('name', 'like', '%' . $value . '%');
+                });
+            }),
+            AllowedFilter::callback('company_name', function (Builder $query, $value) {
+                $query->whereHas('studentCompany.company', function (Builder $q) use ($value) {
+                    $q->whereTranslationLike('name', '%' . $value . '%');
+                });
+            })
         ];
     }
 
@@ -105,6 +117,9 @@ class LeaveRequestResource extends JsonResource
     {
         return [
             'createdBy',
+            'studentCompany',
+            'studentCompany.student',
+            'studentCompany.company',
         ];
     }
 }
