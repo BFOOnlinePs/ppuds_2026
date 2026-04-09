@@ -57,7 +57,7 @@ class StudentCompanyResource extends JsonResource
             AllowedFilter::exact('status'),
 
             AllowedFilter::callback('student_name', function (Builder $query, $value) {
-                $query->whereHas('student.user', function (Builder $q) use ($value) {
+                $query->whereHas('student', function (Builder $q) use ($value) {
                     $q->where('name', 'like', '%' . $value . '%');
                 });
             }),
