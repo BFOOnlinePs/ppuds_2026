@@ -23,7 +23,7 @@ class CompanyRequest extends FormRequest
             // Branch Validation
             'branches'                => ['required', 'array', 'min:1'],
             'branches.*.name'         => ['required', 'string', 'max:255'],
-            'branches.*.email'        => ['nullable', 'email', 'max:255', 'distinct', 'unique:branch_table_name,email'],
+            'branches.*.email'        => ['nullable', 'email', 'max:255', 'distinct', 'unique:' . config('branch.table_prefix') . 'branches,email'],
             'branches.*.phone'        => ['nullable', 'string', 'max:50'],
             'branches.*.country_id'   => ['required', 'integer', 'exists:geolocation_countries,id'],
             'branches.*.city_id'      => ['required', 'integer', 'exists:geolocation_cities,id'],
