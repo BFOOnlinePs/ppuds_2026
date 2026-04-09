@@ -30,6 +30,7 @@ use Modules\PPUDS\Entities\Major;
 use Modules\PPUDS\Entities\StudentAttendance;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\AttendanceStatus;
+use Modules\PPUDS\Settings\GeneralSettings;
 
 class Index extends Component implements HasForms, HasTable
 {
@@ -46,7 +47,7 @@ class Index extends Component implements HasForms, HasTable
     public function table(Table $table)
     {
         return $table
-            ->query(fn() => StudentAttendance::query()->whereHas('studentCompany', fn($query) => $query->where('student_id', $this->studentId))->with(['studentCompany', 'studentReport']))
+            ->query(fn() => StudentAttendance::query()->whereHas('studentCompany', fn($query) => $query->where('student_id', $this->studentId))->with(['studentCompany', 'studentReport'])->whereHas('studentCompany.registration', fn($query) => $query->where('year', app(GeneralSettings::class)->year)))
             ->columns([
                 TextColumn::make('studentCompany.student.name')
                     ->label(__('Student Name'))
