@@ -48,6 +48,7 @@ class LeaveRequestResource extends JsonResource
             'university_supervisor_comment' => $this->university_supervisor_comment,
             'rejection_reason'              => $this->rejection_reason,
             'attachment_file'               => $this->getAttachmentFileAttribute(),
+            'student_company'               => $this->whenLoaded('studentCompany'),
             'created_by'                    => $this->whenLoaded('createdBy'),
         ];
     }
