@@ -869,3 +869,14 @@ textarea,
     position: relative;
 }
 
+header, .navbar-floating header {
+    position: sticky;
+    top: 0px;
+    z-index: 20;
+}
+
+/* منع ترويسات Filament من أن تصبح Sticky بسبب كود خارجي */
+.fi-section-header {
+    position: static !important;
+    z-index: auto !important;
+}
