@@ -41,7 +41,11 @@ class StudentAttendanceResource extends JsonResource
     public static function allowedFields(): array
     {
         return [
-            'id', 'student_company_id', 'attendance_date', 'status', 'description',
+            'id',
+            'student_company_id',
+            'attendance_date',
+            'status',
+            'description',
         ];
     }
 
@@ -51,7 +55,7 @@ class StudentAttendanceResource extends JsonResource
             AllowedFilter::exact('id'),
             AllowedFilter::exact('student_company_id'),
             AllowedFilter::exact('status'),
-            AllowedFilter::scope('date_between'), // يستخدم الـ Scope في الموديل
+            AllowedFilter::scope('date_between'),
             AllowedFilter::exact('attendance_date'),
         ];
     }

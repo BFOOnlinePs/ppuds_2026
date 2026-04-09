@@ -19,7 +19,7 @@ class PaymentResource extends JsonResource
             'status'             => $this->status,
             'status_label'       => $this->status?->getLabel(), // إذا كان الـ Enum يدعم getLabel
             'reference_id'       => $this->reference_id,
-            'student_notes'       => $this->student_notes,
+            'student_notes'      => $this->student_notes,
             'company_notes'      => $this->company_notes,
             'receipt_url'        => $this->image, // Accessor from Payment model: getImageAttribute
             'created_by'         => $this->created_by,
@@ -36,7 +36,14 @@ class PaymentResource extends JsonResource
     public static function allowedFields(): array
     {
         return [
-            'id', 'student_company_id', 'payment_value', 'currency_id', 'status', 'reference_id', 'created_by', 'created_at'
+            'id',
+            'student_company_id',
+            'payment_value',
+            'currency_id',
+            'status',
+            'reference_id',
+            'created_by',
+            'created_at'
         ];
     }
 
@@ -66,6 +73,7 @@ class PaymentResource extends JsonResource
     {
         return [
             'studentCompany',
+            'studentCompany.student',
             'currency',
             'supervisor',
             'createdBy'

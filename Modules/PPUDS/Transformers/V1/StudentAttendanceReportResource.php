@@ -40,6 +40,7 @@ class StudentAttendanceReportResource extends JsonResource
             'submit_latitude'           => $this->submit_latitude,
             'submit_longitude'          => $this->submit_longitude,
             'file_report'               => $this->getMultipleImage(),
+            'student_attendance'        => new StudentAttendanceResource($this->whenLoaded('studentAttendance')),
             'created_by'                => $this->whenLoaded('createdBy'),
         ];
     }
@@ -85,6 +86,10 @@ class StudentAttendanceReportResource extends JsonResource
     {
         return [
             'createdBy',
+            'studentAttendance',
+            'studentAttendance.studentCompany',
+            'studentAttendance.studentCompany.student',
+            'studentAttendance.studentCompany.company',
         ];
     }
 }
