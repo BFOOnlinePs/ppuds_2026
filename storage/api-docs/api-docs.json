@@ -8506,13 +8506,13 @@
             }
         },
         "/api/v1/ppuds/attendances/{id}": {
-            "put": {
+            "patch": {
                 "tags": [
                     "Student Attendances"
                 ],
                 "summary": "Update Student Attendance",
                 "description": "Update Student Attendance\n\nUpdate an existing student attendance record's details.",
-                "operationId": "8df0827c96711601fd34f5a16b73e8ef",
+                "operationId": "b08bb25faff3299e13afc22d1ebbe7fb",
                 "parameters": [
                     {
                         "name": "id",
