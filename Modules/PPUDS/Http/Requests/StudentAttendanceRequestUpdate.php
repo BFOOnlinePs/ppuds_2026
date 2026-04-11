@@ -19,19 +19,19 @@ class StudentAttendanceRequestUpdate extends FormRequest
     {
         return [
             'attendance_date' => [
-                'nullable',
+                'sometimes',
                 'date',
             ],
 
-            'status'          => ['required', 'integer', 'in:' . implode(',', array_column(AttendanceStatus::cases(), 'value'))],
+            'status'          => ['sometimes', 'integer', 'in:' . implode(',', array_column(AttendanceStatus::cases(), 'value'))],
 
             'check_in' => [
-                'nullable',
+                'sometimes',
                 'date_format:Y-m-d H:i:s',
             ],
 
             'check_out' => [
-                'nullable',
+                'sometimes',
                 'date_format:Y-m-d H:i:s',
                 'after:check_in',
             ],
@@ -55,7 +55,7 @@ class StudentAttendanceRequestUpdate extends FormRequest
             ],
 
             'description' => [
-                'nullable',
+                'sometimes',
                 'string',
                 'max:500',
             ],
