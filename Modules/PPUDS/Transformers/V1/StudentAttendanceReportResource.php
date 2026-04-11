@@ -70,6 +70,12 @@ class StudentAttendanceReportResource extends JsonResource
             AllowedFilter::exact('created_by'),
             AllowedFilter::exact('created_at'),
             AllowedFilter::scope('today'),
+
+            AllowedFilter::callback('student_company_id', function ($query, $value) {
+                $query->whereHas('studentAttendance', function ($q) use ($value) {
+                    $q->where('student_company_id', $value);
+                });
+            }),
         ];
     }
 
