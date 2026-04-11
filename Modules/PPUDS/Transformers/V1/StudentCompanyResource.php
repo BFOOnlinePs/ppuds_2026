@@ -5,6 +5,8 @@ namespace Modules\PPUDS\Transformers\V1;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Modules\Branch\Transformers\V1\BranchResource;
+use Modules\Core\Transformers\V1\UserResource;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
 
@@ -13,22 +15,21 @@ class StudentCompanyResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'registration_id' => $this->registration_id,
-            'student_id' => $this->student_id,
-            'company_id' => $this->company_id,
-            'branch_id' => $this->branch_id,
-            'department_id' => $this->department_id,
-            'status' => $this->status,
-            'created_by' => $this->created_by,
-            'created_at' => $this->created_at,
+            'id'                => $this->id,
+            'registration_id'   => $this->registration_id,
+            'student_id'        => $this->student_id,
+            'company_id'        => $this->company_id,
+            'branch_id'         => $this->branch_id,
+            'department_id'     => $this->department_id,
+            'status'            => $this->status,
+            'created_by'        => $this->created_by,
+            'created_at'        => $this->created_at,
 
-            // تحميل العلاقات عند الطلب
-            'registration' => $this->whenLoaded('registration'), // يمكن تفصيلها لريسورس آخر
-            'student' => $this->whenLoaded('student'),      // Student Resource
-            'company' => new CompanyResource($this->whenLoaded('company')),
-            'branch' => $this->whenLoaded('branch'),
-            'department' => new CompanyDepartmentResource($this->whenLoaded('department')),
+            'registration'      => new RegistrationResource($this->whenLoaded('registration')),
+            'student'           => new UserResource($this->whenLoaded('student')),
+            'company'           => new CompanyResource($this->whenLoaded('company')),
+            'branch'            => new BranchResource($this->whenLoaded('branch')),
+            'department'        => new CompanyDepartmentResource($this->whenLoaded('department')),
         ];
     }
 
