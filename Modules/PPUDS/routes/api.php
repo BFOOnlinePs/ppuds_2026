@@ -64,6 +64,7 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
                 ->as('attendances.')
                 ->group(function () {
                     Route::get('/', 'index')->name('index');
+                    Route::patch('/{studentAttendance}', 'update')->name('update');
                     Route::post('/check-in', 'checkIn')->name('check-in');
                     Route::post('/check-out', 'checkOut')->name('check-out');
 

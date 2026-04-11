@@ -123,6 +123,76 @@ class StudentAttendanceController extends Controller
     }
 
     /**
+     * Update Student Attendance
+     *
+     * Update an existing student attendance record's details.
+     *
+     * @OA\Put(
+     * path="/api/v1/ppuds/attendances/{id}",
+     * summary="Update Student Attendance",
+     * tags={"Student Attendances"},
+     * security={{"sanctum": {}}},
+     * @OA\Parameter(
+     * name="id",
+     * in="path",
+     * description="ID of the attendance record to update",
+     * required=true,
+     * @OA\Schema(type="integer", example=1)
+     * ),
+     * @OA\RequestBody(
+     * required=true,
+     * description="Data to update the attendance record",
+     * @OA\JsonContent(
+     * @OA\Property(property="status", type="string", example="present", description="Update attendance status (e.g. present, absent, late, excused)"),
+     * @OA\Property(property="description", type="string", example="Updated description for this attendance", description="Update notes/description")
+     * )
+     * ),
+     * @OA\Response(
+     * response=200,
+     * description="Attendance updated successfully",
+     * @OA\JsonContent(
+     * type="object",
+     * @OA\Property(property="status", type="boolean", example=true),
+     * @OA\Property(property="message", type="string", example="Attendance updated successfully"),
+     * @OA\Property(
+     * property="data",
+     * type="object",
+     * @OA\Property(property="id", type="integer", example=1),
+     * @OA\Property(property="student_company_id", type="integer", example=5),
+     * @OA\Property(property="status", type="string", example="present"),
+     * @OA\Property(property="description", type="string", example="Updated description for this attendance")
+     * )
+     * )
+     * ),
+     * @OA\Response(
+     * response=404,
+     * description="Attendance record not found",
+     * @OA\JsonContent(
+     * @OA\Property(property="message", type="string", example="Record not found.")
+     * )
+     * ),
+     * @OA\Response(
+     * response=422,
+     * description="Validation Error",
+     * @OA\JsonContent(
+     * @OA\Property(property="message", type="string", example="The given data was invalid.")
+     * )
+     * ),
+     * @OA\Response(response=401, description="Unauthenticated")
+     * )
+     */
+    public function update(StudentAttendanceRequest $request, StudentAttendance $studentAttendance)
+    {
+        $studentAttendance->update($request->validated());
+
+        return $this->successResponse(
+            new StudentAttendanceResource($studentAttendance),
+            __('Attendance updated successfully')
+        );
+    }
+
+
+    /**
      * Student Check-In
      *
      * Record a student's arrival at the company location.
