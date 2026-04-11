@@ -25,11 +25,11 @@ class StudentCompanyResource extends JsonResource
             'created_by'        => $this->created_by,
             'created_at'        => $this->created_at,
 
-            'registration'      => new RegistrationResource($this->whenLoaded('registration')),
-            'student'           => new UserResource($this->whenLoaded('student')),
-            'company'           => new CompanyResource($this->whenLoaded('company')),
-            'branch'            => new BranchResource($this->whenLoaded('branch')),
-            'department'        => new CompanyDepartmentResource($this->whenLoaded('department')),
+            'registration'      => RegistrationResource::make($this->whenLoaded('registration')),
+            'student'           => UserResource::make($this->whenLoaded('student')),
+            'company'           => CompanyResource::make($this->whenLoaded('company')),
+            'branch'            => BranchResource::make($this->whenLoaded('branch')),
+            'department'        => CompanyDepartmentResource::make($this->whenLoaded('department')),
         ];
     }
 
