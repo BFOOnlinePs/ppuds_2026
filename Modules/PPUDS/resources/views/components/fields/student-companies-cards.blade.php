@@ -40,24 +40,26 @@
 
 <div>
     @if ($this->getStudentCompanies()->isNotEmpty())
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             @foreach ($this->getStudentCompanies() as $studentCompany)
                 <a href="#"
-                    class="flex flex-col items-center bg-neutral-primary-soft border border-default rounded-base shadow-xs md:flex-row md:max-w-xl md:flex-row md:max-w-xl">
-                    <img class="object-cover w-32 rounded-base p-5 h-32 md:h-auto md:w-48 mb-4 md:mb-0"
+                    class="flex flex-col items-center w-full bg-neutral-primary-soft border border-default rounded-base shadow-xs md:flex-row">
+
+                    <img class="object-cover w-32 h-32 p-5 mb-4 rounded-base md:h-auto md:w-48 md:mb-0"
                         src="{{ $studentCompany->company->getImageAttribute() }}" alt="">
-                    <div class="flex flex-col justify-between md:p-4 leading-normal">
+
+                    <div class="flex flex-col justify-between flex-1 p-4 leading-normal text-right">
                         <h5 class="mb-2 text-2xl font-bold tracking-tight text-heading">{{ $studentCompany->company->name }}</h5>
                         <p class="mb-6 text-body">
-                            {{ $studentCompany->description ?? 'اضغط هنا لعرض تفاصيل الشركة' }}</p>
-
+                            {{ $studentCompany->description ?? 'اضغط هنا لعرض تفاصيل الشركة' }}
+                        </p>
                     </div>
                 </a>
             @endforeach
         </div>
     @else
         <div
-            class="p-6 text-center text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+            class="p-6 text-center text-gray-500 border border-gray-200 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 rounded-xl dark:border-gray-700">
             {{ __('No Company Registered') }}
         </div>
     @endif
