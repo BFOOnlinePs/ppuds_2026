@@ -54,10 +54,10 @@ class StudentCompanyResource extends JsonResource
             AllowedFilter::exact('registration_id'),
             AllowedFilter::exact('student_id'),
             AllowedFilter::exact('company_id'),
+            AllowedFilter::exact('branch_id'),
             AllowedFilter::exact('status'),
 
             AllowedFilter::callback('company_supervisor', function (Builder $query, $value) {
-
                 $query->whereHas('branch', function ($branchQuery) use ($value) {
                     $branchQuery->whereHas('departments', function ($departmentQuery) use ($value) {
                         $departmentQuery->where('user_id', $value);
