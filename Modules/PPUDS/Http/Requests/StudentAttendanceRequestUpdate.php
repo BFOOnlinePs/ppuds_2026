@@ -6,7 +6,6 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\AttendanceStatus;
-use Modules\PPUDS\Enums\Enums\CompanyStatus;
 
 class StudentAttendanceRequestUpdate extends FormRequest
 {
@@ -23,7 +22,7 @@ class StudentAttendanceRequestUpdate extends FormRequest
                 'date',
             ],
 
-            'status'          => ['sometimes', 'integer', 'in:' . implode(',', array_column(AttendanceStatus::cases(), 'value'))],
+            'status' => ['sometimes', 'integer', 'in:'.implode(',', array_column(AttendanceStatus::cases(), 'value'))],
 
             'check_in' => [
                 'sometimes',
