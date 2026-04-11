@@ -36,17 +36,16 @@ class StudentAttendance extends Model
     ];
 
     protected $casts = [
-        // 1. تحويل التواريخ تلقائياً إلى Carbon Instances
-        'attendance_date' => 'date',
-        'check_in'        => 'datetime',
-        'check_out'       => 'datetime',
+        'attendance_date'       => 'date',
+        'check_in'              => 'datetime',
+        'check_out'             => 'datetime',
 
-        'status'          => AttendanceStatus::class,
+        'status'                => AttendanceStatus::class,
 
-        'check_in_latitude'   => 'float',
-        'check_in_longitude'  => 'float',
-        'check_out_latitude'  => 'float',
-        'check_out_longitude' => 'float',
+        'check_in_latitude'     => 'float',
+        'check_in_longitude'    => 'float',
+        'check_out_latitude'    => 'float',
+        'check_out_longitude'   => 'float',
     ];
 
     public function getActivitylogOptions(): LogOptions

@@ -127,7 +127,7 @@ class StudentAttendanceController extends Controller
      *
      * Update an existing student attendance record's details.
      *
-     * @OA\Put(
+     * @OA\PATCH(
      * path="/api/v1/ppuds/attendances/{id}",
      * summary="Update Student Attendance",
      * tags={"Student Attendances"},
