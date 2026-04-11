@@ -7,6 +7,7 @@ use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\StudentAttendance;
 use Modules\PPUDS\Enums\AttendanceStatus;
 use Modules\PPUDS\Http\Requests\StudentAttendanceRequest;
+use Modules\PPUDS\Http\Requests\StudentAttendanceRequestUpdate;
 use Modules\PPUDS\Transformers\V1\StudentAttendanceResource;
 use Spatie\QueryBuilder\QueryBuilder;
 
@@ -181,7 +182,7 @@ class StudentAttendanceController extends Controller
      * @OA\Response(response=401, description="Unauthenticated")
      * )
      */
-    public function update(StudentAttendanceRequest $request, StudentAttendance $studentAttendance)
+    public function update(StudentAttendanceRequestUpdate $request, StudentAttendance $studentAttendance)
     {
         $studentAttendance->update($request->validated());
 

@@ -7,7 +7,7 @@ use Illuminate\Validation\Rule;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\Enums\CompanyStatus;
 
-class StudentAttendanceRequest extends FormRequest
+class StudentAttendanceRequestUpdate extends FormRequest
 {
     public function authorize(): bool
     {
