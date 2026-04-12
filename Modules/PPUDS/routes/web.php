@@ -90,6 +90,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     Route::get('/', Index::class)->name('index')->can('StudentCompany View List');
                     Route::get('/add', Add::class)->name('add')->can('StudentCompany Create');
                     Route::get('/{studentCompany}/edit', Edit::class)->name('edit')->can('StudentCompany Update');
+                    Route::get('/{studentCompany}/details', Details::class)->name('details')->can('StudentCompany Details');
                 });
 
                 Route::group([
@@ -149,7 +150,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         Route::get('/', Index::class)->name('index');
                     });
 
-                    // Route::get('/chats', \Wirechat\Wirechat\Livewire\Chats\Chats::class)->name('chats'); 
+                    // Route::get('/chats', \Wirechat\Wirechat\Livewire\Chats\Chats::class)->name('chats');
                     Route::get('/{conversation}', \Wirechat\Wirechat\Livewire\Chat\Chat::class)->name('show');
                 });
 

@@ -291,9 +291,13 @@ class PermissionSeeder extends Seeder
                 'guard_name' => 'web',
                 'module_name' => 'StudentCompany',
             ],
+            [
+                'name' => 'StudentCompany Details',
+                'guard_name' => 'web',
+                'module_name' => 'StudentCompany',
+            ],
 
-
-            // TODO FieldVisit
+            // TODO FieldVisit StudentCompany Details
             [
                 'name' => 'FieldVisit View List',
                 'guard_name' => 'web',

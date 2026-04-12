@@ -42,7 +42,7 @@
     @if ($this->getStudentCompanies()->isNotEmpty())
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             @foreach ($this->getStudentCompanies() as $studentCompany)
-                <a href="#"
+                <a href="{{ route('student-companies.details', $studentCompany->id) }}"
                     class="flex flex-col items-center w-full bg-neutral-primary-soft border border-default rounded-base shadow-xs md:flex-row">
 
                     <img class="object-cover w-32 h-32 p-5 mb-4 rounded-base md:h-auto md:w-48 md:mb-0"
