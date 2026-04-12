@@ -64,13 +64,13 @@ class ReportController extends Controller
             ->allowedSorts(ReportResource::allowedSorts())
             ->allowedIncludes(ReportResource::allowedIncludes())
             ->with([
-                'registration', 
-                'student', 
-                'student.studentProfile', 
-                'company', 
-                'branch', 
-                'branch.workingHours', 
-                'department', 
+                'registration',
+                'student',
+                'student.studentProfile',
+                'company',
+                'branch',
+                'branch.workingHours',
+                'department',
                 'attendances'
             ])
             ->paginate($perPage)
@@ -120,13 +120,13 @@ class ReportController extends Controller
             ->allowedFields(ReportResource::allowedFields())
             ->allowedIncludes(ReportResource::allowedIncludes())
             ->with([
-                'registration', 
-                'student', 
-                'student.studentProfile', 
-                'company', 
-                'branch', 
-                'branch.workingHours', 
-                'department', 
+                'registration',
+                'student',
+                'student.studentProfile',
+                'company',
+                'branch',
+                'branch.workingHours',
+                'department',
                 'attendances'
             ])
             ->firstOrFail();

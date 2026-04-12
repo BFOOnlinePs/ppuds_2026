@@ -374,7 +374,7 @@
     "Brief description of the group...": "وصف مختصر للمجموعة...",
     "Group Chat": "دردشة جماعية",
     "Chat Messages": "رسائل المحادثة",
-    
+
     "Note Content": "محتوى الملاحظة",
     "Note Title": "عنوان الملاحظة",
     "Enter a brief title for your note...": "أدخل عنواناً مختصراً لملاحظتك...",
@@ -417,5 +417,10 @@
     "To Attendance Days": "أيام الحضور إلى",
     "Semester Type": "نوع الفصل الدراسي",
 
-    "Pending": "قيد الانتظار"
+    "Pending": "قيد الانتظار",
+
+    "Attendance": "الحضور",
+    "Attendance Reports": "تقارير الحضور",
+    "Training Summary": "ملخص التدريب",
+    "Payments": "المدفوعات"
 }

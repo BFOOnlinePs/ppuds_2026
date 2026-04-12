@@ -36,10 +36,13 @@ class Index extends Component implements HasForms, HasTable
     use InteractsWithForms;
     use InteractsWithTable;
 
+    public array $filters = [];
+
     public function table(Table $table)
     {
         return $table
-            ->query(fn () => StudentAttendance::query()->with(['studentCompany', 'studentReport']))
+            ->query(fn () => StudentAttendance::query()->with(['studentCompany', 'studentReport'])
+                ->where($this->filters))
             ->columns([
                 TextColumn::make('studentCompany.student.name')
                     ->label(__('Student Name'))
