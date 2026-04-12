@@ -5,6 +5,7 @@ namespace Modules\PPUDS\Livewire\Pages\StudentCompany;
 use App\View\Components\AppLayout;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Infolists\Components\Grid;
 use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\Livewire;
 use Filament\Infolists\Components\Section;
@@ -95,37 +96,69 @@ class Details extends Component implements HasForms, HasInfolists
                         Tabs\Tab::make('attendance-reports')
                             ->label(__('Attendance Reports'))
                             ->schema([
-
+                                Livewire::make(\Modules\PPUDS\Livewire\Pages\StudentAttendanceReport\Index::class, [
+                                    'filters' => [
+                                        'student_company_id' => $this->studentCompanyModel->id,
+                                    ],
+                                ]),
                             ]),
                         Tabs\Tab::make('training-summary')
                             ->label(__('Training Summary'))
+                            ->icon('heroicon-m-clipboard-document-check')
                             ->schema([
-                                TextEntry::make('attendance_days')
-                                    ->label(__('Attendance Days'))
-                                    ->columnSpanFull(),
+                                Grid::make(['default' => 1, 'md' => 2])
+                                    ->schema([
 
-                                TextEntry::make('actual_working_hours')
-                                    ->label(__('Actual Working Hours'))
-                                    ->columnSpanFull(),
+                                        Section::make(__('Attendance Details'))
+                                            ->icon('heroicon-m-briefcase')
+                                            ->schema([
+                                                TextEntry::make('attendance_days')
+                                                    ->label(__('Attendance Days'))
+                                                    ->icon('heroicon-m-calendar-days')
+                                                    ->weight('bold')
+                                                    ->color('success')
+                                                    ->size('lg'),
 
-                                TextEntry::make('registration.semester')
-                                    ->label(__('Semester'))
-                                    ->badge()
-                                    ->columnSpanFull(),
+                                                TextEntry::make('actual_working_hours')
+                                                    ->label(__('Actual Working Hours'))
+                                                    ->icon('heroicon-m-clock')
+                                                    ->weight('bold')
+                                                    ->color('info')
+                                                    ->size('lg'),
+                                            ])->columns(2),
 
-                                TextEntry::make('registration.year')
-                                    ->label(__('Year'))
-                                    ->columnSpanFull(),
+                                        Section::make(__('Academic Info'))
+                                            ->icon('heroicon-m-academic-cap')
+                                            ->schema([
+                                                TextEntry::make('registration.semester')
+                                                    ->label(__('Semester'))
+                                                    ->badge(),
+
+                                                TextEntry::make('registration.year')
+                                                    ->label(__('Year'))
+                                                    ->icon('heroicon-m-calendar')
+                                                    ->weight('semibold'),
+                                            ])->columns(2),
+
+                                    ]),
                             ]),
                         Tabs\Tab::make('payments')
                             ->label(__('Payments'))
                             ->schema([
-                                // ...
+                                Livewire::make(\Modules\PPUDS\Livewire\Pages\Payment\Index::class, [
+                                    'filters' => [
+                                        'student_company_id' => $this->studentCompanyModel->id,
+                                    ],
+                                ]),
                             ]),
                         Tabs\Tab::make('leave-requests')
                             ->label(__('Leave Requests'))
                             ->schema([
-                                // ...
+                                Livewire::make(\Modules\PPUDS\Livewire\Pages\LeaveRequest\Index::class, [
+                                    'filters' => [
+                                        'student_company_id' => $this->studentCompanyModel->id,
+                                    ],
+                                ]),
                             ]),
                     ]),
             ]);

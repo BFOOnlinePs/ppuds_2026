@@ -123,7 +123,7 @@ class PaymentController extends Controller
      * @OA\Post(
      * path="/api/v1/ppuds/payments/{payment}",
      * summary="Update an existing payment",
-     * description="Update payment details including receipt image. 
+     * description="Update payment details including receipt image.
      * **Note:** You must use `POST` method with `_method` parameter set to `PUT` or `PATCH` to support file uploads in PHP.",
      * tags={"Payments"},
      * security={{"sanctum": {}}},

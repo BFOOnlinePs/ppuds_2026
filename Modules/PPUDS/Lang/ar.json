@@ -422,5 +422,13 @@
     "Attendance": "الحضور",
     "Attendance Reports": "تقارير الحضور",
     "Training Summary": "ملخص التدريب",
-    "Payments": "المدفوعات"
+    "Payments": "المدفوعات",
+
+    "Reference ID": "معرف المرجع",
+    "Payment Value": "قيمة الدفعة",
+
+    "University Status": "حالة الجامعة",
+
+    "Attendance Details": "تفاصيل الحضور",
+    "Academic Info": "المعلومات الأكاديمية"
 }
