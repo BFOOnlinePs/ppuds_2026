@@ -40,7 +40,11 @@ class Index extends Component implements HasForms, HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn() => StudentCompany::query()->with(['registration.student', 'registration', 'registration.course', 'company', 'branch']))
+            ->query(fn() => StudentCompany::query()->with(['registration.student', 'registration', 'registration.course', 'company', 'branch'])->when(auth()->user()->hasRole('Student'), function (Builder $query) {
+                $query->whereHas('registration.student', function (Builder $q) {
+                    $q->where('id', auth()->id());
+                });
+            }))
             ->columns([
                 TextColumn::make('registration.student.name')
                     ->label(__('Student'))
