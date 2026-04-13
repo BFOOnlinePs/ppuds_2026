@@ -7805,7 +7805,7 @@
                     "Payments"
                 ],
                 "summary": "Update an existing payment",
-                "description": "Update payment details including receipt image. \n     * **Note:** You must use `POST` method with `_method` parameter set to `PUT` or `PATCH` to support file uploads in PHP.",
+                "description": "Update payment details including receipt image.\n     * **Note:** You must use `POST` method with `_method` parameter set to `PUT` or `PATCH` to support file uploads in PHP.",
                 "operationId": "8e132416760fa38a27d236f7a05a3a25",
                 "parameters": [
                     {
@@ -8345,6 +8345,145 @@
                                 }
                             }
                         }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/settings": {
+            "get": {
+                "tags": [
+                    "Settings"
+                ],
+                "summary": "Get general settings",
+                "description": "Retrieve all general system settings including semester dates and status configurations.",
+                "operationId": "71df1e440a0c1d8c565e5c71a101a7d4",
+                "parameters": [
+                    {
+                        "name": "Accept-Language",
+                        "in": "header",
+                        "description": "Language header (ar or en)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "default": "ar",
+                            "example": "en"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Settings retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "General settings retrieved successfully"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Settings"
+                ],
+                "summary": "Update general settings",
+                "description": "Update the global system settings. Use PUT to update the settings object.",
+                "operationId": "7cac25f5075ea408ffa125e08ef6f903",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "semester_type": {
+                                        "description": "Enum value from SemesterType",
+                                        "type": "string",
+                                        "example": "first_semester"
+                                    },
+                                    "report_status": {
+                                        "description": "Enum value from ReportStatus",
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "login_method": {
+                                        "description": "Enum value from LoginMethod",
+                                        "type": "string",
+                                        "example": "sso"
+                                    },
+                                    "giz_evaluation_status": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "start_semester": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2024-01-01"
+                                    },
+                                    "end_semester": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2024-06-01"
+                                    },
+                                    "maintenance_mode": {
+                                        "type": "boolean",
+                                        "example": false
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Settings updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "General settings updated successfully"
+                                        },
+                                        "data": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
                     }
                 },
                 "security": [
@@ -10809,6 +10948,10 @@
         {
             "name": "Reports",
             "description": "Reports"
+        },
+        {
+            "name": "Settings",
+            "description": "Settings"
         },
         {
             "name": "Student Companies",
