@@ -93,6 +93,6 @@ class StudentAttendanceResource extends JsonResource
 
     public static function allowedIncludes(): array
     {
-        return ['studentCompany', 'studentCompany.student', 'createdBy'];
+        return ['studentCompany', 'studentCompany.student', 'createdBy', 'studentCompany.company'];
     }
 }
