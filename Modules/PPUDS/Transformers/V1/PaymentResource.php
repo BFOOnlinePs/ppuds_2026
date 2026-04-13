@@ -2,6 +2,7 @@
 
 namespace Modules\PPUDS\Transformers\V1;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -56,6 +57,27 @@ class PaymentResource extends JsonResource
             AllowedFilter::exact('status'),
             AllowedFilter::exact('supervisor_id'),
             AllowedFilter::exact('created_by'),
+
+            AllowedFilter::callback('student_id', function (Builder $query, $value) {
+                $query->whereHas('studentCompany.registration', function ($query) use ($value) {
+                    $query->where('student_id', $value);
+                });
+            }),
+            AllowedFilter::callback('company_id', function (Builder $query, $value) {
+                $query->whereHas('studentCompany.registration', function ($query) use ($value) {
+                    $query->where('company_id', $value);
+                });
+            }),
+            AllowedFilter::callback('semester', function (Builder $query, $value) {
+                $query->whereHas('studentCompany.registration', function ($query) use ($value) {
+                    $query->where('semester', $value);
+                });
+            }),
+            AllowedFilter::callback('year', function (Builder $query, $value) {
+                $query->whereHas('studentCompany.registration', function ($query) use ($value) {
+                    $query->where('year', $value);
+                });
+            }),
         ];
     }
 

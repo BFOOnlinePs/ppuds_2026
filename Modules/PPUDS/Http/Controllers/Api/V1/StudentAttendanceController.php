@@ -108,6 +108,7 @@ class StudentAttendanceController extends Controller
      * @OA\Response(response=401, description="Unauthenticated")
      * )
      */
+
     public function index()
     {
         $attendances = QueryBuilder::for(StudentAttendance::class)
