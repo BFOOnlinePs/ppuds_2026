@@ -197,7 +197,8 @@ class User extends Authenticatable implements HasMedia, WirechatUser
             ->useFallbackUrl($fallbackDataUrl);
 
         $this->addMediaCollection('cover_photo')
-        ->singleFile();
+            ->singleFile()
+            ->useFallbackUrl($fallbackDataUrl);
     }
 
     protected function getDefaultRandomColor(): string
