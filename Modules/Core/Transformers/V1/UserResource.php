@@ -25,6 +25,7 @@ class UserResource extends JsonResource
             'email'             => $this->email,
             'phone'             => $this->phone,
             'image'             => $this->getProfileImageUrlAttribute(),
+            'cover_photo'       => $this->getFirstMediaUrl('cover_photo'),
             'point_balance'     => $this->getPointBalance(),
             'branch_id'         => $this->branch_id,
             'roles'             => $this->whenLoaded('roles'),

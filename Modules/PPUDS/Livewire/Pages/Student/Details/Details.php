@@ -287,11 +287,13 @@ class Details extends Component implements HasForms, HasInfolists
 
     public function save()
     {
-        $this->authorize('update');
+        // $this->authorize('');
 
         $this->validate();
 
         $data = $this->form->getState();
+
+        dd($data);
 
         DB::transaction(function () use ($data) { // أضف use ($data) هنا
 
