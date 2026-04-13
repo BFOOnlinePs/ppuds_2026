@@ -293,22 +293,16 @@ class Details extends Component implements HasForms, HasInfolists
 
         $data = $this->form->getState();
 
-        DB::transaction(function () use ($data) { // أضف use ($data) هنا
+        DB::transaction(function () use ($data) {
 
-            // بما أننا نقوم بالتحديث، الأفضل استخدام update بدلاً من firstOrCreate
             $user = $this->userRecord;
-
-            $updateData = [
-                'name' => $data['name'],
-                'email' => $data['email'],
-            ];
 
             // تحديث الباسورد فقط إذا تم إدخال باسورد جديد
             if (!empty($data['password'])) {
                 $updateData['password'] = Hash::make($data['password']);
             }
 
-            $user->update($updateData);
+            // $user->update($updateData);
 
             $this->form->model($user)->saveRelationships();
 
