@@ -12,7 +12,6 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Intervention\Image\Encoders\PngEncoder;
 use Laravel\Fortify\TwoFactorAuthenticatable;
-use Laravel\Jetstream\HasProfilePhoto;
 use Laravel\Sanctum\HasApiTokens;
 use Laravolt\Avatar\Avatar;
 use Modules\Customer\Entities\Customer;
@@ -29,8 +28,6 @@ use Wirechat\Wirechat\Panel;
 use Wirechat\Wirechat\Traits\InteractsWithWirechat;
 
 /**
- *
- *
  * @property int $id
  * @property string $name
  * @property string $email
@@ -52,6 +49,7 @@ use Wirechat\Wirechat\Traits\InteractsWithWirechat;
  * @property-read string $profile_photo_url
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
  * @property-read int|null $tokens_count
+ *
  * @method static \Database\Factories\UserFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User newQuery()
@@ -69,6 +67,7 @@ use Wirechat\Wirechat\Traits\InteractsWithWirechat;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereTwoFactorRecoveryCodes($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereTwoFactorSecret($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereUpdatedAt($value)
+ *
  * @mixin \Eloquent
  */
 class User extends Authenticatable implements HasMedia, WirechatUser
@@ -77,11 +76,12 @@ class User extends Authenticatable implements HasMedia, WirechatUser
 
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory;
+
+    use HasRoles;
+    use InteractsWithMedia;
+    use InteractsWithWirechat;
     use Notifiable;
     use TwoFactorAuthenticatable;
-    use InteractsWithMedia;
-    use HasRoles;
-    use InteractsWithWirechat;
 
     /**
      * The attributes that are mass assignable.
@@ -97,7 +97,7 @@ class User extends Authenticatable implements HasMedia, WirechatUser
         'password',
         'branch_id',
         'point_balance',
-        'loyalty_tier_id'
+        'loyalty_tier_id',
     ];
 
     /**
@@ -118,7 +118,7 @@ class User extends Authenticatable implements HasMedia, WirechatUser
      * @var array<int, string>
      */
     protected $appends = [
-//        'profile_photo_url',
+        //        'profile_photo_url',
     ];
 
     /**
@@ -177,27 +177,27 @@ class User extends Authenticatable implements HasMedia, WirechatUser
         }
 
         $pngData = $this->generateDefaultAvatar();
-        return 'data:image/png;base64,' . base64_encode($pngData);
+
+        return 'data:image/png;base64,'.base64_encode($pngData);
     }
 
     protected function getAvatarName(): string
     {
         return $this->name
-            ?: ($this->email ? explode('@', $this->email)[0] : 'User_' . $this->id);
+            ?: ($this->email ? explode('@', $this->email)[0] : 'User_'.$this->id);
     }
 
     public function registerMediaCollections(): void
     {
         $pngData = $this->generateDefaultAvatar();
-        $fallbackDataUrl = 'data:image/png;base64,' . base64_encode($pngData);
+        $fallbackDataUrl = 'data:image/png;base64,'.base64_encode($pngData);
 
         $this->addMediaCollection('avatar')
             ->singleFile()
             ->useFallbackUrl($fallbackDataUrl);
 
         $this->addMediaCollection('cover_photo')
-            ->singleFile()
-            ->useFallbackUrl($fallbackDataUrl);
+        ->singleFile();
     }
 
     protected function getDefaultRandomColor(): string
@@ -219,7 +219,7 @@ class User extends Authenticatable implements HasMedia, WirechatUser
         $isArabic = (bool) preg_match('/[\p{Arabic}]/u', $name);
 
         // Get the first letter of the first word
-        if (!empty($words[0])) {
+        if (! empty($words[0])) {
             $initialsArray[] = mb_strtoupper(mb_substr($words[0], 0, 1));
         }
 
@@ -257,7 +257,7 @@ class User extends Authenticatable implements HasMedia, WirechatUser
             ->setFontSize(70)
             ->getImageObject();
 
-        return (string) $image->encode(new PngEncoder());
+        return (string) $image->encode(new PngEncoder);
     }
 
     public function generateAvatar(): void
@@ -279,7 +279,9 @@ class User extends Authenticatable implements HasMedia, WirechatUser
 
         // حوّل البيانات الثنائية إلى رابط بيانات
         $pngData = $this->generateDefaultAvatar();
-        return 'data:image/png;base64,' . base64_encode($pngData); $this->getFirstMediaUrl('avatar') ?: $this->generateDefaultAvatar();
+
+        return 'data:image/png;base64,'.base64_encode($pngData);
+        $this->getFirstMediaUrl('avatar') ?: $this->generateDefaultAvatar();
     }
 
     public function getUserDisplayHtmlAttribute(): \Illuminate\Support\HtmlString
@@ -337,16 +339,16 @@ class User extends Authenticatable implements HasMedia, WirechatUser
     public function activateModule($moduleName, $packageSource = null)
     {
         return $this->userModules()->updateOrCreate([
-            'module_name' => $moduleName
+            'module_name' => $moduleName,
         ], [
             'is_active' => true,
-            'package_source' => $packageSource
+            'package_source' => $packageSource,
         ]);
     }
 
     public function clinicProfile(): HasOne
     {
-        return $this->hasOne(Customer::class , 'user_id');
+        return $this->hasOne(Customer::class, 'user_id');
     }
 
     public function orders(): HasMany
@@ -361,14 +363,12 @@ class User extends Authenticatable implements HasMedia, WirechatUser
 
     public function loyaltyTier(): BelongsTo
     {
-        return $this->belongsTo(LoyaltyTier::class , 'loyalty_tier_id');
+        return $this->belongsTo(LoyaltyTier::class, 'loyalty_tier_id');
     }
 
-/**
- * Get the addresses associated with the customer.
- *
- * @return \Illuminate\Database\Eloquent\Relations\HasMany
- */
+    /**
+     * Get the addresses associated with the customer.
+     */
     public function customerAddresses(): HasMany
     {
         return $this->hasMany(CustomerAddress::class, 'user_id');
@@ -381,16 +381,16 @@ class User extends Authenticatable implements HasMedia, WirechatUser
 
     public function studentProfile(): HasOne
     {
-        return $this->hasOne(StudentProfile::class , 'user_id');
+        return $this->hasOne(StudentProfile::class, 'user_id');
     }
 
     public function studentCompanies(): HasMany
     {
-        return $this->hasMany(StudentCompany::class , 'student_id');
+        return $this->hasMany(StudentCompany::class, 'student_id');
     }
 
-//    public function routeNotificationForFcm()
-//    {
-//        return $this->getDeviceTokens();
-//    }
+    //    public function routeNotificationForFcm()
+    //    {
+    //        return $this->getDeviceTokens();
+    //    }
 }
