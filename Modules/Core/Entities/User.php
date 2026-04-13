@@ -219,12 +219,10 @@ class User extends Authenticatable implements HasMedia, WirechatUser
         $initialsArray = [];
         $isArabic = (bool) preg_match('/[\p{Arabic}]/u', $name);
 
-        // Get the first letter of the first word
         if (! empty($words[0])) {
             $initialsArray[] = mb_strtoupper(mb_substr($words[0], 0, 1));
         }
 
-        // Get the first letter of the last word if there's more than one word
         if (count($words) > 1) {
             $initialsArray[] = mb_strtoupper(mb_substr(end($words), 0, 1));
         }

@@ -293,8 +293,6 @@ class Details extends Component implements HasForms, HasInfolists
 
         $data = $this->form->getState();
 
-        dd($data);
-
         DB::transaction(function () use ($data) { // أضف use ($data) هنا
 
             // بما أننا نقوم بالتحديث، الأفضل استخدام update بدلاً من firstOrCreate
