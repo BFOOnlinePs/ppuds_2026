@@ -15,8 +15,11 @@ use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
@@ -30,6 +33,7 @@ use Modules\PPUDS\Entities\Major;
 use Modules\PPUDS\Entities\StudentAttendance;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\AttendanceStatus;
+use Modules\PPUDS\Enums\SemesterType;
 use Modules\PPUDS\Settings\GeneralSettings;
 
 class Index extends Component implements HasForms, HasTable
@@ -47,7 +51,7 @@ class Index extends Component implements HasForms, HasTable
     public function table(Table $table)
     {
         return $table
-            ->query(fn() => StudentAttendance::query()->whereHas('studentCompany', fn($query) => $query->where('student_id', $this->studentId))->with(['studentCompany', 'studentReport'])->whereHas('studentCompany.registration', fn($query) => $query->where('year', app(GeneralSettings::class)->year)))
+            ->query(fn () => StudentAttendance::query()->whereHas('studentCompany', fn ($query) => $query->where('student_id', $this->studentId))->with(['studentCompany.registration', 'studentReport']))
             ->columns([
                 TextColumn::make('studentCompany.student.name')
                     ->label(__('Student Name'))
@@ -76,15 +80,15 @@ class Index extends Component implements HasForms, HasTable
                 TextColumn::make('status')
                     ->label(__('Status'))
                     ->badge()
-                    ->formatStateUsing(fn(AttendanceStatus $state): string => $state->getLabel())
+                    ->formatStateUsing(fn (AttendanceStatus $state): string => $state->getLabel())
                     ->color(AttendanceStatus::class),
 
                 TextColumn::make('check_in_latitude')
                     ->label(__('Location'))
                     ->icon('heroicon-m-map-pin')
                     ->color('primary')
-                    ->formatStateUsing(fn() => __('View Map'))
-                    ->url(fn($record) => "https://www.google.com/maps?q={$record->check_in_latitude},{$record->check_in_longitude}")
+                    ->formatStateUsing(fn () => __('View Map'))
+                    ->url(fn ($record) => "https://www.google.com/maps?q={$record->check_in_latitude},{$record->check_in_longitude}")
                     ->openUrlInNewTab(),
 
                 TextColumn::make('description')
@@ -93,6 +97,8 @@ class Index extends Component implements HasForms, HasTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters($this->getTableFilters())
+            ->filtersLayout(FiltersLayout::AboveContent)
+            ->filtersFormColumns(3)
             ->actions(
                 $this->getTableActions()
             )
@@ -106,7 +112,7 @@ class Index extends Component implements HasForms, HasTable
                     ->form([
                         MapPicker::make('location')
                             ->label(__('Location'))
-                            ->default(['lat' => 32.2211, 'lng' => 35.2544]) // إبقاء نابلس كاحتياط
+                            ->default(['lat' => 32.2211, 'lng' => 35.2544])
                             ->defaultLocation(32.2211, 35.2544)
                             ->zoom(15)
                             ->draggable(false)
@@ -154,68 +160,6 @@ class Index extends Component implements HasForms, HasTable
                         Toaster::success('Checked In Successfully');
                     }),
 
-                //                CreateAction::make('create')
-                //                    ->label(__('Add Major'))
-                //                    ->form([
-                //                        Section::make(__('Attendance Information'))
-                //                            ->schema([
-                //                                Grid::make(2)->schema([
-                //                                    // اختيار الطالب المرتبط بالشركة
-                //                                    Select::make('student_company_id')
-                //                                        ->label(__('Student'))
-                //                                        ->relationship('studentCompany.student', 'name') // تأكد من اسم العلاقة في الموديل
-                //                                        ->searchable()
-                //                                        ->preload()
-                //                                        ->required(),
-                //
-                //                                    // تاريخ الحضور
-                //                                    DatePicker::make('attendance_date')
-                //                                        ->label(__('Attendance Date'))
-                //                                        ->default(now())
-                //                                        ->required(),
-                //                                ]),
-                //
-                //                                Grid::make(2)->schema([
-                //                                    // وقت الدخول
-                //                                    DateTimePicker::make('check_in')
-                //                                        ->label(__('Check In Time'))
-                //                                        ->seconds(false)
-                //                                        ->default(now()),
-                //
-                //                                    // وقت الخروج
-                //                                    DateTimePicker::make('check_out')
-                //                                        ->label(__('Check Out Time'))
-                //                                        ->seconds(false),
-                //                                ]),
-                //
-                //                                // حالة الحضور من الـ Enum
-                //                                Select::make('status')
-                //                                    ->label(__('Status'))
-                //                                    ->options(AttendanceStatus::options())
-                //                                    ->default(AttendanceStatus::UNDETERMINED->value)
-                //                                    ->required()
-                //                                    ->native(false),
-                //
-                //                                // الملاحظات
-                //                                Textarea::make('description')
-                //                                    ->label(__('Description'))
-                //                                    ->rows(3)
-                //                                    ->columnSpanFull(),
-                //                            ]),
-                //
-                //                        Section::make(__('Location Data'))
-                //                            ->description(__('GPS coordinates for check-in and check-out'))
-                //                            ->collapsed() // جعلها مطوية لأنها غالباً تُعبأ تلقائياً
-                //                            ->schema([
-                //                                Grid::make(2)->schema([
-                //                                    TextInput::make('check_in_latitude')->numeric()->label(__('In Latitude')),
-                //                                    TextInput::make('check_in_longitude')->numeric()->label(__('In Longitude')),
-                //                                    TextInput::make('check_out_latitude')->numeric()->label(__('Out Latitude')),
-                //                                    TextInput::make('check_out_longitude')->numeric()->label(__('Out Longitude')),
-                //                                ]),
-                //                            ]),
-                //                    ])
-                //                    ->visible(fn() => auth()->user()->can('StudentAttendance Create'))
             ])
             ->bulkActions($this->getTableBulkAction());
     }
@@ -223,10 +167,61 @@ class Index extends Component implements HasForms, HasTable
     protected function getTableFilters(): array
     {
         return [
-            Filter::make('reference_code')
-                ->label(__('Reference Code')),
-            Filter::make('name')
-                ->label(__('Name')),
+
+            SelectFilter::make('semeter')
+                ->label(__('Semester'))
+                ->options(SemesterType::class)
+                ->native(false)
+                ->default(app(GeneralSettings::class)->semester_type->value)
+                ->query(function (Builder $query, array $data) {
+                    if (empty($data['value'])) {
+                        return $query;
+                    }
+
+                    return $query->whereHas('studentCompany.registration', function (Builder $query) use ($data) {
+                        $query->where('semester', $data['value']);
+                    });
+                }),
+
+            Filter::make('year')
+                ->form([
+                    TextInput::make('year')->label(__('Year'))
+                    ->live(debounce: 500)
+                    ->default(app((GeneralSettings::class))->year)
+                    ->numeric(),
+                ])
+                ->query(function (Builder $query, array $data): Builder {
+                    if (empty($data['year'])) {
+                        return $query;
+                    }
+
+                    return $query->whereHas('studentCompany.registration', function (Builder $query) use ($data) {
+                        $query->where('year', $data['year']);
+                    });
+                })
+                ->indicateUsing(function (array $data) {
+                    if (empty($data['year'])) {
+                        return null;
+                    }
+
+                    return __('Year') . ': ' . $data['year'];
+                }),
+
+            SelectFilter::make('company_id')
+                ->label(__('Company'))
+                ->options(function () {
+                    return StudentCompany::where('student_id', $this->studentId)->with('company')->get()->pluck('company.name', 'company.id');
+                })
+                ->searchable()
+                ->query(function (Builder $query, array $data) {
+                    if (empty($data['value'])) {
+                        return $query;
+                    }
+
+                    return $query->whereHas('studentCompany', function (Builder $query) use ($data) {
+                        $query->where('company_id', $data['value']);
+                    });
+                }),
         ];
     }
 
@@ -237,8 +232,8 @@ class Index extends Component implements HasForms, HasTable
                 BulkAction::make('delete')
                     ->label(__('Delete'))
                     ->requiresConfirmation()
-                    ->visible(fn() => auth()->user()->can('StudentAttendance Delete'))
-                    ->action(fn(Collection $records) => $records->each->delete()),
+                    ->visible(fn () => auth()->user()->can('StudentAttendance Delete'))
+                    ->action(fn (Collection $records) => $records->each->delete()),
             ]),
         ];
     }
@@ -271,18 +266,18 @@ class Index extends Component implements HasForms, HasTable
 
                     Toaster::success('Checked Out Successfully');
                 })
-                ->visible(fn($record) => $record->check_out === null),
+                ->visible(fn ($record) => $record->check_out === null),
             Action::make('report')
                 // Removed ->model() as it was causing confusion
                 ->button()
                 ->label(__('Report'))
-                ->url(fn($record) => route('student-attendances.report', $record))
+                ->url(fn ($record) => route('student-attendances.report', $record))
                 ->visible(
-                    fn(StudentAttendance $record) => ($record->check_out !== null && $record->studentReport === null) && (auth()->user()->can('StudentAttendance Report List'))
+                    fn (StudentAttendance $record) => ($record->check_out !== null && $record->studentReport === null) && (auth()->user()->can('StudentAttendance Report List'))
                 ),
             InfoAction::make('info')
                 ->label('')
-                ->visible(fn() => auth()->user()->can('Major Info')),
+                ->visible(fn () => auth()->user()->can('Major Info')),
             ViewAction::make('view')
                 ->form(function (Forms\Form $form, $record) {
                     return $form->schema([
@@ -304,7 +299,7 @@ class Index extends Component implements HasForms, HasTable
                     ]);
                 })
                 ->modalSubmitAction(false)
-                ->visible(fn() => auth()->user()->can('Major View')),
+                ->visible(fn () => auth()->user()->can('Major View')),
             EditAction::make('edit')
                 ->form(function (Major $record) {
                     return [
@@ -330,7 +325,7 @@ class Index extends Component implements HasForms, HasTable
                     $record->update($data);
                     Toaster::success(__('Major updated successfully'));
                 })
-                ->visible(fn() => auth()->user()->can('Major Update')),
+                ->visible(fn () => auth()->user()->can('Major Update')),
 
             DeleteAction::make('delete')
                 ->action(function ($record) {
@@ -338,7 +333,7 @@ class Index extends Component implements HasForms, HasTable
                     $record->delete();
                     Toaster::success(__('Major deleted successfully'));
                 })
-                ->visible(fn() => auth()->user()->can('Major Delete')),
+                ->visible(fn () => auth()->user()->can('Major Delete')),
         ];
     }
 

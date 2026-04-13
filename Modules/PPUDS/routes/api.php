@@ -12,6 +12,7 @@ use Modules\PPUDS\Http\Controllers\Api\V1\NoteController;
 use Modules\PPUDS\Http\Controllers\Api\V1\PaymentController;
 use Modules\PPUDS\Http\Controllers\Api\V1\RegistrationController;
 use Modules\PPUDS\Http\Controllers\Api\V1\ReportController;
+use Modules\PPUDS\Http\Controllers\Api\V1\SettingsController;
 use Modules\PPUDS\Http\Controllers\Api\V1\StudentAttendanceController;
 use Modules\PPUDS\Http\Controllers\Api\V1\StudentAttendanceReportController;
 use Modules\PPUDS\Http\Controllers\Api\V1\StudentCompanyController;
@@ -22,6 +23,14 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
     Route::middleware(['auth:sanctum', 'api.localize'])->group(function () {
 
         Route::prefix('ppuds')->as('ppuds.')->group(function () {
+
+            Route::controller(SettingsController::class)
+                ->prefix('settings')
+                ->as('settings.')
+                ->group(function () {
+                    Route::get('/', 'index')->name('index');
+                    Route::patch('/', 'update')->name('update');
+                });
 
             Route::controller(CompanyController::class)
                 ->prefix('companies')

@@ -10,7 +10,6 @@ use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\Tabs;
-use Filament\Forms\Components\Tabs\Tab;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -22,8 +21,8 @@ use Filament\Infolists\Contracts\HasInfolists;
 use Filament\Infolists\Infolist;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Livewire\Component;
-use Livewire\Attributes\Computed; // استيراد ضروري
+use Livewire\Attributes\Computed;
+use Livewire\Component; // استيراد ضروري
 use Modules\Core\Entities\User;
 
 class Details extends Component implements HasForms, HasInfolists
@@ -32,6 +31,7 @@ class Details extends Component implements HasForms, HasInfolists
     use InteractsWithInfolists;
 
     public ?array $data = [];
+
     public int $userId;
 
     public function mount($user)
@@ -48,7 +48,7 @@ class Details extends Component implements HasForms, HasInfolists
             'studentProfile',
             'studentProfile.media',
             'roles',
-            'media'
+            'media',
         ])->findOrFail($this->userId);
     }
 
@@ -61,14 +61,14 @@ class Details extends Component implements HasForms, HasInfolists
                     ->schema([
                         ImageEntry::make('avatar')
                             ->label('')
-                            ->getStateUsing(fn($record) => $record->getAvatarUrlAttribute()),
+                            ->getStateUsing(fn ($record) => $record->getAvatarUrlAttribute()),
 
                         TextEntry::make('name'),
 
                         TextEntry::make('email'),
 
                         TextEntry::make('student_profile.student_number'),
-                    ])
+                    ]),
             ]);
     }
 
@@ -104,39 +104,9 @@ class Details extends Component implements HasForms, HasInfolists
                                                         TextInput::make('password')
                                                             ->label(__('Password'))
                                                             ->password()
-                                                            ->dehydrated(fn($state) => filled($state))
-                                                            ->required(fn(string $context): bool => $context === 'create'),
-                                                    ])
-                                                    ->columnSpan(2),
+                                                            ->dehydrated(fn ($state) => filled($state))
+                                                            ->required(fn (string $context): bool => $context === 'create'),
 
-                                                Grid::make(1)
-                                                    ->schema([
-                                                        SpatieMediaLibraryFileUpload::make('cover_photo')
-                                                            ->disk('media')
-                                                            ->collection('cover_photo')
-                                                            ->imageEditor()
-                                                            ->alignCenter(),
-
-                                                        SpatieMediaLibraryFileUpload::make('avatar')
-                                                            ->disk('media')
-                                                            ->collection('avatar')
-                                                            ->image()
-                                                            ->imageEditor()
-                                                            ->avatar()
-                                                            ->alignCenter()
-                                                    ])
-                                                    ->columnSpan(1)
-                                            ])
-                                    ]),
-
-                                Tabs\Tab::make('Student Profile')
-                                    ->icon('heroicon-o-academic-cap')
-                                    ->schema([
-                                        Grid::make(3)
-                                            ->schema([
-                                                Section::make()
-                                                    ->columnSpan(2)
-                                                    ->schema([
                                                         Grid::make(2)
                                                             ->schema([
                                                                 TextInput::make('student_profile.student_number')
@@ -190,12 +160,26 @@ class Details extends Component implements HasForms, HasInfolists
                                                                         'approved' => __('Approved'),
                                                                         'rejected' => __('Rejected'),
                                                                     ]),
-                                                            ])
-                                                    ]),
+                                                            ]),
+                                                    ])
+                                                    ->columnSpan(2),
 
-                                                Section::make()
-                                                    ->columnSpan(1)
+                                                Grid::make(1)
                                                     ->schema([
+                                                        SpatieMediaLibraryFileUpload::make('cover_photo')
+                                                            ->disk('media')
+                                                            ->collection('cover_photo')
+                                                            ->imageEditor()
+                                                            ->alignCenter(),
+
+                                                        SpatieMediaLibraryFileUpload::make('avatar')
+                                                            ->disk('media')
+                                                            ->collection('avatar')
+                                                            ->image()
+                                                            ->imageEditor()
+                                                            ->avatar()
+                                                            ->alignCenter(),
+
                                                         SpatieMediaLibraryFileUpload::make('cv')
                                                             ->label(__('CV'))
                                                             ->disk('student_profiles')
@@ -203,9 +187,88 @@ class Details extends Component implements HasForms, HasInfolists
                                                             ->image()
                                                             ->imageEditor()
                                                             ->alignCenter(),
-                                                    ]),
+                                                    ])
+                                                    ->columnSpan(1),
                                             ]),
                                     ]),
+
+                                // Tabs\Tab::make('Student Profile')
+                                //     ->icon('heroicon-o-academic-cap')
+                                //     ->schema([
+                                //         Grid::make(3)
+                                //             ->schema([
+                                //                 Section::make()
+                                //                     ->columnSpan(2)
+                                //                     ->schema([
+                                //                         Grid::make(2)
+                                //                             ->schema([
+                                //                                 TextInput::make('student_profile.student_number')
+                                //                                     ->label(__('Student Number'))
+                                //                                     ->numeric()
+                                //                                     ->disabled()
+                                //                                     ->required(),
+
+                                //                                 Select::make('student_profile.major_id')
+                                //                                     ->label(__('Major'))
+                                //                                     ->options(\Modules\PPUDS\Entities\Major::get()->pluck('name', 'id'))
+                                //                                     ->disabled()
+                                //                                     ->searchable(),
+
+                                //                                 TextInput::make('student_profile.enrollment_year')
+                                //                                     ->label(__('Enrollment Year'))
+                                //                                     ->numeric()
+                                //                                     ->disabled()
+                                //                                     ->minLength(4)
+                                //                                     ->maxLength(4),
+
+                                //                                 TextInput::make('student_profile.semester_level')
+                                //                                     ->label(__('Semester Level'))
+                                //                                     ->disabled()
+                                //                                     ->numeric(),
+
+                                //                                 TextInput::make('student_profile.tawjihi_gpa')
+                                //                                     ->label(__('Tawjihi GPA'))
+                                //                                     ->numeric()
+                                //                                     ->disabled()
+                                //                                     ->step(0.1),
+
+                                //                                 DatePicker::make('student_profile.dob')
+                                //                                     ->label(__('Date of Birth'))
+                                //                                     ->disabled()
+                                //                                     ->displayFormat('d/m/Y'),
+
+                                //                                 Select::make('student_profile.gender')
+                                //                                     ->label(__('Gender'))
+                                //                                     ->disabled()
+                                //                                     ->options([
+                                //                                         'male' => __('Male'),
+                                //                                         'female' => __('Female'),
+                                //                                     ]),
+
+                                //                                 Select::make('student_profile.cv_status')
+                                //                                     ->label(__('CV Status'))
+                                //                                     ->disabled()
+                                //                                     ->options([
+                                //                                         'pending' => __('Pending'),
+                                //                                         'approved' => __('Approved'),
+                                //                                         'rejected' => __('Rejected'),
+                                //                                     ]),
+                                //                             ]),
+                                //                     ]),
+
+                                //                 Section::make()
+                                //                     ->columnSpan(1)
+                                //                     ->schema([
+                                //                         SpatieMediaLibraryFileUpload::make('cv')
+                                //                             ->label(__('CV'))
+                                //                             ->disk('student_profiles')
+                                //                             ->collection('cv')
+                                //                             ->image()
+                                //                             ->imageEditor()
+                                //                             ->alignCenter(),
+                                //                     ]),
+                                //             ]),
+                                //     ]),
 
                                 Tabs\Tab::make('Work Experience')
                                     ->icon('heroicon-o-academic-cap')
@@ -226,7 +289,7 @@ class Details extends Component implements HasForms, HasInfolists
                                                     ]
                                                 )
                                                     ->columnSpanFull()
-                                                    ->lazy()
+                                                    ->lazy(),
                                             ]),
                                     ]),
 
@@ -242,7 +305,7 @@ class Details extends Component implements HasForms, HasInfolists
                                                     ]
                                                 )
                                                     ->columnSpanFull()
-                                                    ->lazy()
+                                                    ->lazy(),
                                             ]),
                                     ]),
 
@@ -258,7 +321,7 @@ class Details extends Component implements HasForms, HasInfolists
                                                     ]
                                                 )
                                                     ->columnSpanFull()
-                                                    ->lazy()
+                                                    ->lazy(),
                                             ]),
                                     ]),
 
@@ -274,12 +337,12 @@ class Details extends Component implements HasForms, HasInfolists
                                                     ]
                                                 )
                                                     ->columnSpanFull()
-                                                    ->lazy()
+                                                    ->lazy(),
                                             ]),
                                     ]),
 
                             ])
-                            ->columnSpanFull()
+                            ->columnSpanFull(),
                     ]),
             ])
             ->statePath('data');
@@ -298,7 +361,7 @@ class Details extends Component implements HasForms, HasInfolists
             $user = $this->userRecord;
 
             // تحديث الباسورد فقط إذا تم إدخال باسورد جديد
-            if (!empty($data['password'])) {
+            if (! empty($data['password'])) {
                 $updateData['password'] = Hash::make($data['password']);
             }
 
@@ -320,7 +383,7 @@ class Details extends Component implements HasForms, HasInfolists
                 ['title' => __('Home'), 'url' => route('home')],
                 ['title' => __('Students List'), 'url' => route('students.index')],
                 ['title' => __('Student Details'), 'url' => route('students.details', $this->userId)], // استخدمنا userId هنا بدلاً من الموديل
-            ]
+            ],
         ]);
     }
 }

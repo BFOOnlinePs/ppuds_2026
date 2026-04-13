@@ -42,27 +42,19 @@ class Index extends Component implements HasTable, HasForms
         return $table
             ->query(fn() => Registration::query()->with(['student', 'course', 'supervisor']))
             ->columns([
-                //                TextColumn::make('student.name')
-                //                    ->label(__('Student'))
-                //                    ->searchable()
-                //                    ->sortable()
-                //                    ->icon('solar-user-id-bold-duotone')
-                //                    ->weight('bold'),
 
                 TextColumn::make('course.name')
                     ->label(__('Course'))
                     ->badge()
                     ->color('info'),
 
-                TextColumn::make('registration.semester') // أو اسم الحقل لديك
+                TextColumn::make('registration.semester')
                     ->label(__('Term'))
                     ->formatStateUsing(function ($state, $record) {
-                        // نتحقق إذا كان $state كائن Enum أم قيمة خام
                         $semesterLabel = ($state instanceof SemesterType)
                             ? $state->getLabel()
                             : (SemesterType::tryFrom($state)?->getLabel() ?? (__('Semester') . ' ' . $state));
 
-                        // الوصول للسنة من خلال العلاقة registration
                         $year = $record->registration?->year ?? $record->year;
 
                         return "{$semesterLabel} - {$year}";
@@ -80,14 +72,6 @@ class Index extends Component implements HasTable, HasForms
                 TextColumn::make('year')
                     ->label(__('Year')),
 
-                // 5. عمود العلامة
-                //                TextColumn::make('grade')
-                //                    ->label(__('Grade'))
-                //                    ->placeholder('-')
-                //                    ->badge()
-                //                    ->color(fn ($state) => $state >= 60 ? 'success' : ($state === null ? 'gray' : 'danger'))
-                //                    ->sortable(),
-
                 TextColumn::make('created_at')
                     ->label(__('Registered At'))
                     ->dateTime('Y-m-d')
@@ -95,35 +79,23 @@ class Index extends Component implements HasTable, HasForms
             ])
             ->filters($this->getTableFilters(), layout: FiltersLayout::AboveContent)
             ->filtersFormColumns(4)
-            //            ->actions($this->getTableActions())
-            //            ->headerActions([
-            //                CreateAction::make('create')
-            //                    ->label(__('Add Registration'))
-            //                    ->url(route('registrations.add'))
-            //                    ->visible(fn() => auth()->user()->can('Registration Create'))
-            //            ])
             ->bulkActions($this->getTableBulkAction());
     }
 
     protected function getTableFilters(): array
     {
         return [
-            // 1. فلتر المساق (تم الإصلاح)
             SelectFilter::make('course_id')
                 ->label(__('Course'))
-                // ❌ لا تستخدم relationship هنا لأنها تطلب SQL مباشر
-                // ✅ استخدم options مع get() لجلب الترجمات عبر المودل
                 ->options(Course::get()->pluck('name', 'id'))
                 ->searchable()
                 ->preload(),
 
-            // 2. فلتر الفصل الدراسي
             SelectFilter::make('semester')
                 ->label(__('Semester'))
                 ->options(SemesterType::class)
                 ->native(false),
 
-            // 3. فلتر السنة
             Filter::make('year')
                 ->form([
                     TextInput::make('year')->label(__('Year'))->numeric()
@@ -135,7 +107,6 @@ class Index extends Component implements HasTable, HasForms
                     );
                 }),
 
-            // 4. فلتر المشرف
             SelectFilter::make('supervisor_id')
                 ->label(__('Supervisor'))
                 ->options(User::whereHas('roles', fn($q) => $q->where('name', 'Practical Training Supervisor'))->pluck('name', 'id'))
