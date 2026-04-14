@@ -14,9 +14,6 @@ class UserRequest extends FormRequest
     public function rules(): array
     {
         $rules = [
-            'name'              => 'required|string|max:255',
-            'email'             => 'required|email|max:255',
-            'phone'             => 'required|numeric|digits_between:10,15|unique:users,phone|regex:/^\+?[0-9]{10,15}$/',
 
             'studentProfile'    => 'sometimes|array',
             'studentProfile.dob' => 'sometimes|date',
@@ -26,6 +23,25 @@ class UserRequest extends FormRequest
             'studentProfile.semester_level' => 'sometimes|integer|min:1|max:12',
             'studentProfile.major_id' => 'sometimes|integer|exists:ppu_ds_majors,id',
         ];
+
+        if ($this->method('POST'))
+        {
+            $rules['name'] = 'required|string|max:255';
+
+            $rules['email'] = [
+                'required',
+                'email',
+                'max:255',
+                'unique:users,email'
+            ];
+            $rules['phone'] = [
+                'required',
+                'numeric',
+                'unique:users,phone',
+                'regex:/^\+?[0-9]{10,15}$/'
+            ];
+            $rules['password'] = 'required|string|min:8|max:255';
+        }
 
         if ($this->method('PUT') || $this->method('PATCH'))
         {
