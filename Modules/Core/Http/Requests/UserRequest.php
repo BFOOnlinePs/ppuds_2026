@@ -24,7 +24,7 @@ class UserRequest extends FormRequest
             'studentProfile.major_id' => 'sometimes|integer|exists:ppu_ds_majors,id',
         ];
 
-        if ($this->method('POST'))
+        if ($this->isMethod('POST'))
         {
             $rules['name'] = 'required|string|max:255';
 
@@ -43,7 +43,7 @@ class UserRequest extends FormRequest
             $rules['password'] = 'required|string|min:8|max:255';
         }
 
-        if ($this->method('PUT') || $this->method('PATCH'))
+        if ($this->isMethod('PUT') || $this->isMethod('PATCH'))
         {
             $userId = $this->route('user')->id;
 
