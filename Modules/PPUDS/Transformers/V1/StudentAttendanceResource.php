@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\AllowedInclude;
 use Spatie\QueryBuilder\AllowedSort;
 
 class StudentAttendanceResource extends JsonResource
@@ -93,6 +94,6 @@ class StudentAttendanceResource extends JsonResource
 
     public static function allowedIncludes(): array
     {
-        return ['studentCompany', 'studentCompany.student', 'createdBy', 'studentCompany.company'];
+        return ['studentCompany', 'studentCompany.student', 'createdBy', 'studentCompany.company',AllowedInclude::relationship()];
     }
 }

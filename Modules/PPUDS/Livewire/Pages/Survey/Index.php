@@ -3,13 +3,12 @@
 namespace Modules\PPUDS\Livewire\Pages\Survey;
 
 use App\View\Components\AppLayout;
-use Doctrine\DBAL\Schema\View;
-use Dom\Text;
-use Filament\Actions\Action;
+use Filament\Forms\Components\CheckboxList;
+use Filament\Forms\Components\Radio;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Support\Enums\MaxWidth;
 use Filament\Tables\Actions\Action as ActionsAction;
 use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Actions\BulkActionGroup;
@@ -19,16 +18,15 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
-use Modules\Core\Entities\User;
-use Modules\Core\Filament\Forms\Components\CreateAction;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\Survey;
-use Wirechat\Wirechat\Livewire\Chat\Chat;
+use Modules\PPUDS\Entities\SurveyAnswer;
 
 class Index extends Component implements HasForms, HasTable
 {
@@ -40,7 +38,7 @@ class Index extends Component implements HasForms, HasTable
         return $table
             ->query(fn () => Survey::query()->with('translations'))
             ->columns([
-                
+
                 TextColumn::make('title')
                     ->label(__('Title'))
                     ->searchable(),
@@ -58,7 +56,7 @@ class Index extends Component implements HasForms, HasTable
                 TextColumn::make('year')
                     ->label(__('Year'))
                     ->searchable(),
-                    
+
                 TextColumn::make('start_date')
                     ->label(__('Start Date'))
                     ->dateTime('Y-m-d')
@@ -71,7 +69,7 @@ class Index extends Component implements HasForms, HasTable
 
                 ToggleColumn::make('is_active')
                     ->label(__('Active'))
-                    ->visible(fn() => !auth()->user()->hasRole('Student')),
+                    ->visible(fn () => ! auth()->user()->hasRole('Student')),
 
                 TextColumn::make('created_at')
                     ->label(__('Created At'))
@@ -93,7 +91,7 @@ class Index extends Component implements HasForms, HasTable
     protected function getTableFilters(): array
     {
         return [
-            
+
         ];
     }
 
@@ -166,7 +164,7 @@ class Index extends Component implements HasForms, HasTable
                         \Filament\Forms\Components\Section::make(__('Questions & Options'))
                             ->schema([
                                 \Filament\Forms\Components\Repeater::make('questions')
-                                    ->relationship('questions') 
+                                    ->relationship('questions')
                                     ->label(__('Questions List'))
                                     ->schema([
                                         \Filament\Forms\Components\Grid::make(12)->schema([
@@ -190,17 +188,17 @@ class Index extends Component implements HasForms, HasTable
 
                                         // عرض الخيارات
                                         \Filament\Forms\Components\Repeater::make('options')
-                                            ->relationship('options') 
+                                            ->relationship('options')
                                             ->label(__('Answer Options'))
                                             ->schema([
-                                                \Filament\Forms\Components\TextInput::make('text') 
+                                                \Filament\Forms\Components\TextInput::make('text')
                                                     ->label(__('Option Text'))
                                                     ->disabled(), // تعطيل
                                             ])
                                             ->grid(2)
-                                            ->addable(false) 
-                                            ->deletable(false) 
-                                            ->reorderable(false) 
+                                            ->addable(false)
+                                            ->deletable(false)
+                                            ->reorderable(false)
                                             ->columnSpanFull(),
                                     ])
                                     ->addable(false)
@@ -210,22 +208,122 @@ class Index extends Component implements HasForms, HasTable
                             ]),
                     ];
                 })
-                ->modalSubmitAction(false) 
+                ->modalSubmitAction(false)
                 ->visible(fn () => auth()->user()->can('Survey View')),
 
             ActionsAction::make('survey_submit')
-                ->label(__('Submit'))
+                ->label(__('Submit Survey'))
                 ->color('success')
                 ->icon('heroicon-s-check')
-                ->form([
-                    TextInput::make('title')
-                ])
-                ->action(function ($record) {
-                    dd($record->questions);
-                    $record->update(['is_submitted' => true]);
-                    Toaster::success(__('Survey submitted successfully'));
+                ->modalHeading(fn (Model $record) => $record->title)
+                ->modalDescription(fn (Model $record) => $record->description)
+                ->form(function (Model $record) {
+                    $record->loadMissing([
+                        'questions.translations',
+                        'questions.options.translations',
+                    ]);
+
+                    $schema = [];
+
+                    foreach ($record->questions->sortBy('sort_order') as $question) {
+                        $options = $question->options->mapWithKeys(function ($option) {
+                            return [$option->id => $option->text];
+                        })->toArray();
+
+                        $field = match ((int) $question->type) {
+                            1 => TextInput::make("question_{$question->id}"),
+                            2 => Textarea::make("question_{$question->id}"),
+                            3 => Radio::make("question_{$question->id}")->options($options),
+                            4 => CheckboxList::make("question_{$question->id}")->options($options),
+                            default => TextInput::make("question_{$question->id}"),
+                        };
+
+                        $field->label($question->content)
+                            ->required($question->is_required);
+
+                        $schema[] = $field;
+                    }
+
+                    return $schema;
                 })
-                ->visible(fn () => auth()->user()->can('Survey Submit')),
+                ->action(function (Model $record, array $data) {
+                    $userId = auth()->id();
+
+                    // 🛡️ طبقة الحماية: التأكد من أن المستخدم لم يقدم الاستبيان مسبقاً (لمنع التكرار إذا تم تجاوز الواجهة)
+                    $hasSubmitted = SurveyAnswer::where('survey_id', $record->id)
+                        ->where('submitted_by', $userId)
+                        ->exists();
+
+                    if ($hasSubmitted) {
+                        Notification::make()
+                            ->danger()
+                            ->title(__('You have already submitted this survey')) // "لقد قمت بتسليم هذا الاستبيان مسبقاً"
+                            ->send();
+
+                        return; // إيقاف التنفيذ
+                    }
+
+                    $answers = [];
+                    $now = now();
+
+                    foreach ($data as $key => $value) {
+                        if (str_starts_with($key, 'question_') && $value !== null && $value !== '') {
+                            $questionId = (int) str_replace('question_', '', $key);
+                            $question = $record->questions->where('id', $questionId)->first();
+
+                            if (is_array($value)) {
+                                foreach ($value as $optionId) {
+                                    $answers[] = [
+                                        'survey_id' => $record->id,
+                                        'survey_question_id' => $questionId,
+                                        'selected_option_id' => $optionId,
+                                        'text_answer' => null,
+                                        'submitted_by' => $userId,
+                                        'created_at' => $now,
+                                        'updated_at' => $now,
+                                    ];
+                                }
+                            } else {
+                                $isOption = in_array((int) $question->type, [3, 4]);
+
+                                $answers[] = [
+                                    'survey_id' => $record->id,
+                                    'survey_question_id' => $questionId,
+                                    'selected_option_id' => $isOption ? $value : null,
+                                    'text_answer' => $isOption ? null : $value,
+                                    'submitted_by' => $userId,
+                                    'created_at' => $now,
+                                    'updated_at' => $now,
+                                ];
+                            }
+                        }
+                    }
+
+                    if (! empty($answers)) {
+                        SurveyAnswer::insert($answers);
+                    }
+
+                    Notification::make()
+                        ->success()
+                        ->title(__('Survey submitted successfully'))
+                        ->send();
+                })
+    // 👁️ إخفاء الزر برمجياً إذا كان المستخدم قد أرسل إجابات لهذا الاستبيان من قبل
+                ->visible(function (Model $record) {
+                    $user = auth()->user();
+
+                    // 1. هل لديه الصلاحية أولاً؟
+                    if (! $user->can('Survey Submit')) {
+                        return false;
+                    }
+
+                    // 2. هل قام بالتسليم مسبقاً؟ (إذا كان الجواب نعم، نرجع false لكي يختفي الزر)
+                    $hasSubmitted = SurveyAnswer::where('survey_id', $record->id)
+                        ->where('submitted_by', $user->id)
+                        ->exists();
+
+                    return ! $hasSubmitted;
+                }),
 
             EditAction::make('edit')
                 ->label('')
@@ -255,7 +353,7 @@ class Index extends Component implements HasForms, HasTable
                     ->requiresConfirmation()
                     ->action(fn (Collection $records) => $records->each->delete())
                     ->after(fn () => Toaster::success(__('Selected records deleted successfully')))
-                    ->visible(fn() => auth()->user()->can('Survey Delete')),
+                    ->visible(fn () => auth()->user()->can('Survey Delete')),
             ]),
         ];
     }

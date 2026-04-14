@@ -23,7 +23,7 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
         Route::controller(UserController::class)->prefix('users')->as('user.')->group(function () {
             Route::get('/', 'index')->name('index');
             Route::get('/{user}', 'show')->name('show');
-            Route::put('/{user}', 'update')->name('update');
+            Route::patch('/{user}', 'update')->name('update');
             Route::delete('/{user}', 'destroy')->name('delete');
         });
 
