@@ -205,6 +205,10 @@ class UserController extends Controller
             $studentProfile->addImage($request->file('cv'));
         }
 
+        if ($request->hasFile('cover_photo')) {
+            $studentProfile->addImage($request->file('cover_photo'));
+        }
+
         if ($request->hasFile('avatar')) {
 
             $user->addMediaFromRequest('avatar')
