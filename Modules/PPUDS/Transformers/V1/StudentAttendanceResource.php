@@ -94,6 +94,6 @@ class StudentAttendanceResource extends JsonResource
 
     public static function allowedIncludes(): array
     {
-        return ['studentCompany', 'studentCompany.student', 'createdBy', 'studentCompany.company',AllowedInclude::relationship()];
+        return ['studentCompany', 'studentCompany.student', 'createdBy', 'studentCompany.company'];
     }
 }
