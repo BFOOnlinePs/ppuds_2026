@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Modules\Core\Entities\User;
 use Modules\Core\Http\Controllers\Api\V1\Auth\LoginController;
 use Modules\Core\Http\Requests\UserRequest;
+use Modules\Core\Http\Requests\UserRequestUpdate;
 use Modules\Core\Traits\ApiResponse;
 use Modules\Core\Transformers\V1\UserResource;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -192,7 +193,7 @@ class UserController extends Controller
      *     @OA\Response(response=404, description="User not found")
      * )
      */
-    public function update(UserRequest $request, User $user)
+    public function update(UserRequestUpdate $request, User $user)
     {
         $user->update($request->validated());
 
