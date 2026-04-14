@@ -49,7 +49,11 @@ class UserRequest extends FormRequest
                 'regex:/^\+?[0-9]{10,15}$/'
             ];
 
-            $rules['avatar'] = 'nullable|image|mimes:jpeg,png,jpg|max:2048';
+            $rules['avatar']        = 'nullable|image|mimes:jpeg,png,jpg|max:2048';
+
+            $rules['cover_photo']   = 'nullable|image|mimes:jpeg,png,jpg|max:4096';
+
+            $rules['cv']            = 'nullable|file|mimes:pdf,doc,docx|max:5120';
         }
 
         return $rules;
