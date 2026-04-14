@@ -195,7 +195,6 @@ class UserController extends Controller
      */
     public function update(UserRequestUpdate $request, User $user)
     {
-        return response()->json($request->validated());
         $user->update($request->validated());
 
         $studentProfile = $user->studentProfile()->updateOrCreate(
