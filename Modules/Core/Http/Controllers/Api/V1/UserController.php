@@ -203,7 +203,7 @@ class UserController extends Controller
         );
 
         if ($request->hasFile('cv')) {
-            $user->addMediaFromRequest('cv')
+            $user->studentProfile()->addMediaFromRequest('cv')
                 ->toMediaCollection('cv', 'media');
         }
 
