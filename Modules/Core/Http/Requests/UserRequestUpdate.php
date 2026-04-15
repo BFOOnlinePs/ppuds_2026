@@ -19,7 +19,7 @@ class UserRequestUpdate extends FormRequest
             'phone'           => 'sometimes|required|numeric|regex:/^\+?[0-9]{10,15}$/',
             'password'        => 'sometimes|required|string|min:8|max:255',
 
-            'cv'            => 'sometimes|image|mimes:jpeg,png,jpg|max:2048|file|mimes:pdf,doc,docx|max:5120',
+            'cv'            => 'sometimes|file|mimes:jpeg,png,jpg,pdf,doc,docx|max:5120',
             'avatar'        => 'sometimes|image|mimes:jpeg,png,jpg|max:2048',
             'cover_photo'   => 'sometimes|image|mimes:jpeg,png,jpg|max:4096',
 
