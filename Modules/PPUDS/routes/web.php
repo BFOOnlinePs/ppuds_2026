@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Clinic\Entities\Survey;
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::group(
@@ -137,6 +138,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     Route::get('/', Index::class)->name('index')->can('Survey View List');
                     Route::get('/add', Add::class)->name('add')->can('Survey Create');
                     Route::get('/{survey}/edit', Edit::class)->name('edit')->can('Survey Update');
+                    Route::get('/{survey}/survey-form', SurveyForm::class)->name('survey-form');
                 });
 
                 Route::group([

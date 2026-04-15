@@ -153,7 +153,7 @@ class RegistrationController extends Controller
     }
 
     /**
-     * @OA\Post(
+     * @OA\PAtch(
      * path="/api/v1/ppuds/registrations/{registration}",
      * summary="Update registration",
      * description="Update registration details. Use _method=PUT for multipart form-data to update image.",

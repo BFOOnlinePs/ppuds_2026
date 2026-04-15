@@ -8122,13 +8122,13 @@
                     }
                 ]
             },
-            "post": {
+            "patch": {
                 "tags": [
                     "Registrations"
                 ],
                 "summary": "Update registration",
                 "description": "Update registration details. Use _method=PUT for multipart form-data to update image.",
-                "operationId": "c3c05c028087f89a548b5af203adfd52",
+                "operationId": "b4447dfce8b219dae7387788751cb85f",
                 "parameters": [
                     {
                         "name": "registration",

@@ -3,10 +3,6 @@
 namespace Modules\PPUDS\Livewire\Pages\Survey;
 
 use App\View\Components\AppLayout;
-use Filament\Forms\Components\CheckboxList;
-use Filament\Forms\Components\Radio;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Tables\Actions\Action as ActionsAction;
@@ -217,107 +213,14 @@ class Index extends Component implements HasForms, HasTable
                 ->icon('heroicon-s-check')
                 ->modalHeading(fn (Model $record) => $record->title)
                 ->modalDescription(fn (Model $record) => $record->description)
-                ->form(function (Model $record) {
-                    $record->loadMissing([
-                        'questions.translations',
-                        'questions.options.translations',
-                    ]);
-
-                    $schema = [];
-
-                    foreach ($record->questions->sortBy('sort_order') as $question) {
-                        $options = $question->options->mapWithKeys(function ($option) {
-                            return [$option->id => $option->text];
-                        })->toArray();
-
-                        $field = match ((int) $question->type) {
-                            1 => TextInput::make("question_{$question->id}"),
-                            2 => Textarea::make("question_{$question->id}"),
-                            3 => Radio::make("question_{$question->id}")->options($options),
-                            4 => CheckboxList::make("question_{$question->id}")->options($options),
-                            default => TextInput::make("question_{$question->id}"),
-                        };
-
-                        $field->label($question->content)
-                            ->required($question->is_required);
-
-                        $schema[] = $field;
-                    }
-
-                    return $schema;
-                })
-                ->action(function (Model $record, array $data) {
-                    $userId = auth()->id();
-
-                    // 🛡️ طبقة الحماية: التأكد من أن المستخدم لم يقدم الاستبيان مسبقاً (لمنع التكرار إذا تم تجاوز الواجهة)
-                    $hasSubmitted = SurveyAnswer::where('survey_id', $record->id)
-                        ->where('submitted_by', $userId)
-                        ->exists();
-
-                    if ($hasSubmitted) {
-                        Notification::make()
-                            ->danger()
-                            ->title(__('You have already submitted this survey')) // "لقد قمت بتسليم هذا الاستبيان مسبقاً"
-                            ->send();
-
-                        return; // إيقاف التنفيذ
-                    }
-
-                    $answers = [];
-                    $now = now();
-
-                    foreach ($data as $key => $value) {
-                        if (str_starts_with($key, 'question_') && $value !== null && $value !== '') {
-                            $questionId = (int) str_replace('question_', '', $key);
-                            $question = $record->questions->where('id', $questionId)->first();
-
-                            if (is_array($value)) {
-                                foreach ($value as $optionId) {
-                                    $answers[] = [
-                                        'survey_id' => $record->id,
-                                        'survey_question_id' => $questionId,
-                                        'selected_option_id' => $optionId,
-                                        'text_answer' => null,
-                                        'submitted_by' => $userId,
-                                        'created_at' => $now,
-                                        'updated_at' => $now,
-                                    ];
-                                }
-                            } else {
-                                $isOption = in_array((int) $question->type, [3, 4]);
-
-                                $answers[] = [
-                                    'survey_id' => $record->id,
-                                    'survey_question_id' => $questionId,
-                                    'selected_option_id' => $isOption ? $value : null,
-                                    'text_answer' => $isOption ? null : $value,
-                                    'submitted_by' => $userId,
-                                    'created_at' => $now,
-                                    'updated_at' => $now,
-                                ];
-                            }
-                        }
-                    }
-
-                    if (! empty($answers)) {
-                        SurveyAnswer::insert($answers);
-                    }
-
-                    Notification::make()
-                        ->success()
-                        ->title(__('Survey submitted successfully'))
-                        ->send();
-                })
-    // 👁️ إخفاء الزر برمجياً إذا كان المستخدم قد أرسل إجابات لهذا الاستبيان من قبل
+                ->url(fn (Survey $record) => route('surveys.survey-form', $record->id))
                 ->visible(function (Model $record) {
                     $user = auth()->user();
 
-                    // 1. هل لديه الصلاحية أولاً؟
                     if (! $user->can('Survey Submit')) {
                         return false;
                     }
 
-                    // 2. هل قام بالتسليم مسبقاً؟ (إذا كان الجواب نعم، نرجع false لكي يختفي الزر)
                     $hasSubmitted = SurveyAnswer::where('survey_id', $record->id)
                         ->where('submitted_by', $user->id)
                         ->exists();

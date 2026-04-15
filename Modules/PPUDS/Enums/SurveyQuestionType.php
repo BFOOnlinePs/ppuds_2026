@@ -48,9 +48,9 @@ enum SurveyQuestionType: int implements HasLabel, HasColor
     public function hasOptions(): bool
     {
         return in_array($this, [
-            self::RADIO, 
-            self::CHECKBOX, 
-            self::SELECT, 
+            self::RADIO,
+            self::CHECKBOX,
+            self::SELECT,
             self::MULTI_SELECT
         ]);
     }
