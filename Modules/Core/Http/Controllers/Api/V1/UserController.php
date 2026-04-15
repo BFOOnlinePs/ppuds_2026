@@ -204,7 +204,7 @@ class UserController extends Controller
 
         if ($request->hasFile('cv')) {
             $studentProfile->addMediaFromRequest('cv')
-            ->toMediaCollection('cv', 'media');
+            ->toMediaCollection('cv', 'student_profiles');
         }
 
         if ($request->hasFile('cover_photo')) {
