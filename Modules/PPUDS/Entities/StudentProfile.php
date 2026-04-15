@@ -68,12 +68,7 @@ class StudentProfile extends Model implements HasMedia
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('cv')
-            ->singleFile()
-            ->acceptsMimeTypes([
-                'application/pdf',
-                'application/msword',
-                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            ]);
+            ->singleFile();
     }
 
     public function addImage($file)
