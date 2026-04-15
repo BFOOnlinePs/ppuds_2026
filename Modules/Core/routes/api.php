@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Core\Http\Controllers\Api\V1\ActivityLogController;
 use Modules\Core\Http\Controllers\Api\V1\Auth\LoginController;
 use Modules\Core\Http\Controllers\Api\V1\Auth\RegisterController;
 use Modules\Core\Http\Controllers\Api\V1\SyncController;
@@ -25,6 +26,11 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
             Route::get('/{user}', 'show')->name('show');
             Route::patch('/{user}', 'update')->name('update');
             Route::delete('/{user}', 'destroy')->name('delete');
+        });
+
+        Route::controller(ActivityLogController::class)->prefix('activity-logs')->as('activity-logs.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/{activity}', 'show')->name('show');
         });
 
         Route::controller(SyncController::class)->prefix('sync')->as('sync.')->group(function () {

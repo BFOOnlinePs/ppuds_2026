@@ -2,13 +2,9 @@
 
 namespace Modules\Core\Transformers\V1;
 
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Modules\Core\Entities\User;
 use Modules\Core\Traits\Concerns\SelectsFieldsFromApi;
-use Modules\Items\Transformers\V1\OrderResource;
-use Modules\PPUDS\Transformers\V1\StudentProfileResource;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class ActivityResource extends JsonResource
