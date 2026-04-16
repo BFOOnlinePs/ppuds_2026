@@ -99,6 +99,7 @@ class StudentCompanyResource extends JsonResource
             'company',
             'branch',
             'department',
+            'payments',
         ];
     }
 }
