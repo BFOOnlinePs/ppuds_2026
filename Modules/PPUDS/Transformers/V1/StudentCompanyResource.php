@@ -100,6 +100,7 @@ class StudentCompanyResource extends JsonResource
             'branch',
             'department',
             'payments',
+            'payments.currency',
         ];
     }
 }
