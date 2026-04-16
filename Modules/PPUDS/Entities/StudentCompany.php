@@ -178,4 +178,9 @@ class StudentCompany extends Model implements HasMedia
                 ->whereNotNull('check_out'),
         ]);
     }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class, 'student_company_id');
+    }
 }

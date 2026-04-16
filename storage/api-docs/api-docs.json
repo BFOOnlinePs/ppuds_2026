@@ -941,6 +941,228 @@
                 ]
             }
         },
+        "/api/v1/activities": {
+            "get": {
+                "tags": [
+                    "Activity Logs"
+                ],
+                "summary": "Get all activity logs",
+                "description": "Retrieve a paginated list of all system activity logs with advanced filtering, sorting, and including relations.",
+                "operationId": "2a92fce680ef78e8809769a91c92a1fc",
+                "parameters": [
+                    {
+                        "name": "fields[activities]",
+                        "in": "query",
+                        "description": "Comma separated list of fields to be returned",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "id,log_name,description,event,created_at"
+                        }
+                    },
+                    {
+                        "name": "filter[log_name]",
+                        "in": "query",
+                        "description": "Filter logs by log name",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "default"
+                        }
+                    },
+                    {
+                        "name": "filter[event]",
+                        "in": "query",
+                        "description": "Filter logs by event type (created, updated, deleted)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "created"
+                        }
+                    },
+                    {
+                        "name": "filter[causer_id]",
+                        "in": "query",
+                        "description": "Filter logs by the user ID who caused the activity",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "include",
+                        "in": "query",
+                        "description": "Include related models (e.g., causer, subject)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "causer,subject"
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "Sort by field (prefix with '-' for descending)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "-created_at"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Number of items per page",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 15
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Activities retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Activities retrieved successfully"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "log_name": {
+                                                        "type": "string",
+                                                        "example": "default"
+                                                    },
+                                                    "description": {
+                                                        "type": "string",
+                                                        "example": "created"
+                                                    },
+                                                    "event": {
+                                                        "type": "string",
+                                                        "example": "created"
+                                                    },
+                                                    "created_at": {
+                                                        "type": "string",
+                                                        "format": "date-time"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/activities/{id}": {
+            "get": {
+                "tags": [
+                    "Activity Logs"
+                ],
+                "summary": "Get a single activity log",
+                "description": "Retrieve details of a specific activity log by its ID",
+                "operationId": "536e246f585e28ff9d43f061485f9de5",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Activity ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "include",
+                        "in": "query",
+                        "description": "Include related models (e.g., causer, subject)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "causer,subject"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Activity retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Activity retrieved successfully"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "log_name": {
+                                                    "type": "string",
+                                                    "example": "default"
+                                                },
+                                                "description": {
+                                                    "type": "string",
+                                                    "example": "created"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "404": {
+                        "description": "Activity not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/auth/login": {
             "post": {
                 "tags": [
@@ -10884,6 +11106,10 @@
         {
             "name": "Content",
             "description": "Content"
+        },
+        {
+            "name": "Activity Logs",
+            "description": "Activity Logs"
         },
         {
             "name": "Auth",
