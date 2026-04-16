@@ -34,6 +34,7 @@ class Payment extends Model implements HasMedia
     }
 
     protected $fillable = [
+        'id',
         'student_company_id',
         'reference_id',
         'payment_value',
