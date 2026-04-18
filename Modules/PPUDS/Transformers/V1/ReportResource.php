@@ -49,6 +49,8 @@ class ReportResource extends JsonResource
             'required_training_days'    => $this->branch?->required_training_days,
             'attended_training_days'    => $this->branch?->attended_training_days,
             'actual_working_hours'      => $this->actual_working_hours,
+            'total_payment_amount'      => (float) $this->total_payment_amount ?? 0,
+            'total_attendance_leaves_days'          => $this->total_attendance_leaves_days,
 
             // Registration Details
             'semester'                  => $this->registration?->semester->getLabel(),

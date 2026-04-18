@@ -56,7 +56,9 @@ class ReportController extends Controller
 
         $baseQuery = StudentCompany::query()
             ->withAttendanceDays()
-            ->withActualWorkingHours();
+            ->withActualWorkingHours()
+            ->withTotalPaymentAmount()
+            ->withAttendaceLeavesDays();
 
         $reports = QueryBuilder::for($baseQuery)
             ->allowedFields(ReportResource::allowedFields())
