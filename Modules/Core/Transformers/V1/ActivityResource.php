@@ -2,8 +2,10 @@
 
 namespace Modules\Core\Transformers\V1;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Modules\Core\Entities\User;
 use Modules\Core\Traits\Concerns\SelectsFieldsFromApi;
 use Spatie\QueryBuilder\AllowedFilter;
 
@@ -59,11 +61,25 @@ class ActivityResource extends JsonResource
             AllowedFilter::exact('id'),
             AllowedFilter::exact('log_name'),
             AllowedFilter::exact('event'),
-            AllowedFilter::scope('causer_id'),
-            AllowedFilter::scope('causer_type'),
-            AllowedFilter::scope('subject_id'),
-            AllowedFilter::scope('subject_type'),
-            AllowedFilter::scope('created_at_between'),
+            AllowedFilter::exact('causer_id'),
+            AllowedFilter::exact('causer_type'),
+            AllowedFilter::exact('subject_id'),
+            AllowedFilter::exact('subject_type'),
+            AllowedFilter::exact('created_at_between'),
+
+            AllowedFilter::callback('company_id', function (Builder $query, $value) {
+            $query->whereHasMorph(
+                'causer',
+                [User::class], // نحن نبحث فقط عندما يكون الفاعل User
+                function (Builder $userQuery) use ($value) {
+                    $userQuery->whereHas('branch', function ($branchQuery) use ($value) {
+                        // هنا نفترض أن جدول الفرع يحتوي على company_id
+                        // أو مربوط بجدول الشركات
+                        $branchQuery->where('company_id', $value);
+                    });
+                }
+            );
+        }),
         ];
     }
 
