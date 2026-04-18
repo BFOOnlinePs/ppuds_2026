@@ -116,6 +116,8 @@ class ReportController extends Controller
         $baseQuery = StudentCompany::query()
             ->withAttendanceDays()
             ->withActualWorkingHours()
+            ->withTotalPaymentAmount()
+            ->withAttendaceLeavesDays()
             ->where('id', $id);
 
         $report = QueryBuilder::for($baseQuery)
