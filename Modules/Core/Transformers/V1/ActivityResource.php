@@ -68,17 +68,16 @@ class ActivityResource extends JsonResource
             AllowedFilter::exact('created_at_between'),
 
             AllowedFilter::callback('company_id', function (Builder $query, $value) {
-            $query->whereHasMorph(
-                'causer',
-                [User::class], // نحن نبحث فقط عندما يكون الفاعل User
-                function (Builder $userQuery) use ($value) {
-                    $userQuery->whereHas('branch', function ($branchQuery) use ($value) {
-                        // هنا نفترض أن جدول الفرع يحتوي على company_id
-                        // أو مربوط بجدول الشركات
-                        $branchQuery->where('company_id', $value);
-                    });
-                }
-            );
+            $query->whereHasMorph('causer', [User::class], function (Builder $userQuery) use ($value) {
+
+                // نستخدم العلاقة الموجودة في مودل User للوصول لجدول التدريب
+                $userQuery->whereHas('studentCompanies', function (Builder $studentCompanyQuery) use ($value) {
+
+                    // نبحث عن الـ company_id مباشرة داخل مودل StudentCompany
+                    $studentCompanyQuery->where('company_id', $value);
+
+                });
+            });
         }),
         ];
     }
