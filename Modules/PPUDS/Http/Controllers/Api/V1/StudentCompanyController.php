@@ -69,6 +69,7 @@ class StudentCompanyController extends Controller
             ->allowedFilters(StudentCompanyResource::allowedFilters())
             ->allowedSorts(StudentCompanyResource::allowedSorts())
             ->allowedIncludes(StudentCompanyResource::allowedIncludes())
+            ->withAttendanceDays()
             ->with(['media'])
             ->paginate($perPage)
             ->appends(request()->query());
