@@ -1408,6 +1408,64 @@
                 ]
             }
         },
+        "/api/v1/currencies": {
+            "get": {
+                "tags": [
+                    "Currencies"
+                ],
+                "summary": "Get all currencies",
+                "operationId": "5ade320426b7eaae494349b2d0049353",
+                "parameters": [
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Currencies retrieved successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/currencies/{id}": {
+            "get": {
+                "tags": [
+                    "Currencies"
+                ],
+                "summary": "Get a single currency",
+                "operationId": "afb4b71f23a5fd1c306f259c065ab204",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Currency retrieved successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/users": {
             "get": {
                 "tags": [
@@ -11114,6 +11172,10 @@
         {
             "name": "Auth",
             "description": "Auth"
+        },
+        {
+            "name": "Currencies",
+            "description": "Currencies"
         },
         {
             "name": "Users",
