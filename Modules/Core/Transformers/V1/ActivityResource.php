@@ -80,20 +80,19 @@ class ActivityResource extends JsonResource
             }),
 
             AllowedFilter::callback('company_supervisor', function (Builder $query, $value) {
-                $query->whereHasMorph('causer', [User::class], function (Builder $userQuery) use ($value) {
+    $query->whereHasMorph('causer', [User::class], function (Builder $userQuery) use ($value) {
 
-                    // ملاحظة: تأكد إذا كان اسم العلاقة في مودل User هو 'studentCompany' أو 'studentCompanies'
-                    // استخدمت 'studentCompany' كما طلبت في الكود الخاص بك
-                    $userQuery->whereHas('studentCompany', function (Builder $studentCompanyQuery) use ($value) {
-                        $studentCompanyQuery->whereHas('branch', function (Builder $branchQuery) use ($value) {
-                            $branchQuery->whereHas('departments', function (Builder $departmentQuery) use ($value) {
-                                $departmentQuery->where('user_id', $value);
-                            });
-                        });
-                    });
-
+        // تم التعديل هنا: استخدام studentCompanies بدلاً من studentCompany
+        $userQuery->whereHas('studentCompanies', function (Builder $studentCompanyQuery) use ($value) {
+            $studentCompanyQuery->whereHas('branch', function (Builder $branchQuery) use ($value) {
+                $branchQuery->whereHas('departments', function (Builder $departmentQuery) use ($value) {
+                    $departmentQuery->where('user_id', $value);
                 });
-            }),
+            });
+        });
+
+    });
+}),
         ];
     }
 
