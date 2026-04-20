@@ -80,19 +80,18 @@ class ActivityResource extends JsonResource
             }),
 
             AllowedFilter::callback('company_supervisor', function (Builder $query, $value) {
-    $query->whereHasMorph('causer', [User::class], function (Builder $userQuery) use ($value) {
+                $query->whereHasMorph('causer', [User::class], function (Builder $userQuery) use ($value) {
 
-        // تم التعديل هنا: استخدام studentCompanies بدلاً من studentCompany
-        $userQuery->whereHas('studentCompanies', function (Builder $studentCompanyQuery) use ($value) {
-            $studentCompanyQuery->whereHas('branch', function (Builder $branchQuery) use ($value) {
-                $branchQuery->whereHas('departments', function (Builder $departmentQuery) use ($value) {
-                    $departmentQuery->where('user_id', $value);
+                    $userQuery->whereHas('studentCompanies', function (Builder $studentCompanyQuery) use ($value) {
+                        $studentCompanyQuery->whereHas('branch', function (Builder $branchQuery) use ($value) {
+                            $branchQuery->whereHas('departments', function (Builder $departmentQuery) use ($value) {
+                                $departmentQuery->where('user_id', $value);
+                            });
+                        });
+                    });
+
                 });
-            });
-        });
-
-    });
-}),
+            }),
         ];
     }
 

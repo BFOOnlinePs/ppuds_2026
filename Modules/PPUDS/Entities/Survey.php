@@ -97,4 +97,23 @@ class Survey extends Model implements TranslatableContract, HasMedia
     {
         return $this->hasMany(SurveyQuestion::class, 'survey_id');
     }
+
+    public function answers(): HasMany
+    {
+        return $this->hasMany(SurveyAnswer::class, 'survey_id');
+    }
+
+    public function scopeWithSubmissionStatus(Builder $query, $userId = null)
+    {
+        $userId = $userId ?? auth()->id();
+
+        return $query->withExists(['answers as is_submitted' => function ($q) use ($userId) {
+            $q->where('submitted_by', $userId);
+        }]);
+    }
+
+    public function hasBeenSubmittedBy($userId): bool
+    {
+        return $this->answers()->where('submitted_by', $userId)->exists();
+    }
 }

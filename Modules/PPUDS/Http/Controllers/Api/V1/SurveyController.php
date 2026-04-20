@@ -71,6 +71,7 @@ class SurveyController extends Controller
             ->allowedSorts(SurveyResource::allowedSorts())
             ->allowedIncludes(SurveyResource::allowedIncludes())
             ->with(['translations'])
+            ->withSubmissionStatus()
             ->where('is_active', true)
             ->paginate($perPage)
             ->appends(request()->query());
@@ -132,7 +133,7 @@ class SurveyController extends Controller
     public function store(SurveyRequest $request)
     {
         $survey = DB::transaction(function () use ($request) {
-            
+
             // 1. إنشاء الاستبيان
             $surveyData = $request->safe()->except(['questions']);
             $surveyData['created_by'] = auth()->id();
@@ -142,14 +143,14 @@ class SurveyController extends Controller
             // 2. إنشاء الأسئلة
             if ($request->has('questions')) {
                 foreach ($request->questions as $questionData) {
-                    
+
                     $optionsData = $questionData['options'] ?? [];
-                    
+
                     // تحضير بيانات السؤال
                     $questionAttributes = collect($questionData)
                         ->except(['options'])
                         ->toArray();
-                    
+
                     // إنشاء السؤال مربوطاً بالاستبيان
                     $question = $survey->questions()->create($questionAttributes);
 
@@ -236,7 +237,8 @@ class SurveyController extends Controller
             ->where('id', $survey->id)
             ->allowedFields(SurveyResource::allowedFields())
             ->allowedIncludes(SurveyResource::allowedIncludes())
-            ->with(['translations']) // التأكد من تحميل الترجمات الأساسية
+            ->with(['translations'])
+            ->withSubmissionStatus()
             ->firstOrFail();
 
         return $this->successResponse(

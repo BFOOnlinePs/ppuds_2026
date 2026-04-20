@@ -5,6 +5,7 @@ namespace Modules\PPUDS\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
 use Modules\Core\Traits\ApiResponse;
+use Modules\PPUDS\Entities\Survey;
 use Modules\PPUDS\Entities\SurveyAnswer;
 use Modules\PPUDS\Http\Requests\SurveyAnswerRequest;
 use Modules\PPUDS\Transformers\V1\SurveyAnswerResource;
@@ -79,9 +80,17 @@ class SurveyAnswerController extends Controller
      */
     public function store(SurveyAnswerRequest $request)
     {
-        DB::transaction(function () use ($request) {
-            $surveyId = $request->survey_id;
-            $userId = auth()->id();
+        $survey = Survey::findOrFail($request->survey_id);
+        $userId = auth()->id();
+
+        if ($survey->hasBeenSubmittedBy($userId)) {
+            return response()->json([
+                'status' => false,
+                'message' => __('You have already submitted this survey.'),
+            ], 403);
+        }
+
+        DB::transaction(function () use ($request, $surveyId, $userId) {
 
             foreach ($request->answers as $answerData) {
                 $questionId = $answerData['question_id'];

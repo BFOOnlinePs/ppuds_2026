@@ -24,6 +24,7 @@ class SurveyResource extends JsonResource
             'is_active'             => $this->is_active,
             'semester'              => $this->semester,
             'year'                  => $this->year,
+            'is_submitted'          => (bool) $this->is_submitted,
             'questions'             => SurveyQuestionResource::collection($this->whenLoaded('questions')),
 
             'created_at'            => $this->created_at,
