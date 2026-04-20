@@ -12,6 +12,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 class ActivityResource extends JsonResource
 {
     use SelectsFieldsFromApi;
+
     /**
      * Transform the resource into an array.
      */
@@ -68,17 +69,31 @@ class ActivityResource extends JsonResource
             AllowedFilter::exact('created_at_between'),
 
             AllowedFilter::callback('company_id', function (Builder $query, $value) {
-            $query->whereHasMorph('causer', [User::class], function (Builder $userQuery) use ($value) {
+                $query->whereHasMorph('causer', [User::class], function (Builder $userQuery) use ($value) {
 
-                // نستخدم العلاقة الموجودة في مودل User للوصول لجدول التدريب
-                $userQuery->whereHas('studentCompanies', function (Builder $studentCompanyQuery) use ($value) {
+                    $userQuery->whereHas('studentCompanies', function (Builder $studentCompanyQuery) use ($value) {
 
-                    // نبحث عن الـ company_id مباشرة داخل مودل StudentCompany
-                    $studentCompanyQuery->where('company_id', $value);
+                        $studentCompanyQuery->where('company_id', $value);
+
+                    });
+                });
+            }),
+
+            AllowedFilter::callback('company_supervisor', function (Builder $query, $value) {
+                $query->whereHasMorph('causer', [User::class], function (Builder $userQuery) use ($value) {
+
+                    // ملاحظة: تأكد إذا كان اسم العلاقة في مودل User هو 'studentCompany' أو 'studentCompanies'
+                    // استخدمت 'studentCompany' كما طلبت في الكود الخاص بك
+                    $userQuery->whereHas('studentCompany', function (Builder $studentCompanyQuery) use ($value) {
+                        $studentCompanyQuery->whereHas('branch', function (Builder $branchQuery) use ($value) {
+                            $branchQuery->whereHas('departments', function (Builder $departmentQuery) use ($value) {
+                                $departmentQuery->where('user_id', $value);
+                            });
+                        });
+                    });
 
                 });
-            });
-        }),
+            }),
         ];
     }
 
