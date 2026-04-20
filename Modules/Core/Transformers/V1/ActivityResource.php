@@ -66,7 +66,9 @@ class ActivityResource extends JsonResource
             AllowedFilter::exact('causer_type'),
             AllowedFilter::exact('subject_id'),
             AllowedFilter::exact('subject_type'),
-            AllowedFilter::exact('created_at_between'),
+            AllowedFilter::callback('created_at', function (Builder $query, $value) {
+                $query->whereDate('created_at', $value);
+            }),
 
             AllowedFilter::callback('company_id', function (Builder $query, $value) {
                 $query->whereHasMorph('causer', [User::class], function (Builder $userQuery) use ($value) {
