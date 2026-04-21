@@ -110,9 +110,9 @@ class Index extends Component implements HasForms, HasInfolists
                                                 'single' => __('Single Chat'),
                                             ];
 
-                                            if (!auth()->user()->hasRole('Student')) {
-                                                $options['group'] = __('Group Chat');
-                                            }
+                                            // if (!auth()->user()->hasRole('Student')) {
+                                            //     $options['group'] = __('Group Chat');
+                                            // }
 
                                             return $options;
                                         })
