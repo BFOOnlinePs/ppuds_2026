@@ -82,15 +82,28 @@ class ActivityResource extends JsonResource
             }),
 
             AllowedFilter::callback('company_supervisor', function (Builder $query, $value) {
-                $query->whereHasMorph('causer', [User::class], function (Builder $userQuery) use ($value) {
+                $query->where(function (Builder $query) use ($value) {
 
-                    $userQuery->whereHas('studentCompanies', function (Builder $studentCompanyQuery) use ($value) {
-                        $studentCompanyQuery->whereHas('branch', function (Builder $branchQuery) use ($value) {
-                            $branchQuery->whereHas('departments', function (Builder $departmentQuery) use ($value) {
-                                $departmentQuery->where('user_id', $value);
+                    $query->whereHasMorph('causer', [User::class], function (Builder $userQuery) use ($value) {
+                        $userQuery->whereHas('studentCompanies', function (Builder $studentCompanyQuery) use ($value) {
+                            $studentCompanyQuery->whereHas('branch', function (Builder $branchQuery) use ($value) {
+                                $branchQuery->whereHas('departments', function (Builder $departmentQuery) use ($value) {
+                                    $departmentQuery->where('user_id', $value);
+                                });
                             });
                         });
-                    });
+                    })
+                        ->orWhereHasMorph('subject', [User::class], function (Builder $userQuery) use ($value) {
+                            $userQuery->whereHas('studentCompanies', function (Builder $studentCompanyQuery) use ($value) {
+                                $studentCompanyQuery->whereHas('branch', function (Builder $branchQuery) use ($value) {
+                                    $branchQuery->whereHas('departments', function (Builder $departmentQuery) use ($value) {
+                                        $departmentQuery->where('user_id', $value);
+                                    });
+                                });
+                            });
+                        });
+
+                    // ->orWhereNull('causer_id');
 
                 });
             }),

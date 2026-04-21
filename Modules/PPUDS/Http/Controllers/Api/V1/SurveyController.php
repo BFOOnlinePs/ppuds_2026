@@ -134,7 +134,6 @@ class SurveyController extends Controller
     {
         $survey = DB::transaction(function () use ($request) {
 
-            // 1. إنشاء الاستبيان
             $surveyData = $request->safe()->except(['questions']);
             $surveyData['created_by'] = auth()->id();
 
