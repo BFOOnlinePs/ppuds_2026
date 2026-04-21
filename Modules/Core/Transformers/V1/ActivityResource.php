@@ -94,10 +94,10 @@ class ActivityResource extends JsonResource
                         });
                     });
 
-                    // $query->orWhere(function (Builder $q) use ($value) {
-                    //     $q->where('causer_id', $value)
-                    //         ->where('causer_type', User::class);
-                    // });
+                    $query->orWhere(function (Builder $q) use ($value) {
+                        $q->where('causer_id', $value)
+                            ->where('causer_type', User::class);
+                    });
 
                 });
             }),
