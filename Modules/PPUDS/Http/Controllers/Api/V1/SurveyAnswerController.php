@@ -83,6 +83,8 @@ class SurveyAnswerController extends Controller
         $survey = Survey::findOrFail($request->survey_id);
         $userId = auth()->id();
 
+        $surveyId = $survey->id;
+
         if ($survey->hasBeenSubmittedBy($userId)) {
             return response()->json([
                 'status' => false,

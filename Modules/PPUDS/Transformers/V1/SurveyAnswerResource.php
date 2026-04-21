@@ -21,7 +21,7 @@ class SurveyAnswerResource extends JsonResource
             'survey_question_id'    => $this->survey_question_id,
             'text_answer'           => $this->text_answer,
             'selected_option_id'    => $this->selected_option_id,
-            
+
             'selected_option'       => new SurveyQuestionOptionResource($this->whenLoaded('option')),
             'question'              => new SurveyQuestionResource($this->whenLoaded('question')),
             'survey'                => new SurveyResource($this->whenLoaded('survey')),
