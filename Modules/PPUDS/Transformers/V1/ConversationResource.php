@@ -4,7 +4,6 @@ namespace Modules\PPUDS\Transformers\V1;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Spatie\QueryBuilder\AllowedInclude;
 use Spatie\QueryBuilder\AllowedSort;
 
 class ConversationResource extends JsonResource
@@ -41,7 +40,7 @@ class ConversationResource extends JsonResource
 
     public static function allowedIncludes(): array
     {
-        return ['lastMessage', AllowedInclude::relationship('participants', 'participants.participantable'), 'group', 'messages'];
+        return ['lastMessage', 'participants.participantable', 'group', 'messages'];
     }
 
     public static function allowedSorts(): array
