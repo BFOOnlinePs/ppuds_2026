@@ -82,27 +82,25 @@ class ActivityResource extends JsonResource
             }),
 
             AllowedFilter::callback('company_supervisor', function (Builder $query, $value) {
-    $query->where(function (Builder $query) use ($value) {
+                $query->where(function (Builder $query) use ($value) {
 
-        // 1. الأنشطة التي قام بها الطالب التابع لهذا المشرف (يجلب أحداث الـ updated التي قام بها 105)
-        $query->whereHasMorph('causer', [User::class], function (Builder $userQuery) use ($value) {
-            $userQuery->whereHas('studentCompanies', function (Builder $studentCompanyQuery) use ($value) {
-                $studentCompanyQuery->whereHas('branch', function (Builder $branchQuery) use ($value) {
-                    $branchQuery->whereHas('departments', function (Builder $departmentQuery) use ($value) {
-                        $departmentQuery->where('user_id', $value);
+                    $query->whereHasMorph('causer', [User::class], function (Builder $userQuery) use ($value) {
+                        $userQuery->whereHas('studentCompanies', function (Builder $studentCompanyQuery) use ($value) {
+                            $studentCompanyQuery->whereHas('branch', function (Builder $branchQuery) use ($value) {
+                                $branchQuery->whereHas('departments', function (Builder $departmentQuery) use ($value) {
+                                    $departmentQuery->where('user_id', $value);
+                                });
+                            });
+                        });
                     });
+
+                    // $query->orWhere(function (Builder $q) use ($value) {
+                    //     $q->where('causer_id', $value)
+                    //         ->where('causer_type', User::class);
+                    // });
+
                 });
-            });
-        });
-
-        // 2. الأنشطة التي قام بها المشرف نفسه (يجلب أحداث الـ created التي قام بها 146)
-        $query->orWhere(function (Builder $q) use ($value) {
-            $q->where('causer_id', $value)
-              ->where('causer_type', User::class); // للتأكد من أن الفاعل هو موديل User
-        });
-
-    });
-}),
+            }),
         ];
     }
 
