@@ -18,6 +18,7 @@ use Modules\PPUDS\Http\Controllers\Api\V1\StudentAttendanceReportController;
 use Modules\PPUDS\Http\Controllers\Api\V1\StudentCompanyController;
 use Modules\PPUDS\Http\Controllers\Api\V1\SurveyAnswerController;
 use Modules\PPUDS\Http\Controllers\Api\V1\SurveyController;
+use Modules\PPUDS\Http\Controllers\Api\V1\WorkExperienceController;
 
 Route::prefix('v1')->as('api.v1.')->group(function () {
     Route::middleware(['auth:sanctum', 'api.localize'])->group(function () {
@@ -179,6 +180,16 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
                 ->group(function () {
                     Route::get('/', 'index')->name('index');
                     Route::get('/{report}', 'show')->name('show');
+                });
+
+            Route::controller(WorkExperienceController::class)
+                ->prefix('work-experiences')
+                ->as('work-experiences.')
+                ->group(function () {
+                    Route::get('/', 'index')->name('index');
+                    Route::post('/', 'store')->name('store');
+                    Route::get('/{workExperience}', 'show')->name('show');
+                    Route::delete('/{workExperience}', 'destroy')->name('destroy');
                 });
         });
     });

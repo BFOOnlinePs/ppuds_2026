@@ -10082,6 +10082,284 @@
                 ]
             }
         },
+        "/api/v1/ppuds/work-experiences": {
+            "get": {
+                "tags": [
+                    "Work Experiences"
+                ],
+                "summary": "Get all work experiences",
+                "description": "Retrieve a list of all alumni work experiences with filtering and sorting",
+                "operationId": "c0749c4df7f75270bc9678a33b9a8903",
+                "parameters": [
+                    {
+                        "name": "Accept-Language",
+                        "in": "header",
+                        "description": "Language header (ar or en)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "default": "ar",
+                            "example": "en"
+                        }
+                    },
+                    {
+                        "name": "filter[company_name]",
+                        "in": "query",
+                        "description": "Filter by company name",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Work experiences retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Work experiences retrieved successfully"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/WorkExperienceResource"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Work Experiences"
+                ],
+                "summary": "Create work experience",
+                "operationId": "db7166cb701af1437a5fe66595c58d84",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "position",
+                                    "sector",
+                                    "start_date"
+                                ],
+                                "properties": {
+                                    "company_id": {
+                                        "type": "integer",
+                                        "example": 5
+                                    },
+                                    "company_name": {
+                                        "type": "string",
+                                        "example": "PPU"
+                                    },
+                                    "position": {
+                                        "type": "string",
+                                        "example": "Backend Developer"
+                                    },
+                                    "sector": {
+                                        "type": "string",
+                                        "example": "IT"
+                                    },
+                                    "location": {
+                                        "type": "string",
+                                        "example": "Hebron"
+                                    },
+                                    "start_date": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2023-01-01"
+                                    },
+                                    "end_date": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2024-01-01",
+                                        "nullable": true
+                                    },
+                                    "is_current": {
+                                        "type": "boolean",
+                                        "example": false
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "example": "Developed APIs..."
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Created successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/WorkExperienceResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/work-experiences/{id}": {
+            "get": {
+                "tags": [
+                    "Work Experiences"
+                ],
+                "summary": "Get work experience details",
+                "operationId": "3f94bba2c5fa17a67eda06d03a1521d6",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Work Experience ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Work experience retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Work experience retrieved successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/WorkExperienceResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Work Experiences"
+                ],
+                "summary": "Delete work experience",
+                "operationId": "9c9713acee008848b987778959890756",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Work Experience ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Work experience deleted successfully"
+                                        },
+                                        "data": {
+                                            "type": "null",
+                                            "example": null,
+                                            "nullable": true
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "You are not authorized to delete this record"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/reels/reels": {
             "get": {
                 "tags": [
@@ -11122,6 +11400,75 @@
                 "xml": {
                     "name": "StudentAttendanceReportResource"
                 }
+            },
+            "WorkExperienceResource": {
+                "title": "Work Experience Resource",
+                "description": "Alumni work experience details",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "user_id": {
+                        "type": "integer",
+                        "example": 10
+                    },
+                    "company_id": {
+                        "type": "integer",
+                        "example": 5,
+                        "nullable": true
+                    },
+                    "company_name": {
+                        "type": "string",
+                        "example": "Google",
+                        "nullable": true
+                    },
+                    "resolved_company_name": {
+                        "type": "string",
+                        "example": "Google"
+                    },
+                    "position": {
+                        "type": "string",
+                        "example": "Senior Backend Developer"
+                    },
+                    "sector": {
+                        "type": "string",
+                        "example": "Information Technology"
+                    },
+                    "location": {
+                        "type": "string",
+                        "example": "Ramallah",
+                        "nullable": true
+                    },
+                    "start_date": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2022-01-15"
+                    },
+                    "end_date": {
+                        "type": "string",
+                        "format": "date",
+                        "example": "2024-03-01",
+                        "nullable": true
+                    },
+                    "is_current": {
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "description": {
+                        "type": "string",
+                        "example": "Developed RESTful APIs using Laravel...",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object",
+                "xml": {
+                    "name": "WorkExperienceResource"
+                }
             }
         },
         "securitySchemes": {
@@ -11252,6 +11599,10 @@
         {
             "name": "Surveys",
             "description": "Surveys"
+        },
+        {
+            "name": "Work Experiences",
+            "description": "Work Experiences"
         },
         {
             "name": "Reels",
