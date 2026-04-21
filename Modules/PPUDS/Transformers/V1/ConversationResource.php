@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace Modules\PPUDS\Transformers\V1;
 
@@ -32,16 +32,15 @@ class ConversationResource extends JsonResource
             'created_at'        => $this->created_at,
             'updated_at'        => $this->updated_at,
 
-            // العلاقات حسب الجداول
             'last_message'      => new MessageResource($this->whenLoaded('lastMessage')),
-            'participants'      => $this->whenLoaded('participants'), 
+            'participants'      => $this->whenLoaded('participants'),
             'group_details'     => $this->when($this->type == 'group', $this->group),
         ];
     }
 
     public static function allowedIncludes(): array
     {
-        return ['lastMessage', 'participants', 'group', 'messages'];
+        return ['lastMessage', 'participants.name', 'group', 'messages'];
     }
 
     public static function allowedSorts(): array
