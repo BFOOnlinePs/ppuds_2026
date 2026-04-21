@@ -62,7 +62,7 @@ class ConversationResource extends JsonResource
 
     public static function allowedIncludes(): array
     {
-        return ['lastMessage', 'participants', 'participants.participantable', 'group', 'messages', 'partner'];
+        return ['lastMessage', 'participants', 'participants.participantable', 'group', 'messages'];
     }
 
     public static function allowedSorts(): array
