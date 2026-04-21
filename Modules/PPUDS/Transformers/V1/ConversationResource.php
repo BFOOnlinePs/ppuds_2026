@@ -19,7 +19,7 @@ class ConversationResource extends JsonResource
 
             'name' => $this->name ?? ($this->type == 'private' ? $this->getRecipientName() : null),
 
-            'partner' => $this->whenLoaded('partners', function () use ($authId) {
+            'partner' => $this->whenLoaded('participants', function () use ($authId) {
 
                 $user = $this->participants->firstWhere('participantable_id', '!=', $authId)?->participantable;
 
