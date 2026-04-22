@@ -21,7 +21,6 @@ class WorkExperience extends Model
         'id',
         'user_id',
         'company_name',
-        'city_id',
         'start_date',
         'end_date',
         'is_current',

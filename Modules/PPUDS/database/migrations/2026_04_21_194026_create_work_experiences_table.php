@@ -18,7 +18,6 @@ return new class extends Migration
             $table->string('company_name');
             $table->string('position');
             $table->foreignId('sector')->nullable()->constrained(config('ppuds.table_prefix') . 'company_categories')->nullOnDelete();
-            $table->foreignId('city_id')->constrained(config('geolocation.table_prefix') . 'cities')->cascadeOnDelete();
             $table->date('start_date');
             $table->date('end_date')->nullable();
             $table->boolean('is_current')->default(false);
