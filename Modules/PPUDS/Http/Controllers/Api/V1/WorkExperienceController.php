@@ -127,6 +127,8 @@ class WorkExperienceController extends Controller
 
             $data['user_id'] = auth()->id();
 
+            $data['created_by'] = auth()->id();
+
             if (isset($data['is_current']) && $data['is_current']) {
                 $data['end_date'] = null;
             }
