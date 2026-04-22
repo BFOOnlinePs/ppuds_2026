@@ -48,8 +48,7 @@ class WorkExperienceResource extends JsonResource
             'description'           => $this->description,
             'created_at'            => $this->created_at,
 
-            'user'                  => new UserResource($this->whenLoaded('user')),
-            'company'               => $this->whenLoaded('company'),
+            'user'                  => UserResource::make($this->whenLoaded('user')),
         ];
     }
 
