@@ -14,7 +14,7 @@ class WorkExperience extends Model
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
-        $this->setTable(config('ppuds.table_prefix') . 'work_experiences');
+        $this->setTable(config('ppuds.table_prefix').'work_experiences');
     }
 
     protected $fillable = [
@@ -51,7 +51,7 @@ class WorkExperience extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function sector()
+    public function sectorCategory()
     {
         return $this->belongsTo(CompanyCategory::class, 'sector');
     }
