@@ -52,7 +52,7 @@ class NoteResource extends JsonResource
         return [
             AllowedFilter::callback('name', fn (Builder $query, $value) => $query->whereTranslationLike('name', "%{$value}%")),
             AllowedFilter::callback('content', fn (Builder $query, $value) => $query->whereTranslationLike('content', "%{$value}%")),
-            
+
             AllowedFilter::exact('is_pinned'),
             AllowedFilter::exact('user_id'),
             AllowedFilter::callback('date_from', fn (Builder $query, $value) => $query->whereDate('note_date', '>=', $value)),
