@@ -68,6 +68,12 @@ class StudentCompanyResource extends JsonResource
                 });
             }),
 
+            AllowedFilter::callback('university_supervisor', function (Builder $query, $value) {
+                $query->whereHas('registration', function ($registrationQuery) use ($value) {
+                    $registrationQuery->where('supervisor_id', $value);
+                });
+            }),
+
             AllowedFilter::callback('student_name', function (Builder $query, $value) {
                 $query->whereHas('student', function (Builder $q) use ($value) {
                     $q->where('name', 'like', '%'.$value.'%');
