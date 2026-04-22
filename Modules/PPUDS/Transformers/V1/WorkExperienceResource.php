@@ -40,7 +40,7 @@ class WorkExperienceResource extends JsonResource
             'company_name'          => $this->company_name,
 
             'position'              => $this->position,
-            'sector_id'                => $this->sector,
+            'sector'                => CompanyCategoryResource::make($this->whenLoaded('sector')),
             'location'              => $this->location,
             'start_date'            => $this->start_date,
             'end_date'              => $this->end_date,
@@ -49,7 +49,6 @@ class WorkExperienceResource extends JsonResource
             'created_at'            => $this->created_at,
 
             'user'                  => UserResource::make($this->whenLoaded('user')),
-            'sector'                => CompanyCategoryResource::make($this->whenLoaded('sector')),
         ];
     }
 
