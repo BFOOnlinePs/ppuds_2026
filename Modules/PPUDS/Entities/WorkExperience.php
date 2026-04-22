@@ -14,7 +14,7 @@ class WorkExperience extends Model
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
-        $this->setTable(config('ppuds.table_prefix') . 'announcements');
+        $this->setTable(config('ppuds.table_prefix') . 'work_experiences');
     }
 
     protected $fillable = [
