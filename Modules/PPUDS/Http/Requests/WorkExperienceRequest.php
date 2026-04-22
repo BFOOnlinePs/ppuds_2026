@@ -15,7 +15,7 @@ class WorkExperienceRequest extends FormRequest
             'company_name' => ['nullable', 'string', 'max:255', 'required_without:company_id'],
 
             'position'     => ['required', 'string', 'max:255'],
-            'sector'       => ['required', 'string', 'max:255'],
+            'sector'       => ['required', 'numeric'],
             'location'     => ['nullable', 'string', 'max:255'],
 
             'start_date'   => ['required', 'date', 'before_or_equal:today'],
