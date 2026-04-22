@@ -51,6 +51,11 @@ class WorkExperience extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    public function sector()
+    {
+        return $this->belongsTo(CompanyCategory::class, 'sector');
+    }
+
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');
