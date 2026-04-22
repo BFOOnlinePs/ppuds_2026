@@ -24,6 +24,7 @@ class WorkExperience extends Model
         'start_date',
         'end_date',
         'is_current',
+        'location',
         'sector',
         'position',
         'description',
