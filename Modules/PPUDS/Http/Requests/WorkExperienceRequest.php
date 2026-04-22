@@ -12,7 +12,7 @@ class WorkExperienceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'company_name' => ['nullable', 'string', 'max:255', 'required_without:company_id'],
+            'company_name' => ['required', 'string', 'max:255'],
 
             'position'     => ['required', 'string', 'max:255'],
             'sector'       => ['required', 'numeric'],

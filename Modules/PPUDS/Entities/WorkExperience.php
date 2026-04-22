@@ -31,6 +31,12 @@ class WorkExperience extends Model
         'created_by',
     ];
 
+    protected $casts = [
+        'start_date' => 'date',
+        'end_date' => 'date',
+        'is_current' => 'boolean',
+    ];
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
