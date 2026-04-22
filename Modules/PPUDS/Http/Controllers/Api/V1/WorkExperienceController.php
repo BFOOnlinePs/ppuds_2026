@@ -70,7 +70,6 @@ class WorkExperienceController extends Controller
             ->allowedFilters(WorkExperienceResource::allowedFilters())
             ->allowedSorts(WorkExperienceResource::allowedSorts())
             ->allowedIncludes(WorkExperienceResource::allowedIncludes())
-            ->with(['user', 'company']) // جلب العلاقات الأساسية لمنع مشكلة N+1
             ->paginate($perPage)
             ->appends(request()->query());
 
