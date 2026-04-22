@@ -94,7 +94,6 @@ class WorkExperienceController extends Controller
      *
      * @OA\Schema(
      * required={"position", "sector", "start_date"},
-     * @OA\Property(property="company_id", type="integer", example=5),
      * @OA\Property(property="company_name", type="string", example="PPU"),
      * @OA\Property(property="position", type="string", example="Backend Developer"),
      * @OA\Property(property="sector", type="string", example="IT"),
