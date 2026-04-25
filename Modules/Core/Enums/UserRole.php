@@ -13,13 +13,13 @@ enum UserRole: string implements HasLabel, HasColor, HasIcon
     case USER = 'User';
     case CUSTOMER = 'Customer';
     case STUDENT = 'Student';
-    case HEAD_OF_DEPARTMENT = 'Head of Department';
-    case ADMINISTRATIVE_ASSISTANT = 'Administrative Assistant';
+    case HEAD_OF_DEPARTMENT = 'Head of Department'; // رئيس قسم
+    case ADMINISTRATIVE_ASSISTANT = 'Administrative Assistant'; // مساعد إداري
     case M_AND_E_OFFICER = 'M&E Officer'; // تم حل مشكلة الرمز & هنا
-    case CORPORATE_RELATIONS_OFFICER = 'Corporate Relations Officer';
-    case PRACTICAL_TRAINING_SUPERVISOR = 'Practical Training Supervisor';
-    case COMPANY_SUPERVISOR = 'Company Supervisor';
-   
+    case CORPORATE_RELATIONS_OFFICER = 'Corporate Relations Officer'; // مسؤول العلاقات المؤسسية
+    case PRACTICAL_TRAINING_SUPERVISOR = 'Practical Training Supervisor'; // مشرف التدريب العملي
+    case COMPANY_SUPERVISOR = 'Company Supervisor'; // مشرف الشركة
+
     public function getLabel(): ?string
     {
         return match ($this) {

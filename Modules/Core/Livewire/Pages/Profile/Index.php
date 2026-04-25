@@ -207,10 +207,18 @@ class Index extends Component implements HasForms, HasInfolists
                                     ->visible(fn() => auth()->user()->hasRole('Student')),
 
                                 Tabs\Tab::make('Work Experience')
-                                    ->icon('heroicon-o-academic-cap')
+                                    ->icon('heroicon-o-briefcase')
                                     ->schema([
                                         Grid::make(2)
-                                            ->schema([]),
+                                            ->schema([
+                                                Livewire::make(
+                                                    \Modules\PPUDS\Livewire\Pages\Student\Details\WorkExperience\Index::class,
+                                                    [
+                                                        'studentId' => auth()->id()
+                                                    ]
+                                                )
+                                                    ->columnSpanFull()
+                                            ]),
                                     ])
                                     ->visible(fn() => auth()->user()->hasRole('Student')),
 

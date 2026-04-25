@@ -56,6 +56,27 @@ class PermissionSeeder extends Seeder
                 'module_name' => 'Student',
             ],
 
+            [
+                'name' => 'WorkExperience View List',
+                'guard_name' => 'web',
+                'module_name' => 'WorkExperience',
+            ],
+            [
+                'name' => 'WorkExperience Create',
+                'guard_name' => 'web',
+                'module_name' => 'WorkExperience',
+            ],
+            [
+                'name' => 'WorkExperience Update',
+                'guard_name' => 'web',
+                'module_name' => 'WorkExperience',
+            ],
+            [
+                'name' => 'WorkExperience Delete',
+                'guard_name' => 'web',
+                'module_name' => 'WorkExperience',
+            ],
+
 
             // TODO Company Category
             [
