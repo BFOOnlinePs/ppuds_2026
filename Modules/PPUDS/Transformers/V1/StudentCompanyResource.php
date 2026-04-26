@@ -110,7 +110,7 @@ class StudentCompanyResource extends JsonResource
             'payments.currency',
 
             'branch.departments',
-            'branch.departments.supervisor',
+            'branch.departments.user',
             'branch.departments.supervisors',
         ];
     }
