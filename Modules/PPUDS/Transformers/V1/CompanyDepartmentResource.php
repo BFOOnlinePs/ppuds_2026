@@ -20,7 +20,12 @@ class CompanyDepartmentResource extends JsonResource
             'name'                      => $this->name,
             'supervisor_id'             => $this->pivot->user_id ?? null,
 
-            'supervisor'            => UserResource::make($this->whenLoaded('user')),
+            'supervisor'                => UserResource::make(function (){
+                if ($this->pivot && $this->pivot->user_id) {
+                    return $this->supervisors()->where('user_id', $this->pivot->user_id)->first();
+                }
+                return null;
+            }),
         ];
     }
 
