@@ -30,8 +30,9 @@ class StudentCompanyResource extends JsonResource
             'student'           => UserResource::make($this->whenLoaded('student')),
             'company'           => CompanyResource::make($this->whenLoaded('company')),
             'branch'            => BranchResource::make($this->whenLoaded('branch')),
-            'payments'          => PaymentResource::collection($this->whenLoaded('payments')),
             'department'        => CompanyDepartmentResource::make($this->whenLoaded('department')),
+            'department_user'   => UserResource::make($this->whenLoaded('department.user')),
+            'payments'          => PaymentResource::collection($this->whenLoaded('payments')),
         ];
     }
 
@@ -111,6 +112,7 @@ class StudentCompanyResource extends JsonResource
 
             'branch.departments',
             'branch.departments.user',
+            'department.user',
             'branch.departments.supervisors',
         ];
     }
