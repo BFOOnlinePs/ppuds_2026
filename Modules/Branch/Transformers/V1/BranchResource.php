@@ -80,7 +80,8 @@ class BranchResource extends JsonResource
         return [
             'workingHours',
             'departments',
-            'translations'
+            'translations',
+            'departments.user'
         ];
     }
 

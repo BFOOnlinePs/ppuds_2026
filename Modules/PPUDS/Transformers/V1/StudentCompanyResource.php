@@ -109,8 +109,6 @@ class StudentCompanyResource extends JsonResource
             'payments',
             'payments.currency',
 
-            'department.supervisors',
-
             'branch.departments',
             'branch.departments.supervisor',
             'branch.departments.supervisors',
