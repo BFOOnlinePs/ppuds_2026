@@ -78,16 +78,14 @@ class CompanyDepartment extends Model implements TranslatableContract
 
     public function branches(): BelongsToMany
     {
-        // ضع الاسم الذي نسخته هنا بدلاً من 'الاسم_الصحيح_للجدول'
-        return $this->belongsToMany(Branch::class, 'الاسم_الصحيح_للجدول', 'company_department_id', 'branch_id')
+        return $this->belongsToMany(Branch::class, 'ppud_branch_department', 'company_department_id', 'branch_id')
             ->withPivot('user_id')
             ->withTimestamps();
     }
 
     public function supervisors(): BelongsToMany
     {
-        // وضع نفس الاسم هنا أيضاً
-        return $this->belongsToMany(User::class, 'الاسم_الصحيح_للجدول', 'company_department_id', 'user_id')
+        return $this->belongsToMany(User::class, 'ppud_branch_department', 'company_department_id', 'user_id')
             ->distinct();
     }
 }
