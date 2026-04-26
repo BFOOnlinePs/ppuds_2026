@@ -5,7 +5,6 @@ namespace Modules\PPUDS\Transformers\V1;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Database\Eloquent\Builder;
-use Modules\Branch\Transformers\V1\BranchResource;
 use Modules\Core\Transformers\V1\UserResource;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
@@ -15,17 +14,19 @@ class CompanyDepartmentResource extends JsonResource
 
     public function toArray(Request $request): array
     {
+        $supervisorId = $this->pivot->user_id ?? null;
+
+        $supervisor = null;
+        if ($this->relationLoaded('supervisors') && $supervisorId) {
+            $supervisor = $this->supervisors->firstWhere('id', $supervisorId);
+        }
+
         return [
             'id'                        => $this->id,
             'name'                      => $this->name,
             'supervisor_id'             => $this->pivot->user_id ?? null,
 
-            'supervisor'                => UserResource::make(function (){
-                if ($this->pivot && $this->pivot->user_id) {
-                    return $this->supervisors()->where('user_id', $this->pivot->user_id)->first();
-                }
-                return null;
-            }),
+            'supervisor'                => $supervisor ? UserResource::make($supervisor) : null,
         ];
     }
 
