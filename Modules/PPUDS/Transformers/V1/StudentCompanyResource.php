@@ -112,6 +112,8 @@ class StudentCompanyResource extends JsonResource
             'department.supervisors',
 
             'branch.departments',
+            'branch.departments.supervisor',
+            'branch.departments.supervisors',
         ];
     }
 }
