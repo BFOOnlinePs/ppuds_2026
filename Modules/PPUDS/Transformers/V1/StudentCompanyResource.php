@@ -88,7 +88,7 @@ class StudentCompanyResource extends JsonResource
     }
 
     public static function allowedSorts(): array
-    {department
+    {
         return [
             AllowedSort::field('id'),
             AllowedSort::field('created_at'),
