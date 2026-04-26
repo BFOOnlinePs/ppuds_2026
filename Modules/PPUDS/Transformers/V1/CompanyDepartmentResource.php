@@ -34,6 +34,7 @@ class CompanyDepartmentResource extends JsonResource
     {
         return [
             AllowedFilter::callback('name', fn(Builder $query, $value) => $query->whereTranslationLike('name', "%{$value}%")),
+            AllowedFilter::exact('id'),
         ];
     }
 
@@ -50,6 +51,7 @@ class CompanyDepartmentResource extends JsonResource
     {
         return [
             'createdBy',
+            'supervisors'
         ];
     }
 }

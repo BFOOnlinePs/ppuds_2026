@@ -82,4 +82,10 @@ class CompanyDepartment extends Model implements TranslatableContract
             ->withPivot('user_id')
             ->withTimestamps();
     }
+
+    public function supervisors(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'ppud_branch_department', 'company_department_id', 'user_id')
+            ->distinct();
+    }
 }
