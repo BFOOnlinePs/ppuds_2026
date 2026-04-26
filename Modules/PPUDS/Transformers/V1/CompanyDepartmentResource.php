@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Database\Eloquent\Builder;
 use Modules\Branch\Transformers\V1\BranchResource;
+use Modules\Core\Transformers\V1\UserResource;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
 
@@ -17,7 +18,9 @@ class CompanyDepartmentResource extends JsonResource
         return [
             'id'                        => $this->id,
             'name'                      => $this->name,
-            'supervisor_id'             => $this->pivot->user_id ?? null
+            'supervisor_id'             => $this->pivot->user_id ?? null,
+
+            'supervisor'            => UserResource::make($this->whenLoaded('supervisor')),
         ];
     }
 
@@ -51,7 +54,8 @@ class CompanyDepartmentResource extends JsonResource
     {
         return [
             'createdBy',
-            'supervisors'
+            'supervisors',
+            'supervisor'
         ];
     }
 }
