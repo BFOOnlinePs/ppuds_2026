@@ -51,6 +51,7 @@ class CompanyDepartmentResource extends JsonResource
     {
         return [
             'createdBy',
+            'branches',
             'supervisors'
         ];
     }
