@@ -20,7 +20,7 @@ class CompanyDepartmentResource extends JsonResource
             'name'                      => $this->name,
             'supervisor_id'             => $this->pivot->user_id ?? null,
 
-            'supervisor'            => UserResource::make($this->whenLoaded('supervisor')),
+            'supervisor'            => UserResource::make($this->whenLoaded('user')),
         ];
     }
 
@@ -55,7 +55,7 @@ class CompanyDepartmentResource extends JsonResource
         return [
             'createdBy',
             'supervisors',
-            'supervisor'
+            'user'
         ];
     }
 }
