@@ -13,7 +13,7 @@ class AuthenticateViaKeycloakAction
 {
     public function execute(KeycloakUser $keycloakUser): User
     {
-        dd(json_decode($keycloakUser->token));
+        dd(json_decode(base64_decode(explode('.', $keycloakUser->token)[1]), true));
         return DB::transaction(function () use ($keycloakUser) {
             // 1. فك تشفير التوكن واستخراج الأدوار (Roles)
             $payload = json_decode(base64_decode(explode('.', $keycloakUser->token)[1]), true);
