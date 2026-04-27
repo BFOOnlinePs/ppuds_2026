@@ -7,6 +7,7 @@ Route::get('/login', [KeycloakAuthController::class, 'redirect'])->name('login')
 
 Route::middleware('web')->group(function () {
     Route::get('/auth/keycloak/callback', [KeycloakAuthController::class, 'callback'])->name('keycloak.callback');
+    Route::post('/logout', [KeycloakAuthController::class, 'logout'])->name('logout');
 });
 
 
