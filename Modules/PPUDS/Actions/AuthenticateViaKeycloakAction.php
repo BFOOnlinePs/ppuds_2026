@@ -12,7 +12,7 @@ class AuthenticateViaKeycloakAction
 {
     public function execute(KeycloakUser $keycloakUser): User
     {
-        // dd($keycloakUser);
+        dd($keycloakUser);
         return DB::transaction(function () use ($keycloakUser) {
 
 
