@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\DB;
 use Laravel\Socialite\Contracts\User as KeycloakUser;
 use Modules\Core\Entities\User;
 
-class KeycloakAuthController
+class AuthenticateViaKeycloakAction
 {
     public function handle() {}
 
