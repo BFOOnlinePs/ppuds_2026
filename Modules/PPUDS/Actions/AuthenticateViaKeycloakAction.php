@@ -13,9 +13,7 @@ class AuthenticateViaKeycloakAction
     public function execute(KeycloakUser $keycloakUser) : User
     {
         return DB::transaction(function () use ($keycloakUser) {
-            $user = User::updateOrCreate(
-
-            );
+            dd($keycloakUser);
         });
     }
 }
