@@ -1,7 +1,14 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Modules\Clinic\Entities\Survey;
+use Modules\PPUDS\Http\Controllers\KeycloakAuthController;
+
+Route::get('/login', [KeycloakAuthController::class, 'redirect'])->name('login');
+
+Route::middleware('web')->group(function () {
+    Route::get('/auth/keycloak/callback', [KeycloakAuthController::class, 'callback'])->name('keycloak.callback');
+});
+
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::group(

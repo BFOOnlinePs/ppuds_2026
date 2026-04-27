@@ -3,10 +3,13 @@
 namespace Modules\PPUDS\Providers;
 
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Nwidart\Modules\Traits\PathNamespace;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use SocialiteProviders\Manager\SocialiteWasCalled;
+use SocialiteProviders\Keycloak\KeycloakExtendSocialite;
 
 class PPUDSServiceProvider extends ServiceProvider
 {
@@ -30,6 +33,11 @@ class PPUDSServiceProvider extends ServiceProvider
 
         // This for settings
         $this->loadMigrationsFrom(module_path('PPUDS', 'database/Settings'));
+
+        Event::listen(
+            SocialiteWasCalled::class,
+            [KeycloakExtendSocialite::class, 'handle']
+        );
     }
 
     /**
