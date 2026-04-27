@@ -15,23 +15,23 @@ class StudentCompanyResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'                => $this->id,
-            'registration_id'   => $this->registration_id,
-            'student_id'        => $this->student_id,
-            'company_id'        => $this->company_id,
-            'branch_id'         => $this->branch_id,
-            'department_id'     => $this->department_id,
-            'status'            => $this->status,
-            'attendance_days'   => (int) $this->attendance_days ?? 0,
-            'created_by'        => $this->created_by,
-            'created_at'        => $this->created_at,
+            'id' => $this->id,
+            'registration_id' => $this->registration_id,
+            'student_id' => $this->student_id,
+            'company_id' => $this->company_id,
+            'branch_id' => $this->branch_id,
+            'department_id' => $this->department_id,
+            'status' => $this->status,
+            'attendance_days' => (int) $this->attendance_days ?? 0,
+            'created_by' => $this->created_by,
+            'created_at' => $this->created_at,
 
-            'registration'      => RegistrationResource::make($this->whenLoaded('registration')),
-            'student'           => UserResource::make($this->whenLoaded('student')),
-            'company'           => CompanyResource::make($this->whenLoaded('company')),
-            'branch'            => BranchResource::make($this->whenLoaded('branch')),
-            'department'        => CompanyDepartmentResource::make($this->whenLoaded('department')),
-            'payments'          => PaymentResource::collection($this->whenLoaded('payments')),
+            'registration' => RegistrationResource::make($this->whenLoaded('registration')),
+            'student' => UserResource::make($this->whenLoaded('student')),
+            'company' => CompanyResource::make($this->whenLoaded('company')),
+            'branch' => BranchResource::make($this->whenLoaded('branch')),
+            'department' => CompanyDepartmentResource::make($this->whenLoaded('department')),
+            'payments' => PaymentResource::collection($this->whenLoaded('payments')),
         ];
     }
 
@@ -82,6 +82,17 @@ class StudentCompanyResource extends JsonResource
             AllowedFilter::callback('company_name', function (Builder $query, $value) {
                 $query->whereHas('company', function (Builder $q) use ($value) {
                     $q->whereTranslationLike('name', '%'.$value.'%');
+                });
+            }),
+
+            AllowedFilter::callback('search', function (Builder $query, $value) {
+                $query->where(function (Builder $q) use ($value) {
+                    $q->whereHas('student', function (Builder $studentQuery) use ($value) {
+                        $studentQuery->where('name', 'like', '%'.$value.'%');
+                    })
+                        ->orWhereHas('company', function (Builder $companyQuery) use ($value) {
+                            $companyQuery->whereTranslationLike('name', '%'.$value.'%');
+                        });
                 });
             }),
         ];
