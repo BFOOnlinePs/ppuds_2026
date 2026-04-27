@@ -6903,13 +6903,13 @@
                     }
                 ]
             },
-            "post": {
+            "patch": {
                 "tags": [
                     "Companies"
                 ],
                 "summary": "Update a company (Partial Update / PATCH)",
                 "description": "Partially updates company data, branches, or logo. Note: Due to multipart/form-data constraints, send a POST request with '_method=PATCH' in the body.",
-                "operationId": "9a1dfaa1cf79ac0616d878b2a656cc86",
+                "operationId": "32fafe3a130ea9883be126bfe7bac45c",
                 "parameters": [
                     {
                         "name": "company",
