@@ -5,6 +5,7 @@ namespace Modules\PPUDS\Transformers\V1;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use Modules\Branch\Transformers\V1\BranchResource;
 use Modules\Core\Transformers\V1\UserResource;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -58,6 +59,12 @@ class CompanyResource extends JsonResource
             AllowedFilter::exact('company_category_id'),
             AllowedFilter::exact('website'),
             AllowedFilter::exact('status'),
+
+            AllowedFilter::callback('has_current_students', function (Builder $query, $value) {
+                if (filter_var($value, FILTER_VALIDATE_BOOLEAN)) {
+                    $query->hasCurrentStudents();
+                }
+            }),
         ];
     }
 

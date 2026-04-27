@@ -15,6 +15,7 @@ use Modules\Core\Enums\ImageQuality;
 use Modules\Core\Enums\ImageSize;
 use Modules\Core\Services\ImageService;
 use Modules\PPUDS\Enums\CompanyStatus;
+use Modules\PPUDS\Settings\GeneralSettings;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Image\Enums\Fit;
@@ -128,8 +129,8 @@ class Company extends Model implements TranslatableContract, HasMedia
 
             $size = ImageSize::MEDIUM;
 
-            ImageService::optimize($media->getPath() , ImageQuality::HIGH->value);
-            ImageService::resize($media->getPath() , $size->width(), $size->height());
+            ImageService::optimize($media->getPath(), ImageQuality::HIGH->value);
+            ImageService::resize($media->getPath(), $size->width(), $size->height());
 
             return $media;
         } catch (\Exception $e) {
@@ -153,5 +154,30 @@ class Company extends Model implements TranslatableContract, HasMedia
         return $this->belongsToMany(Branch::class, 'ppu_ds_branch_company')
             ->withPivot('is_main')
             ->withTimestamps();
+    }
+
+    public function students(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, config('ppuds.table_prefix') . 'company_student', 'company_id', 'student_id');
+    }
+
+    public function registrations(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Registration::class,
+            'ppu_ds_students_companies',
+            'company_id',
+            'registration_id'
+        );
+    }
+
+    public function scopeHasCurrentStudents($query)
+    {
+        $settings = app(GeneralSettings::class);
+
+        return $query->whereHas('registrations', function ($q) use ($settings) {
+            $q->where('semester', $settings->semester_type)
+                ->where('year', $settings->year);
+        });
     }
 }
