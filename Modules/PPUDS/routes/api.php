@@ -40,6 +40,7 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
                     Route::get('/', 'index')->name('index');
                     Route::post('/', 'store')->name('store');
                     Route::get('/{company}', 'show')->name('show');
+                    Route::put('/{company}', 'update')->name('update');
                 });
 
             Route::controller(CompanyCategoryController::class)

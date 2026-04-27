@@ -9,6 +9,7 @@ use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\CompanyDepartment; // تأكد من استدعاء هذا الكلاس
 use Modules\PPUDS\Http\Requests\CompanyRequest;
+use Modules\PPUDS\Http\Requests\CompanyUpdateRequest;
 use Modules\PPUDS\Transformers\V1\CompanyResource;
 use Spatie\QueryBuilder\QueryBuilder;
 
@@ -219,6 +220,139 @@ class CompanyController extends Controller
             new CompanyResource($company),
             __('Company created successfully'),
             201
+        );
+    }
+
+
+    /**
+     * @OA\Post(
+     * path="/api/v1/ppuds/companies/{company}",
+     * summary="Update a company (Partial Update / PATCH)",
+     * description="Partially updates company data, branches, or logo. Note: Due to multipart/form-data constraints, send a POST request with '_method=PATCH' in the body.",
+     * tags={"Companies"},
+     * security={{"sanctum": {}}},
+     * @OA\Parameter(
+     * name="company",
+     * in="path",
+     * required=true,
+     * description="Company ID",
+     * @OA\Schema(type="integer", example=1)
+     * ),
+     * @OA\RequestBody(
+     * required=true,
+     * @OA\MediaType(
+     * mediaType="multipart/form-data",
+     * @OA\Schema(
+     * @OA\Property(property="_method", type="string", example="PATCH", description="MANDATORY: Tells Laravel to process this POST request as a PATCH"),
+     * @OA\Property(property="name", type="string", example="Updated Tech Company"),
+     * @OA\Property(property="website", type="string", example="https://updated-example.com"),
+     * @OA\Property(property="description", type="string", example="Updated description"),
+     * @OA\Property(property="status", type="integer", example=1),
+     * @OA\Property(property="logo", type="string", format="binary", description="Upload new logo to replace the old one"),
+     * @OA\Property(
+     * property="branches",
+     * type="array",
+     * description="Array of branches. Send branch ID to update, omit ID to create a new one.",
+     * @OA\Items(
+     * type="object",
+     * @OA\Property(property="id", type="integer", example=10, description="Send ID to update existing branch"),
+     * @OA\Property(property="name", type="string", example="Updated Main Branch"),
+     * @OA\Property(property="country_id", type="integer", example=1),
+     * @OA\Property(property="city_id", type="integer", example=1),
+     * @OA\Property(property="latitude", type="number", example=31.90),
+     * @OA\Property(property="longitude", type="number", example=35.20)
+     * )
+     * )
+     * )
+     * )
+     * ),
+     * @OA\Response(response=200, description="Company updated successfully"),
+     * @OA\Response(response=404, description="Company not found")
+     * )
+     */
+    public function update(CompanyUpdateRequest $request, Company $company)
+    {
+        $company = DB::transaction(function () use ($request, $company) {
+            // استبعاد البيانات غير المباشرة
+            $companyData = $request->safe()->except(['branches', 'logo', '_method']);
+
+            // تحديث بيانات الشركة (بما أننا PATCH، سيتم تحديث الحقول المرسلة فقط)
+            if (!empty($companyData)) {
+                $company->update($companyData);
+            }
+
+            // تحديث اللوجو إذا تم رفعه
+            if ($request->hasFile('logo')) {
+                $company->clearMediaCollection('logo');
+                $company->addMediaFromRequest('logo')->toMediaCollection('logo');
+            }
+
+            // تحديث الفروع (إذا تم إرسال مصفوفة الفروع فقط)
+            if ($request->has('branches')) {
+                foreach ($request->branches as $branchData) {
+                    $departmentsData  = $branchData['departments'] ?? [];
+                    $workingHoursData = $branchData['working_hours'] ?? [];
+
+                    $branchAttributes = collect($branchData)
+                        ->except(['id', 'departments', 'working_hours'])
+                        ->toArray();
+
+                    if (isset($branchData['id']) && $branchData['id']) {
+                        // تحديث فرع موجود
+                        $branch = Branch::findOrFail($branchData['id']);
+                        $branch->update($branchAttributes);
+                    } else {
+                        // إضافة فرع جديد من شاشة التعديل
+                        $branchAttributes['created_by'] = auth()->id();
+                        $branch = Branch::create($branchAttributes);
+                        $company->branches()->attach($branch->id, ['is_main' => false]);
+                    }
+
+                    // تحديث ساعات العمل (إذا تم إرسالها)
+                    if (isset($branchData['working_hours'])) {
+                        $branch->workingHours()->delete();
+                        foreach ($workingHoursData as $wh) {
+                            $branch->workingHours()->create([
+                                'day'        => $wh['day'],
+                                'is_closed'  => $wh['is_closed'] ?? false,
+                                'start_time' => ($wh['is_closed'] ?? false) ? null : ($wh['start_time'] ?? null),
+                                'end_time'   => ($wh['is_closed'] ?? false) ? null : ($wh['end_time'] ?? null),
+                            ]);
+                        }
+                    }
+
+                    // تحديث الأقسام (إذا تم إرسالها)
+                    if (isset($branchData['departments'])) {
+                        $syncDepartments = [];
+                        foreach ($departmentsData as $deptData) {
+                            $deptName = $deptData['name'];
+                            $supervisorId = $deptData['user_id'] ?? null;
+
+                            $department = CompanyDepartment::whereTranslation('name', $deptName)->first();
+
+                            if (! $department) {
+                                $department = CompanyDepartment::create([
+                                    'name'       => $deptName,
+                                    'created_by' => auth()->id(),
+                                ]);
+                            }
+
+                            $syncDepartments[$department->id] = ['user_id' => $supervisorId];
+                        }
+                        $branch->departments()->sync($syncDepartments);
+                    }
+                }
+            }
+
+            return $company;
+        });
+
+        $company->load(['media', 'branches.departments', 'branches.workingHours', 'translations']);
+
+        return $this->successResponse(
+            new CompanyResource($company),
+            __('Company updated successfully'),
+            200
         );
     }
 

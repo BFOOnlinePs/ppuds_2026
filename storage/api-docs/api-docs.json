@@ -6902,6 +6902,111 @@
                         "sanctum": []
                     }
                 ]
+            },
+            "post": {
+                "tags": [
+                    "Companies"
+                ],
+                "summary": "Update a company (Partial Update / PATCH)",
+                "description": "Partially updates company data, branches, or logo. Note: Due to multipart/form-data constraints, send a POST request with '_method=PATCH' in the body.",
+                "operationId": "9a1dfaa1cf79ac0616d878b2a656cc86",
+                "parameters": [
+                    {
+                        "name": "company",
+                        "in": "path",
+                        "description": "Company ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "_method": {
+                                        "description": "MANDATORY: Tells Laravel to process this POST request as a PATCH",
+                                        "type": "string",
+                                        "example": "PATCH"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Updated Tech Company"
+                                    },
+                                    "website": {
+                                        "type": "string",
+                                        "example": "https://updated-example.com"
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "example": "Updated description"
+                                    },
+                                    "status": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "logo": {
+                                        "description": "Upload new logo to replace the old one",
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "branches": {
+                                        "description": "Array of branches. Send branch ID to update, omit ID to create a new one.",
+                                        "type": "array",
+                                        "items": {
+                                            "properties": {
+                                                "id": {
+                                                    "description": "Send ID to update existing branch",
+                                                    "type": "integer",
+                                                    "example": 10
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Updated Main Branch"
+                                                },
+                                                "country_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "city_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "latitude": {
+                                                    "type": "number",
+                                                    "example": 31.9
+                                                },
+                                                "longitude": {
+                                                    "type": "number",
+                                                    "example": 35.2
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Company updated successfully"
+                    },
+                    "404": {
+                        "description": "Company not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             }
         },
         "/api/v1/ppuds/company-departments": {
@@ -10163,10 +10268,6 @@
                                     "start_date"
                                 ],
                                 "properties": {
-                                    "company_id": {
-                                        "type": "integer",
-                                        "example": 5
-                                    },
                                     "company_name": {
                                         "type": "string",
                                         "example": "PPU"
