@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Database\Eloquent\Builder;
 use Modules\Branch\Transformers\V1\BranchResource;
+use Modules\Core\Transformers\V1\UserResource;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
 
@@ -25,6 +26,14 @@ class CompanyResource extends JsonResource
 
             'branches'            => BranchResource::collection($this->whenLoaded('branches')),
 
+            'supervisors'         => $this->whenLoaded('branches', function () {
+                $supervisors = $this->branches->flatMap(function ($branch) {
+                    return $branch->supervisors;
+                })->unique('id')->values();
+
+                return UserResource::collection($supervisors);
+            }),
+
             'created_at'          => $this->created_at,
         ];
     }
@@ -32,15 +41,20 @@ class CompanyResource extends JsonResource
     public static function allowedFields(): array
     {
         return [
-            'id', 'name', 'description',
-            'company_category_id', 'website', 'status', 'created_at'
+            'id',
+            'name',
+            'description',
+            'company_category_id',
+            'website',
+            'status',
+            'created_at'
         ];
     }
 
     public static function allowedFilters(): array
     {
         return [
-            AllowedFilter::callback('name', fn (Builder $query, $value) => $query->whereTranslationLike('name', "%{$value}%")),
+            AllowedFilter::callback('name', fn(Builder $query, $value) => $query->whereTranslationLike('name', "%{$value}%")),
             AllowedFilter::exact('company_category_id'),
             AllowedFilter::exact('website'),
             AllowedFilter::exact('status'),
@@ -62,7 +76,8 @@ class CompanyResource extends JsonResource
             'createdBy',
             'branches',
             'branches.departments',
-            'branches.workingHours'
+            'branches.workingHours',
+            'branches.supervisors'
         ];
     }
 }

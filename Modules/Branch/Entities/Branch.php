@@ -172,4 +172,11 @@ class Branch extends Model implements TranslatableContract
             return in_array($date->dayOfWeek, $openDays);
         }, $cutoffDate);
     }
+
+    public function supervisors(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'ppu_ds_branch_department', 'branch_id', 'user_id')
+            ->withPivot('company_department_id')
+            ->distinct();
+    }
 }
