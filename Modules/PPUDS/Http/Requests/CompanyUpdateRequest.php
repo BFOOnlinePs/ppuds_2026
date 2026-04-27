@@ -21,9 +21,8 @@ class CompanyUpdateRequest extends FormRequest
         $branchTable = config('branch.table_prefix') . 'branches';
 
         return [
-            // استخدمنا sometimes لأننا في PATCH (تحديث جزئي)
             'name'                  => [
-                'sometimes', // <--- هذا يعني: دقق فقط إذا كان الحقل موجوداً في الطلب
+                'sometimes',
                 'required',
                 'string',
                 'max:255',

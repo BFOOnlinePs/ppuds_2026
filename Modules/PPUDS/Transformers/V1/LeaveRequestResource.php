@@ -90,6 +90,16 @@ class LeaveRequestResource extends JsonResource
                 });
             }),
 
+            AllowedFilter::callback('university_supervisor', function (Builder $query, $value) {
+                $query->whereHas('studentCompany', function ($query) use ($value) {
+                    $query->whereHas('branch', function ($branchQuery) use ($value) {
+                        $branchQuery->whereHas('departments', function ($departmentQuery) use ($value) {
+                            $departmentQuery->where('user_id', $value);
+                        });
+                    });
+                });
+            }),
+
             AllowedFilter::callback('student_name', function (Builder $query, $value) {
                 $query->whereHas('studentCompany.student', function (Builder $q) use ($value) {
                     $q->where('name', 'like', '%' . $value . '%');
