@@ -12,7 +12,9 @@ class AuthenticateViaKeycloakAction
 {
     public function execute(KeycloakUser $keycloakUser): User
     {
+        dd($keycloakUser);
         return DB::transaction(function () use ($keycloakUser) {
+
 
             // 1. استخراج البيانات الأساسية من كائن Keycloak
             $email = $keycloakUser->getEmail();
