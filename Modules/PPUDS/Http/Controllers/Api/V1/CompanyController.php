@@ -225,7 +225,7 @@ class CompanyController extends Controller
 
 
     /**
-     * @OA\Post(
+     * @OA\Patch(
      * path="/api/v1/ppuds/companies/{company}",
      * summary="Update a company (Partial Update / PATCH)",
      * description="Partially updates company data, branches, or logo. Note: Due to multipart/form-data constraints, send a POST request with '_method=PATCH' in the body.",
