@@ -5,6 +5,7 @@ namespace Modules\PPUDS\Providers;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use KeycloakGuard\KeycloakGuardServiceProvider;
 use Nwidart\Modules\Traits\PathNamespace;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -45,7 +46,7 @@ class PPUDSServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->register(\KeycloakGuard\KeycloakGuardServiceProvider::class);
+        $this->app->register(KeycloakGuardServiceProvider::class);
 
         $this->app->register(EventServiceProvider::class);
         $this->app->register(RouteServiceProvider::class);
