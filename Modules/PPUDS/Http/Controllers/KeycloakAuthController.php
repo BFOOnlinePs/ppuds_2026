@@ -18,6 +18,7 @@ class KeycloakAuthController extends Controller
 
     public function callback(AuthenticateViaKeycloakAction $authAction)
     {
+        dd($authAction);
         try {
             $keycloakUser = Socialite::driver('keycloak')->user();
             $authAction->execute($keycloakUser);
