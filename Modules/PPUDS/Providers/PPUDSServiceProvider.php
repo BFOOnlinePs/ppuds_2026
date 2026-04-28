@@ -40,14 +40,6 @@ class PPUDSServiceProvider extends ServiceProvider
             SocialiteWasCalled::class,
             [KeycloakExtendSocialite::class, 'handle']
         );
-
-        $this->app->bind(EloquentUserProvider::class, function ($app, array $config) {
-        return new class($app['hash'], $config['model']) extends EloquentUserProvider {
-            public function retrieveByToken($token, $credentials) {
-                return (new KeycloakUserRepository())->retrieveByToken($token, $credentials);
-            }
-        };
-    });
     }
 
     /**
