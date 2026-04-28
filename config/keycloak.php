@@ -17,7 +17,7 @@ return [
 
     'append_decoded_token' => env('KEYCLOAK_APPEND_DECODED_TOKEN', false),
 
-    'allowed_resources' => env('KEYCLOAK_ALLOWED_RESOURCES', 'Dual-Studies-Laravel'),
+    'allowed_resources' => env('KEYCLOAK_ALLOWED_RESOURCES'),
 
     'ignore_resources_validation' => env('KEYCLOAK_IGNORE_RESOURCES_VALIDATION', false),
 
