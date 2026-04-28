@@ -34,8 +34,9 @@ class ProfileController extends Controller
         $userQuery = User::where('id', $request->user()->id);
 
         $user = QueryBuilder::for($userQuery)
+                    ->allowedFields(UserResource::allowedFields())
+
             ->allowedIncludes(UserResource::allowedIncludes())
-            ->allowedFields(UserResource::allowedFields())
             ->first(); // جلب الكائن بعد تطبيق الفلاتر والـ includes
 
         // تحميل العلاقات الأساسية لضمان ظهورها في الـ Resource
