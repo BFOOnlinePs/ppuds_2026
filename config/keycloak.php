@@ -9,7 +9,7 @@ return [
 
     'load_user_from_database' => env('KEYCLOAK_LOAD_USER_FROM_DATABASE', true),
 
-    'user_provider_custom_retrieve_method' => KeycloakUserRepository::class . '@retrieveByToken',
+'user_provider_custom_retrieve_method' => [KeycloakUserRepository::class, 'retrieveByToken'],
 
     'user_provider_credential' => env('KEYCLOAK_USER_PROVIDER_CREDENTIAL', 'email'),
 
