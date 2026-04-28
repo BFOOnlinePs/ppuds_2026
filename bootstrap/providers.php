@@ -6,4 +6,5 @@ return [
     App\Providers\JetstreamServiceProvider::class,
     App\Providers\TelescopeServiceProvider::class,
     App\Providers\Wirechat\ChatsPanelProvider::class,
+    KeycloakGuard\KeycloakGuardServiceProvider::class,
 ];
