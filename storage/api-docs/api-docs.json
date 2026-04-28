@@ -8331,6 +8331,36 @@
                 ]
             }
         },
+        "/api/v1/ppuds/me": {
+            "get": {
+                "tags": [
+                    "PPUDS - Profile"
+                ],
+                "summary": "جلب بيانات المستخدم الحالي",
+                "description": "يستخدم هذا الرابط لجلب بيانات المستخدم صاحب التوكن من Keycloak ومزامنة صلاحياته",
+                "operationId": "69f455888cd26549f018f9a0d323cf74",
+                "responses": {
+                    "200": {
+                        "description": "تم جلب البيانات بنجاح",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserResource"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "التوكن غير صحيح أو منتهي"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/api/v1/ppuds/registrations": {
             "get": {
                 "tags": [
@@ -10967,6 +10997,27 @@
                 },
                 "type": "object"
             },
+            "UserResource": {
+                "title": "User Resource",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "roles": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "type": "object"
+            },
             "CityResource": {
                 "title": "City Resource",
                 "description": "City resource model",
@@ -11680,6 +11731,10 @@
         {
             "name": "Payments",
             "description": "Payments"
+        },
+        {
+            "name": "PPUDS - Profile",
+            "description": "PPUDS - Profile"
         },
         {
             "name": "Reports",

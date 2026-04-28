@@ -10,6 +10,7 @@ use Modules\PPUDS\Http\Controllers\Api\V1\FieldVisitController;
 use Modules\PPUDS\Http\Controllers\Api\V1\LeaveRequestController;
 use Modules\PPUDS\Http\Controllers\Api\V1\NoteController;
 use Modules\PPUDS\Http\Controllers\Api\V1\PaymentController;
+use Modules\PPUDS\Http\Controllers\Api\V1\ProfileController;
 use Modules\PPUDS\Http\Controllers\Api\V1\RegistrationController;
 use Modules\PPUDS\Http\Controllers\Api\V1\ReportController;
 use Modules\PPUDS\Http\Controllers\Api\V1\SettingsController;
@@ -25,6 +26,8 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
     Route::middleware([AuthenticateKeycloakApi::class, 'api.localize'])->group(function () {
 
         Route::prefix('ppuds')->as('ppuds.')->group(function () {
+
+        Route::get('/me', [ProfileController::class, 'show'])->name('profile.me');
 
             Route::controller(SettingsController::class)
                 ->prefix('settings')

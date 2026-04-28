@@ -11,6 +11,19 @@ use Modules\Items\Transformers\V1\OrderResource;
 use Modules\PPUDS\Transformers\V1\StudentProfileResource;
 use Spatie\QueryBuilder\AllowedFilter;
 
+/**
+ * @OA\Schema(
+ * schema="UserResource",
+ * type="object",
+ * title="User Resource",
+ * properties={
+ * @OA\Property(property="id", type="integer"),
+ * @OA\Property(property="name", type="string"),
+ * @OA\Property(property="email", type="string"),
+ * @OA\Property(property="roles", type="array", @OA\Items(type="string"))
+ * }
+ * )
+ */
 class UserResource extends JsonResource
 {
     use SelectsFieldsFromApi;
