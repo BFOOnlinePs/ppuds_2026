@@ -19,9 +19,10 @@ use Modules\PPUDS\Http\Controllers\Api\V1\StudentCompanyController;
 use Modules\PPUDS\Http\Controllers\Api\V1\SurveyAnswerController;
 use Modules\PPUDS\Http\Controllers\Api\V1\SurveyController;
 use Modules\PPUDS\Http\Controllers\Api\V1\WorkExperienceController;
+use Modules\PPUDS\Http\Middleware\AuthenticateKeycloakApi;
 
 Route::prefix('v1')->as('api.v1.')->group(function () {
-    Route::middleware(['auth:sanctum', 'api.localize'])->group(function () {
+    Route::middleware([AuthenticateKeycloakApi::class, 'api.localize'])->group(function () {
 
         Route::prefix('ppuds')->as('ppuds.')->group(function () {
 

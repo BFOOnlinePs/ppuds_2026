@@ -41,6 +41,14 @@ return [
         'redirect' => env('KEYCLOAK_REDIRECT_URI'),
         'base_url' => env('KEYCLOAK_BASE_URL'),
         'realms' => env('KEYCLOAK_REALM'),
+
+        // --- الإضافات الجديدة المطلوبة للفلاتر والـ API ---
+
+        // رابط الـ JWKS لجلب مفاتيح التحقق من التوكن تلقائياً
+        'jwks_url' => env('KEYCLOAK_JWKS_URL'),
+
+        // الـ Client ID الخاص بالـ API لضمان أن التوكن موجه لنظامك (Audience)
+        'api_client_id' => env('KEYCLOAK_API_CLIENT_ID'),
     ],
 
 ];

@@ -15,6 +15,7 @@ class AuthenticateViaKeycloakAction
     {
         dd($keycloakUser);
         dd(json_decode(base64_decode(explode('.', $keycloakUser->token)[1]), true));
+
         return DB::transaction(function () use ($keycloakUser) {
             // 1. فك تشفير التوكن واستخراج الأدوار (Roles)
             $payload = json_decode(base64_decode(explode('.', $keycloakUser->token)[1]), true);
@@ -24,7 +25,7 @@ class AuthenticateViaKeycloakAction
             $user = User::updateOrCreate(
                 ['email' => $keycloakUser->getEmail()],
                 [
-                    'name'     => $keycloakUser->getName(),
+                    'name' => $keycloakUser->getName(),
                     'password' => bcrypt(Str::random(24)),
                 ]
             );
@@ -41,7 +42,28 @@ class AuthenticateViaKeycloakAction
             }
 
             Auth::login($user);
+
             return $user;
         });
     }
+
+    public function executeFromToken(array $payload): \Modules\Core\Entities\User
+{
+    return \Illuminate\Support\Facades\DB::transaction(function () use ($payload) {
+        $email = $payload['email'] ?? ($payload['preferred_username'] . '@ppu.edu');
+
+        $user = \Modules\Core\Entities\User::updateOrCreate(
+            ['email' => $email],
+            [
+                'name' => $payload['name'] ?? $payload['preferred_username'],
+                'password' => \Illuminate\Support\Facades\Hash::make(\Illuminate\Support\Str::random(32)),
+            ]
+        );
+
+        $roles = $payload['realm_access']['roles'] ?? [];
+        $user->syncRoles(array_intersect($roles, ['Student', 'Supervisor', 'Admin']));
+
+        return $user;
+    });
+}
 }
