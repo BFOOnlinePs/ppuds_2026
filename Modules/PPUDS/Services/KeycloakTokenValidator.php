@@ -2,10 +2,10 @@
 
 namespace Modules\PPUDS\Services;
 
-use Firebase\JWT\JWT;
-use Firebase\JWT\JWK;
-use Illuminate\Support\Facades\Http;
 use Exception;
+use Firebase\JWT\JWK;
+use Firebase\JWT\JWT;
+use Illuminate\Support\Facades\Http;
 
 class KeycloakTokenValidator
 {
@@ -27,19 +27,19 @@ class KeycloakTokenValidator
             // 3. التحقق من الـ Audience (aud)
             // نتأكد أن التوكن موجه فعلاً لمشروعنا (dualstudies-laravel-api)
             $expectedAud = config('services.keycloak.api_client_id');
-            if (!isset($payload['aud']) || !in_array($expectedAud, (array)$payload['aud'])) {
-                throw new Exception("Token is not intended for this API audience.");
+            if (! isset($payload['aud']) || ! in_array($expectedAud, (array) $payload['aud'])) {
+                throw new Exception('Token is not intended for this API audience.');
             }
 
             // 4. التحقق من الـ Issuer (iss)
             if ($payload['iss'] !== config('services.keycloak.issuer')) {
-                throw new Exception("Invalid Token Issuer.");
+                throw new Exception('Invalid Issuer. Expected: '.config('services.keycloak.issuer').' but got: '.$payload['iss']);
             }
 
             return $payload;
 
         } catch (Exception $e) {
-            throw new Exception("JWT Validation Failed: " . $e->getMessage());
+            throw new Exception('JWT Validation Failed: '.$e->getMessage());
         }
     }
 }
