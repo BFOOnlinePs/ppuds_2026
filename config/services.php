@@ -49,6 +49,7 @@ return [
 
         // الـ Client ID الخاص بالـ API لضمان أن التوكن موجه لنظامك (Audience)
         'api_client_id' => env('KEYCLOAK_API_CLIENT_ID'),
+        'issuer'        => env('KEYCLOAK_ISSUER'),
     ],
 
 ];
