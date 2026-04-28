@@ -2,15 +2,16 @@
 
 namespace Modules\PPUDS\Providers;
 
+use Illuminate\Auth\EloquentUserProvider;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
-use KeycloakGuard\KeycloakGuardServiceProvider;
+use Modules\PPUDS\Services\KeycloakUserRepository;
 use Nwidart\Modules\Traits\PathNamespace;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
-use SocialiteProviders\Manager\SocialiteWasCalled;
 use SocialiteProviders\Keycloak\KeycloakExtendSocialite;
+use SocialiteProviders\Manager\SocialiteWasCalled;
 
 class PPUDSServiceProvider extends ServiceProvider
 {
@@ -39,6 +40,10 @@ class PPUDSServiceProvider extends ServiceProvider
             SocialiteWasCalled::class,
             [KeycloakExtendSocialite::class, 'handle']
         );
+
+        EloquentUserProvider::macro('retrieveByToken', function ($token, $credentials) {
+            return (new KeycloakUserRepository)->retrieveByToken($token, $credentials);
+        });
     }
 
     /**
@@ -46,8 +51,6 @@ class PPUDSServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->register(KeycloakGuardServiceProvider::class);
-
         $this->app->register(EventServiceProvider::class);
         $this->app->register(RouteServiceProvider::class);
         $this->app->register(SidebarServiceProvider::class);

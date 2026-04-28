@@ -7,8 +7,7 @@ return [
 
     'load_user_from_database' => env('KEYCLOAK_LOAD_USER_FROM_DATABASE', true),
 
-    'user_provider_custom_retrieve_method' => 'Modules\PPUDS\Services\KeycloakUserRepository@retrieveByToken',
-
+    'user_provider_custom_retrieve_method' => 'retrieveByToken',
     'user_provider_credential' => env('KEYCLOAK_USER_PROVIDER_CREDENTIAL', 'email'),
 
     'token_principal_attribute' => env('KEYCLOAK_TOKEN_PRINCIPAL_ATTRIBUTE', 'email'),
