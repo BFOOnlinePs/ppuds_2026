@@ -22,7 +22,7 @@ class KeycloakTokenValidator
 
             // 2. فك التشفير والتحقق من التوقيع (Signature)
             $decoded = JWT::decode($token, JWK::parseKeySet($jwks));
-            $payload = (array) $decoded;
+            $payload = json_decode(json_encode($decoded), true);
 
             // 3. التحقق من الـ Audience (aud)
             // نتأكد أن التوكن موجه فعلاً لمشروعنا (dualstudies-laravel-api)
