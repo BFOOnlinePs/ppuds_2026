@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Modules\Core\Traits\ApiResponse;
 use Modules\Core\Transformers\V1\UserResource;
+use Modules\Core\Entities\User; // أضفنا استدعاء الموديل
 use Spatie\QueryBuilder\QueryBuilder;
 
 class ProfileController extends Controller
@@ -29,12 +30,16 @@ class ProfileController extends Controller
      */
     public function show(Request $request)
     {
-        // نستخدم الـ QueryBuilder للسماح للمبرمج بطلب الـ includes مثل (roles, studentProfile)
-        $user = QueryBuilder::for($request->user())
+        // التصحيح: نمرر Builder يبدأ من الـ ID الخاص بالمستخدم الحالي
+        $userQuery = User::where('id', $request->user()->id);
+
+        $user = QueryBuilder::for($userQuery)
             ->allowedIncludes(UserResource::allowedIncludes())
             ->allowedFields(UserResource::allowedFields())
-            // نضمن تحميل البيانات الأساسية التي يحتاجها الفلاتر فوراً
-            ->load(['roles', 'studentProfile', 'media']);
+            ->first(); // جلب الكائن بعد تطبيق الفلاتر والـ includes
+
+        // تحميل العلاقات الأساسية لضمان ظهورها في الـ Resource
+        $user->loadMissing(['roles', 'studentProfile', 'media']);
 
         return $this->successResponse(
             new UserResource($user),
