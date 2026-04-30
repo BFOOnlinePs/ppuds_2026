@@ -254,6 +254,31 @@ class Index extends Component implements HasForms
             $this->settingsModel->handleLogoUpload($data['logo']);
         }
 
+        if (isset($state['app_versions'])) {
+            $platformsToKeep = [];
+
+            foreach ($state['app_versions'] as $versionData) {
+                DB::table('app_versions')->updateOrInsert(
+                    ['platform' => $versionData['platform']], // عمود فريد لتحديد التحديث أو الإضافة
+                    [
+                        'min_version' => $versionData['min_version'],
+                        'latest_version' => $versionData['latest_version'],
+                        'store_url' => $versionData['store_url'],
+                        'maintenance_mode' => $versionData['maintenance_mode'] ?? 0,
+                        'message' => $versionData['message'] ?? null,
+                        'updated_at' => now(),
+                    ]
+                );
+
+                $platformsToKeep[] = $versionData['platform'];
+            }
+
+            // (اختياري) حذف المنصات التي قام المستخدم بمسحها من الـ Repeater
+            DB::table('app_versions')
+                ->whereNotIn('platform', $platformsToKeep)
+                ->delete();
+        }
+
         //        auth()->user()->notify(new GeneralNotification(
         //            __('Settings Updated'),
         //            __('System settings have been updated successfully'),
