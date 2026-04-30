@@ -17,6 +17,11 @@ class GeneralSettingsResource extends JsonResource
             'giz_evaluation_status' => $this->giz_evaluation_status?->value,
             'start_semester'        => $this->start_semester?->format('Y-m-d'),
             'end_semester'          => $this->end_semester?->format('Y-m-d'),
+
+            'facebook_url'          => $this->facebook_url,
+            'linkedin_url'          => $this->linkedin_url,
+            'x_url'                 => $this->x_url,
+            'instagram_url'         => $this->instagram_url,
         ];
     }
 }
