@@ -41,10 +41,10 @@ return [
             'provider' => 'users',
         ],
 
-        'api' => [
-            'driver' => 'keycloak',
-            'provider' => 'users',
-        ],
+        // 'api' => [
+        //     'driver' => 'keycloak',
+        //     'provider' => 'users',
+        // ],
     ],
 
     /*
