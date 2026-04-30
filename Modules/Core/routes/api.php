@@ -15,6 +15,10 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
         Route::post('register', [RegisterController::class, 'register'])->name('register');
     });
 
+    Route::controller(ConfigController::class)->prefix('config')->as('config.')->group(function () {
+        Route::get('/', 'index')->name('index');
+    });
+
     Route::middleware('auth:sanctum')->group(function () {
 
         Route::prefix('auth')->as('auth.')->group(function () {
