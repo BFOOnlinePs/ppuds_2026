@@ -76,6 +76,12 @@ class FieldVisitResource extends JsonResource
                     $query->where('supervisor_id', $value);
                 });
             }),
+
+            AllowedFilter::callback('student_name', function (Builder $query, $value) {
+                $query->whereHas('studentCompany.student', function (Builder $query) use ($value) {
+                    $query->where('name', 'like', "%{$value}%");
+                });
+            }),
         ];
     }
 
