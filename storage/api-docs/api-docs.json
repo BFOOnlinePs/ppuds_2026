@@ -1408,6 +1408,106 @@
                 ]
             }
         },
+        "/api/v1/config": {
+            "get": {
+                "tags": [
+                    "Config"
+                ],
+                "summary": "Get App Configuration",
+                "description": "Retrieve app versions, maintenance mode, and general settings for Android and iOS",
+                "operationId": "852cf494e97875c6beb0db062e0041b6",
+                "responses": {
+                    "200": {
+                        "description": "Config retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Config retrieved successfully"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "android": {
+                                                    "properties": {
+                                                        "min_version": {
+                                                            "type": "string",
+                                                            "example": "1.0.0"
+                                                        },
+                                                        "latest_version": {
+                                                            "type": "string",
+                                                            "example": "1.2.0"
+                                                        },
+                                                        "store_url": {
+                                                            "type": "string",
+                                                            "example": "https://play.google.com/..."
+                                                        },
+                                                        "maintenance_mode": {
+                                                            "type": "boolean",
+                                                            "example": false
+                                                        },
+                                                        "message": {
+                                                            "type": "string",
+                                                            "example": "Please update app"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "ios": {
+                                                    "properties": {
+                                                        "min_version": {
+                                                            "type": "string",
+                                                            "example": "1.0.0"
+                                                        },
+                                                        "latest_version": {
+                                                            "type": "string",
+                                                            "example": "1.3.0"
+                                                        },
+                                                        "store_url": {
+                                                            "type": "string",
+                                                            "example": "https://apps.apple.com/..."
+                                                        },
+                                                        "maintenance_mode": {
+                                                            "type": "boolean",
+                                                            "example": false
+                                                        },
+                                                        "message": {
+                                                            "type": "string",
+                                                            "example": ""
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "contact": {
+                                                    "properties": {
+                                                        "support_email": {
+                                                            "type": "string",
+                                                            "example": "support@domain.com"
+                                                        },
+                                                        "whatsapp": {
+                                                            "type": "string",
+                                                            "example": "+970599123456"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/currencies": {
             "get": {
                 "tags": [
@@ -11671,6 +11771,10 @@
         {
             "name": "Auth",
             "description": "Auth"
+        },
+        {
+            "name": "Config",
+            "description": "Config"
         },
         {
             "name": "Currencies",
