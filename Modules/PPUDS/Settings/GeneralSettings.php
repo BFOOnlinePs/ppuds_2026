@@ -19,6 +19,11 @@ class GeneralSettings extends Settings
     public Carbon $start_semester;
     public Carbon $end_semester;
 
+    public string $facebook_url = 'https://www.facebook.com/ppu.edu';
+    public string $linkedin_url = 'https://www.linkedin.com/school/palestine-polytechnic-university/';
+    public string $x_url = 'https://x.com/PPU_edu';
+    public string $instagram_url = 'https://www.instagram.com/ppu.edu';
+
     public static function group(): string
     {
         return 'ppuds_general';
