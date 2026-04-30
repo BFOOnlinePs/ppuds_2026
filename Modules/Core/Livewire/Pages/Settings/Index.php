@@ -48,11 +48,6 @@ class Index extends Component implements HasForms
             'email_address_for_contact' => $generalSettings->email_address_for_contact,
             'site_description' => $generalSettings->site_description,
 
-            'facebook_url' => $generalSettings->facebook_url,
-            'linkedin_url' => $generalSettings->linkedin_url,
-            'x_url' => $generalSettings->x_url,
-            'instagram_url' => $generalSettings->instagram_url,
-
             'semester_type' => $ppudsSettings->semester_type->value,
             'year' => $ppudsSettings->year,
             'report_status' => $ppudsSettings->report_status->value,
@@ -60,6 +55,11 @@ class Index extends Component implements HasForms
             'giz_evaluation_status' => $ppudsSettings->giz_evaluation_status->value,
             'start_semester' => $ppudsSettings->start_semester,
             'end_semester' => $ppudsSettings->end_semester,
+
+            'facebook_url' => $ppudsSettings->facebook_url,
+            'linkedin_url' => $ppudsSettings->linkedin_url,
+            'x_url' => $ppudsSettings->x_url,
+            'instagram_url' => $ppudsSettings->instagram_url,
         ]);
     }
 
