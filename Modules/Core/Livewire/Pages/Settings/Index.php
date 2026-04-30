@@ -46,6 +46,11 @@ class Index extends Component implements HasForms
             'email_address_for_contact' => $generalSettings->email_address_for_contact,
             'site_description' => $generalSettings->site_description,
 
+            'facebook_url' => $generalSettings->facebook_url,
+            'linkedin_url' => $generalSettings->linkedin_url,
+            'x_url' => $generalSettings->x_url,
+            'instagram_url' => $generalSettings->instagram_url,
+
             'semester_type' => $ppudsSettings->semester_type->value,
             'year' => $ppudsSettings->year,
             'report_status' => $ppudsSettings->report_status->value,
@@ -81,6 +86,27 @@ class Index extends Component implements HasForms
                                                 ->label(__('Site Description'))
                                                 ->rows(3)
                                                 ->required(),
+
+                                            TextInput::make('facebook_url')
+                                                ->label(__('Facebook URL'))
+                                                ->prefixIcon('fab-facebook')
+                                                ->url()
+                                                ,
+                                            TextInput::make('linkedin_url')
+                                                ->label(__('LinkedIn URL'))
+                                                ->prefixIcon('fab-linkedin')
+                                                ->url()
+                                                ,
+                                            TextInput::make('instagram_url')
+                                                ->label(__('Instagram URL'))
+                                                ->prefixIcon('fab-instagram')
+                                                ->url()
+                                                ,
+                                            TextInput::make('x_url')
+                                                ->label(__('X URL'))
+                                                ->prefixIcon('fab-x-twitter')
+                                                ->url()
+                                                ,
                                         ])->columnSpan(2),
 
                                     Section::make()
@@ -154,6 +180,11 @@ class Index extends Component implements HasForms
         $generalSettings->site_name = $data['site_name'];
         $generalSettings->email_address_for_contact = $data['email_address_for_contact'];
         $generalSettings->site_description = $data['site_description'];
+
+        $generalSettings->facebook_url = $data['facebook_url'];
+        $generalSettings->linkedin_url = $data['linkedin_url'];
+        $generalSettings->x_url = $data['x_url'];
+        $generalSettings->instagram_url = $data['instagram_url'];
         $generalSettings->save();
 
         $ppudsSettings = app(PPUDSGeneralSettings::class);
