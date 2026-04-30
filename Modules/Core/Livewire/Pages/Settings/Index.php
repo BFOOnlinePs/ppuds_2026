@@ -225,6 +225,7 @@ class Index extends Component implements HasForms
     public function save()
     {
         $validatedData = $this->form->validate();
+        $state = $this->form->getState();
         $data = $validatedData['data'];
 
         $generalSettings = app(GeneralSettings::class);
