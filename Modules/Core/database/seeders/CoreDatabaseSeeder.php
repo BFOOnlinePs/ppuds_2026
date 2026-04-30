@@ -11,10 +11,11 @@ class CoreDatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-         $this->call([
-             AdminSeeder::class,
-             PermissionSeeder::class,
-             CurrencySeeder::class,
-         ]);
+        $this->call([
+            AdminSeeder::class,
+            PermissionSeeder::class,
+            CurrencySeeder::class,
+            AppVersionSeeder::class,
+        ]);
     }
 }
