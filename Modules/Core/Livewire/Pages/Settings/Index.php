@@ -17,6 +17,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
+use Illuminate\Support\Facades\DB;
 use Jantinnerezo\LivewireAlert\Facades\LivewireAlert;
 use Livewire\Component;
 use Modules\Core\Entities\Settings;
@@ -43,6 +44,10 @@ class Index extends Component implements HasForms
         $generalSettings = app(GeneralSettings::class);
         $ppudsSettings = app(PPUDSGeneralSettings::class);
 
+        $appVersions = DB::table('app_versions')->get()->map(function ($item) {
+            return (array) $item;
+        })->toArray();
+
         $this->form->fill([
             'site_name' => $generalSettings->site_name,
             'email_address_for_contact' => $generalSettings->email_address_for_contact,
@@ -60,6 +65,9 @@ class Index extends Component implements HasForms
             'linkedin_url' => $ppudsSettings->linkedin_url,
             'x_url' => $ppudsSettings->x_url,
             'instagram_url' => $ppudsSettings->instagram_url,
+
+            'app_versions' => $appVersions,
+
         ]);
     }
 
