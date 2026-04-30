@@ -70,6 +70,12 @@ class FieldVisitResource extends JsonResource
             AllowedFilter::partial('visiting_place'),
             AllowedFilter::exact('visit_date'),
             AllowedFilter::exact('created_by'),
+
+            AllowedFilter::callback('university_supervisor', function (Builder $query, $value) {
+                $query->whereHas('studentCompany.registration', function ($query) use ($value) {
+                    $query->where('supervisor_id', $value);
+                });
+            }),
         ];
     }
 
