@@ -10,7 +10,7 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up(): void
-    {s
+    {
         Schema::create('app_version', function (Blueprint $table) {
             $table->id();
 
