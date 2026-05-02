@@ -2,33 +2,110 @@
 
 namespace Modules\Core\Livewire\Pages\Home\Widget;
 
-use App\View\Components\AppLayout;
-use Filament\Forms\Components\Section;
-use Filament\Forms\Concerns\InteractsWithForms;
-use Filament\Forms\Contracts\HasForms;
-use Filament\Infolists\Concerns\InteractsWithInfolists;
-use Filament\Infolists\Contracts\HasInfolists;
-use Filament\Infolists\Infolist;
 use Filament\Widgets\Widget;
-use Livewire\Component;
-use Modules\Core\Services\ModulePackageService;
-use Nwidart\Modules\Facades\Module;
+use Illuminate\Support\Facades\Route;
 
-class HomeActionsWidget extends Widget implements HasInfolists
+class HomeActionsWidget extends Widget
 {
-    use InteractsWithInfolists;
-
     protected int | string | array $columnSpan = 'full';
 
     protected static string $view = 'core::livewire.pages.home.widget.home-actions-widget';
 
-    public function infolist(Infolist $infolist): Infolist
+    public function links(): array
     {
-        return $infolist
-            ->state([])
-            ->schema([
-                Section::make('Welcome')
-                    ->description('Welcome to the admin panel dashboard. Here you can find an overview of the system status and quick access to various features.')
-            ]);
+        return collect($this->items())
+            ->filter(fn (array $item) => $this->canSee($item))
+            ->map(fn (array $item) => $this->formatItem($item))
+            ->values()
+            ->all();
+    }
+
+    private function items(): array
+    {
+        return [
+            [
+                'label' => 'Students',
+                'route' => 'students.index',
+                'permission' => 'Student View List',
+                'icon' => 'heroicon-o-academic-cap',
+            ],
+            [
+                'label' => 'Companies',
+                'route' => 'companies.index',
+                'permission' => 'Company View List',
+                'icon' => 'heroicon-o-building-office-2',
+            ],
+            [
+                'label' => 'Attendance And Departure Log',
+                'route' => 'student-attendances.index',
+                'permission' => 'StudentAttendance View List',
+                'icon' => 'heroicon-o-clipboard-document-check',
+            ],
+            [
+                'label' => 'Student Company Registration',
+                'route' => 'student-companies.index',
+                'permission' => 'StudentCompany View List',
+                'icon' => 'heroicon-o-user-plus',
+            ],
+            [
+                'label' => 'Field Visit',
+                'route' => 'field-visits.index',
+                'permission' => 'FieldVisit View List',
+                'icon' => 'heroicon-o-map-pin',
+            ],
+            [
+                'label' => 'Surveys',
+                'route' => 'surveys.index',
+                'permission' => 'Survey View List',
+                'icon' => 'heroicon-o-clipboard-document-list',
+            ],
+            [
+                'label' => 'Announcements',
+                'route' => 'announcements.index',
+                'permission' => 'Announcement View List',
+                'icon' => 'heroicon-o-megaphone',
+            ],
+            [
+                'label' => 'Attendance Map',
+                'permission' => 'StudentAttendance View List',
+                'icon' => 'heroicon-o-map',
+                'disabled' => true,
+            ],
+            [
+                'label' => 'Training Places',
+                'route' => 'branches.index',
+                'permission' => 'Branch View List',
+                'icon' => 'heroicon-o-map',
+            ],
+            [
+                'label' => 'Attendance And Departure Records',
+                'route' => 'student-attendances.index',
+                'permission' => 'StudentAttendance View List',
+                'icon' => 'heroicon-o-calendar-days',
+            ],
+            [
+                'label' => 'Departure Permission',
+                'route' => 'leave-requests.index',
+                'permission' => 'LeaveRequest View List',
+                'icon' => 'heroicon-o-document-text',
+            ],
+        ];
+    }
+
+    private function canSee(array $item): bool
+    {
+        return auth()->user()?->can($item['permission']) ?? false;
+    }
+
+    private function formatItem(array $item): array
+    {
+        $route = $item['route'] ?? null;
+        $isDisabled = ($item['disabled'] ?? false) || ! $route || ! Route::has($route);
+
+        return [
+            ...$item,
+            'disabled' => $isDisabled,
+            'url' => $isDisabled ? null : route($route),
+        ];
     }
 }

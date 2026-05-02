@@ -33,7 +33,7 @@ class CityResource extends JsonResource
     {
         return [
             AllowedFilter::exact('id'),
-            AllowedFilter::partial('name'), // غيرت 'exact' إلى 'partial' للبحث الجزئي، يمكنك إعادتها
+            AllowedFilter::partial('name'),
             AllowedFilter::exact('governorate_id'),
             AllowedFilter::exact('latitude'),
             AllowedFilter::exact('longitude'),
@@ -41,6 +41,11 @@ class CityResource extends JsonResource
             AllowedFilter::exact('type'),
             AllowedFilter::exact('is_capital'),
             AllowedFilter::exact('capital_type'),
+            AllowedFilter::callback('country_id', function ($query, $value) {
+                $query->whereHas('governorate', function ($q) use ($value) {
+                    $q->where('country_id', $value);
+                });
+            }),
         ];
     }
 
