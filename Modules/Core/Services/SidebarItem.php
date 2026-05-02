@@ -18,7 +18,7 @@ class SidebarItem implements SidebarItemsInterface
         string $icon,
         array $permissions,
         string $route,
-        int $sort = 100
+        int $sort = 1000
     ) {
         $this->title = $title;
         $this->icon = $icon;

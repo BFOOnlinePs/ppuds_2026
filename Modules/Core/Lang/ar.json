@@ -2,7 +2,7 @@
     "Ecommerce": "متجر الالكتروني",
     "Clinic": "العيادات التخصيية",
 
-    "Home": "الصفحة الرئيسية",
+    "Home": "الرئيسية",
     "Search...": "ابحث...",
     "Profile": "الملف الشخصي",
     "Sign Out": "تسجيل الخروج",
@@ -58,11 +58,12 @@
     "No, cancel": "لا، إلغاء",
     "Cancel": "إلغاء",
 
-    "Settings": "الإعدادات",
+    "Settings": "الإعدادات",
+    "System Settings": "إعدادات النظام",
     "Site Information": "معلومات الموقع",
     "Site Logo": "شعار الموقع",
 
-    "Roles And Permissions": "الأدوار والصلاحيات",
+    "Roles And Permissions": "الأدوار والصلاحيات",
     "General": "عام",
     "Price": "السعر",
     "Inventory": "المخزون",

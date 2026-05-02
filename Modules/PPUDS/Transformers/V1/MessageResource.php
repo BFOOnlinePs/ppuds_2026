@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace Modules\PPUDS\Transformers\V1;
 
@@ -12,7 +12,7 @@ class MessageResource extends JsonResource
             'id'              => $this->id,
             'conversation_id' => $this->conversation_id,
             'body'            => $this->body,
-            'type'            => $this->type, // text, image...
+            'type'            => $this->type,
             'sender'          => [
                 'id'   => $this->sendable_id,
                 'type' => $this->sendable_type,

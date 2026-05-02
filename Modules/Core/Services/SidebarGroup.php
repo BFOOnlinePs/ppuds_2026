@@ -10,14 +10,14 @@ class SidebarGroup implements SidebarItemsInterface
     protected string $icon;
     protected array $children = [];
     protected array $permissions = [];
-    protected int $sort = 100;
+    protected int $sort = 1000;
 
 
     public function __construct(
         string $title,
         string $icon,
         array $permissions = [],
-        int $sort = 100
+        int $sort = 1000
     ) {
         $this->title = $title;
         $this->icon = $icon;
@@ -40,7 +40,10 @@ class SidebarGroup implements SidebarItemsInterface
 
     public function canSee(): bool
     {
-        if (empty($this->permissions)) return true;
+        if (empty($this->permissions)) {
+            return empty($this->children) || collect($this->children)->contains(fn($item) => $item->canSee());
+        }
+
         foreach ($this->permissions as $perm) {
             if (!auth()->check() || !auth()->user()->can($perm)) {
                 return false;
