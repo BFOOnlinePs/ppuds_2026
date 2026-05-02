@@ -4,8 +4,10 @@ namespace Modules\PPUDS\Livewire\Pages\Announcement;
 
 use App\View\Components\AppLayout;
 use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -43,31 +45,64 @@ class Index extends Component implements HasTable, HasForms
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn() => Announcement::query()->latest())
+            ->query(fn() => Announcement::query()
+                ->with('createdBy')
+                ->orderByDesc('is_pinned')
+                ->latest('published_at'))
             ->columns([
+                ImageColumn::make('image')
+                    ->label('')
+                    ->getStateUsing(fn (Announcement $record) => $record->getImageAttribute())
+                    ->height(48)
+                    ->width(72)
+                    ->extraImgAttributes(['class' => 'rounded-md object-cover']),
+
                 TextColumn::make('name')
                     ->label(__('Title'))
                     ->searchable()
-                    ->limit(50),
+                    ->sortable()
+                    ->weight('medium')
+                    ->limit(48)
+                    ->description(fn (Announcement $record) => str($record->content)->stripTags()->limit(90)),
 
-                // تعديل: عرض الأدوار المتعددة
                 TextColumn::make('target_roles')
                     ->label(__('Target Roles'))
                     ->badge()
-                    ->separator(',') // يفصل بينهم إذا لم تستخدم badge، لكن مع badge يرتبهم بجانب بعض
-                    // دالة لعرض الاسم واللون الصحيح لكل دور داخل المصفوفة
+                    ->separator(',')
                     ->formatStateUsing(fn(string $state): string => UserRole::tryFrom($state)?->getLabel() ?? $state)
                     ->color(fn(string $state): string => UserRole::tryFrom($state)?->getColor() ?? 'gray')
                     ->searchable(),
+
+                TextColumn::make('createdBy.name')
+                    ->label(__('Publisher'))
+                    ->placeholder(__('System'))
+                    ->toggleable(),
 
                 TextColumn::make('published_at')
                     ->label(__('Published At'))
                     ->dateTime('Y-m-d H:i')
                     ->sortable(),
 
+                TextColumn::make('expires_at')
+                    ->label(__('Expiry Date'))
+                    ->dateTime('Y-m-d H:i')
+                    ->placeholder(__('No Expiry'))
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 IconColumn::make('is_pinned')
                     ->label(__('Pinned'))
-                    ->boolean(),
+                    ->boolean()
+                    ->trueColor('warning')
+                    ->falseColor('gray'),
+
+                IconColumn::make('is_active')
+                    ->label(__('Status'))
+                    ->getStateUsing(fn (Announcement $record) => $this->isActive($record))
+                    ->boolean()
+                    ->trueIcon('heroicon-o-check-circle')
+                    ->falseIcon('heroicon-o-x-circle')
+                    ->trueColor('success')
+                    ->falseColor('gray'),
             ])
             ->filters($this->getTableFilters())
             ->actions(
@@ -184,7 +219,7 @@ class Index extends Component implements HasTable, HasForms
 
                                 SpatieMediaLibraryFileUpload::make('image')
                                     ->label(__('Attachment / Image'))
-                                    ->collection('announcements')
+                                    ->collection('announcement_image')
                                     ->disabled()
                                     ->downloadable(),
                             ])
@@ -192,6 +227,12 @@ class Index extends Component implements HasTable, HasForms
                 })
                 ->modalSubmitAction(false)
                 ->visible(fn() => auth()->user()->can('Announcement View')),
+
+            Action::make('details')
+                ->label('')
+                ->icon('heroicon-o-arrow-top-right-on-square')
+                ->url(fn (Announcement $record) => route('announcements.details', $record))
+                ->visible(fn() => auth()->user()->can('Announcement Details')),
 
             EditAction::make('edit')
                 ->form($this->getFormSchema())
@@ -214,7 +255,7 @@ class Index extends Component implements HasTable, HasForms
                     $record->update($data);
 
                     if (isset($data['announcement_image'])) {
-                        $record->addMedia($data['announcement_image'])->toMediaCollection('announcements');
+                        $record->addMedia($data['announcement_image'])->toMediaCollection('announcement_image');
                     }
 
                     Toaster::success(__('Announcement updated successfully'));
@@ -234,9 +275,10 @@ class Index extends Component implements HasTable, HasForms
     protected function getFormSchema(): array
     {
         return [
-            Grid::make(3)->schema([
+            Grid::make(['default' => 1, 'lg' => 3])->schema([
                 Section::make(__('Content'))
-                    ->columnSpan(2)
+                    ->icon('heroicon-o-megaphone')
+                    ->columnSpan(['default' => 1, 'lg' => 2])
                     ->schema([
                         TextInput::make('name')
                             ->label(__('Title'))
@@ -246,7 +288,7 @@ class Index extends Component implements HasTable, HasForms
                         Textarea::make('content')
                             ->label(__('Content'))
                             ->required()
-                            ->rows(5),
+                            ->rows(7),
 
                         SpatieMediaLibraryFileUpload::make('announcement_image')
                             ->label(__('Attachment / Image'))
@@ -255,9 +297,9 @@ class Index extends Component implements HasTable, HasForms
                     ]),
 
                 Section::make(__('Settings & Targeting'))
-                    ->columnSpan(1)
+                    ->icon('heroicon-o-adjustments-horizontal')
+                    ->columnSpan(['default' => 1, 'lg' => 1])
                     ->schema([
-                        // تعديل: تحويل القائمة لاختيار متعدد
                         Select::make('target_roles')
                             ->label(__('Target Roles'))
                             ->options(UserRole::class)
@@ -266,7 +308,6 @@ class Index extends Component implements HasTable, HasForms
                             ->live()
                             ->afterStateUpdated(fn(Forms\Set $set) => $set('filters.major_id', null)),
 
-                        // تعديل: شرط الظهور يعتمد على وجود "Student" داخل المصفوفة
                         Select::make('filters.major_id')
                             ->label(__('Specific Major'))
                             ->options(Major::get()->pluck('name', 'id')) // تأكد من استدعاء get() قبل pluck
@@ -293,6 +334,12 @@ class Index extends Component implements HasTable, HasForms
                     ]),
             ]),
         ];
+    }
+
+    private function isActive(Announcement $announcement): bool
+    {
+        return $announcement->published_at?->lte(now())
+            && ($announcement->expires_at === null || $announcement->expires_at->gte(now()));
     }
 
     public function render()
