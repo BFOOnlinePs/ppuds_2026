@@ -30,12 +30,6 @@ class CompanyResource extends JsonResource
                     return $branch->supervisors;
                 })->unique('id')->values();
 
-                $departments = $this->branches->flatMap(function ($branch) {
-                    return $branch->departments;
-                })->unique('id')->values();
-
-                $supervisors = $supervisors->merge($departments);
-
                 return UserResource::collection($supervisors);
             }),
 
