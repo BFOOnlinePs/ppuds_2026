@@ -25,6 +25,8 @@ class CompanyResource extends JsonResource
 
             'branches' => BranchResource::collection($this->whenLoaded('branches')),
 
+            'departments' => $this->whenLoaded('branches', fn () => $this->departmentsWithSupervisors()),
+
             'supervisors' => $this->whenLoaded('branches', function () {
                 $supervisors = $this->branches->flatMap(function ($branch) {
                     return $branch->supervisors;
@@ -101,8 +103,48 @@ class CompanyResource extends JsonResource
             'createdBy',
             'branches',
             'branches.departments',
+            'branches.departments.supervisors',
             'branches.workingHours',
             'branches.supervisors',
         ];
+    }
+
+    private function departmentsWithSupervisors()
+    {
+        return $this->branches
+            ->filter(fn ($branch) => $branch->relationLoaded('departments'))
+            ->flatMap(function ($branch) {
+                return $branch->departments->map(function ($department) use ($branch) {
+                    $supervisorId = $department->pivot->user_id ?? null;
+                    $supervisor = $this->resolveDepartmentSupervisor($branch, $department, $supervisorId);
+
+                    return [
+                        'id' => $department->id,
+                        'name' => $department->name,
+                        'branch_id' => $branch->id,
+                        'branch_name' => $branch->name,
+                        'supervisor_id' => $supervisorId,
+                        'supervisor' => $supervisor ? UserResource::make($supervisor) : null,
+                    ];
+                });
+            })
+            ->values();
+    }
+
+    private function resolveDepartmentSupervisor($branch, $department, ?int $supervisorId)
+    {
+        if (! $supervisorId) {
+            return null;
+        }
+
+        if ($department->relationLoaded('supervisors')) {
+            return $department->supervisors->firstWhere('id', $supervisorId);
+        }
+
+        if ($branch->relationLoaded('supervisors')) {
+            return $branch->supervisors->firstWhere('id', $supervisorId);
+        }
+
+        return null;
     }
 }

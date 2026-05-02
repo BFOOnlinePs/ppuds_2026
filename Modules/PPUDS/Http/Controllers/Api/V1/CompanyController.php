@@ -214,7 +214,13 @@ class CompanyController extends Controller
             return $company;
         });
 
-        $company->load(['media', 'branches.departments', 'branches.workingHours', 'translations']); // أضفنا branches.workingHours
+        $company->load([
+            'media',
+            'branches.departments.supervisors',
+            'branches.workingHours',
+            'branches.supervisors',
+            'translations',
+        ]);
 
         return $this->successResponse(
             new CompanyResource($company),
@@ -347,7 +353,13 @@ class CompanyController extends Controller
             return $company;
         });
 
-        $company->load(['media', 'branches.departments', 'branches.workingHours', 'translations']);
+        $company->load([
+            'media',
+            'branches.departments.supervisors',
+            'branches.workingHours',
+            'branches.supervisors',
+            'translations',
+        ]);
 
         return $this->successResponse(
             new CompanyResource($company),
@@ -423,7 +435,14 @@ class CompanyController extends Controller
         $company = QueryBuilder::for(Company::class)
             ->where('id', $company->id)
             ->allowedFields(CompanyResource::allowedFields())
-            ->with(['media', 'translations'])
+            ->allowedIncludes(CompanyResource::allowedIncludes())
+            ->with([
+                'media',
+                'branches.departments.supervisors',
+                'branches.workingHours',
+                'branches.supervisors',
+                'translations',
+            ])
             ->firstOrFail();
 
         return $this->successResponse(
