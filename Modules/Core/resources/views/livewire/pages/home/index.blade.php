@@ -3,12 +3,6 @@
 
     @livewire(\Modules\Core\Livewire\Pages\Home\Widget\HomeActionsWidget::class)
 
-    @if ($this->isStudent())
-        <x-filament::section :heading="__('My Training')">
-            @include('ppuds::components.fields.student-companies-cards')
-        </x-filament::section>
-    @endif
-
     @if (count($chartWidgets = $this->chartWidgets()))
         <x-filament-widgets::widgets
             :widgets="$chartWidgets"

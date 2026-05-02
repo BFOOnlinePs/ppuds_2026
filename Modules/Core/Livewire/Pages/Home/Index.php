@@ -3,6 +3,7 @@
 namespace Modules\Core\Livewire\Pages\Home;
 
 use App\View\Components\AppLayout;
+use Filament\Forms\Components\Livewire;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\ViewField;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -13,7 +14,6 @@ use Filament\Infolists\Contracts\HasInfolists;
 use Livewire\Component;
 use Modules\PPUDS\Entities\Announcement;
 use Livewire\Attributes\Computed;
-use Modules\Core\Enums\UserRole;
 use Modules\Core\Livewire\Pages\Home\Widget\Charts\AttendanceLastSevenDaysChart;
 use Modules\Core\Livewire\Pages\Home\Widget\Charts\CurrentStudentsGenderChart;
 use Modules\Core\Livewire\Pages\Home\Widget\Charts\FieldVisitsLastSixMonthsChart;
@@ -45,11 +45,6 @@ class Index extends Component implements HasForms, HasInfolists
             ->all();
     }
 
-    public function isStudent(): bool
-    {
-        return auth()->user()?->hasRole(UserRole::STUDENT->value) ?? false;
-    }
-
     #[Computed]
     public function settings()
     {
@@ -65,15 +60,21 @@ class Index extends Component implements HasForms, HasInfolists
     #[Computed]
     public function getStudentCompanies()
     {
-        return StudentCompany::whereHas('registration', fn($q) => $q->where('student_id', auth()->id()))
-            ->with(['company', 'branch', 'department'])
-            ->latest()
-            ->get();
+        return StudentCompany::whereHas('registration', fn($q) => $q->where('student_id', auth()->id()))->with(['company', 'branch'])->get();
     }
 
     public function form(Form $form): Form
     {
         return $form->schema([
+            Section::make(__('Student Companies'))
+                ->schema([
+                    // Livewire::make(\Modules\PPUDS\Livewire\Pages\StudentCompany\Index::class)
+                    ViewField::make('student_companies_cards')
+                        ->view('ppuds::components.fields.student-companies-cards'),
+
+                ])
+                ->visible(fn() => auth()->user()->hasRole('Student')),
+
             Section::make(__('Announcements'))
                 ->schema([
                     ViewField::make('announcements_list')
