@@ -1,5 +1,4 @@
 <div>
-    {{-- @php($studentCompanies = $this->getStudentCompanies()) --}}
 
     @if ($studentCompanies->isNotEmpty())
         <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
