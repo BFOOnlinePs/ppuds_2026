@@ -3,5 +3,12 @@
 
     @livewire(\Modules\Core\Livewire\Pages\Home\Widget\HomeActionsWidget::class)
 
+    @if (count($chartWidgets = $this->chartWidgets()))
+        <x-filament-widgets::widgets
+            :widgets="$chartWidgets"
+            :columns="['default' => 1, 'xl' => 2]"
+        />
+    @endif
+
     {{ $this->form }}
 </div>

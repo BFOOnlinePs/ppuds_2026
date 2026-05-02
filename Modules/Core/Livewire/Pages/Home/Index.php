@@ -14,6 +14,12 @@ use Filament\Infolists\Contracts\HasInfolists;
 use Livewire\Component;
 use Modules\PPUDS\Entities\Announcement;
 use Livewire\Attributes\Computed;
+use Modules\Core\Livewire\Pages\Home\Widget\Charts\AttendanceLastSevenDaysChart;
+use Modules\Core\Livewire\Pages\Home\Widget\Charts\CurrentStudentsGenderChart;
+use Modules\Core\Livewire\Pages\Home\Widget\Charts\FieldVisitsLastSixMonthsChart;
+use Modules\Core\Livewire\Pages\Home\Widget\Charts\LeaveRequestsStatusChart;
+use Modules\Core\Livewire\Pages\Home\Widget\Charts\TrainingStatusChart;
+use Modules\Core\Livewire\Pages\Home\Widget\Charts\UsersByRoleChart;
 use Modules\Core\Settings\GeneralSettings;
 use Modules\PPUDS\Entities\StudentCompany;
 
@@ -23,6 +29,21 @@ class Index extends Component implements HasForms, HasInfolists
     use InteractsWithForms;
 
     public function mount() {}
+
+    public function chartWidgets(): array
+    {
+        return collect([
+            UsersByRoleChart::class,
+            CurrentStudentsGenderChart::class,
+            TrainingStatusChart::class,
+            AttendanceLastSevenDaysChart::class,
+            LeaveRequestsStatusChart::class,
+            FieldVisitsLastSixMonthsChart::class,
+        ])
+            ->filter(fn (string $widget) => $widget::canView())
+            ->values()
+            ->all();
+    }
 
     #[Computed]
     public function settings()
