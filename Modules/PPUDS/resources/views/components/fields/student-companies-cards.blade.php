@@ -1,7 +1,8 @@
 <div>
-    @php($studentCompanies = $this->getStudentCompanies())
+    {{-- @php($studentCompanies = $this->getStudentCompanies()) --}}
 
-    <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
+    @if ($studentCompanies->isNotEmpty())
+        <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
             @foreach ($studentCompanies as $studentCompany)
                 @php
                     $statusColor = $studentCompany->status?->getColor() ?? 'gray';
@@ -59,4 +60,9 @@
                 </a>
             @endforeach
         </div>
+    @else
+        <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-800/60 dark:text-gray-400">
+            {{ __('No Company Registered') }}
+        </div>
+    @endif
 </div>
