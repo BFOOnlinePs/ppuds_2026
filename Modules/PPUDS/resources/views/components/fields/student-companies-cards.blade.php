@@ -1,65 +1,67 @@
-{{-- <div>
-    @if ($this->getStudentCompanies()->isNotEmpty())
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            @foreach ($this->getStudentCompanies() as $studentCompany)
-                <a href="#"
-                    class="flex flex-col bg-white border border-gray-200 rounded-xl shadow-sm hover:ring-2 hover:ring-primary-500 dark:bg-gray-900 dark:border-gray-800 transition duration-200 overflow-hidden group">
-
-                    <div class="w-full h-48 bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
-                        <img class="w-full h-full object-cover"
-                             src="{{ $studentCompany->company->getImageAttribute() }}"
-                             alt="{{ $studentCompany->company->name }}">
-                    </div>
-
-                    <div class="p-5 flex flex-col flex-grow">
-                        <h5 class="mb-2 text-lg font-bold tracking-tight text-gray-900 dark:text-white group-hover:text-primary-600 transition-colors">
-                            {{ $studentCompany->company->name }}
-                        </h5>
-
-                        <p class="font-normal text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
-                            {{ $studentCompany->description ?? 'اضغط هنا لعرض تفاصيل الشركة' }}
-                        </p>
-
-                        <div class="mt-auto text-primary-600 dark:text-primary-400 text-sm font-medium inline-flex items-center">
-                            عرض التفاصيل
-                            <svg class="w-4 h-4 mr-1 rtl:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                            </svg>
-                        </div>
-                    </div>
-                </a>
-            @endforeach
-        </div>
-    @else
-        <div class="p-6 text-center text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-            لا يوجد شركات مسجلة حتى الآن.
-        </div>
-    @endif
-</div> --}}
-
-
 <div>
-    @if ($this->getStudentCompanies()->isNotEmpty())
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            @foreach ($this->getStudentCompanies() as $studentCompany)
-                <a href="{{ route('student-companies.details', $studentCompany->id) }}"
-                    class="flex flex-col items-center w-full bg-neutral-primary-soft border border-default rounded-base shadow-xs md:flex-row">
+    @php($studentCompanies = $this->getStudentCompanies())
 
-                    <img class="object-cover w-32 h-32 p-5 mb-4 rounded-base md:h-auto md:w-48 md:mb-0"
-                        src="{{ $studentCompany->company->getImageAttribute() }}" alt="">
+    @if ($studentCompanies->isNotEmpty())
+        <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            @foreach ($studentCompanies as $studentCompany)
+                @php
+                    $statusColor = $studentCompany->status?->getColor() ?? 'gray';
+                    $statusClasses = match ($statusColor) {
+                        'success' => 'bg-success-50 text-success-700 ring-success-600/20 dark:bg-success-400/10 dark:text-success-300 dark:ring-success-400/20',
+                        'danger' => 'bg-danger-50 text-danger-700 ring-danger-600/20 dark:bg-danger-400/10 dark:text-danger-300 dark:ring-danger-400/20',
+                        default => 'bg-primary-50 text-primary-700 ring-primary-600/20 dark:bg-primary-400/10 dark:text-primary-300 dark:ring-primary-400/20',
+                    };
+                @endphp
 
-                    <div class="flex flex-col justify-between flex-1 p-4 leading-normal text-right">
-                        <h5 class="mb-2 text-2xl font-bold tracking-tight text-heading">{{ $studentCompany->company->name }}</h5>
-                        <p class="mb-6 text-body">
-                            {{ $studentCompany->description ?? 'اضغط هنا لعرض تفاصيل الشركة' }}
-                        </p>
+                <a
+                    href="{{ route('student-companies.details', $studentCompany) }}"
+                    class="group flex min-h-[168px] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition hover:border-primary-300 hover:bg-primary-50/50 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-primary-500 dark:hover:bg-primary-500/10"
+                >
+                    <div class="flex w-32 shrink-0 items-center justify-center bg-gray-50 p-4 dark:bg-gray-800 sm:w-40">
+                        <img
+                            src="{{ $studentCompany->company?->getImageAttribute() }}"
+                            alt="{{ $studentCompany->company?->name }}"
+                            class="h-24 w-24 rounded-lg object-contain"
+                        >
+                    </div>
+
+                    <div class="flex min-w-0 flex-1 flex-col p-4">
+                        <div class="mb-3 flex flex-wrap items-center gap-2">
+                            <span class="inline-flex rounded-md px-2 py-1 text-xs font-medium ring-1 {{ $statusClasses }}">
+                                {{ $studentCompany->status?->getLabel() ?? __('Status') }}
+                            </span>
+                        </div>
+
+                        <h3 class="truncate text-base font-semibold text-gray-950 transition group-hover:text-primary-700 dark:text-white dark:group-hover:text-primary-300">
+                            {{ $studentCompany->company?->name ?? __('Company Name') }}
+                        </h3>
+
+                        <dl class="mt-3 grid grid-cols-1 gap-2 text-sm text-gray-600 dark:text-gray-400 sm:grid-cols-2">
+                            <div class="min-w-0">
+                                <dt class="text-xs text-gray-500 dark:text-gray-500">{{ __('Branch Name') }}</dt>
+                                <dd class="truncate font-medium text-gray-800 dark:text-gray-200">
+                                    {{ $studentCompany->branch?->name ?? '-' }}
+                                </dd>
+                            </div>
+
+                            <div class="min-w-0">
+                                <dt class="text-xs text-gray-500 dark:text-gray-500">{{ __('Department') }}</dt>
+                                <dd class="truncate font-medium text-gray-800 dark:text-gray-200">
+                                    {{ $studentCompany->department?->name ?? '-' }}
+                                </dd>
+                            </div>
+                        </dl>
+
+                        <span class="mt-auto inline-flex items-center gap-1 pt-4 text-sm font-medium text-primary-600 dark:text-primary-400">
+                            {{ __('View Training Details') }}
+                            @svg('heroicon-o-arrow-left', 'h-4 w-4')
+                        </span>
                     </div>
                 </a>
             @endforeach
         </div>
     @else
-        <div
-            class="p-6 text-center text-gray-500 border border-gray-200 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 rounded-xl dark:border-gray-700">
+        <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-800/60 dark:text-gray-400">
             {{ __('No Company Registered') }}
         </div>
     @endif
