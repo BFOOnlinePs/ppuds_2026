@@ -10,7 +10,6 @@ use Modules\Core\Enums\UserRole;
 use Modules\PPUDS\Entities\StudentAttendance;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\AttendanceStatus;
-use Modules\PPUDS\Settings\GeneralSettings;
 
 class AttendanceMapWidget extends Component
 {
@@ -110,8 +109,19 @@ class AttendanceMapWidget extends Component
                 'studentCompany.branch',
             ])
             ->whereBetween('attendance_date', [$fromDate, $toDate])
-            ->whereNotNull('check_in_latitude')
-            ->whereNotNull('check_in_longitude')
+            ->where(function (Builder $query) {
+                $query
+                    ->where(function (Builder $checkInQuery) {
+                        $checkInQuery
+                            ->whereNotNull('check_in_latitude')
+                            ->whereNotNull('check_in_longitude');
+                    })
+                    ->orWhere(function (Builder $checkOutQuery) {
+                        $checkOutQuery
+                            ->whereNotNull('check_out_latitude')
+                            ->whereNotNull('check_out_longitude');
+                    });
+            })
             ->whereHas('studentCompany', fn (Builder $query) => $this->applyStudentCompanyScope($query));
     }
 
@@ -120,30 +130,17 @@ class AttendanceMapWidget extends Component
         $user = auth()->user();
 
         if ($user?->hasRole(UserRole::STUDENT->value)) {
-            $query
-                ->where('student_id', $user->id)
-                ->whereHas('registration', fn (Builder $registrationQuery) => $this->applyCurrentSemester($registrationQuery));
+            $query->where('student_id', $user->id);
 
             return;
         }
 
-        $query->whereHas('registration', fn (Builder $registrationQuery) => $this->applyCurrentSemester($registrationQuery));
+        if ($this->shouldScopePracticalSupervisor()) {
+            $query->whereHas('registration', fn (Builder $registrationQuery) => $registrationQuery->where('supervisor_id', $user->id));
+        }
 
         if ($this->shouldScopeCompanySupervisor()) {
             $this->scopeCompanySupervisor($query);
-        }
-    }
-
-    private function applyCurrentSemester(Builder $query): void
-    {
-        $settings = app(GeneralSettings::class);
-
-        $query
-            ->where('semester', $settings->semester_type->value)
-            ->where('year', $settings->year);
-
-        if ($this->shouldScopePracticalSupervisor()) {
-            $query->where('supervisor_id', auth()->id());
         }
     }
 
@@ -184,11 +181,12 @@ class AttendanceMapWidget extends Component
     private function formatAttendancePoint(StudentAttendance $attendance): array
     {
         $studentCompany = $attendance->studentCompany;
+        $coordinates = $this->attendanceCoordinates($attendance);
 
         return [
             'id' => $attendance->id,
-            'lat' => (float) $attendance->check_in_latitude,
-            'lng' => (float) $attendance->check_in_longitude,
+            'lat' => $coordinates['lat'],
+            'lng' => $coordinates['lng'],
             'student' => $studentCompany?->student?->name ?? '-',
             'company' => $studentCompany?->company?->name ?? '-',
             'branch' => $studentCompany?->branch?->name ?? '-',
@@ -197,6 +195,21 @@ class AttendanceMapWidget extends Component
             'check_out' => $attendance->check_out?->format('H:i') ?? '-',
             'status' => $this->statusLabel($attendance),
             'color' => $this->statusColor($attendance),
+        ];
+    }
+
+    private function attendanceCoordinates(StudentAttendance $attendance): array
+    {
+        if ($attendance->check_in_latitude && $attendance->check_in_longitude) {
+            return [
+                'lat' => (float) $attendance->check_in_latitude,
+                'lng' => (float) $attendance->check_in_longitude,
+            ];
+        }
+
+        return [
+            'lat' => (float) $attendance->check_out_latitude,
+            'lng' => (float) $attendance->check_out_longitude,
         ];
     }
 

@@ -40,6 +40,7 @@ class StudentAttendanceReportResource extends JsonResource
             'submit_latitude'           => $this->submit_latitude,
             'submit_longitude'          => $this->submit_longitude,
             'file_report'               => $this->getMultipleImage(),
+            'created_at'                => $this->created_at,
             'student_attendance'        => new StudentAttendanceResource($this->whenLoaded('studentAttendance')),
             'created_by'                => $this->whenLoaded('createdBy'),
         ];
