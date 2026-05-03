@@ -51,6 +51,7 @@ class PPUDSServiceProvider extends ServiceProvider
 
                 if ($settings->login_method === LoginMethod::PPU) {
                     Config::set('auth.guards.api.driver', 'keycloak');
+                    Config::set('auth.guards.api.provider', 'users');
                 }
             } catch (\Exception $e) {
                 Log::error('Failed to load PPUDS general settings: '.$e->getMessage());
