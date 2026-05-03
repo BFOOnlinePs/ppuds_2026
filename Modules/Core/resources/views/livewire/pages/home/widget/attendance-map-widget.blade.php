@@ -270,7 +270,7 @@
                             }
 
                             leaflet.marker([point.lat, point.lng], {
-                                icon: this.markerIcon(point.color),
+                                icon: this.markerIcon(),
                             })
                                 .bindPopup(this.popupContent(point))
                                 .addTo(this.markerLayer);
@@ -285,16 +285,9 @@
                         this.refreshSize();
                     },
 
-                    markerIcon(color) {
+                    markerIcon() {
                         const leaflet = window.L || window.leaflet;
-                        const colors = {
-                            success: '#16a34a',
-                            warning: '#f59e0b',
-                            danger: '#dc2626',
-                            gray: '#6b7280',
-                            primary: '#EE7517',
-                        };
-                        const markerColor = colors[color] || colors.primary;
+                        const markerColor = '#dc2626';
 
                         return leaflet.divIcon({
                             className: 'attendance-map-marker-shell',
