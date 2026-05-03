@@ -22,19 +22,22 @@ use Modules\PPUDS\Http\Controllers\Api\V1\SurveyController;
 use Modules\PPUDS\Http\Controllers\Api\V1\WorkExperienceController;
 
 Route::prefix('v1')->as('api.v1.')->group(function () {
-    Route::middleware(['auth:api,sanctum', 'api.localize'])->group(function () {
 
-        Route::prefix('ppuds')->as('ppuds.')->group(function () {
-
-        Route::get('/me', [ProfileController::class, 'show'])->name('profile.me');
-
-            Route::controller(SettingsController::class)
+    Route::prefix('ppuds')->as('ppuds.')->group(function () {
+        Route::controller(SettingsController::class)
                 ->prefix('settings')
                 ->as('settings.')
                 ->group(function () {
                     Route::get('/', 'index')->name('index');
                     Route::patch('/', 'update')->name('update');
                 });
+    });
+
+    Route::middleware(['auth:api,sanctum', 'api.localize'])->group(function () {
+
+        Route::prefix('ppuds')->as('ppuds.')->group(function () {
+
+        Route::get('/me', [ProfileController::class, 'show'])->name('profile.me');
 
             Route::controller(CompanyController::class)
                 ->prefix('companies')
