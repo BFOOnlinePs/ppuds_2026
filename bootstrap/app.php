@@ -26,20 +26,63 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->render(function (\KeycloakGuard\Exceptions\TokenException $e, \Illuminate\Http\Request $request) {
+        $exceptions->render(function (\Throwable $e, \Illuminate\Http\Request $request) {
+
+            // تطبيق هذه الهيكلية فقط على مسارات الـ API لعدم كسر واجهات الويب (Blade/Livewire)
             if ($request->expectsJson() || $request->is('api/*')) {
 
-                // إنشاء كلاس مجهول لاستخدام الـ Trait
-                $responder = new class {
-                    use \Modules\Core\Traits\ApiResponse;
+                $options = JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE;
 
-                    // دالة عامة للوصول للدالة المحمية داخل الـ Trait
-                    public function sendError($message, $code) {
-                        return $this->errorResponse($message, $code);
-                    }
-                };
+                // 1. أخطاء المصادقة (Authentication - 401)
+                if ($e instanceof \KeycloakGuard\Exceptions\TokenException ||
+                    $e instanceof \Illuminate\Auth\AuthenticationException) {
+                    return response()->json([
+                        'status'  => false,
+                        'message' => 'Unauthenticated.', // أو 'انتهت الجلسة'
+                        'data'    => null
+                    ], 401, [], $options);
+                }
 
-                return $responder->sendError('Unauthenticated.', 401);
+                // 2. أخطاء الصلاحيات (Authorization/Permissions - 403)
+                if ($e instanceof \Illuminate\Auth\Access\AuthorizationException ||
+                    $e instanceof \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException) {
+                    return response()->json([
+                        'status'  => false,
+                        'message' => 'This action is unauthorized.',
+                        'data'    => null
+                    ], 403, [], $options);
+                }
+
+                // 3. أخطاء التحقق من البيانات (Validation - 422)
+                if ($e instanceof \Illuminate\Validation\ValidationException) {
+                    return response()->json([
+                        'status'  => false,
+                        'message' => 'Validation Error',
+                        'data'    => $e->errors() // إرجاع مصفوفة الأخطاء هنا
+                    ], 422, [], $options);
+                }
+
+                // 4. أخطاء عدم وجود البيانات أو الروابط (Not Found - 404)
+                if ($e instanceof \Illuminate\Database\Eloquent\ModelNotFoundException ||
+                    $e instanceof \Symfony\Component\HttpKernel\Exception\NotFoundHttpException) {
+                    return response()->json([
+                        'status'  => false,
+                        'message' => 'Resource not found.',
+                        'data'    => null
+                    ], 404, [], $options);
+                }
+
+                // 5. أي أخطاء أخرى بالسيرفر (Server Error - 500)
+                // في بيئة التطوير (local) نعرض تفاصيل الخطأ الحقيقي، وفي الإنتاج (production) نعرض رسالة عامة
+                return response()->json([
+                    'status'  => false,
+                    'message' => config('app.debug') ? $e->getMessage() : 'Server Error.',
+                    'data'    => config('app.debug') ? [
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine()
+                    ] : null
+                ], 500, [], $options);
             }
+
         });
     })->create();
