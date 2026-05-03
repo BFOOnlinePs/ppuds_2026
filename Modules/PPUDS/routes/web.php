@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\PPUDS\Http\Controllers\KeycloakAuthController;
+use Modules\PPUDS\Http\Controllers\LoginGatewayController;
 
 // Route::get('/login', [KeycloakAuthController::class, 'redirect'])->name('login');
 
@@ -9,6 +10,17 @@ use Modules\PPUDS\Http\Controllers\KeycloakAuthController;
 //     Route::get('/auth/keycloak/callback', [KeycloakAuthController::class, 'callback'])->name('keycloak.callback');
 //     Route::post('/logout', [KeycloakAuthController::class, 'logout'])->name('logout');
 // });
+
+Route::middleware('guest')->get('/login', LoginGatewayController::class)->name('login');
+
+// مسارات Keycloak
+Route::middleware('guest')->group(function () {
+    Route::get('/auth/keycloak/redirect', [KeycloakAuthController::class, 'redirect'])->name('keycloak.redirect');
+    Route::get('/auth/keycloak/callback', [KeycloakAuthController::class, 'callback'])->name('keycloak.callback');
+});
+
+// مسار تسجيل الخروج الخاص بالنظامين
+Route::middleware('auth')->post('/logout', [KeycloakAuthController::class, 'logout'])->name('logout');
 
 
 Route::middleware(['auth', 'verified'])->group(function () {
