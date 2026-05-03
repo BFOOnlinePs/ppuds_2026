@@ -3,7 +3,9 @@
 namespace Modules\Core\Livewire\Pages\Home\Widget;
 
 use Filament\Widgets\Widget;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Route;
+use Modules\Core\Enums\UserRole;
 
 class HomeActionsWidget extends Widget
 {
@@ -68,8 +70,9 @@ class HomeActionsWidget extends Widget
             [
                 'label' => 'Attendance Map',
                 'permission' => 'StudentAttendance View List',
+                'roles' => [UserRole::STUDENT->value],
                 'icon' => 'heroicon-o-map',
-                'disabled' => true,
+                'event' => 'open-attendance-map',
             ],
             [
                 'label' => 'Training Places',
@@ -94,18 +97,39 @@ class HomeActionsWidget extends Widget
 
     private function canSee(array $item): bool
     {
-        return auth()->user()?->can($item['permission']) ?? false;
+        $user = auth()->user();
+
+        if (! $user) {
+            return false;
+        }
+
+        $canByPermission = collect(Arr::wrap($item['permission'] ?? []))
+            ->contains(fn (string $permission) => $user->can($permission));
+
+        $roles = Arr::wrap($item['roles'] ?? []);
+        $canByRole = filled($roles) && $user->hasAnyRole($roles);
+
+        return $canByPermission || $canByRole;
     }
 
     private function formatItem(array $item): array
     {
         $route = $item['route'] ?? null;
-        $isDisabled = ($item['disabled'] ?? false) || ! $route || ! Route::has($route);
+        $event = $item['event'] ?? null;
+        $isDisabled = (bool) ($item['disabled'] ?? false);
+
+        if (! $isDisabled && $route) {
+            $isDisabled = ! Route::has($route);
+        }
+
+        if (! $route && ! $event) {
+            $isDisabled = true;
+        }
 
         return [
             ...$item,
             'disabled' => $isDisabled,
-            'url' => $isDisabled ? null : route($route),
+            'url' => (! $isDisabled && $route) ? route($route) : null,
         ];
     }
 }

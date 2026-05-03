@@ -26,6 +26,20 @@
                                 {{ __($link['label']) }}
                             </span>
                         </span>
+                    @elseif (! empty($link['event']))
+                        <button
+                            type="button"
+                            wire:click="$dispatch('{{ $link['event'] }}')"
+                            class="group inline-flex min-h-[64px] items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 text-start text-sm font-medium text-gray-700 shadow-sm transition hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-primary-500 dark:hover:bg-primary-500/10 dark:hover:text-primary-300 dark:focus:ring-offset-gray-900"
+                        >
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-50 text-primary-600 ring-1 ring-gray-200 transition group-hover:bg-white dark:bg-gray-800 dark:text-primary-400 dark:ring-gray-700 dark:group-hover:bg-gray-900">
+                                @svg($link['icon'], 'h-5 w-5')
+                            </span>
+
+                            <span class="min-w-0 flex-1 leading-5">
+                                {{ __($link['label']) }}
+                            </span>
+                        </button>
                     @else
                         <a
                             href="{{ $link['url'] }}"

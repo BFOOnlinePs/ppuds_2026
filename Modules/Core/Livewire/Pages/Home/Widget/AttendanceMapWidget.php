@@ -1,0 +1,262 @@
+<?php
+
+namespace Modules\Core\Livewire\Pages\Home\Widget;
+
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
+use Livewire\Attributes\On;
+use Livewire\Component;
+use Modules\Core\Enums\UserRole;
+use Modules\PPUDS\Entities\StudentAttendance;
+use Modules\PPUDS\Entities\StudentCompany;
+use Modules\PPUDS\Enums\AttendanceStatus;
+use Modules\PPUDS\Settings\GeneralSettings;
+
+class AttendanceMapWidget extends Component
+{
+    private const MODAL_ID = 'attendance-map-modal';
+
+    public bool $isOpen = false;
+
+    public ?string $fromDate = null;
+
+    public ?string $toDate = null;
+
+    public function mount(): void
+    {
+        $this->setDefaultDates();
+    }
+
+    #[On('open-attendance-map')]
+    public function open(): void
+    {
+        if (! $this->canView()) {
+            return;
+        }
+
+        $this->setDefaultDates();
+        $this->isOpen = true;
+        $this->dispatch('open-modal', id: self::MODAL_ID);
+    }
+
+    public function close(): void
+    {
+        $this->isOpen = false;
+        $this->dispatch('close-modal', id: self::MODAL_ID);
+    }
+
+    public function applyFilters(): void
+    {
+        [$this->fromDate, $this->toDate] = $this->normalizedDates();
+
+        $points = $this->attendancePoints();
+
+        $this->dispatch(
+            'attendance-map-points-updated',
+            points: $points,
+            center: $this->mapCenter($points),
+        );
+    }
+
+    public function canView(): bool
+    {
+        $user = auth()->user();
+
+        return $user && (
+            $user->hasRole(UserRole::STUDENT->value)
+            || $user->can('StudentAttendance View List')
+        );
+    }
+
+    public function attendancePoints(): array
+    {
+        if (! $this->canView()) {
+            return [];
+        }
+
+        [$fromDate, $toDate] = $this->normalizedDates();
+
+        return $this->attendanceQuery($fromDate, $toDate)
+            ->latest('attendance_date')
+            ->get()
+            ->map(fn (StudentAttendance $attendance) => $this->formatAttendancePoint($attendance))
+            ->values()
+            ->all();
+    }
+
+    public function mapCenter(?array $points = null): array
+    {
+        $points ??= $this->attendancePoints();
+
+        if (! empty($points)) {
+            return [
+                'lat' => (float) $points[0]['lat'],
+                'lng' => (float) $points[0]['lng'],
+            ];
+        }
+
+        return [
+            'lat' => 32.2211,
+            'lng' => 35.2544,
+        ];
+    }
+
+    private function attendanceQuery(string $fromDate, string $toDate): Builder
+    {
+        return StudentAttendance::query()
+            ->with([
+                'studentCompany.student',
+                'studentCompany.company',
+                'studentCompany.branch',
+            ])
+            ->whereBetween('attendance_date', [$fromDate, $toDate])
+            ->whereNotNull('check_in_latitude')
+            ->whereNotNull('check_in_longitude')
+            ->whereHas('studentCompany', fn (Builder $query) => $this->applyStudentCompanyScope($query));
+    }
+
+    private function applyStudentCompanyScope(Builder $query): void
+    {
+        $user = auth()->user();
+
+        if ($user?->hasRole(UserRole::STUDENT->value)) {
+            $query
+                ->where('student_id', $user->id)
+                ->whereHas('registration', fn (Builder $registrationQuery) => $this->applyCurrentSemester($registrationQuery));
+
+            return;
+        }
+
+        $query->whereHas('registration', fn (Builder $registrationQuery) => $this->applyCurrentSemester($registrationQuery));
+
+        if ($this->shouldScopeCompanySupervisor()) {
+            $this->scopeCompanySupervisor($query);
+        }
+    }
+
+    private function applyCurrentSemester(Builder $query): void
+    {
+        $settings = app(GeneralSettings::class);
+
+        $query
+            ->where('semester', $settings->semester_type->value)
+            ->where('year', $settings->year);
+
+        if ($this->shouldScopePracticalSupervisor()) {
+            $query->where('supervisor_id', auth()->id());
+        }
+    }
+
+    private function shouldScopePracticalSupervisor(): bool
+    {
+        return auth()->user()?->hasRole(UserRole::PRACTICAL_TRAINING_SUPERVISOR->value)
+            && ! $this->isAdmin();
+    }
+
+    private function shouldScopeCompanySupervisor(): bool
+    {
+        return auth()->user()?->hasRole(UserRole::COMPANY_SUPERVISOR->value)
+            && ! $this->isAdmin();
+    }
+
+    private function isAdmin(): bool
+    {
+        return auth()->user()?->hasAnyRole([
+            UserRole::SUPER_ADMIN->value,
+            UserRole::ADMIN->value,
+        ]) ?? false;
+    }
+
+    private function scopeCompanySupervisor(Builder $query): void
+    {
+        $studentCompanyTable = (new StudentCompany())->getTable();
+
+        $query->whereExists(function ($subQuery) use ($studentCompanyTable) {
+            $subQuery
+                ->selectRaw('1')
+                ->from('ppu_ds_branch_department')
+                ->whereColumn('ppu_ds_branch_department.branch_id', "{$studentCompanyTable}.branch_id")
+                ->whereColumn('ppu_ds_branch_department.company_department_id', "{$studentCompanyTable}.department_id")
+                ->where('ppu_ds_branch_department.user_id', auth()->id());
+        });
+    }
+
+    private function formatAttendancePoint(StudentAttendance $attendance): array
+    {
+        $studentCompany = $attendance->studentCompany;
+
+        return [
+            'id' => $attendance->id,
+            'lat' => (float) $attendance->check_in_latitude,
+            'lng' => (float) $attendance->check_in_longitude,
+            'student' => $studentCompany?->student?->name ?? '-',
+            'company' => $studentCompany?->company?->name ?? '-',
+            'branch' => $studentCompany?->branch?->name ?? '-',
+            'date' => $attendance->attendance_date?->format('Y-m-d') ?? '-',
+            'check_in' => $attendance->check_in?->format('H:i') ?? '-',
+            'check_out' => $attendance->check_out?->format('H:i') ?? '-',
+            'status' => $this->statusLabel($attendance),
+            'color' => $this->statusColor($attendance),
+        ];
+    }
+
+    private function statusLabel(StudentAttendance $attendance): string
+    {
+        try {
+            $status = $attendance->status;
+        } catch (\Throwable) {
+            return (string) $attendance->getRawOriginal('status');
+        }
+
+        return $status instanceof AttendanceStatus
+            ? (string) $status->getLabel()
+            : __((string) $status);
+    }
+
+    private function statusColor(StudentAttendance $attendance): string
+    {
+        try {
+            $status = $attendance->status;
+        } catch (\Throwable) {
+            return 'primary';
+        }
+
+        return $status instanceof AttendanceStatus
+            ? (string) $status->getColor()
+            : 'primary';
+    }
+
+    private function setDefaultDates(): void
+    {
+        $today = now()->toDateString();
+
+        $this->fromDate ??= $today;
+        $this->toDate ??= $today;
+    }
+
+    private function normalizedDates(): array
+    {
+        $fromDate = $this->normalizeDate($this->fromDate);
+        $toDate = $this->normalizeDate($this->toDate);
+
+        if (Carbon::parse($fromDate)->gt(Carbon::parse($toDate))) {
+            return [$toDate, $fromDate];
+        }
+
+        return [$fromDate, $toDate];
+    }
+
+    private function normalizeDate(?string $date): string
+    {
+        try {
+            return Carbon::parse($date)->toDateString();
+        } catch (\Throwable) {
+            return now()->toDateString();
+        }
+    }
+
+    public function render()
+    {
+        return view('core::livewire.pages.home.widget.attendance-map-widget');
+    }
+}

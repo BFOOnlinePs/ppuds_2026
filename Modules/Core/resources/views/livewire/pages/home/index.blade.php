@@ -2,6 +2,7 @@
     @livewire(\Modules\Core\Livewire\Pages\Home\Widget\DashboardStatsWidget::class)
 
     @livewire(\Modules\Core\Livewire\Pages\Home\Widget\HomeActionsWidget::class)
+    @livewire(\Modules\Core\Livewire\Pages\Home\Widget\AttendanceMapWidget::class)
 
     @if (count($chartWidgets = $this->chartWidgets()))
         <x-filament-widgets::widgets
