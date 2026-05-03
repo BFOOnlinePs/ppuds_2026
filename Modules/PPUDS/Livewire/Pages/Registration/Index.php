@@ -71,7 +71,7 @@ class Index extends Component implements HasTable, HasForms
                 // تم إزالة sortable لتجنب المشاكل حالياً
 
                 // 4. عمود المشرف
-                SelectColumn::make('supervisor.supervisor_id')
+                SelectColumn::make('supervisor_id')
                     ->label(__('Supervisor'))
                     ->options(User::whereHas('roles', fn($q) => $q->where('name', UserRole::PRACTICAL_TRAINING_SUPERVISOR->value))->pluck('name', 'id'))
                     ->toggleable(),
