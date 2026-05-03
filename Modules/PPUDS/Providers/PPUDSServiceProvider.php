@@ -4,9 +4,13 @@ namespace Modules\PPUDS\Providers;
 
 use Illuminate\Auth\EloquentUserProvider;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
+use Modules\PPUDS\Enums\LoginMethod;
 use Modules\PPUDS\Services\KeycloakUserRepository;
+use Modules\PPUDS\Settings\GeneralSettings;
 use Nwidart\Modules\Traits\PathNamespace;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -40,6 +44,18 @@ class PPUDSServiceProvider extends ServiceProvider
             SocialiteWasCalled::class,
             [KeycloakExtendSocialite::class, 'handle']
         );
+
+        if (! $this->app->runningInConsole()) {
+            try {
+                $settings = app(GeneralSettings::class);
+
+                if ($settings->login_method === LoginMethod::PPU) {
+                    Config::set('auth.guards.api.driver', 'keycloak');
+                }
+            } catch (\Exception $e) {
+                Log::error('Failed to load PPUDS general settings: '.$e->getMessage());
+            }
+        }
     }
 
     /**
