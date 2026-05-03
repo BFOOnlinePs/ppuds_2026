@@ -74,7 +74,6 @@ class Index extends Component implements HasTable, HasForms
                 SelectColumn::make('supervisor.name')
                     ->label(__('Supervisor'))
                     ->options(User::whereHas('roles', fn($q) => $q->where('name', UserRole::CORPORATE_RELATIONS_OFFICER->value))->pluck('name', 'id'))
-                    ->icon('solar-user-speak-rounded-linear')
                     ->toggleable(),
 
                 // 5. عمود العلامة
