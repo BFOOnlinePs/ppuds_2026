@@ -104,7 +104,7 @@ class AttendanceMapWidget extends Component
     {
         return StudentAttendance::query()
             ->with([
-                'studentCompany' => fn (Builder $query) => $query->withTrashed(),
+                'studentCompany' => fn ($query) => $query->withTrashed(),
                 'studentCompany.student',
                 'studentCompany.company',
                 'studentCompany.branch',
