@@ -832,7 +832,7 @@ textarea,
     border-color: var(--color-primary) !important;
     
     border-radius: 0.5rem !important; /* لتنعيم الحواف (rounded-lg) */
-    overflow: hidden !important; /* لمنع خروج المحتوى عن الإطار */
+    overflow: visible !important;
 }
 
 .company-structure-repeater .fi-fo-repeater-item,
@@ -847,7 +847,9 @@ textarea,
 .company-departments-repeater .fi-fo-repeater-item-content,
 .company-departments-repeater .fi-fo-grid,
 .company-departments-repeater .fi-fo-group,
-.company-departments-repeater .fi-fo-field-wrp {
+.company-departments-repeater .fi-fo-field-wrp,
+.company-departments-repeater .fi-input-wrp,
+.company-departments-repeater .fi-input-wrp-input {
     overflow: visible !important;
 }
 
@@ -867,8 +869,20 @@ textarea,
     z-index: 10000 !important;
 }
 
+.company-supervisor-select .choices__list--dropdown,
+.company-supervisor-select .choices__list[aria-expanded],
+.company-supervisor-choices .choices__list--dropdown,
+.company-supervisor-choices .choices__list[aria-expanded] {
+    top: auto !important;
+    bottom: calc(100% + 0.5rem) !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
 .company-departments-repeater .fi-fo-repeater-item:has(.company-supervisor-select .choices.is-open),
-.company-departments-repeater .fi-fo-repeater-item:has(.company-supervisor-select .choices.is-focused) {
+.company-departments-repeater .fi-fo-repeater-item:has(.company-supervisor-select .choices.is-focused),
+.company-departments-repeater .fi-fo-repeater-item:has(.company-supervisor-choices .choices.is-open),
+.company-departments-repeater .fi-fo-repeater-item:has(.company-supervisor-choices .choices.is-focused) {
     min-height: 18rem;
     overflow: visible !important;
     position: relative;
@@ -876,7 +890,9 @@ textarea,
 }
 
 .company-structure-repeater .fi-fo-repeater-item:has(.company-supervisor-select .choices.is-open),
-.company-structure-repeater .fi-fo-repeater-item:has(.company-supervisor-select .choices.is-focused) {
+.company-structure-repeater .fi-fo-repeater-item:has(.company-supervisor-select .choices.is-focused),
+.company-structure-repeater .fi-fo-repeater-item:has(.company-supervisor-choices .choices.is-open),
+.company-structure-repeater .fi-fo-repeater-item:has(.company-supervisor-choices .choices.is-focused) {
     overflow: visible !important;
     position: relative;
     z-index: 10000;

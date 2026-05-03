@@ -39,6 +39,7 @@ class Details extends Component implements HasForms, HasInfolists
     use InteractsWithInfolists;
 
     public ?array $data = [];
+
     public Company $company;
 
     public function mount(Company $company)
@@ -65,7 +66,7 @@ class Details extends Component implements HasForms, HasInfolists
                     ];
                 }
             } else {
-                $workingHoursData = $existingHours->map(function($wh) {
+                $workingHoursData = $existingHours->map(function ($wh) {
                     return [
                         'id' => $wh->id,
                         'day' => $wh->day->value,
@@ -77,18 +78,18 @@ class Details extends Component implements HasForms, HasInfolists
             }
 
             return [
-                'id'           => $branch->id,
-                'name'         => $branch->name,
-                'email'        => $branch->email,
-                'phone'        => $branch->phone,
-                'country_id'   => $branch->country_id,
-                'city_id'      => $branch->city_id,
-                'latitude'     => $branch->latitude,
-                'longitude'    => $branch->longitude,
+                'id' => $branch->id,
+                'name' => $branch->name,
+                'email' => $branch->email,
+                'phone' => $branch->phone,
+                'country_id' => $branch->country_id,
+                'city_id' => $branch->city_id,
+                'latitude' => $branch->latitude,
+                'longitude' => $branch->longitude,
                 'working_hours' => $workingHoursData,
                 'departments' => $branch->departments->map(function ($dept) {
                     return [
-                        'name'    => $dept->name,
+                        'name' => $dept->name,
                         'user_id' => $dept->pivot->user_id,
                     ];
                 })->toArray(),
@@ -153,10 +154,10 @@ class Details extends Component implements HasForms, HasInfolists
                                                             ->image()
                                                             ->imageEditor()
                                                             ->avatar()
-                                                            ->alignCenter()
+                                                            ->alignCenter(),
                                                     ])
-                                                    ->columnSpan(1)
-                                            ])
+                                                    ->columnSpan(1),
+                                            ]),
                                     ]),
 
                                 // التعديل هنا: تصحيح الاسم واستخدام دالة الترجمة ليطابق ملف JSON
@@ -171,6 +172,7 @@ class Details extends Component implements HasForms, HasInfolists
                                             ->itemLabel(fn (array $state): ?string => $state['name'] ?? __('New Branch'))
                                             ->addActionLabel(__('Add New Branch'))
                                             ->grid(1)
+                                            ->extraAttributes(['class' => 'gap-6 company-structure-repeater'])
                                             ->schema([
                                                 TextInput::make('id')->hidden(),
 
@@ -243,7 +245,7 @@ class Details extends Component implements HasForms, HasInfolists
                                                                                             ->deletable(false)
                                                                                             ->reorderable(false)
                                                                                             ->defaultItems(7)
-                                                                                            ->default(function() {
+                                                                                            ->default(function () {
                                                                                                 $days = [];
                                                                                                 foreach (\Modules\Branch\Enums\WeekDay::cases() as $day) {
                                                                                                     $days[] = [
@@ -253,6 +255,7 @@ class Details extends Component implements HasForms, HasInfolists
                                                                                                         'end_time' => '16:00',
                                                                                                     ];
                                                                                                 }
+
                                                                                                 return $days;
                                                                                             }),
                                                                                     ])
@@ -282,7 +285,10 @@ class Details extends Component implements HasForms, HasInfolists
                                                                                     ->label(__('City'))
                                                                                     ->options(function (Get $get) {
                                                                                         $countryId = $get('country_id');
-                                                                                        if (! $countryId) return [];
+                                                                                        if (! $countryId) {
+                                                                                            return [];
+                                                                                        }
+
                                                                                         return City::whereHas('governorate', function (Builder $query) use ($countryId) {
                                                                                             $query->where('country_id', $countryId);
                                                                                         })->get()->pluck('name', 'id');
@@ -324,15 +330,18 @@ class Details extends Component implements HasForms, HasInfolists
                                                                                                 ->required()
                                                                                                 ->maxLength(255),
                                                                                         ])
-                                                                                        ->createOptionUsing(fn(array $data) => $data['new_department_name']),
+                                                                                        ->createOptionUsing(fn (array $data) => $data['new_department_name']),
 
                                                                                     Select::make('user_id')
                                                                                         ->label(__('Supervisor'))
                                                                                         ->required()
                                                                                         ->searchable()
                                                                                         ->preload()
+                                                                                        ->position('top')
                                                                                         ->prefixIcon('solar-user-id-linear')
-                                                                                        ->options(fn() => User::role('Company Supervisor')->pluck('name', 'id'))
+                                                                                        ->extraAttributes(['class' => 'company-supervisor-select'])
+                                                                                        ->extraAlpineAttributes(['class' => 'company-supervisor-choices'])
+                                                                                        ->options(fn () => User::role('Company Supervisor')->pluck('name', 'id'))
                                                                                         ->getSearchResultsUsing(fn (string $search) => User::role('Company Supervisor')
                                                                                             ->where('name', 'like', "%{$search}%")
                                                                                             ->limit(50)
@@ -347,12 +356,13 @@ class Details extends Component implements HasForms, HasInfolists
                                                                                                 TextInput::make('phone')->required()->numeric(),
                                                                                                 TextInput::make('password')->required()->password()->confirmed(),
                                                                                                 TextInput::make('password_confirmation')->required()->password(),
-                                                                                            ])
+                                                                                            ]),
                                                                                         ])
                                                                                         ->createOptionUsing(function (array $data) {
                                                                                             $data['password'] = bcrypt($data['password']);
                                                                                             $user = User::create($data);
                                                                                             $user->assignRole('Company Supervisor');
+
                                                                                             return $user->id;
                                                                                         })
                                                                                         ->required(),
@@ -363,13 +373,12 @@ class Details extends Component implements HasForms, HasInfolists
                                                                             ->itemLabel(fn (array $state): ?string => $state['name'] ?? null)
                                                                             ->addActionLabel(__('Add Department'))
                                                                             ->reorderableWithButtons()
-                                                                            ->extraAttributes(['class' => 'border-l-4 border-primary-500 pl-4']),
+                                                                            ->extraAttributes(['class' => 'company-departments-repeater border-l-4 border-primary-500 pl-4']),
                                                                     ]),
                                                             ]),
                                                     ]),
                                             ]),
                                     ]),
-
 
                                 // التعديل هنا: تحويل "تدريبات الطلاب" إلى مفتاح ترجمة
                                 Tabs\Tab::make(__('Student Trainings'))
@@ -377,17 +386,17 @@ class Details extends Component implements HasForms, HasInfolists
                                     ->schema([
                                         Grid::make(2)
                                             ->schema([
-                                                Livewire::make(\Modules\PPUDS\Livewire\Pages\Student\Details\StudentCompany\Index::class ,
+                                                Livewire::make(\Modules\PPUDS\Livewire\Pages\Student\Details\StudentCompany\Index::class,
                                                     [
                                                         'companyId' => $this->company->id,
                                                     ]
                                                 )
                                                     ->columnSpanFull()
-                                                    ->lazy()
+                                                    ->lazy(),
                                             ]),
                                     ]),
                             ])
-                            ->columnSpanFull()
+                            ->columnSpanFull(),
                     ]),
             ])
             ->statePath('data');
@@ -403,7 +412,7 @@ class Details extends Component implements HasForms, HasInfolists
         $this->company->update($companyData);
 
         // 3. حفظ الصور (الشعار والغلاف)
-            $this->form->model($this->company)->saveRelationships();
+        $this->form->model($this->company)->saveRelationships();
 
         // 4. حفظ الفروع والأقسام وساعات العمل
         $this->saveBranchesAndDepartments();
@@ -458,9 +467,9 @@ class Details extends Component implements HasForms, HasInfolists
                     $branch->workingHours()->updateOrCreate(
                         ['day' => $wh['day']],
                         [
-                            'is_closed'  => $wh['is_closed'],
+                            'is_closed' => $wh['is_closed'],
                             'start_time' => $wh['is_closed'] ? null : $wh['start_time'],
-                            'end_time'   => $wh['is_closed'] ? null : $wh['end_time'],
+                            'end_time' => $wh['is_closed'] ? null : $wh['end_time'],
                         ]
                     );
                 }
@@ -474,7 +483,7 @@ class Details extends Component implements HasForms, HasInfolists
         // الفروع التي يجب فصلها هي الموجودة في الداتابيز ولكن غير موجودة في الـ processedBranchIds
         $branchesToDetach = array_diff($currentCompanyBranchIds, $processedBranchIds);
 
-        if (!empty($branchesToDetach)) {
+        if (! empty($branchesToDetach)) {
             $this->company->branches()->detach($branchesToDetach);
             // Branch::destroy($branchesToDetach); // اختياري: إذا أردت الحذف النهائي
         }
@@ -492,7 +501,7 @@ class Details extends Component implements HasForms, HasInfolists
 
             if (! $department) {
                 $department = CompanyDepartment::create([
-                    'name'       => $deptName,
+                    'name' => $deptName,
                     'created_by' => auth()->id(),
                 ]);
             }
@@ -510,7 +519,7 @@ class Details extends Component implements HasForms, HasInfolists
                 ['title' => __('Home'), 'url' => route('home')],
                 ['title' => __('Companies List'), 'url' => route('companies.index')],
                 ['title' => __('Company Details'), 'url' => route('companies.details', $this->company)],
-            ]
+            ],
         ]);
     }
 }

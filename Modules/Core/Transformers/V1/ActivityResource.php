@@ -70,6 +70,10 @@ class ActivityResource extends JsonResource
                 $query->whereDate('created_at', $value);
             }),
 
+            AllowedFilter::callback('today', function (Builder $query) {
+                $query->whereDate('created_at', now()->toDateString());
+            }),
+
             AllowedFilter::callback('company_id', function (Builder $query, $value) {
                 $query->whereHasMorph('causer', [User::class], function (Builder $userQuery) use ($value) {
 
