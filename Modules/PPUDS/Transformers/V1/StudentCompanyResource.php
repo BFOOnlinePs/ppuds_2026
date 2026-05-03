@@ -95,6 +95,18 @@ class StudentCompanyResource extends JsonResource
                         });
                 });
             }),
+
+            AllowedFilter::callback('semester', function (Builder $query, $value) {
+                $query->whereHas('registration', function (Builder $registrationQuery) use ($value) {
+                    $registrationQuery->where('semester_id', $value);
+                });
+            }),
+
+            AllowedFilter::callback('year', function (Builder $query, $value) {
+                $query->whereHas('registration', function (Builder $registrationQuery) use ($value) {
+                    $registrationQuery->where('year_id', $value);
+                });
+            }),
         ];
     }
 
