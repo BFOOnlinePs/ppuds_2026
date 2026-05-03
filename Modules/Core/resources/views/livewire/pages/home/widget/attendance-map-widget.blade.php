@@ -117,12 +117,47 @@
                 }
 
                 .attendance-map-marker {
+                    position: relative;
                     display: block;
                     width: 18px;
                     height: 18px;
                     border: 3px solid #ffffff;
                     border-radius: 9999px;
                     box-shadow: 0 8px 18px rgba(15, 23, 42, 0.28);
+                }
+
+                .attendance-map-marker::before,
+                .attendance-map-marker::after {
+                    position: absolute;
+                    inset: -9px;
+                    content: "";
+                    border: 2px solid rgba(220, 38, 38, 0.45);
+                    border-radius: inherit;
+                    animation: attendance-map-radar 1.9s ease-out infinite;
+                }
+
+                .attendance-map-marker::after {
+                    animation-delay: 0.95s;
+                }
+
+                @keyframes attendance-map-radar {
+                    0% {
+                        opacity: 0.75;
+                        transform: scale(0.55);
+                    }
+
+                    100% {
+                        opacity: 0;
+                        transform: scale(2.25);
+                    }
+                }
+
+                @media (prefers-reduced-motion: reduce) {
+                    .attendance-map-marker::before,
+                    .attendance-map-marker::after {
+                        animation: none;
+                        opacity: 0;
+                    }
                 }
 
                 .attendance-map-popup {
