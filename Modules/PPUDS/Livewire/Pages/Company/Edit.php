@@ -41,12 +41,13 @@ use Modules\PPUDS\Enums\CompanyStatus;
 // تمت الاضافة
 // تمت الاضافة
 
-class Edit extends Component implements HasForms, HasActions
+class Edit extends Component implements HasActions, HasForms
 {
-    use InteractsWithForms;
     use InteractsWithActions;
+    use InteractsWithForms;
 
     public ?array $data = [];
+
     public Company $company;
 
     public function mount(Company $company)
@@ -75,7 +76,7 @@ class Edit extends Component implements HasForms, HasActions
                 }
             } else {
                 // إذا كانت موجودة، نقوم بتحويلها للصيغة المناسبة للفورم
-                $workingHoursData = $existingHours->map(function($wh) {
+                $workingHoursData = $existingHours->map(function ($wh) {
                     return [
                         'id' => $wh->id, // مهم للتحديث لاحقاً
                         'day' => $wh->day->value, // (value) لأننا نستخدم Enum
@@ -89,14 +90,14 @@ class Edit extends Component implements HasForms, HasActions
             // -----------------------------
 
             return [
-                'id'           => $branch->id,
-                'name'         => $branch->name,
-                'email'        => $branch->email,
-                'phone'        => $branch->phone,
-                'country_id'   => $branch->country_id,
-                'city_id'      => $branch->city_id,
-                'latitude'     => $branch->latitude,
-                'longitude'    => $branch->longitude,
+                'id' => $branch->id,
+                'name' => $branch->name,
+                'email' => $branch->email,
+                'phone' => $branch->phone,
+                'country_id' => $branch->country_id,
+                'city_id' => $branch->city_id,
+                'latitude' => $branch->latitude,
+                'longitude' => $branch->longitude,
 
                 // نضع المصفوفة المجهزة هنا
                 'working_hours' => $workingHoursData,
@@ -104,7 +105,7 @@ class Edit extends Component implements HasForms, HasActions
                 // جلب الأقسام
                 'departments' => $branch->departments->map(function ($dept) {
                     return [
-                        'name'    => $dept->name,
+                        'name' => $dept->name,
                         'user_id' => $dept->pivot->user_id,
                     ];
                 })->toArray(),
@@ -206,7 +207,7 @@ class Edit extends Component implements HasForms, HasActions
                                 ->collapsible()
                                 ->cloneable()
                                 ->grid(1)
-                                ->extraAttributes(['class' => 'gap-6'])
+                                ->extraAttributes(['class' => 'gap-6 company-structure-repeater'])
                                 ->schema([
                                     // هام جداً: معرف الفرع للتحديث
                                     TextInput::make('id')->hidden(),
@@ -284,7 +285,7 @@ class Edit extends Component implements HasForms, HasActions
                                                                             ->deletable(false)
                                                                             ->reorderable(false)
                                                                             ->defaultItems(7)
-                                                                            ->default(function() { // دالة الـ Default مهمة للفروع الجديدة التي تضاف أثناء التعديل
+                                                                            ->default(function () { // دالة الـ Default مهمة للفروع الجديدة التي تضاف أثناء التعديل
                                                                                 $days = [];
                                                                                 foreach (\Modules\Branch\Enums\WeekDay::cases() as $day) {
                                                                                     $days[] = [
@@ -294,12 +295,13 @@ class Edit extends Component implements HasForms, HasActions
                                                                                         'end_time' => '16:00',
                                                                                     ];
                                                                                 }
+
                                                                                 return $days;
                                                                             }),
                                                                     ])
                                                                     ->columnSpanFull()
                                                                     ->extraAttributes(['class' => 'bg-gray-50/50']),
-                                                                ]),
+                                                            ]),
                                                         ]),
 
                                                     // 2. تبويب الموقع
@@ -320,7 +322,10 @@ class Edit extends Component implements HasForms, HasActions
                                                                     ->label(__('City'))
                                                                     ->options(function (Get $get) {
                                                                         $countryId = $get('country_id');
-                                                                        if (! $countryId) return [];
+                                                                        if (! $countryId) {
+                                                                            return [];
+                                                                        }
+
                                                                         return City::whereHas('governorate', function (Builder $query) use ($countryId) {
                                                                             $query->where('country_id', $countryId);
                                                                         })->get()->pluck('name', 'id');
@@ -363,15 +368,16 @@ class Edit extends Component implements HasForms, HasActions
                                                                                     ->required()
                                                                                     ->maxLength(255),
                                                                             ])
-                                                                            ->createOptionUsing(fn(array $data) => $data['new_department_name']),
+                                                                            ->createOptionUsing(fn (array $data) => $data['new_department_name']),
 
                                                                         Select::make('user_id')
                                                                             ->label(__('Supervisor'))
                                                                             ->required()
                                                                             ->searchable()
                                                                             ->preload()
+                                                                            ->position('top')
                                                                             ->prefixIcon('solar-user-id-linear')
-                                                                            ->options(fn() => User::role('Company Supervisor')->pluck('name', 'id'))
+                                                                            ->options(fn () => User::role('Company Supervisor')->pluck('name', 'id'))
                                                                             ->getSearchResultsUsing(fn (string $search) => User::role('Company Supervisor')
                                                                                 ->where('name', 'like', "%{$search}%")
                                                                                 ->limit(50)
@@ -386,12 +392,13 @@ class Edit extends Component implements HasForms, HasActions
                                                                                     TextInput::make('phone')->required()->numeric(),
                                                                                     TextInput::make('password')->required()->password()->confirmed(),
                                                                                     TextInput::make('password_confirmation')->required()->password(),
-                                                                                ])
+                                                                                ]),
                                                                             ])
                                                                             ->createOptionUsing(function (array $data) {
                                                                                 $data['password'] = bcrypt($data['password']);
                                                                                 $user = User::create($data);
                                                                                 $user->assignRole('Company Supervisor');
+
                                                                                 return $user->id;
                                                                             })
                                                                             ->required(),
@@ -402,16 +409,16 @@ class Edit extends Component implements HasForms, HasActions
                                                                 ->itemLabel(fn (array $state): ?string => $state['name'] ?? null)
                                                                 ->addActionLabel(__('Add Department'))
                                                                 ->reorderableWithButtons()
-                                                                ->extraAttributes(['class' => 'border-l-4 border-primary-500 pl-4']),
+                                                                ->extraAttributes(['class' => 'company-departments-repeater border-l-4 border-primary-500 pl-4']),
                                                         ]),
-                                                ])
-                                        ])
+                                                ]),
+                                        ]),
                                 ]),
                         ]),
                 ])
                     ->columnSpan('full')
                     // زر الحفظ يظهر فقط في الخطوة الأخيرة
-                    ->submitAction(new HtmlString(Blade::render(<<<BLADE
+                    ->submitAction(new HtmlString(Blade::render(<<<'BLADE'
                     <x-filament::button
                         wire:click="save"
                         type="button"
@@ -420,7 +427,7 @@ class Edit extends Component implements HasForms, HasActions
                     >
                         {{ __('Save') }}
                     </x-filament::button>
-                BLADE)))
+                BLADE))),
             ])
             ->statePath('data');
     }
@@ -455,7 +462,7 @@ class Edit extends Component implements HasForms, HasActions
     public function save()
     {
         // 1. التحقق من الصلاحيات والبيانات
-        $this->authorize("Company Update");
+        $this->authorize('Company Update');
         $this->validate();
 
         // 2. تحديث بيانات الشركة الأساسية (مع استبعاد الفروع والشعار)
@@ -517,10 +524,10 @@ class Edit extends Component implements HasForms, HasActions
                     $branch->workingHours()->updateOrCreate(
                         ['day' => $wh['day']], // مفتاح البحث: اليوم
                         [
-                            'is_closed'  => $wh['is_closed'],
+                            'is_closed' => $wh['is_closed'],
                             // إذا كان مغلقاً، نصفر الأوقات، وإلا نحفظ الوقت القادم من الفورم
                             'start_time' => $wh['is_closed'] ? null : $wh['start_time'],
-                            'end_time'   => $wh['is_closed'] ? null : $wh['end_time'],
+                            'end_time' => $wh['is_closed'] ? null : $wh['end_time'],
                         ]
                     );
                 }
@@ -535,7 +542,7 @@ class Edit extends Component implements HasForms, HasActions
 
         $branchesToDetach = array_diff($currentCompanyBranchIds, $processedBranchIds);
 
-        if (!empty($branchesToDetach)) {
+        if (! empty($branchesToDetach)) {
             // فصل الفروع المحذوفة عن الشركة
             $this->company->branches()->detach($branchesToDetach);
 
@@ -556,7 +563,7 @@ class Edit extends Component implements HasForms, HasActions
 
             if (! $department) {
                 $department = CompanyDepartment::create([
-                    'name'       => $deptName,
+                    'name' => $deptName,
                     'created_by' => auth()->id(),
                 ]);
             }
@@ -574,7 +581,7 @@ class Edit extends Component implements HasForms, HasActions
                 ['title' => __('Home'), 'url' => route('home')],
                 ['title' => __('Companies List'), 'url' => route('companies.index')],
                 ['title' => __('Edit Company'), 'url' => route('companies.edit', $this->company->id)],
-            ]
+            ],
         ]);
     }
 }

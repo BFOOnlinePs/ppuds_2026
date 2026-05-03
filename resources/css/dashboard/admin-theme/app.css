@@ -835,6 +835,46 @@ textarea,
     overflow: hidden !important; /* لمنع خروج المحتوى عن الإطار */
 }
 
+.company-structure-repeater .fi-fo-repeater-item,
+.company-departments-repeater .fi-fo-repeater-item {
+    overflow: visible !important;
+}
+
+.company-structure-repeater .fi-fo-repeater-item-content,
+.company-structure-repeater .fi-fo-tabs,
+.company-structure-repeater .fi-fo-grid,
+.company-structure-repeater .fi-fo-group,
+.company-departments-repeater .fi-fo-repeater-item-content,
+.company-departments-repeater .fi-fo-grid,
+.company-departments-repeater .fi-fo-group,
+.company-departments-repeater .fi-fo-field-wrp {
+    overflow: visible !important;
+}
+
+.company-departments-repeater .fi-fo-select,
+.company-departments-repeater .choices {
+    position: relative;
+    z-index: 100;
+}
+
+.company-departments-repeater .choices.is-open,
+.company-departments-repeater .choices.is-focused {
+    z-index: 10000;
+}
+
+.company-departments-repeater .choices.is-flipped .choices__list--dropdown,
+.company-departments-repeater .choices.is-flipped .choices__list[aria-expanded] {
+    top: auto !important;
+    bottom: 100% !important;
+    margin-top: 0 !important;
+    margin-bottom: 0.5rem !important;
+}
+
+.company-departments-repeater .choices__list--dropdown,
+.company-departments-repeater .choices__list[aria-expanded] {
+    z-index: 10000 !important;
+}
+
 
 .choices__list--dropdown, 
 .fi-select-dropdown {
