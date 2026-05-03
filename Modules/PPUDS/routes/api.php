@@ -22,7 +22,7 @@ use Modules\PPUDS\Http\Controllers\Api\V1\SurveyController;
 use Modules\PPUDS\Http\Controllers\Api\V1\WorkExperienceController;
 
 Route::prefix('v1')->as('api.v1.')->group(function () {
-    Route::middleware(['auth:sanctum', 'api.localize'])->group(function () {
+    Route::middleware(['auth:api,sanctum', 'api.localize'])->group(function () {
 
         Route::prefix('ppuds')->as('ppuds.')->group(function () {
 
