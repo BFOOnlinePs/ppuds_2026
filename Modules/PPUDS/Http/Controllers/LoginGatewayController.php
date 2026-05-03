@@ -11,7 +11,7 @@ class LoginGatewayController extends Controller
     public function __invoke()
     {
         $generalSettings = app(GeneralSettings::class);
-        dd($generalSettings->login_method === \Modules\PPUDS\Enums\LoginMethod::PPU->value);
+        dd($generalSettings->login_method === \Modules\PPUDS\Enums\LoginMethod::PPU);
         if ($generalSettings->login_method === \Modules\PPUDS\Enums\LoginMethod::PPU->value) {
             return redirect()->route('keycloak.redirect');
         }
