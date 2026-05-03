@@ -22,6 +22,7 @@ use Modules\Core\Livewire\Pages\Home\Widget\Charts\TrainingStatusChart;
 use Modules\Core\Livewire\Pages\Home\Widget\Charts\UsersByRoleChart;
 use Modules\Core\Settings\GeneralSettings;
 use Modules\PPUDS\Entities\StudentCompany;
+use Modules\PPUDS\Settings\GeneralSettings as SettingsGeneralSettings;
 
 class Index extends Component implements HasForms, HasInfolists
 {
@@ -52,6 +53,12 @@ class Index extends Component implements HasForms, HasInfolists
     }
 
     #[Computed]
+    public function ppudsSettings()
+    {
+        return app(SettingsGeneralSettings::class);
+    }
+
+    #[Computed]
     public function getAnnouncements()
     {
         return Announcement::active()->get();
@@ -60,7 +67,7 @@ class Index extends Component implements HasForms, HasInfolists
     #[Computed]
     public function getStudentCompanies()
     {
-        return StudentCompany::whereHas('registration', fn($q) => $q->where('student_id', auth()->id())->where('semester', $this->settings->semester_type)->where('year', $this->settings->year))->orWhereHas('registration', fn($q) => $q->where('supervisor_id', auth()->id())->where('semester', $this->settings->semester_type)->where('year', $this->settings->year))->with(['company', 'branch', 'department'])->get();
+        return StudentCompany::whereHas('registration', fn($q) => $q->where('student_id', auth()->id())->where('semester', $this->ppudsSettings()->semester_type)->where('year', $this->ppudsSettings()->year))->orWhereHas('registration', fn($q) => $q->where('supervisor_id', auth()->id())->where('semester', $this->ppudsSettings()->semester_type)->where('year', $this->ppudsSettings()->year))->with(['company', 'branch', 'department'])->get();
     }
 
     public function form(Form $form): Form
