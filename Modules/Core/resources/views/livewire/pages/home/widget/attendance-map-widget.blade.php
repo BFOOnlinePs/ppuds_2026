@@ -145,7 +145,7 @@
                 }
 
                 .attendance-map-popup-row span {
-                    color: #6b7280;
+                    color: #EE4B2B;
                 }
 
                 .attendance-map-popup-row strong {
