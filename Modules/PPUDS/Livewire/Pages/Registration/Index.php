@@ -10,6 +10,7 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Columns\SelectColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
@@ -22,6 +23,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Core\Entities\User;
+use Modules\Core\Enums\UserRole;
 use Modules\Core\Filament\Forms\Components\CreateAction;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
@@ -69,8 +71,9 @@ class Index extends Component implements HasTable, HasForms
                 // تم إزالة sortable لتجنب المشاكل حالياً
 
                 // 4. عمود المشرف
-                TextColumn::make('supervisor.name')
+                SelectColumn::make('supervisor.name')
                     ->label(__('Supervisor'))
+                    ->options(User::whereHas('roles', fn($q) => $q->where('name', UserRole::CORPORATE_RELATIONS_OFFICER->value))->pluck('name', 'id'))
                     ->icon('solar-user-speak-rounded-linear')
                     ->toggleable(),
 
