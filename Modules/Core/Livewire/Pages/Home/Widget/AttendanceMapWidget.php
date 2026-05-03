@@ -104,6 +104,7 @@ class AttendanceMapWidget extends Component
     {
         return StudentAttendance::query()
             ->with([
+                'studentCompany' => fn (Builder $query) => $query->withTrashed(),
                 'studentCompany.student',
                 'studentCompany.company',
                 'studentCompany.branch',
@@ -122,7 +123,10 @@ class AttendanceMapWidget extends Component
                             ->whereNotNull('check_out_longitude');
                     });
             })
-            ->whereHas('studentCompany', fn (Builder $query) => $this->applyStudentCompanyScope($query));
+            ->whereHas('studentCompany', function (Builder $query) {
+                $query->withTrashed();
+                $this->applyStudentCompanyScope($query);
+            });
     }
 
     private function applyStudentCompanyScope(Builder $query): void
@@ -200,7 +204,7 @@ class AttendanceMapWidget extends Component
 
     private function attendanceCoordinates(StudentAttendance $attendance): array
     {
-        if ($attendance->check_in_latitude && $attendance->check_in_longitude) {
+        if ($attendance->check_in_latitude !== null && $attendance->check_in_longitude !== null) {
             return [
                 'lat' => (float) $attendance->check_in_latitude,
                 'lng' => (float) $attendance->check_in_longitude,
