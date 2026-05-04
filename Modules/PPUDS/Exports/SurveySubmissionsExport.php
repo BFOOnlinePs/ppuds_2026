@@ -12,6 +12,7 @@ use Modules\Core\Entities\User;
 use Modules\PPUDS\Entities\Survey;
 use Modules\PPUDS\Entities\SurveyAnswer;
 use Modules\PPUDS\Entities\SurveyQuestion;
+use Modules\PPUDS\Enums\SurveyQuestionType;
 
 class SurveySubmissionsExport implements FromGenerator, ShouldAutoSize, WithHeadings
 {
@@ -53,6 +54,7 @@ class SurveySubmissionsExport implements FromGenerator, ShouldAutoSize, WithHead
             ->where('survey_id', $this->survey->id)
             ->whereIn('submitted_by', $users->pluck('id'))
             ->with(['option.translations'])
+            ->orderBy('id')
             ->get()
             ->groupBy(['submitted_by', 'survey_question_id']);
 
@@ -60,7 +62,6 @@ class SurveySubmissionsExport implements FromGenerator, ShouldAutoSize, WithHead
             yield $this->rowFor($user, $answers->get($user->id, collect()));
         }
     }
-
 
     protected function submittedUsersQuery(): Builder
     {
@@ -89,19 +90,66 @@ class SurveySubmissionsExport implements FromGenerator, ShouldAutoSize, WithHead
         $row = [$this->submittedPerson($user)];
 
         foreach ($this->questions as $question) {
-            $row[] = $this->answerText($answersByQuestion->get($question->id, collect()));
+            $row[] = $this->answerText($question, $answersByQuestion->get($question->id, collect()));
         }
 
         return $row;
     }
 
-    protected function answerText(Collection $answers): string
+    protected function answerText(SurveyQuestion $question, Collection $answers): string
+    {
+        return match ((int) $question->type) {
+            SurveyQuestionType::RADIO->value,
+            SurveyQuestionType::SELECT->value => $this->singleSelectedOptionText($question, $answers),
+
+            SurveyQuestionType::CHECKBOX->value,
+            SurveyQuestionType::MULTI_SELECT->value => $this->selectedOptionsText($question, $answers),
+
+            SurveyQuestionType::FILE->value => $this->textAnswers($answers),
+
+            default => $this->singleTextAnswer($answers),
+        };
+    }
+
+    protected function singleTextAnswer(Collection $answers): string
+    {
+        return (string) ($answers
+            ->first(fn (SurveyAnswer $answer): bool => filled($answer->text_answer))
+            ?->text_answer ?? '');
+    }
+
+    protected function textAnswers(Collection $answers): string
     {
         return $answers
-            ->map(fn (SurveyAnswer $answer): ?string => $answer->option?->text ?? $answer->text_answer)
+            ->pluck('text_answer')
             ->filter(fn (?string $answer): bool => filled($answer))
             ->unique()
             ->implode(', ');
+    }
+
+    protected function singleSelectedOptionText(SurveyQuestion $question, Collection $answers): string
+    {
+        return (string) ($answers
+            ->map(fn (SurveyAnswer $answer): ?string => $this->optionTextForQuestion($question, $answer))
+            ->first(fn (?string $answer): bool => filled($answer)) ?? '');
+    }
+
+    protected function selectedOptionsText(SurveyQuestion $question, Collection $answers): string
+    {
+        return $answers
+            ->map(fn (SurveyAnswer $answer): ?string => $this->optionTextForQuestion($question, $answer))
+            ->filter(fn (?string $answer): bool => filled($answer))
+            ->unique()
+            ->implode(', ');
+    }
+
+    protected function optionTextForQuestion(SurveyQuestion $question, SurveyAnswer $answer): ?string
+    {
+        if ((int) $answer->option?->survey_question_id !== (int) $question->id) {
+            return null;
+        }
+
+        return $answer->option?->text;
     }
 
     protected function submittedPerson(User $user): string
