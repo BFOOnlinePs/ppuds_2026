@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
+use Modules\Core\Enums\UserRole;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
@@ -37,7 +38,9 @@ class Index extends Component implements HasForms, HasTable
 
                 TextColumn::make('title')
                     ->label(__('Title'))
-                    ->searchable(),
+                    ->searchable()
+                    ->url(fn (Survey $record): ?string => $this->canViewSurveyDetails() ? route('surveys.details', $record) : null)
+                    ->color(fn (): ?string => $this->canViewSurveyDetails() ? 'primary' : null),
 
                 TextColumn::make('serve_group')
                     ->label(__('Target Group'))
@@ -89,6 +92,17 @@ class Index extends Component implements HasForms, HasTable
         return [
 
         ];
+    }
+
+    protected function canViewSurveyDetails(): bool
+    {
+        return auth()->user()?->hasAnyRole([
+            UserRole::SUPER_ADMIN->value,
+            UserRole::ADMIN->value,
+            UserRole::PRACTICAL_TRAINING_SUPERVISOR->value,
+            'Academic Supervisor',
+            'University Supervisor',
+        ]) ?? false;
     }
 
     protected function getTableActions(): array

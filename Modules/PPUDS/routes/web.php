@@ -157,6 +157,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ], function () {
                     Route::get('/', Index::class)->name('index')->can('Survey View List');
                     Route::get('/add', Add::class)->name('add')->can('Survey Create');
+                    Route::get('/{survey}/details', Details\Details::class)->name('details');
+                    Route::get('/{survey}/submissions/{user}', Details\SubmissionDetails::class)->name('submission-details');
                     Route::get('/{survey}/edit', Edit::class)->name('edit')->can('Survey Update');
                     Route::get('/{survey}/survey-form', SurveyForm::class)->name('survey-form');
                 });
