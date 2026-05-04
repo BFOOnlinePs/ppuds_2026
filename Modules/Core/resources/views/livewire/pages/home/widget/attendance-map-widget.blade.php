@@ -115,6 +115,10 @@
                     filter: drop-shadow(0 8px 14px rgba(15, 23, 42, 0.24));
                 }
 
+                .attendance-map-radar-ring {
+                    pointer-events: none;
+                }
+
                 .attendance-map-popup {
                     min-width: 220px;
                     color: #111827;
@@ -162,6 +166,7 @@
                 Alpine.data('attendanceMapModal', (config) => ({
                     map: null,
                     markerLayer: null,
+                    radarAnimations: [],
                     modalId: config.modalId,
                     points: config.points || [],
                     center: config.center || { lat: 32.2211, lng: 35.2544 },
@@ -252,6 +257,7 @@
                         }
 
                         const leaflet = window.L || window.leaflet;
+                        this.clearRadarAnimations();
                         this.markerLayer.clearLayers();
 
                         this.points.forEach((point) => {
@@ -259,17 +265,7 @@
                                 return;
                             }
 
-                            leaflet.circleMarker([point.lat, point.lng], {
-                                className: 'attendance-map-point',
-                                radius: 8,
-                                color: '#ffffff',
-                                weight: 3,
-                                opacity: 1,
-                                fillColor: this.markerColor(point),
-                                fillOpacity: 1,
-                            })
-                                .bindPopup(this.popupContent(point))
-                                .addTo(this.markerLayer);
+                            this.addRadarPoint(leaflet, point);
                         });
 
                         if (this.markerLayer.getLayers().length) {
@@ -281,17 +277,67 @@
                         this.refreshSize();
                     },
 
-                    markerColor(point) {
-                        const colors = {
-                            danger: '#dc2626',
-                            gray: '#6b7280',
-                            info: '#0891b2',
-                            primary: '#2563eb',
-                            success: '#16a34a',
-                            warning: '#d97706',
+                    addRadarPoint(leaflet, point) {
+                        const latLng = [point.lat, point.lng];
+
+                        [0, 950].forEach((delay) => {
+                            const ring = leaflet.circleMarker(latLng, {
+                                className: 'attendance-map-radar-ring',
+                                radius: 8,
+                                color: '#dc2626',
+                                weight: 2,
+                                opacity: 0.45,
+                                fill: false,
+                                interactive: false,
+                            }).addTo(this.markerLayer);
+
+                            this.animateRadarRing(ring, delay);
+                        });
+
+                        leaflet.circleMarker(latLng, {
+                            className: 'attendance-map-point',
+                            radius: 8,
+                            color: '#ffffff',
+                            weight: 3,
+                            opacity: 1,
+                            fillColor: '#dc2626',
+                            fillOpacity: 1,
+                        })
+                            .bindPopup(this.popupContent(point))
+                            .addTo(this.markerLayer);
+                    },
+
+                    animateRadarRing(ring, delay) {
+                        const duration = 1900;
+                        const start = performance.now() - delay;
+                        const animation = { frame: null };
+
+                        const animate = (time) => {
+                            if (! this.map || ! this.markerLayer?.hasLayer(ring)) {
+                                return;
+                            }
+
+                            const progress = ((time - start) % duration) / duration;
+                            ring.setRadius(8 + (progress * 24));
+                            ring.setStyle({
+                                opacity: 0.5 * (1 - progress),
+                            });
+
+                            animation.frame = requestAnimationFrame(animate);
                         };
 
-                        return colors[point.color] || colors.danger;
+                        animation.frame = requestAnimationFrame(animate);
+                        this.radarAnimations.push(animation);
+                    },
+
+                    clearRadarAnimations() {
+                        this.radarAnimations.forEach((animation) => {
+                            if (animation.frame) {
+                                cancelAnimationFrame(animation.frame);
+                            }
+                        });
+
+                        this.radarAnimations = [];
                     },
 
                     popupContent(point) {
