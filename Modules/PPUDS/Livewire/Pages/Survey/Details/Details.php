@@ -39,6 +39,7 @@ class Details extends Component implements HasForms, HasInfolists
         abort_unless($this->canViewSurveyDetails(), 403);
 
         $this->survey = $survey->load([
+            'major.translations',
             'questions' => fn ($query) => $query->orderBy('sort_order'),
             'questions.options' => fn ($query) => $query->orderBy('sort_order'),
         ]);
@@ -75,6 +76,12 @@ class Details extends Component implements HasForms, HasInfolists
                                                     ->label(__('Target Group'))
                                                     ->badge()
                                                     ->formatStateUsing(fn (?string $state): string => $this->formatTargetGroup($state)),
+
+                                                TextEntry::make('major.name')
+                                                    ->label(__('Target Major'))
+                                                    ->badge()
+                                                    ->color('primary')
+                                                    ->placeholder('-'),
 
                                                 TextEntry::make('semester')
                                                     ->label(__('Semester'))
@@ -126,6 +133,11 @@ class Details extends Component implements HasForms, HasInfolists
                                                     ->badge()
                                                     ->color('primary'),
 
+                                                TextEntry::make('major')
+                                                    ->label(__('Target Major'))
+                                                    ->badge()
+                                                    ->color('primary'),
+
                                                 TextEntry::make('total_users')
                                                     ->label(__('Total Required Submissions'))
                                                     ->badge()
@@ -136,7 +148,7 @@ class Details extends Component implements HasForms, HasInfolists
                                                     ->badge()
                                                     ->color('warning'),
                                             ])
-                                            ->columns(['default' => 1, 'md' => 3]),
+                                            ->columns(['default' => 1, 'md' => 4]),
                                     ]),
 
                             ]),
@@ -180,6 +192,10 @@ class Details extends Component implements HasForms, HasInfolists
                 $this->survey->serve_group,
                 fn (Builder $query) => $query->whereHas('submittedBy', fn (Builder $userQuery) => $userQuery->role($this->survey->serve_group))
             )
+            ->when(
+                $this->survey->major_id,
+                fn (Builder $query, int $majorId) => $query->whereHas('submittedBy.studentProfile', fn (Builder $profileQuery) => $profileQuery->where('major_id', $majorId))
+            )
             ->distinct('submitted_by')
             ->count('submitted_by');
 
@@ -193,6 +209,10 @@ class Details extends Component implements HasForms, HasInfolists
                 $this->survey->serve_group,
                 fn (Builder $query, string $role) => $query->role($role),
                 fn (Builder $query) => $query->whereRaw('1 = 0')
+            )
+            ->when(
+                $this->survey->major_id,
+                fn (Builder $query, int $majorId) => $query->whereHas('studentProfile', fn (Builder $profileQuery) => $profileQuery->where('major_id', $majorId))
             );
     }
 
@@ -205,6 +225,7 @@ class Details extends Component implements HasForms, HasInfolists
         return [
             [
                 'name' => $this->formatTargetGroup($this->survey->serve_group),
+                'major' => $this->survey->major?->name ?? '-',
                 'total_users' => $this->targetUsersCount,
                 'pending_users' => $this->pendingUsersCount,
             ],

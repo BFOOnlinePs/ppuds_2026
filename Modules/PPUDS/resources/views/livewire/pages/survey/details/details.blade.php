@@ -10,6 +10,13 @@
                     {{ __('Target Group') }}:
                     {{ $this->survey->serve_group ? \Modules\Core\Enums\UserRole::tryFrom($this->survey->serve_group)?->getLabel() ?? $this->survey->serve_group : '-' }}
                 </p>
+
+                @if($this->survey->major)
+                    <p class="mt-1 text-lg font-semibold text-primary-600">
+                        {{ __('Target Major') }}:
+                        {{ $this->survey->major->name }}
+                    </p>
+                @endif
             </div>
         </div>
     </div>

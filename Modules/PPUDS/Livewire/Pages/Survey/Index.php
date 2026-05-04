@@ -33,7 +33,7 @@ class Index extends Component implements HasForms, HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn () => Survey::query()->with('translations'))
+            ->query(fn () => Survey::query()->with(['translations', 'major.translations']))
             ->columns([
 
                 TextColumn::make('title')
@@ -46,6 +46,11 @@ class Index extends Component implements HasForms, HasTable
                     ->label(__('Target Group'))
                     ->formatStateUsing(fn ($state) => $state ? \Modules\Core\Enums\UserRole::from($state)->getLabel() : '-')
                     ->searchable(),
+
+                TextColumn::make('major.name')
+                    ->label(__('Target Major'))
+                    ->toggleable()
+                    ->placeholder('-'),
 
                 TextColumn::make('semester')
                     ->label(__('Semester'))
@@ -148,6 +153,11 @@ class Index extends Component implements HasForms, HasTable
                                     \Filament\Forms\Components\Select::make('serve_group')
                                         ->label(__('Target Audience'))
                                         ->options(\Modules\Core\Enums\UserRole::options())
+                                        ->disabled(), // تعطيل
+
+                                    \Filament\Forms\Components\Select::make('major_id')
+                                        ->label(__('Target Major'))
+                                        ->options(\Modules\PPUDS\Entities\Major::get()->pluck('name', 'id'))
                                         ->disabled(), // تعطيل
 
                                     \Filament\Forms\Components\DatePicker::make('start_date')

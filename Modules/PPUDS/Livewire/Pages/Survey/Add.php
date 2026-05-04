@@ -21,6 +21,7 @@ use Filament\Forms\Get;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Core\Enums\UserRole;
+use Modules\PPUDS\Entities\Major;
 use Modules\PPUDS\Entities\Survey;
 use Modules\PPUDS\Entities\SurveyQuestion;
 use Modules\PPUDS\Enums\SurveyQuestionType;
@@ -71,6 +72,13 @@ class Add extends Component implements HasActions, HasForms
                                     ->required()
                                     ->searchable()
                                     ->placeholder('e.g. 4th Year Students'),
+
+                                Select::make('major_id')
+                                    ->label(__('Target Major'))
+                                    ->options(fn () => Major::get()->pluck('name', 'id'))
+                                    ->searchable()
+                                    ->preload()
+                                    ->nullable(),
 
                                 DatePicker::make('start_date')
                                     ->label(__('Start Date'))
@@ -170,9 +178,9 @@ class Add extends Component implements HasActions, HasForms
 
         $state = $this->data;
 
-        $state['created_by']    = auth()->id();
-        $state['semester']      = app(GeneralSettings::class)->semester_type->value;
-        $state['year']          = app(GeneralSettings::class)->year;
+        $state['created_by'] = auth()->id();
+        $state['semester'] = app(GeneralSettings::class)->semester_type->value;
+        $state['year'] = app(GeneralSettings::class)->year;
 
         $survey = Survey::create($state);
 

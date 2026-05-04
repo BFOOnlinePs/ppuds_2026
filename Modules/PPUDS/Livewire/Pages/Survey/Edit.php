@@ -22,6 +22,7 @@ use Filament\Forms\Get;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Core\Enums\UserRole;
+use Modules\PPUDS\Entities\Major;
 use Modules\PPUDS\Entities\Survey;
 use Modules\PPUDS\Entities\SurveyQuestion;
 use Modules\PPUDS\Entities\SurveyQuestionOption;
@@ -33,12 +34,13 @@ class Edit extends Component implements HasActions, HasForms
     use InteractsWithForms;
 
     public ?array $data = [];
+
     public Survey $record;
 
     public function mount(Survey $survey)
     {
         $this->record = $survey->load('questions.options');
-        
+
         $surveyData = $this->record->toArray();
 
         $this->form->fill($surveyData);
@@ -68,6 +70,13 @@ class Edit extends Component implements HasActions, HasForms
                                     ->required()
                                     ->searchable()
                                     ->placeholder('e.g. 4th Year Students'),
+
+                                Select::make('major_id')
+                                    ->label(__('Target Major'))
+                                    ->options(fn () => Major::get()->pluck('name', 'id'))
+                                    ->searchable()
+                                    ->preload()
+                                    ->nullable(),
 
                                 DatePicker::make('start_date')
                                     ->label(__('Start Date'))
@@ -138,6 +147,7 @@ class Edit extends Component implements HasActions, HasForms
                                     ->label(__('Answer Options'))
                                     ->visible(function (Get $get) {
                                         $typeVal = $get('type');
+
                                         return $typeVal && SurveyQuestionType::tryFrom($typeVal)?->hasOptions();
                                     })
                                     ->schema([
@@ -174,6 +184,7 @@ class Edit extends Component implements HasActions, HasForms
         $this->record->update([
             'title' => $state['title'],
             'serve_group' => $state['serve_group'],
+            'major_id' => $state['major_id'] ?? null,
             'start_date' => $state['start_date'],
             'end_date' => $state['end_date'],
             'is_active' => $state['is_active'],
@@ -230,7 +241,7 @@ class Edit extends Component implements HasActions, HasForms
                     $submittedOptionIds[] = $option->id;
                 }
             }
-            
+
             $question->options()->whereNotIn('id', $submittedOptionIds)->delete();
         }
 

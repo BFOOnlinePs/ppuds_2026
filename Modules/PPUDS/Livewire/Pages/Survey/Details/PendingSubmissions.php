@@ -41,6 +41,10 @@ class PendingSubmissions extends Component implements HasForms, HasTable
                     fn (Builder $query, string $role) => $query->role($role),
                     fn (Builder $query) => $query->whereRaw('1 = 0')
                 )
+                ->when(
+                    $this->survey?->major_id,
+                    fn (Builder $query, int $majorId) => $query->whereHas('studentProfile', fn (Builder $profileQuery) => $profileQuery->where('major_id', $majorId))
+                )
                 ->whereNotIn('users.id', SurveyAnswer::query()
                     ->select('submitted_by')
                     ->where('survey_id', $this->surveyId)
@@ -67,6 +71,11 @@ class PendingSubmissions extends Component implements HasForms, HasTable
                 TextColumn::make('studentProfile.student_number')
                     ->label(__('Student Number'))
                     ->searchable()
+                    ->toggleable()
+                    ->placeholder('-'),
+
+                TextColumn::make('studentProfile.major.name')
+                    ->label(__('Major'))
                     ->toggleable()
                     ->placeholder('-'),
 

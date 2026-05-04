@@ -54,6 +54,10 @@ class Submissions extends Component implements HasForms, HasTable
                     'survey_submitted_at'
                 )
                 ->when($this->survey?->serve_group, fn (Builder $query, string $role) => $query->role($role))
+                ->when(
+                    $this->survey?->major_id,
+                    fn (Builder $query, int $majorId) => $query->whereHas('studentProfile', fn (Builder $profileQuery) => $profileQuery->where('major_id', $majorId))
+                )
                 ->whereIn('users.id', SurveyAnswer::query()
                     ->select('submitted_by')
                     ->where('survey_id', $this->surveyId)
@@ -85,6 +89,11 @@ class Submissions extends Component implements HasForms, HasTable
                 TextColumn::make('studentProfile.student_number')
                     ->label(__('Student Number'))
                     ->searchable()
+                    ->toggleable()
+                    ->placeholder('-'),
+
+                TextColumn::make('studentProfile.major.name')
+                    ->label(__('Major'))
                     ->toggleable()
                     ->placeholder('-'),
 
