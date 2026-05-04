@@ -4,16 +4,17 @@ namespace Modules\Core\Providers;
 
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
+use Maatwebsite\Excel\Exporter;
+use Maatwebsite\Excel\Importer;
 use Modules\Core\Database\Seeders\CoreDatabaseSeeder;
-use Modules\Core\Filament\Forms\Components\Textarea;
+use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\Core\Interfaces\TransactionLoggerInterface;
+use Modules\Core\Services\ExcelService;
+use Modules\Core\Services\PdfService;
 use Modules\Core\Services\TransactionLoggerService;
 use Nwidart\Modules\Traits\PathNamespace;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
-use Modules\Core\Providers\SidebarServiceProvider;
-use Modules\Core\Filament\Forms\Components\TextInput;
-use Modules\Core\Services\PdfService;
 
 class CoreServiceProvider extends ServiceProvider
 {
@@ -36,14 +37,23 @@ class CoreServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(module_path($this->name, 'database/migrations'));
 
         $this->app->singleton(PdfService::class, function () {
-            return new PdfService();
+            return new PdfService;
         });
+
+        $this->app->singleton(ExcelService::class, function ($app) {
+            return new ExcelService(
+                $app->make(Exporter::class),
+                $app->make(Importer::class)
+            );
+        });
+
+        $this->app->bind(ExcelServiceInterface::class, ExcelService::class);
 
         $this->app->bind(
             TransactionLoggerInterface::class,
             TransactionLoggerService::class
         );
-//        $this->callSeeder();
+        //        $this->callSeeder();
     }
 
     /**
@@ -153,7 +163,7 @@ class CoreServiceProvider extends ServiceProvider
 
         $this->loadViewsFrom(array_merge($this->getPublishableViewPaths(), [$sourcePath]), $this->nameLower);
 
-        Blade::componentNamespace(config('modules.namespace').'\\' . $this->name . '\\View\\Components', $this->nameLower);
+        Blade::componentNamespace(config('modules.namespace').'\\'.$this->name.'\\View\\Components', $this->nameLower);
     }
 
     /**
@@ -176,8 +186,9 @@ class CoreServiceProvider extends ServiceProvider
         return $paths;
     }
 
-    protected function callSeeder(){
-        $seeder = new CoreDatabaseSeeder();
+    protected function callSeeder()
+    {
+        $seeder = new CoreDatabaseSeeder;
         $seeder->run();
     }
 }

@@ -35,6 +35,7 @@
         "laravel/tinker": "^2.10.1",
         "laravolt/avatar": "^6.2",
         "livewire/livewire": "^3.0",
+        "maatwebsite/excel": "^3.1",
         "malhal/laravel-geographical": "^1.0",
         "masmerise/livewire-toaster": "^2.8",
         "matanyadaev/laravel-eloquent-spatial": "^4.5",

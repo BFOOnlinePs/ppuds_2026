@@ -5,16 +5,21 @@ namespace Modules\PPUDS\Livewire\Pages\Survey\Details;
 use App\View\Components\AppLayout;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Tables\Actions\Action as TablesAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
 use Livewire\Component;
+use Maatwebsite\Excel\Excel as WriterType;
 use Modules\Core\Entities\User;
 use Modules\Core\Enums\UserRole;
+use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\PPUDS\Entities\Survey;
 use Modules\PPUDS\Entities\SurveyAnswer;
+use Modules\PPUDS\Exports\SurveySubmissionsExport;
 
 class Submissions extends Component implements HasForms, HasTable
 {
@@ -114,6 +119,18 @@ class Submissions extends Component implements HasForms, HasTable
                     ->dateTime('Y-m-d H:i')
                     ->sortable(),
             ])
+            ->headerActions([
+                TablesAction::make('export_submissions')
+                    ->label(__('Export Submissions'))
+                    ->icon('heroicon-m-arrow-down-tray')
+                    ->color('success')
+                    ->action(fn () => app(ExcelServiceInterface::class)->download(
+                        new SurveySubmissionsExport($this->survey),
+                        $this->exportFilename(),
+                        WriterType::XLSX
+                    ))
+                    ->visible(fn (): bool => $this->canViewSurveyDetails()),
+            ])
             ->emptyStateHeading(__('No submissions found'));
     }
 
@@ -124,6 +141,24 @@ class Submissions extends Component implements HasForms, HasTable
         return $role
             ? UserRole::tryFrom($role)?->getLabel() ?? $role
             : '-';
+    }
+
+    protected function exportFilename(): string
+    {
+        $slug = Str::slug((string) $this->survey?->title);
+
+        return 'survey-submissions-'.($slug ?: $this->surveyId).'-'.now()->format('Y-m-d-His').'.xlsx';
+    }
+
+    protected function canViewSurveyDetails(): bool
+    {
+        return auth()->user()?->hasAnyRole([
+            UserRole::SUPER_ADMIN->value,
+            UserRole::ADMIN->value,
+            UserRole::PRACTICAL_TRAINING_SUPERVISOR->value,
+            'Academic Supervisor',
+            'University Supervisor',
+        ]) ?? false;
     }
 
     public function render()

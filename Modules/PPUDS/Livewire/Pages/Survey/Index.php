@@ -15,15 +15,19 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 use Livewire\Component;
+use Maatwebsite\Excel\Excel as WriterType;
 use Masmerise\Toaster\Toaster;
 use Modules\Core\Enums\UserRole;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
+use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\PPUDS\Entities\Survey;
 use Modules\PPUDS\Entities\SurveyAnswer;
+use Modules\PPUDS\Exports\SurveySubmissionsExport;
 
 class Index extends Component implements HasForms, HasTable
 {
@@ -231,6 +235,18 @@ class Index extends Component implements HasForms, HasTable
                 ->modalSubmitAction(false)
                 ->visible(fn () => auth()->user()->can('Survey View')),
 
+            ActionsAction::make('export_submissions')
+                ->label('')
+                ->tooltip(__('Export Submissions'))
+                ->icon('heroicon-m-arrow-down-tray')
+                ->color('success')
+                ->action(fn (Survey $record) => app(ExcelServiceInterface::class)->download(
+                    new SurveySubmissionsExport($record),
+                    $this->exportFilename($record),
+                    WriterType::XLSX
+                ))
+                ->visible(fn (): bool => $this->canViewSurveyDetails()),
+
             ActionsAction::make('survey_submit')
                 ->label(__('Submit Survey'))
                 ->color('success')
@@ -267,6 +283,13 @@ class Index extends Component implements HasForms, HasTable
                 })
                 ->visible(fn () => auth()->user()->can('Survey Delete')),
         ];
+    }
+
+    protected function exportFilename(Survey $survey): string
+    {
+        $slug = Str::slug((string) $survey->title);
+
+        return 'survey-submissions-'.($slug ?: $survey->id).'-'.now()->format('Y-m-d-His').'.xlsx';
     }
 
     public function getTableBulkAction(): array
