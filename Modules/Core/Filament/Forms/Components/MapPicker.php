@@ -2,10 +2,13 @@
 
 namespace Modules\Core\Filament\Forms\Components;
 
+use Closure;
 use Dotswan\MapPicker\Fields\Map;
 
 class MapPicker extends Map
 {
+    public string $view = 'core::filament.forms.components.map-picker';
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -66,6 +69,13 @@ class MapPicker extends Map
                     ]);
                 }
             });
+    }
+
+    public function fixedLocationMarker(Closure|bool $fixed = true): static
+    {
+        return $this->extraTileControl([
+            'fixedLocationMarker' => $this->evaluate($fixed),
+        ]);
     }
 
     // ======================================================

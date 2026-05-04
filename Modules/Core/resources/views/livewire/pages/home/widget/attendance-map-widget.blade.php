@@ -111,53 +111,8 @@
 
         @once
             <style>
-                .attendance-map-marker-shell {
-                    background: transparent;
-                    border: 0;
-                }
-
-                .attendance-map-marker {
-                    position: relative;
-                    display: block;
-                    width: 18px;
-                    height: 18px;
-                    border: 3px solid #ffffff;
-                    border-radius: 9999px;
-                    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.28);
-                }
-
-                .attendance-map-marker::before,
-                .attendance-map-marker::after {
-                    position: absolute;
-                    inset: -9px;
-                    content: "";
-                    border: 2px solid rgba(220, 38, 38, 0.45);
-                    border-radius: inherit;
-                    animation: attendance-map-radar 1.9s ease-out infinite;
-                }
-
-                .attendance-map-marker::after {
-                    animation-delay: 0.95s;
-                }
-
-                @keyframes attendance-map-radar {
-                    0% {
-                        opacity: 0.75;
-                        transform: scale(0.55);
-                    }
-
-                    100% {
-                        opacity: 0;
-                        transform: scale(2.25);
-                    }
-                }
-
-                @media (prefers-reduced-motion: reduce) {
-                    .attendance-map-marker::before,
-                    .attendance-map-marker::after {
-                        animation: none;
-                        opacity: 0;
-                    }
+                .attendance-map-point {
+                    filter: drop-shadow(0 8px 14px rgba(15, 23, 42, 0.24));
                 }
 
                 .attendance-map-popup {
@@ -304,8 +259,14 @@
                                 return;
                             }
 
-                            leaflet.marker([point.lat, point.lng], {
-                                icon: this.markerIcon(),
+                            leaflet.circleMarker([point.lat, point.lng], {
+                                className: 'attendance-map-point',
+                                radius: 8,
+                                color: '#ffffff',
+                                weight: 3,
+                                opacity: 1,
+                                fillColor: this.markerColor(point),
+                                fillOpacity: 1,
                             })
                                 .bindPopup(this.popupContent(point))
                                 .addTo(this.markerLayer);
@@ -320,16 +281,17 @@
                         this.refreshSize();
                     },
 
-                    markerIcon() {
-                        const leaflet = window.L || window.leaflet;
-                        const markerColor = '#dc2626';
+                    markerColor(point) {
+                        const colors = {
+                            danger: '#dc2626',
+                            gray: '#6b7280',
+                            info: '#0891b2',
+                            primary: '#2563eb',
+                            success: '#16a34a',
+                            warning: '#d97706',
+                        };
 
-                        return leaflet.divIcon({
-                            className: 'attendance-map-marker-shell',
-                            html: `<span class="attendance-map-marker" style="background:${markerColor}"></span>`,
-                            iconSize: [22, 22],
-                            iconAnchor: [11, 11],
-                        });
+                        return colors[point.color] || colors.danger;
                     },
 
                     popupContent(point) {
