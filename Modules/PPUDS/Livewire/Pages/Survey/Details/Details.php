@@ -11,6 +11,7 @@ use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\Tabs;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Components\ViewEntry;
 use Filament\Infolists\Concerns\InteractsWithInfolists;
 use Filament\Infolists\Contracts\HasInfolists;
 use Filament\Infolists\Infolist;
@@ -124,31 +125,41 @@ class Details extends Component implements HasForms, HasInfolists
 
                                 Section::make(__('Target Groups'))
                                     ->schema([
-                                        RepeatableEntry::make('target_groups')
-                                            ->hiddenLabel()
-                                            ->state(fn (): array => $this->targetGroupsSummary())
+                                        Grid::make(['default' => 1, 'md' => 3])
                                             ->schema([
-                                                TextEntry::make('name')
-                                                    ->label(__('Target Group'))
-                                                    ->badge()
-                                                    ->color('primary'),
+                                                RepeatableEntry::make('target_groups')
+                                                    ->hiddenLabel()
+                                                    ->state(fn (): array => $this->targetGroupsSummary())
+                                                    ->schema([
+                                                        TextEntry::make('name')
+                                                            ->label(__('Target Group'))
+                                                            ->badge()
+                                                            ->color('primary'),
 
-                                                TextEntry::make('major')
-                                                    ->label(__('Target Major'))
-                                                    ->badge()
-                                                    ->color('primary'),
+                                                        TextEntry::make('major')
+                                                            ->label(__('Target Major'))
+                                                            ->badge()
+                                                            ->color('primary'),
 
-                                                TextEntry::make('total_users')
-                                                    ->label(__('Total Required Submissions'))
-                                                    ->badge()
-                                                    ->color('info'),
+                                                        TextEntry::make('total_users')
+                                                            ->label(__('Total Required Submissions'))
+                                                            ->badge()
+                                                            ->color('info'),
 
-                                                TextEntry::make('pending_users')
-                                                    ->label(__('Pending Submissions Count'))
-                                                    ->badge()
-                                                    ->color('warning'),
-                                            ])
-                                            ->columns(['default' => 1, 'md' => 4]),
+                                                        TextEntry::make('pending_users')
+                                                            ->label(__('Pending Submissions Count'))
+                                                            ->badge()
+                                                            ->color('warning'),
+                                                    ])
+                                                    ->columns(['default' => 1, 'md' => 4])
+                                                    ->columnSpan(['default' => 1, 'md' => 2]),
+
+                                                ViewEntry::make('target_groups_chart')
+                                                    ->hiddenLabel()
+                                                    ->state(fn (): array => $this->targetGroupsChartSummary())
+                                                    ->view('ppuds::livewire.pages.survey.details.target-groups-chart')
+                                                    ->columnSpan(['default' => 1, 'md' => 1]),
+                                            ]),
                                     ]),
 
                             ]),
@@ -229,6 +240,22 @@ class Details extends Component implements HasForms, HasInfolists
                 'total_users' => $this->targetUsersCount,
                 'pending_users' => $this->pendingUsersCount,
             ],
+        ];
+    }
+
+    protected function targetGroupsChartSummary(): array
+    {
+        $totalUsers = max($this->targetUsersCount, 0);
+        $submittedUsers = min(max($this->submittedUsersCount, 0), $totalUsers);
+        $pendingUsers = max($totalUsers - $submittedUsers, 0);
+
+        return [
+            'total_users' => $totalUsers,
+            'submitted_users' => $submittedUsers,
+            'pending_users' => $pendingUsers,
+            'submitted_percentage' => $totalUsers > 0
+                ? round(($submittedUsers / $totalUsers) * 100)
+                : 0,
         ];
     }
 
