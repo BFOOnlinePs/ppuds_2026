@@ -2,7 +2,7 @@
     @if (count($chartWidgets = $this->chartWidgets()))
         <x-filament-widgets::widgets
             :widgets="$chartWidgets"
-            :columns="['default' => 1, 'xl' => 2, '2xl' => 3]"
+            :columns="['default' => 1]"
         />
     @else
         <x-filament::section :heading="__('Answer Results')">
