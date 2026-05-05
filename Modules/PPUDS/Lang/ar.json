@@ -505,5 +505,17 @@
     "No pending submissions found": "لا يوجد أشخاص بانتظار التسليم",
     "Export Submissions": "تصدير التسليمات",
     "Submitted By": "تم التسليم بواسطة",
-    "Question": "سؤال"
+    "Question": "سؤال",
+    "Option": "خيار",
+    "Answer Results": "نتائج الإجابات",
+    "No multiple choice questions found": "لا توجد أسئلة متعددة الخيارات",
+    "Short Text": "نص قصير",
+    "Long Text": "نص طويل",
+    "Single Choice (Radio)": "اختيار واحد",
+    "Multiple Choice (Checkbox)": "اختيارات متعددة",
+    "Dropdown (Single)": "قائمة منسدلة - اختيار واحد",
+    "Dropdown (Multiple)": "قائمة منسدلة - اختيارات متعددة",
+    "Date Picker": "منتقي التاريخ",
+    "File Upload": "رفع ملف",
+    "Star Rating": "تقييم بالنجوم"
 }

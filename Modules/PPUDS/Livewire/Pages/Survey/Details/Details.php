@@ -42,7 +42,9 @@ class Details extends Component implements HasForms, HasInfolists
         $this->survey = $survey->load([
             'major.translations',
             'questions' => fn ($query) => $query->orderBy('sort_order'),
+            'questions.translations',
             'questions.options' => fn ($query) => $query->orderBy('sort_order'),
+            'questions.options.translations',
         ]);
 
         $this->loadSubmissionStats();
@@ -184,7 +186,11 @@ class Details extends Component implements HasForms, HasInfolists
 
                         Tabs\Tab::make(__('Statistics'))
                             ->icon('solar-chart-2-bold-duotone')
-                            ->schema([]),
+                            ->schema([
+                                Livewire::make(QuestionAnswerStatisticsCharts::class, [
+                                    'surveyId' => $this->survey->id,
+                                ])->columnSpanFull(),
+                            ]),
                     ])
                     ->persistTabInQueryString()
                     ->columnSpanFull(),
