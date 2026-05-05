@@ -40,6 +40,7 @@ class Company extends Model implements TranslatableContract, HasMedia
 
     protected $fillable = [
         'id',
+        'old_company_id',
         'website',
         'company_category_id',
         'status',
@@ -47,6 +48,7 @@ class Company extends Model implements TranslatableContract, HasMedia
     ];
 
     protected $casts = [
+        'old_company_id' => 'integer',
         'status'    => CompanyStatus::class
     ];
 
