@@ -80,7 +80,8 @@ class Index extends Component implements HasForms, HasInfolists
                         Tabs::make('tabs')
                             ->tabs([
 
-                                Tabs\Tab::make('Personal Information')
+                                Tabs\Tab::make('personal-information')
+                                    ->label(__('Personal Information'))
                                     ->icon('heroicon-o-user')
                                     ->schema([
                                         Grid::make(3)
@@ -127,7 +128,8 @@ class Index extends Component implements HasForms, HasInfolists
                                             ])
                                     ]),
 
-                                Tabs\Tab::make('Student Profile')
+                                Tabs\Tab::make('student-profile')
+                                    ->label(__('Student Profile'))
                                     ->icon('heroicon-o-academic-cap')
                                     ->schema([
                                         Grid::make(3)
@@ -206,7 +208,8 @@ class Index extends Component implements HasForms, HasInfolists
                                     ])
                                     ->visible(fn() => auth()->user()->hasRole('Student')),
 
-                                Tabs\Tab::make('Work Experience')
+                                Tabs\Tab::make('work-experience')
+                                    ->label(__('Work Experience'))
                                     ->icon('heroicon-o-briefcase')
                                     ->schema([
                                         Grid::make(2)
@@ -222,7 +225,8 @@ class Index extends Component implements HasForms, HasInfolists
                                     ])
                                     ->visible(fn() => auth()->user()->hasRole('Student')),
 
-                                Tabs\Tab::make('Training History')
+                                Tabs\Tab::make('training-history')
+                                    ->label(__('Training History'))
                                     ->icon('heroicon-o-academic-cap')
                                     ->schema([
                                         Grid::make(2)
@@ -238,7 +242,8 @@ class Index extends Component implements HasForms, HasInfolists
                                             ]),
                                     ]),
 
-                                Tabs\Tab::make('Registration')
+                                Tabs\Tab::make('registration')
+                                    ->label(__('Registration'))
                                     ->icon('heroicon-o-academic-cap')
                                     ->schema([
                                         Grid::make(2)
@@ -255,7 +260,8 @@ class Index extends Component implements HasForms, HasInfolists
                                     ])
                                     ->visible(fn() => auth()->user()->hasRole('Student')),
 
-                                Tabs\Tab::make('Attendance')
+                                Tabs\Tab::make('attendance')
+                                    ->label(__('Attendance'))
                                     ->icon('heroicon-o-academic-cap')
                                     ->schema([
                                         Grid::make(2)
@@ -272,7 +278,8 @@ class Index extends Component implements HasForms, HasInfolists
                                     ])
                                     ->visible(fn() => auth()->user()->hasRole('Student')),
 
-                                Tabs\Tab::make('Payment')
+                                Tabs\Tab::make('payment')
+                                    ->label(__('Payment'))
                                     ->icon('heroicon-o-academic-cap')
                                     ->schema([
                                         Grid::make(2)
