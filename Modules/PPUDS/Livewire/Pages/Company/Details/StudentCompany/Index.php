@@ -11,6 +11,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Get;
+use Filament\Forms\Set;
 use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Columns\TextColumn;
@@ -153,7 +154,10 @@ class Index extends Component implements HasForms, HasTable
                                                         ->live()
                                                         ->default($this->companyId)
                                                         ->selectablePlaceholder(false)
-                                                        ->afterStateUpdated(fn(Select $component) => $component->getContainer()->getComponent('branchSelect')->state(null)) // تصفير الفرع عند تغيير الشركة
+                                                        ->afterStateUpdated(function (Set $set) {
+                                                            $set('branch_id', null);
+                                                            $set('department_id', null);
+                                                        })
                                                         ->prefixIcon('solar-city-linear'),
 
                                                     Select::make('branch_id')
@@ -161,6 +165,8 @@ class Index extends Component implements HasForms, HasTable
                                                         ->key('branchSelect')
                                                         ->searchable()
                                                         ->preload()
+                                                        ->live()
+                                                        ->afterStateUpdated(fn (Set $set) => $set('department_id', null))
                                                         ->prefixIcon('solar-map-point-linear')
                                                         ->placeholder(fn(Get $get) => $get('company_id') ? __('Select Branch') : __('Select Company First'))
                                                         ->disabled(fn(Get $get) => ! $get('company_id'))
@@ -173,14 +179,23 @@ class Index extends Component implements HasForms, HasTable
 
                                                     Select::make('department_id')
                                                         ->label(__('Department'))
+                                                        ->key('deptSelect')
                                                         ->searchable()
                                                         ->preload()
                                                         ->prefixIcon('solar-users-group-two-rounded-linear')
-                                                        ->disabled(fn(Get $get) => ! $get('company_id'))
-                                                        ->options(
-                                                            fn(Get $get) =>
-                                                            CompanyDepartment::get()->pluck('name', 'id')
-                                                        )
+                                                        ->placeholder(fn(Get $get) => $get('branch_id') ? __('Select Department') : __('Select Branch First'))
+                                                        ->disabled(fn(Get $get) => ! $get('branch_id'))
+                                                        ->options(function (Get $get) {
+                                                            $branchId = $get('branch_id');
+
+                                                            if (! $branchId) {
+                                                                return [];
+                                                            }
+
+                                                            return CompanyDepartment::whereHas('branches', fn ($query) => $query->whereKey($branchId))
+                                                                ->get()
+                                                                ->pluck('name', 'id');
+                                                        })
                                                         ->columnSpanFull(),
                                                 ]),
                                             ]),

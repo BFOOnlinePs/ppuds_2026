@@ -78,6 +78,14 @@ class Index extends Component implements HasForms, HasTable
                     ->color('gray')
                     ->toggleable(),
 
+                TextColumn::make('registration.year')
+                    ->label(__('Year'))
+                    ->toggleable(),
+
+                TextColumn::make('registration.semester')
+                    ->label(__('Semester'))
+                    ->toggleable(),
+
                 TextColumn::make('created_at')
                     ->label(__('Created At'))
                     ->dateTime('Y-m-d')

@@ -20,6 +20,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
+use Modules\Core\Enums\UserRole;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
@@ -42,7 +43,8 @@ class Index extends Component implements HasForms, HasTable
     {
         return $table
             ->query(fn () => StudentAttendance::query()->with(['studentCompany', 'studentReport'])
-                ->where($this->filters))
+                ->where($this->filters)
+                ->when(auth()->user()->hasRole(UserRole::STUDENT->value), fn ($query) => $query->whereHas('studentCompany', fn ($studentCompanyQuery) => $studentCompanyQuery->where('student_id', auth()->id()))))
             ->columns([
                 TextColumn::make('studentCompany.student.name')
                     ->label(__('Student Name'))
@@ -114,7 +116,10 @@ class Index extends Component implements HasForms, HasTable
 
                         Select::make('student_company_id')
                             ->label(__('Student Company'))
-                            ->options(StudentCompany::with(['company', 'branch', 'registration', 'student', 'student.studentProfile'])->get()->mapWithKeys(function ($item) {
+                            ->options(StudentCompany::with(['company', 'branch', 'registration', 'student', 'student.studentProfile'])
+                                ->when(auth()->user()->hasRole('Student'), fn ($query) => $query->where('student_id', auth()->id()))
+                                ->get()
+                                ->mapWithKeys(function ($item) {
                                 $number = $item->student->studentProfile?->student_number ?? __('No Number');
                                 $name = $item->student->name ?? __('No Name');
                                 $company = $item->company->name ?? __('No Company');
@@ -130,6 +135,10 @@ class Index extends Component implements HasForms, HasTable
                             ->label(__('Description')),
                     ])
                     ->action(function (array $data) {
+                        if (auth()->user()->hasRole('Student') && ! StudentCompany::whereKey($data['student_company_id'])->where('student_id', auth()->id())->exists()) {
+                            abort(403);
+                        }
+
                         if (empty($data['location']['lat']) || empty($data['location']['lng'])) {
                             Toaster::success('The location could not be determined. Please check permissions.');
 

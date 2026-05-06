@@ -53,12 +53,24 @@ class Add extends Component implements HasForms, HasActions
                                                 ->searchable()
                                                 ->preload()
                                                 ->prefixIcon('solar-user-id-linear')
-                                                ->options(User::whereHas('roles', fn($q) => $q->where('name', 'Student'))->pluck('name', 'id'))
+                                                ->options(fn () => User::with('studentProfile')
+                                                    ->whereHas('roles', fn($q) => $q->where('name', 'Student'))
+                                                    ->get()
+                                                    ->mapWithKeys(fn (User $student) => [
+                                                        $student->id => $this->formatStudentOption($student),
+                                                    ]))
                                                 ->getSearchResultsUsing(
-                                                    fn(string $search) => User::whereHas('roles', fn($q) => $q->where('name', 'Student'))
-                                                        ->where('name', 'like', "%{$search}%")
+                                                    fn(string $search) => User::with('studentProfile')
+                                                        ->whereHas('roles', fn($q) => $q->where('name', 'Student'))
+                                                        ->where(function ($query) use ($search) {
+                                                            $query->where('name', 'like', "%{$search}%")
+                                                                ->orWhereHas('studentProfile', fn ($profileQuery) => $profileQuery->where('student_number', 'like', "%{$search}%"));
+                                                        })
                                                         ->limit(10)
-                                                        ->pluck('name', 'id')
+                                                        ->get()
+                                                        ->mapWithKeys(fn (User $student) => [
+                                                            $student->id => $this->formatStudentOption($student),
+                                                        ])
                                                 ),
 
                                             Select::make('course_id')
@@ -117,6 +129,15 @@ class Add extends Component implements HasForms, HasActions
                     ]),
             ])
             ->statePath('data');
+    }
+
+    private function formatStudentOption(User $student): string
+    {
+        $studentNumber = $student->studentProfile?->student_number;
+
+        return $studentNumber
+            ? "{$studentNumber} - {$student->name}"
+            : $student->name;
     }
 
     protected function messages(): array

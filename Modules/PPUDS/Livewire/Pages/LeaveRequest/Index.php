@@ -23,6 +23,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
+use Modules\Core\Enums\UserRole;
 use Modules\Core\Filament\Forms\Components\CreateAction;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
@@ -43,7 +44,10 @@ class Index extends Component implements HasTable, HasForms
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn() => LeaveRequest::query()->where($this->filters)->latest())
+            ->query(fn() => LeaveRequest::query()
+                ->where($this->filters)
+                ->when(auth()->user()->hasRole(UserRole::STUDENT->value), fn ($query) => $query->whereHas('studentCompany', fn ($studentCompanyQuery) => $studentCompanyQuery->where('student_id', auth()->id())))
+                ->latest())
             ->columns([
                 TextColumn::make('studentCompany.student.name')
                     ->label(__('Student'))
@@ -86,6 +90,10 @@ class Index extends Component implements HasTable, HasForms
                     ->icon('heroicon-o-plus')
                     ->form($this->getFormSchema(isCreate: true))
                     ->action(function (array $data) {
+                        if (auth()->user()->hasRole('Student') && ! StudentCompany::whereKey($data['student_company_id'])->where('student_id', auth()->id())->exists()) {
+                            abort(403);
+                        }
+
                         $data['created_by'] = auth()->id();
 
                         $data['company_approval'] = LeaveRequestStatus::PENDING ?? LeaveRequestStatus::APPROVED;

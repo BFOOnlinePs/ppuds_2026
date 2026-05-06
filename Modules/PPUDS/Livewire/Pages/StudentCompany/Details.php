@@ -28,17 +28,22 @@ class Details extends Component implements HasForms, HasInfolists
 
     public function mount($studentCompany)
     {
-        $studentCompany = StudentCompany::with([
-            'registration',
-            'student',
-            'student.studentProfile',
-            'company',
-            'branch',
-            'branch.workingHours',
-            'department',
-            'attendances',
-        ])->withAttendanceDays()
-            ->withActualWorkingHours()->findOrFail($studentCompany);
+        $studentCompany = StudentCompany::query()
+            ->with([
+                'registration',
+                'student',
+                'student.studentProfile',
+                'company',
+                'branch',
+                'branch.workingHours',
+                'department',
+                'attendances',
+            ])
+            ->withAttendanceDays()
+            ->withActualWorkingHours()
+            ->when(auth()->user()->hasRole('Student'), fn ($query) => $query->where('student_id', auth()->id()))
+            ->findOrFail($studentCompany);
+
         $this->studentCompanyModel = $studentCompany;
 
         $this->form->fill($studentCompany->toArray());

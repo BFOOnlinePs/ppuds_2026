@@ -17,6 +17,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
+use Modules\Core\Enums\UserRole;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
@@ -35,7 +36,8 @@ class Index extends Component implements HasForms, HasTable
     {
         return $table
             ->query(fn() => Payment::query()->with(['studentCompany','studentCompany.registration.student' , 'supervisor', 'currency'])
-                ->where($this->filters))
+                ->where($this->filters)
+                ->when(auth()->user()->hasRole(UserRole::STUDENT->value), fn ($query) => $query->whereHas('studentCompany', fn ($studentCompanyQuery) => $studentCompanyQuery->where('student_id', auth()->id()))))
             ->columns([
                 TextColumn::make('studentCompany.registration.student.name')
                     ->label(__('Student'))

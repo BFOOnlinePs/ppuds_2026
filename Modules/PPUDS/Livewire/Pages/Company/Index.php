@@ -3,21 +3,22 @@
 namespace Modules\PPUDS\Livewire\Pages\Company;
 
 use App\View\Components\AppLayout;
+use Filament\Forms;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Columns\ImageColumn;
-use Filament\Tables\Contracts\HasTable;
-use Filament\Forms\Contracts\HasForms;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Component;
-use Filament\Forms;
-use Filament\Forms\Components\TextInput;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\SelectFilter;
 use Masmerise\Toaster\Toaster;
 use Modules\Core\Filament\Forms\Components\CreateAction;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
@@ -27,17 +28,16 @@ use Modules\Core\Filament\Forms\Components\Textarea;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Enums\CompanyStatus;
-use View;
 
-class Index extends Component implements HasTable, HasForms
+class Index extends Component implements HasForms, HasTable
 {
-    use InteractsWithTable;
     use InteractsWithForms;
+    use InteractsWithTable;
 
     public function table(Table $table)
     {
         return $table
-            ->query(fn() => Company::query())
+            ->query(fn () => Company::query())
             ->columns([
                 ImageColumn::make('logo')
                     ->label(__('Logo'))
@@ -47,14 +47,18 @@ class Index extends Component implements HasTable, HasForms
 
                 TextColumn::make('name')
                     ->label(__('Name'))
-                    ->searchable()
+                    ->searchable(query: fn (Builder $query, string $search): Builder => $query->whereTranslationLike('name', "%{$search}%")
+                    )
                     ->sortable(),
+
                 TextColumn::make('website')
                     ->label(__('Website'))
                     ->searchable()
                     ->sortable(),
+
                 TextColumn::make('category.name'),
-                TextColumn::make('status')
+
+                TextColumn::make('status'),
             ])
             ->filters($this->getTableFilters())
             ->actions(
@@ -64,7 +68,7 @@ class Index extends Component implements HasTable, HasForms
                 CreateAction::make('create')
                     ->label(__('Add Company'))
                     ->url(route('companies.add'))
-                    ->visible(fn() => auth()->user()->can('Company Create'))
+                    ->visible(fn () => auth()->user()->can('Company Create')),
             ])
             ->bulkActions($this->getTableBulkAction());
     }
@@ -75,7 +79,7 @@ class Index extends Component implements HasTable, HasForms
             SelectFilter::make('status')
                 ->label(__('Company Status'))
                 ->options(CompanyStatus::options())
-                ->searchable()
+                ->searchable(),
         ];
     }
 
@@ -86,8 +90,8 @@ class Index extends Component implements HasTable, HasForms
                 BulkAction::make('delete')
                     ->label(__('Delete'))
                     ->requiresConfirmation()
-                    ->action(fn(Collection $records) => $records->each->delete()),
-            ])
+                    ->action(fn (Collection $records) => $records->each->delete()),
+            ]),
         ];
     }
 
@@ -96,7 +100,7 @@ class Index extends Component implements HasTable, HasForms
         return [
             InfoAction::make('info')
                 ->label('')
-                ->visible(fn() => auth()->user()->can('Company Info')),
+                ->visible(fn () => auth()->user()->can('Company Info')),
             ViewAction::make('view')
                 ->form(function (Forms\Form $form, $record) {
                     return $form->schema([
@@ -118,18 +122,18 @@ class Index extends Component implements HasTable, HasForms
                     ]);
                 })
                 ->modalSubmitAction(false)
-                ->visible(fn() => auth()->user()->can('Company Category View')),
+                ->visible(fn () => auth()->user()->can('Company Category View')),
 
             Action::make('details')
                 ->label('')
                 ->size('xl')
                 ->icon('heroicon-o-user')
-                ->url(fn($record) => route('companies.details', $record))
-                ->visible(fn() => auth()->user()->can('Student Details List')),
+                ->url(fn ($record) => route('companies.details', $record))
+                ->visible(fn () => auth()->user()->can('Student Details List')),
 
             EditAction::make('edit')
-                ->url(fn(Company $record) => route('companies.edit', $record->id))
-                ->visible(fn() => auth()->user()->can('Company Category Update')),
+                ->url(fn (Company $record) => route('companies.edit', $record->id))
+                ->visible(fn () => auth()->user()->can('Company Category Update')),
 
             DeleteAction::make('delete')
                 ->action(function ($record) {
@@ -137,7 +141,7 @@ class Index extends Component implements HasTable, HasForms
                     $record->delete();
                     Toaster::success(__('Company category deleted successfully'));
                 })
-                ->visible(fn() => auth()->user()->can('Company Category Delete'))
+                ->visible(fn () => auth()->user()->can('Company Category Delete')),
         ];
     }
 
@@ -147,7 +151,7 @@ class Index extends Component implements HasTable, HasForms
             'breadcrumbs' => [
                 ['title' => __('Home'), 'url' => route('home')],
                 ['title' => __('Companies List'), 'url' => route('companies.index')],
-            ]
+            ],
         ]);
     }
 }

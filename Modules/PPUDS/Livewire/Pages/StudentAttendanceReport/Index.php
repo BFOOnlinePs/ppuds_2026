@@ -17,6 +17,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
+use Modules\Core\Enums\UserRole;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
@@ -37,6 +38,10 @@ class Index extends Component implements HasForms, HasTable
                 $filtersData = $this->filters;
 
                 $query = StudentReport::query()->with(['studentAttendance.studentCompany.student']);
+
+                $query->when(auth()->user()->hasRole(UserRole::STUDENT->value), function ($q) {
+                    $q->whereHas('studentAttendance.studentCompany', fn ($studentCompanyQuery) => $studentCompanyQuery->where('student_id', auth()->id()));
+                });
 
                 // 2. تطبيق فلتر الشركة من خلال العلاقة إذا كان موجوداً
                 if (isset($filtersData['student_company_id'])) {
