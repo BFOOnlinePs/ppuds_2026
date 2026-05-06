@@ -355,6 +355,9 @@
     "Out Longitude": "خط الطول (مغادرة)",
     "View Map": "عرض الخريطة",
     "Personal Information": "المعلومات الشخصية",
+    "Work Experience": "الخبرات العملية",
+    "Training History": "سجل التدريب",
+    "Payment": "المدفوعات",
     "Student Trainings": "تدريبات الطلاب",
     "Company Details": "تفاصيل الشركة",
     "Surveys": "الاستبيانات",
@@ -472,6 +475,7 @@
 
     "Attendance": "الحضور",
     "Attendance Reports": "تقارير الحضور",
+    "Daily Reports": "التقارير اليومية",
     "Training Summary": "ملخص التدريب",
     "Payments": "المدفوعات",
 

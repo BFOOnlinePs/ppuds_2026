@@ -99,7 +99,7 @@ class Details extends Component implements HasForms, HasInfolists
                                 ]),
                             ]),
                         Tabs\Tab::make('attendance-reports')
-                            ->label(__('Attendance Reports'))
+                            ->label(__('Daily Reports'))
                             ->schema([
                                 Livewire::make(\Modules\PPUDS\Livewire\Pages\StudentAttendanceReport\Index::class, [
                                     'filters' => [
