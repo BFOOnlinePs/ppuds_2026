@@ -37,6 +37,7 @@ use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\PaymentStatus;
 use Modules\PPUDS\Enums\SemesterType;
 use Modules\PPUDS\Enums\TrainingStatus;
+use Modules\PPUDS\Services\PpudsNotificationService;
 use Modules\PPUDS\Settings\GeneralSettings;
 
 class Index extends Component implements HasForms, HasTable
@@ -163,7 +164,11 @@ class Index extends Component implements HasForms, HasTable
                     })
                     ->using(function (array $data) {
                         $data['created_by'] = auth()->user()->id;
-                        return Payment::create($data);
+                        $payment = Payment::create($data);
+
+                        app(PpudsNotificationService::class)->paymentCreated($payment);
+
+                        return $payment;
                     })
                     ->visible(fn() => auth()->user()->can('StudentCompany Create')),
             ])

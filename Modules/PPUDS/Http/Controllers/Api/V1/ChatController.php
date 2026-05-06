@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Modules\Core\Entities\User;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Http\Requests\ConversationRequest;
+use Modules\PPUDS\Services\PpudsNotificationService;
 use Modules\PPUDS\Transformers\V1\ConversationResource;
 use Modules\PPUDS\Transformers\V1\MessageResource;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -192,6 +193,8 @@ class ChatController extends Controller
         $message = auth()->user()->sendMessageTo($conversation, $request->body);
 
         broadcast(new MessageCreated($message));
+
+        app(PpudsNotificationService::class)->chatMessageCreated($message);
 
         return $this->successResponse(
             new MessageResource($message),

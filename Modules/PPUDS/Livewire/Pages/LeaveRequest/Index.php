@@ -33,6 +33,7 @@ use Modules\PPUDS\Entities\LeaveRequest;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\LeaveRequestStatus;
 use Modules\PPUDS\Enums\LeaveRequestType;
+use Modules\PPUDS\Services\PpudsNotificationService;
 
 class Index extends Component implements HasTable, HasForms
 {
@@ -99,7 +100,10 @@ class Index extends Component implements HasTable, HasForms
                         $data['company_approval'] = LeaveRequestStatus::PENDING ?? LeaveRequestStatus::APPROVED;
                         $data['university_approval'] = LeaveRequestStatus::PENDING ?? LeaveRequestStatus::APPROVED;
 
-                        LeaveRequest::create($data);
+                        $leaveRequest = LeaveRequest::create($data);
+
+                        app(PpudsNotificationService::class)->leaveRequestCreated($leaveRequest);
+
                         Toaster::success(__('Leave Request created successfully'));
                     })
                     ->visible(fn() => auth()->user()->can('LeaveRequest Create'))
@@ -153,6 +157,11 @@ class Index extends Component implements HasTable, HasForms
                         'company_supervisor_comment' => $data['company_supervisor_comment'],
                         'company_supervisor_id' => auth()->id(), // توثيق تلقائي للشخص
                     ]);
+
+                    if ($record->wasChanged('company_approval')) {
+                        app(PpudsNotificationService::class)->leaveRequestDecisionUpdated($record->refresh(), 'company_approval');
+                    }
+
                     Toaster::success(__('Company decision recorded successfully'));
                 })
                 // يظهر فقط إذا كان المستخدم يملك هذه الصلاحية
@@ -179,6 +188,11 @@ class Index extends Component implements HasTable, HasForms
                         'university_supervisor_comment' => $data['university_supervisor_comment'],
                         'university_supervisor_id' => auth()->id(), // توثيق تلقائي للشخص
                     ]);
+
+                    if ($record->wasChanged('university_approval')) {
+                        app(PpudsNotificationService::class)->leaveRequestDecisionUpdated($record->refresh(), 'university_approval');
+                    }
+
                     Toaster::success(__('University decision recorded successfully'));
                 })
                 // يظهر فقط إذا كان المستخدم يملك هذه الصلاحية

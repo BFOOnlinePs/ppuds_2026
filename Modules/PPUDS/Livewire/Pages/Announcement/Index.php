@@ -36,6 +36,7 @@ use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\Announcement;
 use Modules\PPUDS\Entities\Major;
 use Modules\Core\Enums\UserRole;
+use Modules\PPUDS\Services\PpudsNotificationService;
 
 class Index extends Component implements HasTable, HasForms
 {
@@ -123,6 +124,8 @@ class Index extends Component implements HasTable, HasForms
                         if (isset($data['announcement_image'])) {
                             $announcement->addMedia($data['announcement_image'])->toMediaCollection('announcement_image');
                         }
+
+                        app(PpudsNotificationService::class)->announcementCreated($announcement->refresh());
 
                         Toaster::success(__('Announcement created successfully'));
                     })

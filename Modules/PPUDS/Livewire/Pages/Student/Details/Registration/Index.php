@@ -51,13 +51,9 @@ class Index extends Component implements HasTable, HasForms
                 TextColumn::make('registration.semester')
                     ->label(__('Term'))
                     ->formatStateUsing(function ($state, $record) {
-                        $semesterLabel = ($state instanceof SemesterType)
-                            ? $state->getLabel()
-                            : (SemesterType::tryFrom($state)?->getLabel() ?? (__('Semester') . ' ' . $state));
-
                         $year = $record->registration?->year ?? $record->year;
 
-                        return "{$semesterLabel} - {$year}";
+                        return $this->semesterLabel($state).' - '.$year;
                     })
                     ->icon('solar-calendar-date-linear'),
 
@@ -152,7 +148,7 @@ class Index extends Component implements HasTable, HasForms
                                 ->disabled(),
                             TextInput::make('semester')
                                 ->label(__('Semester'))
-                                ->default(fn() => SemesterType::tryFrom($record->semester)?->getLabel() ?? $record->semester)
+                                ->default(fn() => $this->semesterLabel($record->semester))
                                 ->disabled(),
                             TextInput::make('year')
                                 ->label(__('Year'))
@@ -202,5 +198,20 @@ class Index extends Component implements HasTable, HasForms
                 ['title' => __('Registrations List'), 'url' => route('registrations.index')],
             ]
         ]);
+    }
+
+    private function semesterLabel(SemesterType|int|string|null $semester): string
+    {
+        if ($semester instanceof SemesterType) {
+            return $semester->getLabel() ?? (string) $semester->value;
+        }
+
+        if ($semester === null) {
+            return '-';
+        }
+
+        $semester = (int) $semester;
+
+        return SemesterType::tryFrom($semester)?->getLabel() ?? (__('Semester') . ' ' . $semester);
     }
 }

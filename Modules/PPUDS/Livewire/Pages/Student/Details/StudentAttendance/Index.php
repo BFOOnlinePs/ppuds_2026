@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
+use Modules\Core\Enums\UserRole;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
@@ -34,6 +35,7 @@ use Modules\PPUDS\Entities\StudentAttendance;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\AttendanceStatus;
 use Modules\PPUDS\Enums\SemesterType;
+use Modules\PPUDS\Services\PpudsNotificationService;
 use Modules\PPUDS\Settings\GeneralSettings;
 
 class Index extends Component implements HasForms, HasTable
@@ -147,7 +149,7 @@ class Index extends Component implements HasForms, HasTable
                             return;
                         }
 
-                        StudentAttendance::create([
+                        $attendance = StudentAttendance::create([
                             'student_company_id' => $data['student_company_id'],
                             'attendance_date' => now()->toDateString(),
                             'check_in' => now(),
@@ -157,6 +159,10 @@ class Index extends Component implements HasForms, HasTable
                             'description' => $data['description'],
                             'created_by' => auth()->user()->id,
                         ]);
+
+                        if (auth()->user()?->hasRole(UserRole::STUDENT->value)) {
+                            app(PpudsNotificationService::class)->attendanceCheckedIn($attendance);
+                        }
 
                         Toaster::success('Checked In Successfully');
                     }),
@@ -265,6 +271,10 @@ class Index extends Component implements HasForms, HasTable
                         'check_out_latitude' => $data['location']['lat'],
                         'check_out_longitude' => $data['location']['lng'],
                     ]);
+
+                    if (auth()->user()?->hasRole(UserRole::STUDENT->value)) {
+                        app(PpudsNotificationService::class)->attendanceCheckedOut($record->refresh());
+                    }
 
                     Toaster::success('Checked Out Successfully');
                 })

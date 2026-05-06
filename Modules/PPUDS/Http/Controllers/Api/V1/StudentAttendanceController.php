@@ -3,11 +3,13 @@
 namespace Modules\PPUDS\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use Modules\Core\Enums\UserRole;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\StudentAttendance;
 use Modules\PPUDS\Enums\AttendanceStatus;
 use Modules\PPUDS\Http\Requests\StudentAttendanceRequest;
 use Modules\PPUDS\Http\Requests\StudentAttendanceRequestUpdate;
+use Modules\PPUDS\Services\PpudsNotificationService;
 use Modules\PPUDS\Transformers\V1\StudentAttendanceResource;
 use Spatie\QueryBuilder\QueryBuilder;
 
@@ -187,6 +189,10 @@ class StudentAttendanceController extends Controller
     {
         $studentAttendance->update($request->validated());
 
+        if ($request->has('status') && $studentAttendance->wasChanged('status') && ! auth()->user()?->hasRole(UserRole::STUDENT->value)) {
+            app(PpudsNotificationService::class)->attendanceStatusUpdated($studentAttendance->refresh());
+        }
+
         return $this->successResponse(
             new StudentAttendanceResource($studentAttendance),
             __('Attendance updated successfully')
@@ -258,6 +264,10 @@ class StudentAttendanceController extends Controller
             'created_by'          => auth()->id(),
         ]);
 
+        if (auth()->user()?->hasRole(UserRole::STUDENT->value)) {
+            app(PpudsNotificationService::class)->attendanceCheckedIn($attendance);
+        }
+
         return $this->successResponse(
             new StudentAttendanceResource($attendance),
             __('Checked in successfully'),
@@ -318,6 +328,10 @@ class StudentAttendanceController extends Controller
             'check_out_latitude'  => $request->latitude,
             'check_out_longitude' => $request->longitude,
         ]);
+
+        if (auth()->user()?->hasRole(UserRole::STUDENT->value)) {
+            app(PpudsNotificationService::class)->attendanceCheckedOut($attendance->refresh());
+        }
 
         return $this->successResponse(
             new StudentAttendanceResource($attendance),

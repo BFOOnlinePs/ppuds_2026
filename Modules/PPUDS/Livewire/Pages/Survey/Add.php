@@ -25,6 +25,7 @@ use Modules\PPUDS\Entities\Major;
 use Modules\PPUDS\Entities\Survey;
 use Modules\PPUDS\Entities\SurveyQuestion;
 use Modules\PPUDS\Enums\SurveyQuestionType;
+use Modules\PPUDS\Services\PpudsNotificationService;
 use Modules\PPUDS\Settings\GeneralSettings;
 
 class Add extends Component implements HasActions, HasForms
@@ -211,6 +212,8 @@ class Add extends Component implements HasActions, HasForms
                 }
             }
         }
+
+        app(PpudsNotificationService::class)->surveyCreated($survey);
 
         Toaster::success(__('Survey created successfully'));
 

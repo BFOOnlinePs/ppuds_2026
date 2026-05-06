@@ -3,10 +3,13 @@
 namespace Modules\PPUDS\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use Modules\Core\Enums\UserRole;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\Payment;
+use Modules\PPUDS\Enums\PaymentStatus;
 use Modules\PPUDS\Http\Requests\PaymentRequest;
 use Modules\PPUDS\Http\Requests\PaymentRequestUpdate;
+use Modules\PPUDS\Services\PpudsNotificationService;
 use Modules\PPUDS\Transformers\V1\PaymentResource;
 use Spatie\QueryBuilder\QueryBuilder;
 
@@ -111,6 +114,8 @@ class PaymentController extends Controller
         }
 
         $payment->load(['studentCompany', 'currency']);
+
+        app(PpudsNotificationService::class)->paymentCreated($payment);
 
         return $this->successResponse(
             new PaymentResource($payment),
@@ -235,10 +240,22 @@ class PaymentController extends Controller
      */
     public function update(PaymentRequestUpdate $request, Payment $payment)
     {
+        $oldStatus = $payment->status;
+
         $payment->update($request->validated());
+        $payment->refresh();
+
+        if (
+            $request->has('status')
+            && $oldStatus !== $payment->status
+            && $payment->status === PaymentStatus::PAID
+            && auth()->user()?->hasRole(UserRole::STUDENT->value)
+        ) {
+            app(PpudsNotificationService::class)->paymentApprovedByStudent($payment);
+        }
 
         return $this->successResponse(
-            new PaymentResource($payment->refresh()),
+            new PaymentResource($payment),
             __('Payment updated successfully')
         );
     }

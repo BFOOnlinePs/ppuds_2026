@@ -175,7 +175,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     });
 
                     // Route::get('/chats', \Wirechat\Wirechat\Livewire\Chats\Chats::class)->name('chats');
-                    Route::get('/{conversation}', \Wirechat\Wirechat\Livewire\Chat\Chat::class)->name('show');
+                    Route::get('/{conversation}', \Modules\PPUDS\Livewire\Pages\ChatMessage\Show::class)->name('show');
                 });
 
                 Route::group([

@@ -67,7 +67,9 @@ class Index extends Component implements HasForms, HasInfolists
     #[Computed]
     public function getStudentCompanies()
     {
-        return StudentCompany::whereHas('registration', fn($q) => $q->where('student_id', auth()->id())->where('semester', $this->ppudsSettings()->semester_type)->where('year', $this->ppudsSettings()->year))->orWhereHas('registration', fn($q) => $q->where('supervisor_id', auth()->id())->where('semester', $this->ppudsSettings()->semester_type)->where('year', $this->ppudsSettings()->year))->with(['company', 'branch', 'department'])->get();
+        $semester = $this->ppudsSettings()->semester_type?->value;
+
+        return StudentCompany::whereHas('registration', fn($q) => $q->where('student_id', auth()->id())->where('semester', $semester)->where('year', $this->ppudsSettings()->year))->orWhereHas('registration', fn($q) => $q->where('supervisor_id', auth()->id())->where('semester', $semester)->where('year', $this->ppudsSettings()->year))->with(['company', 'branch', 'department'])->get();
     }
 
     public function form(Form $form): Form

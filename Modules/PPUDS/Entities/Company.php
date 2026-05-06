@@ -178,7 +178,7 @@ class Company extends Model implements TranslatableContract, HasMedia
         $settings = app(GeneralSettings::class);
 
         return $query->whereHas('registrations', function ($q) use ($settings) {
-            $q->where('semester', $settings->semester_type)
+            $q->where('semester', $settings->semester_type?->value)
                 ->where('year', $settings->year);
         });
     }

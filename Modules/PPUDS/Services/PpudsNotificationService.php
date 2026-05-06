@@ -38,6 +38,26 @@ class PpudsNotificationService
         ]));
     }
 
+    public function attendanceStatusUpdated(StudentAttendance $attendance): void
+    {
+        $attendance->loadMissing('studentCompany.student');
+
+        $status = $attendance->status;
+
+        $this->notifyUsers($this->recipients([
+            $attendance->studentCompany?->student,
+        ]), new GeneralNotification(
+            title: __('Attendance Status Updated'),
+            message: __(':side updated your attendance status to :status.', [
+                'side' => $this->actorSide(),
+                'status' => is_object($status) && method_exists($status, 'getLabel') ? $status->getLabel() : (string) $status,
+            ]),
+            url: $this->routeUrl('student-attendances.index'),
+            icon: 'heroicon-o-clipboard-document-check',
+            color: 'text-primary',
+        ));
+    }
+
     public function leaveRequestCreated(LeaveRequest $leaveRequest): void
     {
         $leaveRequest->loadMissing('studentCompany.registration.supervisor', 'studentCompany.student');
@@ -264,6 +284,21 @@ class PpudsNotificationService
     private function studentName(?StudentCompany $studentCompany): string
     {
         return $studentCompany?->student?->name ?? __('Student');
+    }
+
+    private function actorSide(): string
+    {
+        $user = auth()->user();
+
+        if ($user?->hasRole(UserRole::COMPANY_SUPERVISOR->value)) {
+            return __('Company Supervisor');
+        }
+
+        if ($user?->hasRole(UserRole::PRACTICAL_TRAINING_SUPERVISOR->value)) {
+            return __('University Supervisor');
+        }
+
+        return __('Supervisor');
     }
 
     private function studentCompanyUrl(?StudentCompany $studentCompany): string

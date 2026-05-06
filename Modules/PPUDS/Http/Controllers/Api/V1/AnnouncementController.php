@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\Announcement;
 use Modules\PPUDS\Http\Requests\AnnouncementRequest;
+use Modules\PPUDS\Services\PpudsNotificationService;
 use Modules\PPUDS\Transformers\V1\AnnouncementResource;
 use Spatie\QueryBuilder\QueryBuilder;
 
@@ -120,12 +121,18 @@ class AnnouncementController extends Controller
 
             $announcment = Announcement::create($data);
 
-            if ($request->hasFile('media')) {
-                $announcment->addMediaFromRequest('media')->toMediaCollection('announcements');
+            if ($request->hasFile('image')) {
+                $announcment->addImage($request->file('image'));
+            } elseif ($request->hasFile('media')) {
+                $announcment->addImage($request->file('media'));
             }
 
             return $announcment;
         });
+
+        $announcment->load(['media', 'translations']);
+
+        app(PpudsNotificationService::class)->announcementCreated($announcment);
 
         return $this->successResponse(
             new AnnouncementResource($announcment),

@@ -31,6 +31,7 @@ use Modules\PPUDS\Entities\Major;
 use Modules\PPUDS\Entities\StudentAttendance;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\AttendanceStatus;
+use Modules\PPUDS\Services\PpudsNotificationService;
 
 class Index extends Component implements HasForms, HasTable
 {
@@ -145,7 +146,7 @@ class Index extends Component implements HasForms, HasTable
                             return;
                         }
 
-                        StudentAttendance::create([
+                        $attendance = StudentAttendance::create([
                             'student_company_id' => $data['student_company_id'],
                             'attendance_date' => now()->toDateString(),
                             'check_in' => now(),
@@ -155,6 +156,10 @@ class Index extends Component implements HasForms, HasTable
                             'description' => $data['description'],
                             'created_by' => auth()->user()->id,
                         ]);
+
+                        if (auth()->user()?->hasRole(UserRole::STUDENT->value)) {
+                            app(PpudsNotificationService::class)->attendanceCheckedIn($attendance);
+                        }
 
                         Toaster::success('Checked In Successfully');
 
@@ -275,6 +280,10 @@ class Index extends Component implements HasForms, HasTable
                         'check_out_latitude' => $data['location']['lat'],
                         'check_out_longitude' => $data['location']['lng'],
                     ]);
+
+                    if (auth()->user()?->hasRole(UserRole::STUDENT->value)) {
+                        app(PpudsNotificationService::class)->attendanceCheckedOut($record->refresh());
+                    }
 
                     Toaster::success('Checked Out Successfully');
                 })

@@ -8,6 +8,7 @@ use Modules\PPUDS\Entities\LeaveRequest;
 use Modules\PPUDS\Enums\LeaveRequestStatus;
 use Modules\PPUDS\Http\Requests\LeaveRequestRequest;
 use Modules\PPUDS\Http\Requests\LeaveRequestUpdate;
+use Modules\PPUDS\Services\PpudsNotificationService;
 use Modules\PPUDS\Transformers\V1\LeaveRequestResource;
 use Spatie\QueryBuilder\QueryBuilder;
 
@@ -119,6 +120,8 @@ class LeaveRequestController extends Controller
             $leaveRequest->addImage($request->file('attachment_file'));
         }
 
+        app(PpudsNotificationService::class)->leaveRequestCreated($leaveRequest);
+
         return $this->successResponse(
             new LeaveRequestResource($leaveRequest),
             __('Leave Request created successfully'),
@@ -174,6 +177,15 @@ class LeaveRequestController extends Controller
     public function update(LeaveRequestUpdate $request, LeaveRequest $leaveRequest)
     {
         $leaveRequest->update($request->validated());
+
+        $changedApprovalFields = collect(['company_approval', 'university_approval'])
+            ->filter(fn (string $approvalField): bool => $request->has($approvalField) && $leaveRequest->wasChanged($approvalField));
+
+        if ($changedApprovalFields->isNotEmpty()) {
+            $leaveRequest->refresh();
+
+            $changedApprovalFields->each(fn (string $approvalField) => app(PpudsNotificationService::class)->leaveRequestDecisionUpdated($leaveRequest, $approvalField));
+        }
 
         if ($request->hasFile('attachment_file')) {
             $leaveRequest->addImage($request->file('attachment_file'));

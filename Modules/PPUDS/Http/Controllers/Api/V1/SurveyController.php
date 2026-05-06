@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\Survey;
 use Modules\PPUDS\Http\Requests\SurveyRequest; // تأكد من إنشاء هذا الريكويست
+use Modules\PPUDS\Services\PpudsNotificationService;
 use Modules\PPUDS\Transformers\V1\SurveyResource;
 use Spatie\QueryBuilder\QueryBuilder;
 
@@ -171,6 +172,8 @@ class SurveyController extends Controller
 
         // إعادة تحميل العلاقات لضمان ظهور كل شيء في الرد
         $survey->load(['translations', 'questions.translations', 'questions.options.translations']);
+
+        app(PpudsNotificationService::class)->surveyCreated($survey);
 
         return $this->successResponse(
             new SurveyResource($survey),

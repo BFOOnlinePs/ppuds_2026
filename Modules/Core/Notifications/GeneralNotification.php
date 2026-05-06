@@ -25,6 +25,7 @@ class GeneralNotification extends Notification implements ShouldBroadcastNow
     public string $url;
     public string $icon;
     public string $color;
+    public ?string $image;
 
     public function __construct(
         string $title,
@@ -32,12 +33,14 @@ class GeneralNotification extends Notification implements ShouldBroadcastNow
         string $url = '#',
         string $icon = 'bell',
         string $color = 'text-primary',
+        ?string $image = null,
     ) {
         $this->title = $title;
         $this->message = $message;
         $this->url = $url;
         $this->icon = $icon;
         $this->color = $color;
+        $this->image = $image;
     }
 
     public function via($notifiable): array
@@ -54,6 +57,7 @@ class GeneralNotification extends Notification implements ShouldBroadcastNow
             'url'     => $this->url,
             'icon'    => $this->icon,
             'color'   => $this->color,
+            'image'   => $this->image,
         ];
     }
 
@@ -65,6 +69,7 @@ class GeneralNotification extends Notification implements ShouldBroadcastNow
             'url'       => $this->url,
             'icon'      => $this->icon,
             'color'     => $this->color,
+            'image'     => $this->image,
             'sent_at'   => now()->toIso8601String(),
         ]);
     }
@@ -81,7 +86,7 @@ class GeneralNotification extends Notification implements ShouldBroadcastNow
         return (new FcmMessage(notification: new FcmNotification(
             title: $this->title,
             body: $this->message,
-            image: $this->icon
+            image: $this->image
         )))
             ->data(['data1' => 'value', 'data2' => 'value2'])
             ->custom([

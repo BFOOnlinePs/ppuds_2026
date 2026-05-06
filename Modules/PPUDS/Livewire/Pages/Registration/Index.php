@@ -147,18 +147,18 @@ class Index extends Component implements HasTable, HasForms
             ->orderBy('semester')
             ->pluck('semester')
             ->mapWithKeys(function ($semester): array {
-                $semester = (int) $semester;
+                $semester = $this->semesterValue($semester);
 
                 return [
-                    $semester => SemesterType::tryFrom($semester)?->getLabel() ?? (string) $semester,
+                    $semester => $this->semesterLabel($semester),
                 ];
             })
             ->toArray();
 
-        $currentSemester = app(GeneralSettings::class)->semester_type?->value;
+        $currentSemester = $this->semesterValue(app(GeneralSettings::class)->semester_type);
 
         if ($currentSemester !== null) {
-            $options[$currentSemester] = SemesterType::tryFrom((int) $currentSemester)?->getLabel() ?? (string) $currentSemester;
+            $options[$currentSemester] = $this->semesterLabel($currentSemester);
         }
 
         ksort($options);
@@ -224,7 +224,7 @@ class Index extends Component implements HasTable, HasForms
                                 ->disabled(),
                             TextInput::make('semester')
                                 ->label(__('Semester'))
-                                ->default(fn() => SemesterType::tryFrom($record->semester)?->getLabel() ?? $record->semester)
+                                ->default(fn() => $this->semesterLabel($record->semester))
                                 ->disabled(),
                             TextInput::make('year')
                                 ->label(__('Year'))
@@ -274,5 +274,27 @@ class Index extends Component implements HasTable, HasForms
                 ['title' => __('Registrations List'), 'url' => route('registrations.index')],
             ]
         ]);
+    }
+
+    private function semesterValue(SemesterType|int|string|null $semester): ?int
+    {
+        if ($semester instanceof SemesterType) {
+            return $semester->value;
+        }
+
+        return $semester === null ? null : (int) $semester;
+    }
+
+    private function semesterLabel(SemesterType|int|string|null $semester): string
+    {
+        if ($semester instanceof SemesterType) {
+            return $semester->getLabel() ?? (string) $semester->value;
+        }
+
+        $semesterValue = $this->semesterValue($semester);
+
+        return $semesterValue === null
+            ? '-'
+            : (SemesterType::tryFrom($semesterValue)?->getLabel() ?? (string) $semesterValue);
     }
 }
