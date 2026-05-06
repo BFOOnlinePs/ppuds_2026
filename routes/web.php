@@ -20,27 +20,29 @@ use Wirechat\Wirechat\Livewire\Chats\Chats;
 //     })->name('dashboard');
 // });
 
+Route::view('/privacy-policy', 'privacy')->name('privacy.policy');
+
 Route::get('/test-realtime', function () {
     // نضع هنا نفس اسم القناة التي نجحت في الاشتراك بها في Postman
-    $channelName = 'flutter.chats.conversation.019c9906-7928-7009-94f8-487cb30f176f'; 
+    $channelName = 'flutter.chats.conversation.019c9906-7928-7009-94f8-487cb30f176f';
 
     // إطلاق حدث وهمي (Anonymous Event) للبث الفوري
     broadcast(new class($channelName) implements ShouldBroadcastNow {
         public $channel;
-        
+
         public function __construct($channel) {
             $this->channel = $channel;
         }
-        
+
         public function broadcastOn() {
             // نستخدم Channel عادية هنا لأنك اشتركت بدون كلمة private- في Postman
-            return new Channel($this->channel); 
+            return new Channel($this->channel);
         }
-        
+
         public function broadcastAs() {
             return 'MessageSent'; // اسم الحدث
         }
-        
+
         public function broadcastWith() {
             return [
                 'sender' => 'Laravel Server',
