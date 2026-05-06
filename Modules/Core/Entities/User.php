@@ -215,19 +215,8 @@ class User extends Authenticatable implements HasMedia, WirechatUser
     private function generateInitials(string $name): array
     {
         $name = trim($name);
-        $words = explode(' ', $name);
-        $initialsArray = [];
         $isArabic = (bool) preg_match('/[\p{Arabic}]/u', $name);
-
-        if (! empty($words[0])) {
-            $initialsArray[] = mb_strtoupper(mb_substr($words[0], 0, 1));
-        }
-
-        if (count($words) > 1) {
-            $initialsArray[] = mb_strtoupper(mb_substr(end($words), 0, 1));
-        }
-
-        $initials = implode('', $initialsArray);
+        $initials = mb_strtoupper(mb_substr($name, 0, 1));
 
         return ['initials' => $initials, 'is_arabic' => $isArabic];
     }

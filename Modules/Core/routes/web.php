@@ -35,7 +35,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     'as' => '',
                     'namespace' => 'Modules\Core\Livewire\Pages\Settings',
                 ], function () {
-                    Route::get('/settings', Index::class)->name('settings');
+                    Route::get('/settings', Index::class)->name('settings')->can('Setting View List');
                 });
 
                 Route::group([
@@ -51,7 +51,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     'as' => '',
                     'namespace' => 'Modules\Core\Livewire\Pages\Roles',
                 ], function () {
-                    Route::get('/roles', Index::class)->name('roles.index');
+                    Route::get('/roles', Index::class)->name('roles.index')->can('Roles And Permissions View List');
                 });
 
                 Route::group([

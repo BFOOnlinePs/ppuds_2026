@@ -49,7 +49,7 @@ class Index extends Component implements HasTable, HasForms
             ->emptyStateActions([
                 CreateAction::make()
                     ->label(__('Add Currency'))
-                    ->visible(fn() => auth()->user()->can('Currency Create'))
+                    ->visible(fn() => auth()->user()->can('Brand Create'))
             ])
             ->columns([
                 ImageColumn::make('image')
@@ -63,7 +63,7 @@ class Index extends Component implements HasTable, HasForms
                     ->icon('solar-pen-new-square-bold')
                     ->action(
                         EditAction::make('edit')
-                            ->visible(fn() => auth()->user()->can('Currency Edit'))
+                            ->visible(fn() => auth()->user()->can('Brand Update'))
                     ),
                 TextColumn::make('slug')
                     ->label(__('Slug'))
@@ -133,7 +133,7 @@ class Index extends Component implements HasTable, HasForms
 
                         Toaster::success(__('Currency created successfully'));
                     })
-                    ->visible(fn() => auth()->user()->can('Currency Create'))
+                    ->visible(fn() => auth()->user()->can('Brand Create'))
             ])
             ->bulkActions($this->getTableBulkAction());
     }
@@ -168,7 +168,7 @@ class Index extends Component implements HasTable, HasForms
             // ActivityLogAction::make('activity_log')->label(__('Activity Log')),
             InfoAction::make('info')
                 ->label('')
-                ->visible(fn() => auth()->user()->can('Currency Info')),
+                ->visible(fn() => auth()->user()->can('Brand Info')),
             ViewAction::make('view')
                 ->form(function (Forms\Form $form, $record) {
                     return $form->schema([
@@ -194,7 +194,7 @@ class Index extends Component implements HasTable, HasForms
                     ]);
                 })
                 ->modalSubmitAction(false)
-                ->visible(fn() => auth()->user()->can('Currency View')),
+                ->visible(fn() => auth()->user()->can('Brand View')),
             EditAction::make('edit')
                 ->label('')
                 ->modalHeading(__('Edit Currency'))
@@ -239,7 +239,7 @@ class Index extends Component implements HasTable, HasForms
                     $data['locale'] = app()->getLocale();
                     return $data;
                 })
-                ->visible(fn() => auth()->user()->can('Currency Update'))
+                ->visible(fn() => auth()->user()->can('Brand Update'))
                 ->action(function ($form, array $data, $record) {
 
                     $imageComponent = collect($form->getFlatComponents())
@@ -262,7 +262,7 @@ class Index extends Component implements HasTable, HasForms
 
                     Toaster::success(__('Currency deleted successfully'));
                 })
-                ->visible(fn() => auth()->user()->can('Currency Delete')),
+                ->visible(fn() => auth()->user()->can('Brand Delete')),
         ];
     }
 
@@ -274,7 +274,7 @@ class Index extends Component implements HasTable, HasForms
                     ->label(__('Delete'))
                     ->requiresConfirmation()
                     ->action(fn(Collection $records) => $records->each->delete())
-                    ->visible(fn() => auth()->user()->can('Currency Delete')),
+                    ->visible(fn() => auth()->user()->can('Brand Delete')),
             ])
         ];
     }

@@ -57,7 +57,7 @@ class Index extends Component implements HasTable, HasForms
                     ->icon('solar-pen-new-square-bold')
                     ->action(
                         EditAction::make('edit')
-                            ->visible(fn() => auth()->user()->can('Label Edit')),
+                            ->visible(fn() => auth()->user()->can('Label Update')),
                     ),
                 TextColumn::make('slug')
                     ->label(__('Slug'))

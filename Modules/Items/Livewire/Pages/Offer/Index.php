@@ -163,7 +163,7 @@ class Index extends Component implements HasTable, HasForms
                     ->label(__('Delete'))
                     ->requiresConfirmation()
                     ->action(fn(Collection $records) => $records->each->delete())
-                    ->visible(fn() => auth()->user()->can('Appointment Delete')),
+                    ->visible(fn() => auth()->user()->can('Offer Delete')),
             ])
         ];
     }

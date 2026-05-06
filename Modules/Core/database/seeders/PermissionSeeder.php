@@ -73,58 +73,63 @@ class PermissionSeeder extends Seeder
                 'module_name' => 'Currency Management',
             ],
 
-            // TODO Currency
+            // TODO Roles And Permissions
             [
                 'name' => 'Roles And Permissions View List',
                 'guard_name' => 'web',
-                'module_name' => 'Currency Management',
+                'module_name' => 'Roles And Permissions',
             ],
             [
                 'name' => 'Roles And Permissions Create',
                 'guard_name' => 'web',
-                'module_name' => 'Currency Management',
+                'module_name' => 'Roles And Permissions',
             ],
             [
                 'name' => 'Roles And Permissions Update',
                 'guard_name' => 'web',
-                'module_name' => 'Currency Management',
+                'module_name' => 'Roles And Permissions',
             ],
             [
                 'name' => 'Roles And Permissions Delete',
                 'guard_name' => 'web',
-                'module_name' => 'Currency Management',
+                'module_name' => 'Roles And Permissions',
             ],
             [
                 'name' => 'Roles And Permissions View',
                 'guard_name' => 'web',
-                'module_name' => 'Currency Management',
+                'module_name' => 'Roles And Permissions',
             ],
 
-            // TODO Currency
+            // TODO Settings
             [
                 'name' => 'Setting View List',
                 'guard_name' => 'web',
-                'module_name' => 'Currency Management',
+                'module_name' => 'Settings',
             ],
             [
                 'name' => 'Setting Create',
                 'guard_name' => 'web',
-                'module_name' => 'Currency Management',
+                'module_name' => 'Settings',
             ],
             [
                 'name' => 'Setting Update',
                 'guard_name' => 'web',
-                'module_name' => 'Currency Management',
+                'module_name' => 'Settings',
             ],
             [
                 'name' => 'Setting Delete',
                 'guard_name' => 'web',
-                'module_name' => 'Currency Management',
+                'module_name' => 'Settings',
             ],
             [
                 'name' => 'Setting View',
                 'guard_name' => 'web',
-                'module_name' => 'Currency Management',
+                'module_name' => 'Settings',
+            ],
+            [
+                'name' => 'General Settings Update',
+                'guard_name' => 'web',
+                'module_name' => 'Settings',
             ],
         ];
 

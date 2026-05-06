@@ -469,6 +469,23 @@ class PermissionSeeder extends Seeder
                 'module_name' => 'Student Attendance',
             ],
 
+            // TODO StudentReport
+            [
+                'name' => 'StudentReport View',
+                'guard_name' => 'web',
+                'module_name' => 'Student Report',
+            ],
+            [
+                'name' => 'StudentReport Info',
+                'guard_name' => 'web',
+                'module_name' => 'Student Report',
+            ],
+            [
+                'name' => 'StudentReport Delete',
+                'guard_name' => 'web',
+                'module_name' => 'Student Report',
+            ],
+
 
 
             // TODO Survey

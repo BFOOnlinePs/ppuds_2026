@@ -54,7 +54,7 @@ class Index extends Component implements HasTable, HasForms
             ->emptyStateActions([
                 CreateAction::make()
                     ->label(__('Add Loyalty Tier'))
-                    ->visible(fn() => auth()->user()->can('Loyalty Tier Create'))
+                    ->visible(fn() => auth()->user()->can('Loyalty Tiers Create'))
             ])
             ->columns([
                 TextColumn::make('name')
@@ -93,7 +93,7 @@ class Index extends Component implements HasTable, HasForms
                             ])
                     ])
                     ->using(function ($data , $action){
-                        $this->authorize('Loyalty Tier Create');
+                        $this->authorize('Loyalty Tiers Create');
                         $data['created_by'] = auth()->id();
                         $loyaltyTier = LoyaltyTier::create($data);
                         return $loyaltyTier;
@@ -101,7 +101,7 @@ class Index extends Component implements HasTable, HasForms
                     ->after(function (){
                         Toaster::success(__('Loyalty Tier created successfully'));
                     })
-                    ->visible(fn() => auth()->user()->can('Loyalty Tier Create')),
+                    ->visible(fn() => auth()->user()->can('Loyalty Tiers Create')),
             ])
             ->bulkActions($this->getTableBulkAction());
     }
@@ -188,7 +188,7 @@ class Index extends Component implements HasTable, HasForms
                     ->label(__('Delete'))
                     ->requiresConfirmation()
                     ->action(fn(Collection $records) => $records->each->delete())
-                    ->visible(fn() => auth()->user()->can('Loyalty Tier Delete')),
+                    ->visible(fn() => auth()->user()->can('Loyalty Tiers Delete')),
             ])
         ];
     }

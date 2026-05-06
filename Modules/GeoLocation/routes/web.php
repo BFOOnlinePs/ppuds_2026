@@ -31,7 +31,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     ], function () {
                         Route::get('/', Index::class)->name('index')->can('Country View List');
                         Route::get('/add', Add::class)->name('add')->can('Country Create');
-                        Route::get('/{country}/edit', Edit::class)->name('edit')->can('Country Edit');
+                        Route::get('/{country}/edit', Edit::class)->name('edit')->can('Country Update');
                     });
                     Route::group([
                         'prefix' => 'governorates',
@@ -57,7 +57,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         'namespace' => 'Modules\GeoLocation\Livewire\Pages\District',
                     ], function () {
                         Route::get('/', Index::class)->name('index')->can('District View List');
-                        Route::get('/add', Add::class)->name('add')->can('District Add');
+                        Route::get('/add', Add::class)->name('add')->can('District Create');
                         Route::get('/{district}/edit', Edit::class)->name('edit')->can('District Update');
                     });
                 });

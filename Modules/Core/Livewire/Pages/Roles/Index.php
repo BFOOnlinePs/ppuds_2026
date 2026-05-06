@@ -10,7 +10,9 @@ use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Tables\Actions\Action as TableAction;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ViewColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
@@ -21,6 +23,7 @@ use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Index extends Component implements HasTable, HasForms
 {
@@ -38,10 +41,23 @@ class Index extends Component implements HasTable, HasForms
             ->columns($this->getTableColumns())
             ->headerActions($this->getTableHeaderActions())
             ->actions([
-                EditAction::make('edit') 
+                TableAction::make('permissions')
+                    ->label(__('View Permissions'))
+                    ->icon('heroicon-o-shield-check')
+                    ->color('gray')
+                    ->modalHeading(fn (Role $record): string => __('Permissions').': '.__($record->name))
+                    ->modalContent(fn (Role $record) => view('core::filament.tables.columns.role-permissions-details', [
+                        'summary' => $this->getRolePermissionSummary($record),
+                    ]))
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel(__('Close'))
+                    ->modalWidth('5xl'),
+
+                EditAction::make('edit')
                     ->label(__('Edit'))
                     ->form($this->getFormSchema())
                     ->slideOver()
+                    ->visible(fn () => auth()->user()->can('Roles And Permissions Update'))
                     ->mountUsing(function (\Filament\Forms\Form $form, Model $record) {
                         $form->fill([
                             'name' => $record->name,
@@ -49,6 +65,8 @@ class Index extends Component implements HasTable, HasForms
                         ]);
                     })
                     ->action(function (Model $record, array $data) {
+                        $this->authorize('Roles And Permissions Update');
+
                         $record->update(['name' => $data['name']]);
                         $record->permissions()->sync($data['permissions'] ?? []);
                     }),
@@ -62,13 +80,15 @@ class Index extends Component implements HasTable, HasForms
         return [
             TextColumn::make('name')
                 ->label(__('Role Name'))
+                ->formatStateUsing(fn (string $state): string => __($state))
                 ->sortable()
-                ->searchable(), // إضافة البحث قد تكون مفيدة هنا
-            
-            TextColumn::make('permissions.name')
-                ->label(__('Permissions'))
-                ->wrap()
-                ->badge(), // عرض الصلاحيات كشريط (Badge) يعطي مظهر أفضل (اختياري)
+                ->searchable()
+                ->width('220px'),
+
+            ViewColumn::make('permissions_summary')
+                ->label(__('Permission Groups'))
+                ->getStateUsing(fn (Role $record): array => $this->getRolePermissionSummary($record, 12))
+                ->view('core::filament.tables.columns.permission-summary'),
         ];
     }
 
@@ -79,6 +99,7 @@ class Index extends Component implements HasTable, HasForms
                 ->label(__('Create Role'))
                 ->form($this->getFormSchema())
                 ->action(fn(array $data) => $this->saveRole($data))
+                ->visible(fn () => auth()->user()->can('Roles And Permissions Create'))
                 ->slideOver(), // فتح الفورم من الجانب يعطي تجربة مستخدم أفضل (اختياري)
         ];
     }
@@ -109,10 +130,13 @@ class Index extends Component implements HasTable, HasForms
                             $set('permissions', $state ? $allPermissionIds : [])
                         )
                         ->columnSpan(1),
-                ])->columns(2), // ترتيب الحقول بجانب بعضها
+                ])
+                ->columns(2), // ترتيب الحقول بجانب بعضها
 
             // القسم الثاني: شبكة الصلاحيات
             Section::make(__('Assign Permissions'))
+                ->description(__('Permissions are grouped by feature. Open only the group you want to edit.'))
+                ->collapsible()
                 ->schema([
                     Grid::make([
                         'default' => 1,
@@ -130,19 +154,34 @@ class Index extends Component implements HasTable, HasForms
      */
     private function getPermissionSections(): array
     {
-        $allPermissions = Permission::all();
-        $grouped        = $allPermissions->groupBy('module_name');
+        $allPermissions = Permission::query()->get();
+        $grouped = $allPermissions->groupBy(fn (Permission $permission) => $this->resolvePermissionModule($permission));
 
-        return $grouped->map(function ($permissions, $module) {
-            $opts = $permissions->pluck('name', 'id')->toArray();
+        return $grouped
+            ->sortKeysUsing(fn (string $a, string $b) => strnatcasecmp($this->translateModuleName($a), $this->translateModuleName($b)))
+            ->map(function ($permissions, $module) {
+            $permissions = $permissions->sortBy(fn (Permission $permission) => sprintf(
+                '%03d-%s',
+                $this->permissionSortWeight($permission->name),
+                $permission->name
+            ));
+
+            $opts = $permissions
+                ->mapWithKeys(fn (Permission $permission) => [
+                    $permission->id => $this->translatePermissionName($permission->name),
+                ])
+                ->toArray();
             $ids  = array_keys($opts);
-            $key  = 'select_all_' . str_replace(' ', '_', strtolower($module));
+            $key  = 'select_all_' . Str::slug($module, '_');
 
-            return Section::make(__($module))
+            return Section::make($this->translateModuleName($module))
+                ->description(count($ids).' '.__('Permissions'))
+                ->collapsible()
+                ->collapsed()
                 ->columnSpan(1)
                 ->schema([
                     Checkbox::make($key)
-                        ->label(__('Select All in ' . $module))
+                        ->label(__('Select All Permissions'))
                         ->reactive()
                         ->afterStateUpdated(function (bool $state, callable $set, callable $get) use ($ids) {
                             $current = $get('permissions') ?? [];
@@ -157,13 +196,233 @@ class Index extends Component implements HasTable, HasForms
                     CheckboxList::make('permissions')
                         ->label('')
                         ->options($opts)
-                        ->columns(2),
+                        ->bulkToggleable()
+                        ->columns([
+                            'default' => 1,
+                            'md' => 2,
+                        ]),
                 ]);
         })->values()->toArray();
     }
 
+    private function resolvePermissionModule(Permission $permission): string
+    {
+        [$module] = $this->splitPermissionName($permission->name);
+
+        return $module ?: ($permission->module_name ?: __('Other'));
+    }
+
+    private function getRolePermissionSummary(Role $role, ?int $groupLimit = null): array
+    {
+        $groups = $role->permissions
+            ->groupBy(fn (Permission $permission) => $this->resolvePermissionModule($permission))
+            ->map(function ($permissions, string $module): array {
+                $permissions = $permissions->sortBy(fn (Permission $permission) => sprintf(
+                    '%03d-%s',
+                    $this->permissionSortWeight($permission->name),
+                    $permission->name
+                ));
+
+                return [
+                    'label' => $this->translateModuleName($module),
+                    'count' => $permissions->count(),
+                    'actions' => $permissions
+                        ->map(fn (Permission $permission): string => $this->translatePermissionActionFromName($permission->name))
+                        ->values()
+                        ->toArray(),
+                ];
+            })
+            ->sortBy('label', SORT_NATURAL | SORT_FLAG_CASE)
+            ->values();
+
+        $visibleGroups = $groupLimit ? $groups->take($groupLimit) : $groups;
+
+        return [
+            'total' => $role->permissions->count(),
+            'group_count' => $groups->count(),
+            'groups' => $visibleGroups->values()->toArray(),
+            'more_groups' => $groupLimit ? max($groups->count() - $groupLimit, 0) : 0,
+        ];
+    }
+
+    private function translatePermissionActionFromName(string $permission): string
+    {
+        [, $action] = $this->splitPermissionName($permission);
+
+        return $action ? $this->translatePermissionAction($action) : $this->translatePermissionName($permission);
+    }
+
+    private function permissionSortWeight(string $permission): int
+    {
+        [, $action] = $this->splitPermissionName($permission);
+
+        return [
+            'View List' => 10,
+            'List' => 11,
+            'Create' => 20,
+            'View' => 30,
+            'Info' => 40,
+            'View Details' => 50,
+            'Details' => 51,
+            'Details List' => 52,
+            'Update' => 60,
+            'Delete' => 70,
+            'Submit' => 80,
+            'Report List' => 90,
+            'Print' => 100,
+            'Invoice' => 110,
+        ][$action] ?? 999;
+    }
+
+    private function splitPermissionName(string $permission): array
+    {
+        $actions = [
+            'View Details',
+            'Details List',
+            'View List',
+            'Report List',
+            'Branch Pricings',
+            'CompanyApprove',
+            'UniversityApprove',
+            'Create',
+            'Update',
+            'Delete',
+            'View',
+            'Info',
+            'Details',
+            'Submit',
+            'Print',
+            'Invoice',
+            'List',
+        ];
+
+        foreach ($actions as $action) {
+            if (Str::endsWith($permission, ' '.$action)) {
+                return [trim(Str::beforeLast($permission, ' '.$action)), $action];
+            }
+        }
+
+        return [$permission, null];
+    }
+
+    private function translatePermissionName(string $permission): string
+    {
+        if (! str_starts_with(app()->getLocale(), 'ar')) {
+            return Str::headline($permission);
+        }
+
+        [$module, $action] = $this->splitPermissionName($permission);
+        $moduleLabel = $this->translateModuleName($module);
+        $actionLabel = $action ? $this->translatePermissionAction($action) : null;
+
+        return $actionLabel ? "{$moduleLabel} - {$actionLabel}" : $moduleLabel;
+    }
+
+    private function translateModuleName(?string $module): string
+    {
+        $module = trim((string) $module);
+        $module = preg_replace('/\s+Management$/', '', $module);
+
+        if (! str_starts_with(app()->getLocale(), 'ar')) {
+            return Str::headline($module);
+        }
+
+        return [
+            'Addon' => 'الإضافات',
+            'Announcement' => 'الإعلانات',
+            'Appointment' => 'المواعيد',
+            'Attribute' => 'الخصائص',
+            'Banner' => 'البنرات',
+            'Branch' => 'الفروع',
+            'Brand' => 'العلامات التجارية',
+            'Category' => 'التصنيفات',
+            'City' => 'المدن',
+            'Clinic Setting' => 'إعدادات العيادة',
+            'Clinic Survey Question' => 'أسئلة استبيانات العيادة',
+            'Company' => 'الشركات',
+            'Company Category' => 'تصنيفات الشركات',
+            'Company Department' => 'أقسام الشركات',
+            'Content' => 'المحتوى',
+            'Country' => 'الدول',
+            'Coupon' => 'الكوبونات',
+            'Course' => 'المساقات',
+            'Currency' => 'العملات',
+            'Customer' => 'العملاء',
+            'Customer Program' => 'برامج العملاء',
+            'Delivery Pricing' => 'تسعير التوصيل',
+            'Delivery Zone' => 'مناطق التوصيل',
+            'Disease' => 'الأمراض',
+            'District' => 'المناطق',
+            'Faq' => 'الأسئلة الشائعة',
+            'FieldVisit' => 'الزيارات الميدانية',
+            'Food' => 'الأطعمة',
+            'Food Category' => 'تصنيفات الأطعمة',
+            'Food Item' => 'عناصر الطعام',
+            'General Settings' => 'الإعدادات العامة',
+            'GeoLocation' => 'المواقع الجغرافية',
+            'Governorate' => 'المحافظات',
+            'Label' => 'الوسوم المرئية',
+            'LeaveRequest' => 'طلبات الإذن والمغادرة',
+            'Loyalty Rules' => 'قواعد الولاء',
+            'Loyalty Tiers' => 'مستويات الولاء',
+            'Major' => 'التخصصات',
+            'Marketing' => 'التسويق',
+            'Note' => 'الملاحظات',
+            'Offer' => 'العروض',
+            'Order' => 'الطلبات',
+            'Page' => 'الصفحات',
+            'Product' => 'المنتجات',
+            'Program' => 'البرامج',
+            'Program Category' => 'تصنيفات البرامج',
+            'Program Details' => 'تفاصيل البرامج',
+            'Program Instruction' => 'تعليمات البرامج',
+            'Program Type Of Meal' => 'أنواع وجبات البرامج',
+            'Registration' => 'التسجيلات',
+            'Report' => 'التقارير',
+            'Roles And Permissions' => 'الأدوار والصلاحيات',
+            'Room' => 'الغرف',
+            'Setting' => 'الإعدادات',
+            'Settings' => 'الإعدادات',
+            'Student' => 'الطلاب',
+            'StudentAttendance' => 'الحضور والمغادرة',
+            'StudentCompany' => 'تدريب الطلاب في الشركات',
+            'StudentReport' => 'التقارير اليومية',
+            'Subscription' => 'الاشتراكات',
+            'Survey' => 'الاستبيانات',
+            'Tag' => 'الوسوم',
+            'Type Of Meal' => 'أنواع الوجبات',
+            'User' => 'المستخدمون',
+            'WorkExperience' => 'الخبرات العملية',
+        ][$module] ?? Str::headline($module);
+    }
+
+    private function translatePermissionAction(string $action): string
+    {
+        return [
+            'Branch Pricings' => 'تسعير الفروع',
+            'CompanyApprove' => 'موافقة الشركة',
+            'Create' => 'إضافة',
+            'Delete' => 'حذف',
+            'Details' => 'تفاصيل',
+            'Details List' => 'قائمة التفاصيل',
+            'Info' => 'معلومات',
+            'Invoice' => 'فاتورة',
+            'List' => 'قائمة',
+            'Print' => 'طباعة',
+            'Report List' => 'قائمة التقارير',
+            'Submit' => 'تسليم',
+            'UniversityApprove' => 'موافقة الجامعة',
+            'Update' => 'تعديل',
+            'View' => 'عرض',
+            'View Details' => 'عرض التفاصيل',
+            'View List' => 'عرض القائمة',
+        ][$action] ?? Str::headline($action);
+    }
+
     protected function saveRole(array $data): void
     {
+        $this->authorize('Roles And Permissions Create');
+
         $role = Role::create([
             'name' => $data['name'],
         ]);

@@ -155,7 +155,7 @@ class Index extends Component implements HasForms, HasTable
         return [
             InfoAction::make('info')
                 ->label('')
-                ->visible(fn () => auth()->user()->can('Course Info')),
+                ->visible(fn () => auth()->user()->can('FieldVisit Info')),
 
             ViewAction::make('view')
                 ->label('')

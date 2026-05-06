@@ -122,26 +122,26 @@ class Index extends Component implements HasForms, HasTable
                     ]);
                 })
                 ->modalSubmitAction(false)
-                ->visible(fn () => auth()->user()->can('Company Category View')),
+                ->visible(fn () => auth()->user()->can('Company View')),
 
             Action::make('details')
                 ->label('')
                 ->size('xl')
                 ->icon('heroicon-o-user')
                 ->url(fn ($record) => route('companies.details', $record))
-                ->visible(fn () => auth()->user()->can('Student Details List')),
+                ->visible(fn () => auth()->user()->can('Company Details List')),
 
             EditAction::make('edit')
                 ->url(fn (Company $record) => route('companies.edit', $record->id))
-                ->visible(fn () => auth()->user()->can('Company Category Update')),
+                ->visible(fn () => auth()->user()->can('Company Update')),
 
             DeleteAction::make('delete')
                 ->action(function ($record) {
-                    $this->authorize('Company Category Delete');
+                    $this->authorize('Company Delete');
                     $record->delete();
-                    Toaster::success(__('Company category deleted successfully'));
+                    Toaster::success(__('Company deleted successfully'));
                 })
-                ->visible(fn () => auth()->user()->can('Company Category Delete')),
+                ->visible(fn () => auth()->user()->can('Company Delete')),
         ];
     }
 

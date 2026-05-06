@@ -73,7 +73,7 @@ class Index extends Component implements HasTable, HasForms
                     )
                     ->action(
                         EditAction::make('edit')
-                            ->visible(fn() => auth()->user()->can('Addon Edit'))
+                            ->visible(fn() => auth()->user()->can('Addon Update'))
                     ),
                 TextColumn::make('description')
                     ->label(__('Description')),
@@ -96,7 +96,7 @@ class Index extends Component implements HasTable, HasForms
                 CreateAction::make('create')
                     ->label(__('Add Addon'))
                     ->url(fn() => route('addons.add'))
-                    ->visible(fn() => auth()->user()->can('Currency Create'))
+                    ->visible(fn() => auth()->user()->can('Addon Create'))
             ])
             ->bulkActions($this->getTableBulkAction());
     }
@@ -176,7 +176,7 @@ class Index extends Component implements HasTable, HasForms
                     ->label(__('Delete'))
                     ->requiresConfirmation()
                     ->action(fn(Collection $records) => $records->each->delete())
-                    ->visible(fn() => auth()->user()->can('Currency Delete')),
+                    ->visible(fn() => auth()->user()->can('Addon Delete')),
             ])
         ];
     }

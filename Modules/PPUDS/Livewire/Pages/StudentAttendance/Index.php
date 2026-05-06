@@ -243,7 +243,7 @@ class Index extends Component implements HasForms, HasTable
                 BulkAction::make('delete')
                     ->label(__('Delete'))
                     ->requiresConfirmation()
-                    ->visible(fn () => auth()->user()->can('Major Delete'))
+                    ->visible(fn () => auth()->user()->can('StudentAttendance Delete'))
                     ->action(fn (Collection $records) => $records->each->delete()),
             ]),
         ];
@@ -289,7 +289,7 @@ class Index extends Component implements HasForms, HasTable
                 ),
             InfoAction::make('info')
                 ->label('')
-                ->visible(fn () => auth()->user()->can('Major Info')),
+                ->visible(fn () => auth()->user()->can('StudentAttendance Info')),
             ViewAction::make('view')
                 ->form(function (Forms\Form $form, $record) {
                     return $form->schema([
@@ -311,7 +311,7 @@ class Index extends Component implements HasForms, HasTable
                     ]);
                 })
                 ->modalSubmitAction(false)
-                ->visible(fn () => auth()->user()->can('Major View')),
+                ->visible(fn () => auth()->user()->can('StudentAttendance View')),
             EditAction::make('edit')
                 ->form(function (Major $record) {
                     return [
@@ -337,15 +337,15 @@ class Index extends Component implements HasForms, HasTable
                     $record->update($data);
                     Toaster::success(__('Major updated successfully'));
                 })
-                ->visible(fn () => auth()->user()->can('Major Update')),
+                ->visible(fn () => auth()->user()->can('StudentAttendance Update')),
 
             DeleteAction::make('delete')
                 ->action(function ($record) {
-                    $this->authorize('Major Delete');
+                    $this->authorize('StudentAttendance Delete');
                     $record->delete();
-                    Toaster::success(__('Major deleted successfully'));
+                    Toaster::success(__('Attendance deleted successfully'));
                 })
-                ->visible(fn () => auth()->user()->can('Major Delete')),
+                ->visible(fn () => auth()->user()->can('StudentAttendance Delete')),
         ];
     }
 

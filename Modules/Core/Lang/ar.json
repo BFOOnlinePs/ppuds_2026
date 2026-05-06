@@ -89,8 +89,11 @@
     "Image is required": "الصورة مطلوبة",
 
     "Create Role": "إنشاء دور",
+    "Role Details": "تفاصيل الدور",
     "Role Name": "اسم الدور",
     "Permissions": "الصلاحيات",
+    "Assign Permissions": "تحديد الصلاحيات",
+    "Permissions are grouped by feature. Open only the group you want to edit.": "الصلاحيات مرتبة حسب الميزة. افتح فقط المجموعة التي تريد تعديلها.",
     "Role": "الدور",
     "Select All Permissions": "حدد كل الصلاحيات",
 
@@ -182,5 +185,10 @@
     "Practical Training Supervisor": "مشرف التدريب العملي",
     "Company Supervisor": "مشرف الشركة",
 
-    "Read more": "قراءة المزيد"
+    "Read more": "قراءة المزيد",
+    "Permission Groups": "مجموعات الصلاحيات",
+    "View Permissions": "عرض الصلاحيات",
+    "Groups": "مجموعات",
+    "more groups": "مجموعات أخرى",
+    "No permissions assigned": "لا توجد صلاحيات مضافة"
 }
