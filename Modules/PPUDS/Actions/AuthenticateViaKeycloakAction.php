@@ -58,7 +58,10 @@ class AuthenticateViaKeycloakAction
 
             Auth::login($user);
 
-            session(['keycloak_access_token' => $keycloakUser->token]);
+            session([
+                'keycloak_access_token'  => $keycloakUser->token,
+                'keycloak_refresh_token' => $keycloakUser->refreshToken,
+            ]);
 
             return $user;
         });

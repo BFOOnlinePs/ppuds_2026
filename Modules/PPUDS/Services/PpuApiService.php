@@ -18,7 +18,53 @@ class PpuApiService
             throw new \Exception('لا يوجد صلاحية للوصول إلى بيانات الجامعة. يرجى تسجيل الدخول عبر بوابة الجامعة.');
         }
 
+        if ($this->isTokenExpired($token)) {
+            $token = $this->refreshToken();
+        }
+
         return $token;
+    }
+
+    private function isTokenExpired(string $token): bool
+    {
+        $payload = json_decode(base64_decode(explode('.', $token)[1] ?? '{}'), true);
+        $exp = $payload['exp'] ?? 0;
+
+        return ($exp - 30) < now()->timestamp;
+    }
+
+    private function refreshToken(): string
+    {
+        $refreshToken = session('keycloak_refresh_token');
+        if (!$refreshToken) {
+            throw new \Exception('انتهت صلاحية التوكن ولا يوجد توكن تحديث. يرجى تسجيل الدخول مرة أخرى.');
+        }
+
+        $baseUrl = config('services.keycloak.base_url');
+        $realm = config('services.keycloak.realms');
+        $clientId = config('services.keycloak.client_id');
+        $clientSecret = config('services.keycloak.client_secret');
+
+        $response = Http::asForm()->post("{$baseUrl}/realms/{$realm}/protocol/openid-connect/token", [
+            'grant_type'    => 'refresh_token',
+            'client_id'     => $clientId,
+            'client_secret' => $clientSecret,
+            'refresh_token' => $refreshToken,
+        ]);
+
+        if (!$response->successful()) {
+            session()->forget(['keycloak_access_token', 'keycloak_refresh_token']);
+            throw new \Exception('فشل تحديث التوكن. يرجى تسجيل الدخول مرة أخرى.');
+        }
+
+        $data = $response->json();
+
+        session([
+            'keycloak_access_token'  => $data['access_token'],
+            'keycloak_refresh_token' => $data['refresh_token'] ?? $refreshToken,
+        ]);
+
+        return $data['access_token'];
     }
 
     public static function logToTerminal(string $message, ?int $userId = null): void
