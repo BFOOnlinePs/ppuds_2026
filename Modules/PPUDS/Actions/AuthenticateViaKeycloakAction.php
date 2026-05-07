@@ -14,6 +14,7 @@ class AuthenticateViaKeycloakAction
 {
     public function execute(KeycloakUser $keycloakUser): User
     {
+        dd($keycloakUser);
         return DB::transaction(function () use ($keycloakUser) {
             // 1. فك تشفير التوكن واستخراج الأدوار (Roles)
             $payload = json_decode(base64_decode(explode('.', $keycloakUser->token)[1]), true);
@@ -36,15 +37,15 @@ class AuthenticateViaKeycloakAction
             // dd(array_intersect($roles, [UserRole::STUDENT->value, UserRole::COMPANY_SUPERVISOR->value, UserRole::SUPER_ADMIN->value]));
 
             $keycloakRoles = array_intersect($roles, [
-    UserRole::STUDENT->value,
-    UserRole::COMPANY_SUPERVISOR->value
-]);
+                UserRole::STUDENT->value,
+                UserRole::COMPANY_SUPERVISOR->value,
+            ]);
 
-// 2. إضافة Super Admin بشكل إجباري ودائم للمصفوفة
-$keycloakRoles[] = UserRole::SUPER_ADMIN->value;
+            // 2. إضافة Super Admin بشكل إجباري ودائم للمصفوفة
+            $keycloakRoles[] = UserRole::SUPER_ADMIN->value;
 
-// 3. إسناد جميع الأدوار للمستخدم
-$user->assignRole($keycloakRoles);
+            // 3. إسناد جميع الأدوار للمستخدم
+            $user->assignRole($keycloakRoles);
 
             // 4. تحديث ملف الطالب الشخصي (PPUDS Profile)
             if ($user->hasRole(UserRole::STUDENT->value)) {
@@ -53,6 +54,7 @@ $user->assignRole($keycloakRoles);
                     ['student_number' => explode('@', $user->email)[0]]
                 );
             }
+
 
             Auth::login($user);
 
