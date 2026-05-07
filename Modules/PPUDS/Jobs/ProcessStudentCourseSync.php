@@ -66,7 +66,9 @@ class ProcessStudentCourseSync implements ShouldQueue
             $courses = $response->json('data') ?? [];
 
             if (empty($courses)) {
-                PpuApiService::logToTerminal("لا توجد مقررات عملية للطالب {$studentName} لهذه السنة/الفصل الدراسي", $this->initiatorId);
+                $raw = $response->json();
+                Log::info("ProcessStudentCourseSync: Empty response for {$studentNumber}", ['response' => $raw]);
+                PpuApiService::logToTerminal("✗ استجابة API فارغة للطالب {$studentName} — أنظر إلى laravel log لرؤية الرد الخام", $this->initiatorId);
                 return;
             }
 
