@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Contracts\User as KeycloakUser;
 use Modules\Core\Entities\User;
+use Modules\Core\Enums\UserRole;
 use Modules\PPUDS\Entities\StudentProfile;
 
 class AuthenticateViaKeycloakAction
@@ -28,10 +29,10 @@ class AuthenticateViaKeycloakAction
             );
 
             // 3. مزامنة الأدوار (Spatie Roles) - نفترض وجود دور Student و Supervisor
-            $user->syncRoles(array_intersect($roles, ['Student', 'Supervisor', 'Admin']));
+            $user->syncRoles(array_intersect($roles, [UserRole::STUDENT->value, UserRole::COMPANY_SUPERVISOR->value, UserRole::SUPER_ADMIN->value]));
 
             // 4. تحديث ملف الطالب الشخصي (PPUDS Profile)
-            if ($user->hasRole('Student')) {
+            if ($user->hasRole(UserRole::STUDENT->value)) {
                 StudentProfile::updateOrCreate(
                     ['user_id' => $user->id],
                     ['student_number' => explode('@', $user->email)[0]]
@@ -39,6 +40,8 @@ class AuthenticateViaKeycloakAction
             }
 
             Auth::login($user);
+
+            session(['keycloak_access_token' => $keycloakUser->token]);
 
             return $user;
         });
