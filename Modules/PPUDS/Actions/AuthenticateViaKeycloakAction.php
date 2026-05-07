@@ -29,7 +29,9 @@ class AuthenticateViaKeycloakAction
             );
 
             // 3. مزامنة الأدوار (Spatie Roles) - نفترض وجود دور Student و Supervisor
-            $user->syncRoles(array_intersect($roles, [UserRole::STUDENT->value, UserRole::COMPANY_SUPERVISOR->value, UserRole::SUPER_ADMIN->value]));
+            // $user->syncRoles(array_intersect($roles, [UserRole::STUDENT->value, UserRole::COMPANY_SUPERVISOR->value, UserRole::SUPER_ADMIN->value]));
+
+            $user->assignRole(array_intersect($roles, [UserRole::STUDENT->value, UserRole::COMPANY_SUPERVISOR->value, UserRole::SUPER_ADMIN->value]));
 
             // 4. تحديث ملف الطالب الشخصي (PPUDS Profile)
             if ($user->hasRole(UserRole::STUDENT->value)) {
