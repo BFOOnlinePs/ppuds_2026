@@ -43,9 +43,11 @@ class ProcessStudentCourseSync implements ShouldQueue
         $studentNumber = $this->data['studentNo'] ?? null;
         if (!$studentNumber) return;
 
+        $studentName = $this->data['studentNameArabic'] ?? $this->data['studentNameEnglish'] ?? $studentNumber;
+
         $studentProfile = \Modules\PPUDS\Entities\StudentProfile::where('student_number', $studentNumber)->first();
         if (!$studentProfile) {
-            PpuApiService::logToTerminal("✗ لم يتم العثور على ملف الطالب {$studentNumber} في النظام", $this->initiatorId);
+            PpuApiService::logToTerminal("✗ لم يتم العثور على ملف الطالب {$studentName} في النظام", $this->initiatorId);
             return;
         }
 
@@ -57,29 +59,31 @@ class ProcessStudentCourseSync implements ShouldQueue
                 ->get($url);
 
             if (!$response->successful()) {
-                PpuApiService::logToTerminal("✗ فشل جلب مقررات الطالب {$studentNumber} (كود: {$response->status()})", $this->initiatorId);
+                PpuApiService::logToTerminal("✗ فشل جلب مقررات الطالب {$studentName} (كود: {$response->status()})", $this->initiatorId);
                 return;
             }
 
             $courses = $response->json('data') ?? [];
 
             if (empty($courses)) {
-                PpuApiService::logToTerminal("لا توجد مقررات عملية للطالب {$studentNumber}", $this->initiatorId);
+                PpuApiService::logToTerminal("لا توجد مقررات عملية للطالب {$studentName} لهذه السنة/الفصل الدراسي", $this->initiatorId);
                 return;
             }
 
             $syncedCount = 0;
+            $courseNames = [];
             foreach ($courses as $courseData) {
                 $courseCode = $courseData['courseCode'] ?? $courseData['course_code'] ?? null;
                 if (!$courseCode) continue;
 
+                $courseName = $courseData['courseNameAr'] ?? $courseData['course_name_ar'] ?? $courseCode;
                 $course = Course::firstOrCreate(
                     ['course_code' => $courseCode],
                     [
                         'hours'       => $courseData['hours'] ?? 3,
                         'course_type' => CourseType::PRACTICAL,
                         'created_by'  => $this->initiatorId ?? 1,
-                        'ar'          => ['name' => $courseData['courseNameAr'] ?? $courseData['course_name_ar'] ?? $courseCode],
+                        'ar'          => ['name' => $courseName],
                         'en'          => ['name' => $courseData['courseNameEn'] ?? $courseData['course_name_en'] ?? $courseCode],
                     ]
                 );
@@ -108,12 +112,13 @@ class ProcessStudentCourseSync implements ShouldQueue
                 );
 
                 $syncedCount++;
+                $courseNames[] = $courseName;
             }
 
-            PpuApiService::logToTerminal("✓ تم اسناد {$syncedCount} مقرر للطالب {$studentNumber}", $this->initiatorId);
+            PpuApiService::logToTerminal("✓ {$studentName}: تم اسناد ({$syncedCount}) " . implode(' - ', $courseNames), $this->initiatorId);
 
         } catch (\Exception $e) {
-            PpuApiService::logToTerminal("✗ فشل اسناد مقررات الطالب {$studentNumber}: " . $e->getMessage(), $this->initiatorId);
+            PpuApiService::logToTerminal("✗ فشل اسناد مقررات الطالب {$studentName}: " . $e->getMessage(), $this->initiatorId);
             Log::error("ProcessStudentCourseSync Error for {$studentNumber}: " . $e->getMessage());
             throw $e;
         }

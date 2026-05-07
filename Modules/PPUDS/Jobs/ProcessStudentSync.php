@@ -73,10 +73,12 @@ class ProcessStudentSync implements ShouldQueue
                 );
             });
 
-            PpuApiService::logToTerminal("✓ تمت مزامنة الطالب {$studentId}", $this->initiatorId);
+            $studentName = $data['studentNameArabic'] ?? $data['studentNameEnglish'] ?? $studentId;
+            PpuApiService::logToTerminal("✓ تمت مزامنة الطالب {$studentName}", $this->initiatorId);
 
         } catch (\Exception $e) {
-            PpuApiService::logToTerminal("✗ فشلت مزامنة الطالب {$studentId}: " . $e->getMessage(), $this->initiatorId);
+            $studentName = $data['studentNameArabic'] ?? $data['studentNameEnglish'] ?? $studentId;
+            PpuApiService::logToTerminal("✗ فشلت مزامنة الطالب {$studentName}: " . $e->getMessage(), $this->initiatorId);
             Log::error("ProcessStudentSync Error for {$studentId}: " . $e->getMessage());
             throw $e;
         }
