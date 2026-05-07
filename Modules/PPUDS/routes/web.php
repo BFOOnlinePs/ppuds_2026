@@ -195,6 +195,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ], function () {
                     Route::get('/', Index::class)->name('index')->can('Report View List');
                 });
+
+                Route::group([
+                    'prefix' => 'sync-system-data',
+                    'as' => 'sync-system-data.',
+                    'namespace' => 'Modules\PPUDS\Livewire\Pages\SyncSystemData',
+                ], function () {
+                    Route::get('/', Index::class)->name('index')->can('Survey Create');
+                });
             });
         }
     );

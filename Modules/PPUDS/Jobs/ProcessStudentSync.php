@@ -9,9 +9,11 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Modules\Core\Entities\User;
 use Modules\PPUDS\Entities\Major;
 use Modules\PPUDS\Enums\StudentGender;
+use Modules\PPUDS\Services\PpuApiService;
 
 class ProcessStudentSync implements ShouldQueue
 {
@@ -19,64 +21,67 @@ class ProcessStudentSync implements ShouldQueue
 
     protected $data;
 
-    /**
-     * Create a new job instance.
-     */
-    public function __construct(array $data)
+    protected $initiatorId;
+
+    public function __construct(array $data, ?int $initiatorId = null)
     {
         $this->data = $data;
+        $this->initiatorId = $initiatorId;
     }
 
-    /**
-     * Execute the job.
-     */
     public function handle()
     {
         $data = $this->data;
+        $studentId = $data['studentNo'] ?? null;
 
-        if (!isset($data['studentNo'])) return;
+        if (!$studentId) return;
 
-        DB::transaction(function () use ($data) {
-            $studentId = $data['studentNo'];
-            $email = $studentId . '@ppu.edu.ps';
+        try {
+            DB::transaction(function () use ($data, $studentId) {
+                $email = $studentId . '@ppu.edu.ps';
 
-            $user = User::firstOrNew(['email' => $email]);
+                $user = User::firstOrNew(['email' => $email]);
 
-            $user->fill([
-                'name'      => $data['studentNameArabic'],
-                'name_en'   => $data['studentNameEnglish'],
-                'email'     => $email,
-                'phone'     => $this->sanitizePhone($data['studentMobile'] ?? '00000000'),
-                'password'  => Hash::make($studentId),
-            ])->save();
+                $user->fill([
+                    'name'      => $data['studentNameArabic'],
+                    'name_en'   => $data['studentNameEnglish'],
+                    'email'     => $email,
+                    'phone'     => $this->sanitizePhone($data['studentMobile'] ?? '00000000'),
+                    'password'  => Hash::make($studentId),
+                ])->save();
 
-            if (method_exists($user, 'assignRole')) {
-                $user->assignRole('Student');
-            }
+                if (method_exists($user, 'assignRole')) {
+                    $user->assignRole('Student');
+                }
 
-            if ($user->wasRecentlyCreated && method_exists($user, 'generateAvatar')) {
-                $user->generateAvatar();
-            }
+                if ($user->wasRecentlyCreated && method_exists($user, 'generateAvatar')) {
+                    $user->generateAvatar();
+                }
 
-            $localMajor = Major::where('reference_code', $data['majorNo'])->first();
+                $localMajor = Major::where('reference_code', $data['majorNo'])->first();
 
-            $user->studentProfile()->updateOrCreate(
-                ['student_number' => $studentId],
-                [
-                    'dob'             => isset($data['studentBirthDate']) ? substr($data['studentBirthDate'], 0, 10) : null,
-                    'gender'          => ($data['studentSex'] ?? 0) == 0 ? StudentGender::MALE->value : StudentGender::FEMALE->value,
-                    'tawjihi_gpa'     => $data['studentTawjihiGrade'],
-                    'enrollment_year' => $data['admissionYear'],
-                    'semester_level'  => $data['levelSem'],
-                    'major_id'        => $localMajor?->id, // Null safe operator
-                ]
-            );
-        });
+                $user->studentProfile()->updateOrCreate(
+                    ['student_number' => $studentId],
+                    [
+                        'dob'             => isset($data['studentBirthDate']) ? substr($data['studentBirthDate'], 0, 10) : null,
+                        'gender'          => ($data['studentSex'] ?? 0) == 0 ? StudentGender::MALE->value : StudentGender::FEMALE->value,
+                        'tawjihi_gpa'     => $data['studentTawjihiGrade'],
+                        'enrollment_year' => $data['admissionYear'],
+                        'semester_level'  => $data['levelSem'],
+                        'major_id'        => $localMajor?->id,
+                    ]
+                );
+            });
+
+            PpuApiService::logToTerminal("✓ تمت مزامنة الطالب {$studentId}", $this->initiatorId);
+
+        } catch (\Exception $e) {
+            PpuApiService::logToTerminal("✗ فشلت مزامنة الطالب {$studentId}: " . $e->getMessage(), $this->initiatorId);
+            Log::error("ProcessStudentSync Error for {$studentId}: " . $e->getMessage());
+            throw $e;
+        }
     }
 
-    /**
-     * دالة مساعدة لتنظيف رقم الهاتف داخل الـ Job
-     */
     private function sanitizePhone($phone)
     {
         if (!$phone) return '00000000';
