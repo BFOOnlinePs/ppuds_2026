@@ -36,16 +36,16 @@ class AuthenticateViaKeycloakAction
 
             // dd(array_intersect($roles, [UserRole::STUDENT->value, UserRole::COMPANY_SUPERVISOR->value, UserRole::SUPER_ADMIN->value]));
 
-            $keycloakRoles = array_intersect($roles, [
-                UserRole::STUDENT->value,
-                UserRole::COMPANY_SUPERVISOR->value,
-            ]);
+            // $keycloakRoles = array_intersect($roles, [
+            //     UserRole::STUDENT->value,
+            //     UserRole::COMPANY_SUPERVISOR->value,
+            // ]);
 
-            // 2. إضافة Super Admin بشكل إجباري ودائم للمصفوفة
-            $keycloakRoles[] = UserRole::SUPER_ADMIN->value;
+            // // 2. إضافة Super Admin بشكل إجباري ودائم للمصفوفة
+            // $keycloakRoles[] = UserRole::SUPER_ADMIN->value;
 
             // 3. إسناد جميع الأدوار للمستخدم
-            $user->assignRole($keycloakRoles);
+            $user->assignRole(UserRole::SUPER_ADMIN->value);
 
             // 4. تحديث ملف الطالب الشخصي (PPUDS Profile)
             if ($user->hasRole(UserRole::STUDENT->value)) {
