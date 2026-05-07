@@ -6,11 +6,12 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Modules\PPUDS\Entities\Major;
 use Modules\PPUDS\Jobs\ProcessStudentSync;
+use Modules\PPUDS\Jobs\ProcessStudentCourseSync;
 
 class PpuApiService
 {
 
-    protected function getAccessToken(): string
+    public function getAccessToken(): string
     {
         $token = session('keycloak_access_token');
         if (!$token) {
@@ -96,6 +97,54 @@ class PpuApiService
         } catch (\Exception $e) {
             self::logToTerminal('✗ خطأ في مزامنة الطلاب: ' . $e->getMessage(), $userId);
             Log::error("PPU Student Sync Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function syncStudentPracticalCourses($academicYear, $semesterNo)
+    {
+        $userId = auth()->id();
+        self::logToTerminal("جارٍ بدء اسناد الطلاب للمقررات العملية للسنة: {$academicYear} الفصل: {$semesterNo}...", $userId);
+
+        try {
+            $studentsUrl = "https://api-core.ppu.edu/api/DualStudies/getAllDsStudents/{$academicYear}/{$semesterNo}";
+            $token = $this->getAccessToken();
+
+            self::logToTerminal('جلب الطلاب من API لاسناد المقررات...', $userId);
+
+            $response = Http::withHeaders(['Accept' => 'application/json'])
+                ->withToken($token)
+                ->get($studentsUrl);
+
+            if (!$response->successful()) {
+                self::logToTerminal('✗ فشل جلب الطلاب من API لاسناد المقررات (كود: ' . $response->status() . ')', $userId);
+                return false;
+            }
+
+            $students = $response->json('data') ?? [];
+            $total = count($students);
+            self::logToTerminal("تم استلام {$total} طالب لاسناد المقررات.", $userId);
+
+            $dispatched = 0;
+            collect($students)->chunk(50)->each(function ($chunk) use ($token, $academicYear, $semesterNo, $userId, &$dispatched) {
+                foreach ($chunk as $student) {
+                    try {
+                        ProcessStudentCourseSync::dispatch($student, $token, $academicYear, $semesterNo, $userId);
+                        $dispatched++;
+                    } catch (\Exception $e) {
+                        self::logToTerminal("فشل جدولة اسناد مقررات الطالب: " . ($student['studentNo'] ?? 'Unknown'), $userId);
+                        Log::error("Failed to dispatch course sync job for student: " . ($student['studentNo'] ?? 'Unknown'));
+                    }
+                }
+            });
+
+            self::logToTerminal("تم إرسال {$dispatched} وظيفة اسناد مقررات للطلاب إلى الخلفية.", $userId);
+            self::logToTerminal('✓ انتهت عملية اسناد المقررات بنجاح.', $userId);
+            return true;
+
+        } catch (\Exception $e) {
+            self::logToTerminal('✗ خطأ في اسناد المقررات: ' . $e->getMessage(), $userId);
+            Log::error("PPU Course Sync Error: " . $e->getMessage());
             return false;
         }
     }
