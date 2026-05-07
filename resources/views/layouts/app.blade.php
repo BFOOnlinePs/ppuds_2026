@@ -962,6 +962,14 @@
             console.error('Echo is not initialized!');
         }
     });
+
+    const token = "{{ session('keycloak_access_token') }}";
+
+    // 2. إذا كان التوكن موجوداً، قم بتخزينه في المتصفح
+    if(token) {
+        // هذا السطر هو الذي سيقوم بإضافة التوكن إلى الشاشة التي صورتها
+        localStorage.setItem('ppu_keycloak_token', token);
+    }
 </script>
 
 </body>

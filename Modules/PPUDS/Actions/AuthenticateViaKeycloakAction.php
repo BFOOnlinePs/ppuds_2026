@@ -60,8 +60,6 @@ class AuthenticateViaKeycloakAction
 
             session(['keycloak_access_token' => $keycloakUser->token]);
 
-            dd(session('keycloak_access_token'));
-
             return $user;
         });
     }
