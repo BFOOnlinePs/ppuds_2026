@@ -205,7 +205,28 @@ class Index extends Component
 
     private function refreshCourseSyncingState(): void
     {
-        $this->courseSyncing = (bool) cache()->get($this->courseSyncingCacheKey(), false);
+        if (! cache()->get($this->courseSyncingCacheKey(), false)) {
+            $this->courseSyncing = false;
+
+            return;
+        }
+
+        $hasFinishedLog = collect($this->logs ?: PpuApiService::getTerminalLogs())
+            ->contains(function (array $log): bool {
+                $message = $log['message'] ?? '';
+
+                return str_contains($message, 'انتهت مزامنة المساقات بنجاح')
+                    || str_contains($message, 'يمكنك الآن مراجعة حالة المساقات');
+            });
+
+        if ($hasFinishedLog) {
+            cache()->forget($this->courseSyncingCacheKey());
+            $this->courseSyncing = false;
+
+            return;
+        }
+
+        $this->courseSyncing = true;
     }
 
     private function courseSyncingCacheKey(?int $userId = null): string
