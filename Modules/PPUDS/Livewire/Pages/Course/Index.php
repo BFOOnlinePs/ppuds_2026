@@ -47,7 +47,15 @@ class Index extends Component implements HasTable, HasForms
                     ->label(__('Name'))
                     ->searchable(),
                 ToggleColumn::make('status')
-                    ->label(__('Status')),
+                    ->label(__('Status'))
+                    ->getStateUsing(fn (Course $record): bool => $record->status === CourseStatus::ACTIVE)
+                    ->updateStateUsing(function (Course $record, mixed $state): bool {
+                        $record->update([
+                            'status' => $state ? CourseStatus::ACTIVE->value : CourseStatus::INACTIVE->value,
+                        ]);
+
+                        return (bool) $state;
+                    }),
                 TextColumn::make('hours')
                     ->label(__('Hours')),
                 TextColumn::make('course_type')
