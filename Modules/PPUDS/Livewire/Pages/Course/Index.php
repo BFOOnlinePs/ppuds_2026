@@ -14,6 +14,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Component;
@@ -25,6 +26,7 @@ use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\Textarea;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\Course;
+use Modules\PPUDS\Enums\CourseStatus;
 use Modules\PPUDS\Enums\CourseType;
 
 class Index extends Component implements HasTable, HasForms
@@ -47,7 +49,11 @@ class Index extends Component implements HasTable, HasForms
                     ->label(__('Hours')),
                 TextColumn::make('course_type')
                     ->label(__('Course Type'))
+                    ->badge(),
+                TextColumn::make('status')
+                    ->label(__('Status'))
                     ->badge()
+                    ->color(CourseStatus::class),
             ])
             ->filters($this->getTableFilters())
             ->actions($this->getTableActions())
@@ -84,6 +90,12 @@ class Index extends Component implements HasTable, HasForms
                                 ->prefixIcon('solar-layers-bold-duotone') // Solar Icon
                                 ->options(CourseType::options())
                                 ->required(),
+                            Select::make('status')
+                                ->label(__('Status'))
+                                ->prefixIcon('solar-check-circle-bold-duotone')
+                                ->options(CourseStatus::options())
+                                ->default(CourseStatus::ACTIVE->value)
+                                ->required(),
                             Textarea::make('description')
                                 ->label(__('Description'))
                                 ->columnSpanFull(),
@@ -112,6 +124,7 @@ class Index extends Component implements HasTable, HasForms
                         TextInput::make('name')->default($record->name)->disabled(),
                         TextInput::make('hours')->default($record->hours)->disabled(),
                         Select::make('course_type')->options(CourseType::options())->default($record->course_type->value)->disabled(),
+                        Select::make('status')->options(CourseStatus::options())->default($record->status->value)->disabled(),
                         Textarea::make('description')->default($record->description)->disabled()->columnSpanFull(),
                     ])
                 ])
@@ -159,6 +172,14 @@ class Index extends Component implements HasTable, HasForms
                             ->required()
                             ->default($record->course_type->value),
 
+                        Select::make('status')
+                            ->label(__('Status'))
+                            ->prefixIcon('solar-check-circle-bold-duotone')
+                            ->options(CourseStatus::options())
+                            ->searchable()
+                            ->required()
+                            ->default($record->status->value),
+
                         Textarea::make('description')
                             ->label(__('Description'))
                             ->default($record->description)
@@ -189,6 +210,10 @@ class Index extends Component implements HasTable, HasForms
         return [
             Filter::make('course_code')->label(__('Course Code')),
             Filter::make('name')->label(__('Name')),
+            SelectFilter::make('status')
+                ->label(__('Status'))
+                ->options(CourseStatus::options())
+                ->native(false),
         ];
     }
 

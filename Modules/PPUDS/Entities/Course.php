@@ -7,6 +7,7 @@ use Astrotomic\Translatable\Translatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\Core\Entities\User;
+use Modules\PPUDS\Enums\CourseStatus;
 use Modules\PPUDS\Enums\CourseType;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -32,11 +33,13 @@ class Course extends Model implements TranslatableContract, HasMedia
         'course_code',
         'hours',
         'course_type',
+        'status',
         'created_by',
     ];
 
     protected $casts = [
-        'course_type'   =>  CourseType::class
+        'course_type' => CourseType::class,
+        'status' => CourseStatus::class,
     ];
 
     public $translatedAttributes = [
