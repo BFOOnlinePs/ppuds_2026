@@ -4,7 +4,9 @@ namespace Modules\PPUDS\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Modules\PPUDS\Entities\Course;
 use Modules\PPUDS\Entities\Major;
+use Modules\PPUDS\Enums\CourseType;
 use Modules\PPUDS\Jobs\ProcessStudentSync;
 use Modules\PPUDS\Jobs\ProcessStudentCourseSync;
 
@@ -159,6 +161,83 @@ class PpuApiService
         } catch (\Exception $e) {
             self::logToTerminal('✗ خطأ في المزامنة الكاملة: ' . $e->getMessage(), $userId);
             Log::error('PPU Full System Sync Error: ' . $e->getMessage());
+
+            return false;
+        }
+    }
+
+    public function syncCourses($academicYear, $semesterNo, ?string $token = null, ?int $userId = null): bool
+    {
+        $userId = $userId ?? auth()->id();
+        $token = $token ?? $this->getAccessToken();
+
+        self::logToTerminal("جارٍ بدء مزامنة المساقات للسنة: {$academicYear} الفصل: {$semesterNo}...", $userId);
+
+        try {
+            $students = $this->fetchStudentsFromUniversity($academicYear, $semesterNo, $token, $userId);
+
+            if ($students === null) {
+                return false;
+            }
+
+            $created = 0;
+            $updated = 0;
+            $failed = 0;
+            $empty = 0;
+            $seenCourseCodes = [];
+
+            foreach ($students as $student) {
+                $studentNumber = $student['studentNo'] ?? null;
+
+                if (! $studentNumber) {
+                    continue;
+                }
+
+                $courses = $this->fetchStudentPracticalCourses($studentNumber, $academicYear, $semesterNo, $token, $userId);
+
+                if ($courses === null) {
+                    $failed++;
+                    continue;
+                }
+
+                if (empty($courses)) {
+                    $empty++;
+                    continue;
+                }
+
+                foreach ($courses as $courseData) {
+                    $courseCode = $this->courseCodeFromApiData($courseData);
+
+                    if (! $courseCode || isset($seenCourseCodes[$courseCode])) {
+                        continue;
+                    }
+
+                    $course = $this->syncCourseFromApiData($courseData, $userId);
+
+                    if (! $course) {
+                        continue;
+                    }
+
+                    $seenCourseCodes[$courseCode] = true;
+                    $course->wasRecentlyCreated ? $created++ : $updated++;
+                }
+            }
+
+            $total = $created + $updated;
+
+            self::logToTerminal("تمت مزامنة {$total} مساق: {$created} جديد / {$updated} تحديث.", $userId);
+            self::logToTerminal("طلاب بدون مساقات عملية في هذا الفصل: {$empty}.", $userId);
+
+            if ($failed > 0) {
+                self::logToTerminal("⚠ انتهت مزامنة المساقات مع {$failed} أخطاء.", $userId);
+            } else {
+                self::logToTerminal('✓ انتهت مزامنة المساقات بنجاح. راجع حالة المساقات قبل إكمال المزامنة.', $userId);
+            }
+
+            return $failed === 0;
+        } catch (\Exception $e) {
+            self::logToTerminal('✗ خطأ في مزامنة المساقات: ' . $e->getMessage(), $userId);
+            Log::error('PPU Courses Sync Error: ' . $e->getMessage());
 
             return false;
         }
@@ -375,5 +454,69 @@ class PpuApiService
         }
 
         return $response->json('data') ?? [];
+    }
+
+    private function fetchStudentPracticalCourses($studentNumber, $academicYear, $semesterNo, string $token, ?int $userId = null): ?array
+    {
+        $url = "https://api-core.ppu.edu/api/DualStudies/getStudentPracticalCourses/{$studentNumber}";
+
+        $response = Http::withHeaders(['Accept' => 'application/json'])
+            ->withToken($token)
+            ->connectTimeout(5)
+            ->get($url, [
+                'academicYear' => $academicYear,
+                'semesterNo' => $semesterNo,
+            ]);
+
+        if (! $response->successful()) {
+            self::logToTerminal("✗ فشل جلب مساقات الطالب {$studentNumber} (كود: {$response->status()})", $userId);
+            Log::error('Failed to fetch student practical courses from API', [
+                'student_number' => $studentNumber,
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            return null;
+        }
+
+        return $response->json('data') ?? [];
+    }
+
+    private function syncCourseFromApiData(array $courseData, ?int $userId = null): ?Course
+    {
+        $courseCode = $this->courseCodeFromApiData($courseData);
+
+        if (! $courseCode) {
+            return null;
+        }
+
+        $courseName = $courseData['courseArabicName']
+            ?? $courseData['courseNameAr']
+            ?? $courseData['course_name_ar']
+            ?? $courseData['courseDisplay']
+            ?? $courseCode;
+
+        $courseEnglishName = $courseData['courseEnglishName']
+            ?? $courseData['courseNameEn']
+            ?? $courseData['course_name_en']
+            ?? $courseName;
+
+        return Course::updateOrCreate(
+            ['course_code' => $courseCode],
+            [
+                'hours' => $courseData['hours'] ?? 3,
+                'course_type' => CourseType::PRACTICAL,
+                'created_by' => $userId ?? auth()->id() ?? 1,
+                'ar' => ['name' => $courseName],
+                'en' => ['name' => $courseEnglishName],
+            ]
+        );
+    }
+
+    private function courseCodeFromApiData(array $courseData): ?string
+    {
+        $courseCode = $courseData['courseNo'] ?? $courseData['courseCode'] ?? $courseData['course_code'] ?? null;
+
+        return $courseCode === null ? null : (string) $courseCode;
     }
 }

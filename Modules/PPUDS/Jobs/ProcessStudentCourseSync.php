@@ -14,6 +14,7 @@ use Modules\Core\Enums\UserRole;
 use Modules\PPUDS\Entities\Course;
 use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Entities\StudentProfile;
+use Modules\PPUDS\Enums\CourseStatus;
 use Modules\PPUDS\Enums\CourseType;
 use Modules\PPUDS\Services\PpuApiService;
 
@@ -78,6 +79,7 @@ class ProcessStudentCourseSync implements ShouldQueue
             }
 
             $syncedCount = 0;
+            $inactiveSkipped = 0;
             $courseNames = [];
             foreach ($courses as $courseData) {
                 $courseCode = $courseData['courseNo'] ?? $courseData['courseCode'] ?? $courseData['course_code'] ?? null;
@@ -105,6 +107,11 @@ class ProcessStudentCourseSync implements ShouldQueue
                     ]
                 );
 
+                if ($course->status === CourseStatus::INACTIVE) {
+                    $inactiveSkipped++;
+                    continue;
+                }
+
                 $supervisorId = $this->supervisorId($courseData, $studentProfile);
 
                 Registration::updateOrCreate(
@@ -127,7 +134,13 @@ class ProcessStudentCourseSync implements ShouldQueue
                 $courseNames[] = $courseName;
             }
 
-            PpuApiService::logToTerminal("✓ {$studentName}: تم اسناد ({$syncedCount}) " . implode(' - ', $courseNames), $this->initiatorId);
+            $message = "✓ {$studentName}: تم اسناد ({$syncedCount}) " . implode(' - ', $courseNames);
+
+            if ($inactiveSkipped > 0) {
+                $message .= " / تم تجاهل {$inactiveSkipped} مساق غير فعال";
+            }
+
+            PpuApiService::logToTerminal($message, $this->initiatorId);
 
             return $syncedCount;
 
