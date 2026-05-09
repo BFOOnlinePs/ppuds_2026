@@ -98,6 +98,72 @@ class PpuApiService
         }
     }
 
+    public function syncSystemData($academicYear, $semesterNo): bool
+    {
+        $userId = auth()->id();
+
+        $majorsSynced = $this->syncMajors();
+        if (! $majorsSynced) {
+            self::logToTerminal('تم إيقاف المزامنة لأن مزامنة التخصصات فشلت.', $userId);
+
+            return false;
+        }
+
+        try {
+            $token = $this->getAccessToken();
+            $students = $this->fetchStudentsFromUniversity($academicYear, $semesterNo, $token, $userId);
+
+            if ($students === null) {
+                return false;
+            }
+
+            $studentSynced = 0;
+            $studentFailed = 0;
+
+            foreach ($students as $student) {
+                try {
+                    ProcessStudentSync::dispatchSync($student, $userId);
+                    $studentSynced++;
+                } catch (\Exception $e) {
+                    $studentFailed++;
+                    self::logToTerminal('✗ فشل حفظ الطالب: ' . ($student['studentNo'] ?? 'Unknown'), $userId);
+                    Log::error('Failed to sync student in full system sync', [
+                        'student' => $student,
+                        'exception' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            self::logToTerminal("تمت مزامنة الطلاب: {$studentSynced} نجاح / {$studentFailed} فشل.", $userId);
+
+            $registrationSynced = 0;
+            $registrationFailed = 0;
+
+            foreach ($students as $student) {
+                try {
+                    $registrationSynced += ProcessStudentCourseSync::dispatchSync($student, $token, $academicYear, $semesterNo, $userId) ?? 0;
+                } catch (\Exception $e) {
+                    $registrationFailed++;
+                    self::logToTerminal('✗ فشل اسناد مقررات الطالب: ' . ($student['studentNo'] ?? 'Unknown'), $userId);
+                    Log::error('Failed to sync student registrations in full system sync', [
+                        'student' => $student,
+                        'exception' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            self::logToTerminal("تم إنشاء/تحديث {$registrationSynced} تسجيل في النظام.", $userId);
+            self::logToTerminal("أخطاء اسناد التسجيل: {$registrationFailed}.", $userId);
+
+            return $studentFailed === 0 && $registrationFailed === 0;
+        } catch (\Exception $e) {
+            self::logToTerminal('✗ خطأ في المزامنة الكاملة: ' . $e->getMessage(), $userId);
+            Log::error('PPU Full System Sync Error: ' . $e->getMessage());
+
+            return false;
+        }
+    }
+
     public function syncStudents($academicYear, $semesterNo)
     {
         $userId = auth()->id();
@@ -153,40 +219,34 @@ class PpuApiService
         self::logToTerminal("جارٍ بدء اسناد الطلاب للمقررات العملية للسنة: {$academicYear} الفصل: {$semesterNo}...", $userId);
 
         try {
-            $studentsUrl = "https://api-core.ppu.edu/api/DualStudies/getAllDsStudents/{$academicYear}/{$semesterNo}";
             $token = $this->getAccessToken();
 
-            self::logToTerminal('جلب الطلاب من API لاسناد المقررات...', $userId);
-
-            $response = Http::withHeaders(['Accept' => 'application/json'])
-                ->withToken($token)
-                ->get($studentsUrl);
-
-            if (!$response->successful()) {
-                self::logToTerminal('✗ فشل جلب الطلاب من API لاسناد المقررات (كود: ' . $response->status() . ')', $userId);
+            $students = $this->fetchStudentsFromUniversity($academicYear, $semesterNo, $token, $userId);
+            if ($students === null) {
                 return false;
             }
 
-            $students = $response->json('data') ?? [];
             $total = count($students);
             self::logToTerminal("تم استلام {$total} طالب لاسناد المقررات.", $userId);
 
-            $dispatched = 0;
-            collect($students)->chunk(50)->each(function ($chunk) use ($token, $academicYear, $semesterNo, $userId, &$dispatched) {
+            $synced = 0;
+            $failed = 0;
+            collect($students)->chunk(50)->each(function ($chunk) use ($token, $academicYear, $semesterNo, $userId, &$synced, &$failed) {
                 foreach ($chunk as $student) {
                     try {
-                        ProcessStudentCourseSync::dispatch($student, $token, $academicYear, $semesterNo, $userId);
-                        $dispatched++;
+                        $synced += ProcessStudentCourseSync::dispatchSync($student, $token, $academicYear, $semesterNo, $userId) ?? 0;
                     } catch (\Exception $e) {
-                        self::logToTerminal("فشل جدولة اسناد مقررات الطالب: " . ($student['studentNo'] ?? 'Unknown'), $userId);
-                        Log::error("Failed to dispatch course sync job for student: " . ($student['studentNo'] ?? 'Unknown'));
+                        $failed++;
+                        self::logToTerminal("فشل اسناد مقررات الطالب: " . ($student['studentNo'] ?? 'Unknown'), $userId);
+                        Log::error("Failed to sync course registration for student: " . ($student['studentNo'] ?? 'Unknown'));
                     }
                 }
             });
 
-            self::logToTerminal("تم إرسال {$dispatched} وظيفة اسناد مقررات للطلاب إلى الخلفية.", $userId);
-            self::logToTerminal('✓ انتهت عملية اسناد المقررات بنجاح.', $userId);
-            return true;
+            self::logToTerminal("تم إنشاء/تحديث {$synced} تسجيل في النظام.", $userId);
+            self::logToTerminal($failed === 0 ? '✓ انتهت عملية اسناد المقررات بنجاح.' : "⚠ انتهت عملية اسناد المقررات مع {$failed} أخطاء.", $userId);
+
+            return $failed === 0;
 
         } catch (\Exception $e) {
             self::logToTerminal('✗ خطأ في اسناد المقررات: ' . $e->getMessage(), $userId);
@@ -219,11 +279,18 @@ class PpuApiService
 
                 $synced = 0;
                 foreach ($majors as $majorData) {
+                    $majorNo = $majorData['majorNo'] ?? null;
+                    if (! $majorNo) {
+                        self::logToTerminal('تم تخطي تخصص بدون رقم مرجعي من API الجامعة.', $userId);
+                        continue;
+                    }
+
                     Major::updateOrCreate(
-                        ['reference_code' => $majorData['majorNo'], 'created_by' => auth()->id()],
+                        ['reference_code' => $majorNo],
                         [
-                            'ar' => ['name' => $majorData['majorArabicName']],
-                            'en' => ['name' => $majorData['majorEnglishName']],
+                            'created_by' => auth()->id() ?? 1,
+                            'ar' => ['name' => $majorData['majorArabicName'] ?? $majorNo],
+                            'en' => ['name' => $majorData['majorEnglishName'] ?? ($majorData['majorArabicName'] ?? $majorNo)],
                         ]
                     );
                     $synced++;
@@ -242,5 +309,24 @@ class PpuApiService
             Log::error("PPU Major Sync Error: " . $e->getMessage());
             return false;
         }
+    }
+
+    private function fetchStudentsFromUniversity($academicYear, $semesterNo, string $token, ?int $userId = null): ?array
+    {
+        self::logToTerminal('جلب الطلاب من API الجامعة...', $userId);
+
+        $studentsUrl = "https://api-core.ppu.edu/api/DualStudies/getAllDsStudents/{$academicYear}/{$semesterNo}";
+        $response = Http::withHeaders(['Accept' => 'application/json'])
+            ->withToken($token)
+            ->get($studentsUrl);
+
+        if (! $response->successful()) {
+            self::logToTerminal('✗ فشل جلب الطلاب من API (كود: ' . $response->status() . ')', $userId);
+            Log::error("Failed to fetch students from API", ['status' => $response->status(), 'body' => $response->body()]);
+
+            return null;
+        }
+
+        return $response->json('data') ?? [];
     }
 }

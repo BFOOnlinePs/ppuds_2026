@@ -35,21 +35,9 @@ class Index extends Component
         PpuApiService::logToTerminal('═══════════════════════════════════════');
 
         try {
-            $apiService->syncMajors();
+            $apiService->syncSystemData($this->academicYear, $this->semester);
         } catch (\Exception $e) {
-            PpuApiService::logToTerminal('✗ خطأ في مزامنة التخصصات: ' . $e->getMessage());
-        }
-
-        try {
-            $apiService->syncStudents($this->academicYear, $this->semester);
-        } catch (\Exception $e) {
-            PpuApiService::logToTerminal('✗ خطأ في مزامنة الطلاب: ' . $e->getMessage());
-        }
-
-        try {
-            $apiService->syncStudentPracticalCourses($this->academicYear, $this->semester);
-        } catch (\Exception $e) {
-            PpuApiService::logToTerminal('✗ خطأ في اسناد المقررات: ' . $e->getMessage());
+            PpuApiService::logToTerminal('✗ خطأ في المزامنة الكاملة: ' . $e->getMessage());
         }
 
         PpuApiService::logToTerminal('═══════════════════════════════════════');
