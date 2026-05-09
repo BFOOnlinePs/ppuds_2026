@@ -442,9 +442,22 @@ class PpuApiService
         self::logToTerminal('جلب الطلاب من API الجامعة...', $userId);
 
         $studentsUrl = "https://api-core.ppu.edu/api/DualStudies/getAllDsStudents/{$academicYear}/{$semesterNo}";
-        $response = Http::withHeaders(['Accept' => 'application/json'])
-            ->withToken($token)
-            ->get($studentsUrl);
+        try {
+            $response = Http::withHeaders(['Accept' => 'application/json'])
+                ->withToken($token)
+                ->retry(3, 1000, throw: false)
+                ->connectTimeout(15)
+                ->timeout(60)
+                ->get($studentsUrl);
+        } catch (\Exception $e) {
+            self::logToTerminal('✗ تعذر الاتصال بـ API الطلاب من الجامعة: ' . $e->getMessage(), $userId);
+            Log::error('Failed to connect to students API', [
+                'url' => $studentsUrl,
+                'exception' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
 
         if (! $response->successful()) {
             self::logToTerminal('✗ فشل جلب الطلاب من API (كود: ' . $response->status() . ')', $userId);
@@ -460,13 +473,27 @@ class PpuApiService
     {
         $url = "https://api-core.ppu.edu/api/DualStudies/getStudentPracticalCourses/{$studentNumber}";
 
-        $response = Http::withHeaders(['Accept' => 'application/json'])
-            ->withToken($token)
-            ->connectTimeout(5)
-            ->get($url, [
-                'academicYear' => $academicYear,
-                'semesterNo' => $semesterNo,
+        try {
+            $response = Http::withHeaders(['Accept' => 'application/json'])
+                ->withToken($token)
+                ->retry(3, 1000, throw: false)
+                ->connectTimeout(15)
+                ->timeout(45)
+                ->get($url, [
+                    'academicYear' => $academicYear,
+                    'semesterNo' => $semesterNo,
+                ]);
+        } catch (\Exception $e) {
+            self::logToTerminal("✗ تعذر الاتصال لجلب مساقات الطالب {$studentNumber}: " . $e->getMessage(), $userId);
+            Log::error('Failed to connect to student practical courses API', [
+                'student_number' => $studentNumber,
+                'academic_year' => $academicYear,
+                'semester_no' => $semesterNo,
+                'exception' => $e->getMessage(),
             ]);
+
+            return null;
+        }
 
         if (! $response->successful()) {
             self::logToTerminal("✗ فشل جلب مساقات الطالب {$studentNumber} (كود: {$response->status()})", $userId);

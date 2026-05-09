@@ -57,12 +57,22 @@ class ProcessStudentCourseSync implements ShouldQueue
         try {
             $url = "https://api-core.ppu.edu/api/DualStudies/getStudentPracticalCourses/{$studentNumber}";
 
-            $response = Http::withHeaders(['Accept' => 'application/json'])
-                ->withToken($this->token)
-                ->get($url, [
-                    'academicYear' => $this->academicYear,
-                    'semesterNo' => $this->semesterNo,
-                ]);
+            try {
+                $response = Http::withHeaders(['Accept' => 'application/json'])
+                    ->withToken($this->token)
+                    ->retry(3, 1000, throw: false)
+                    ->connectTimeout(15)
+                    ->timeout(45)
+                    ->get($url, [
+                        'academicYear' => $this->academicYear,
+                        'semesterNo' => $this->semesterNo,
+                    ]);
+            } catch (\Exception $e) {
+                PpuApiService::logToTerminal("✗ تعذر الاتصال لجلب مقررات الطالب {$studentName}: " . $e->getMessage(), $this->initiatorId);
+                Log::error("Failed to connect to practical courses API for {$studentNumber}: " . $e->getMessage());
+
+                return 0;
+            }
 
             if (!$response->successful()) {
                 PpuApiService::logToTerminal("✗ فشل جلب مقررات الطالب {$studentName} (كود: {$response->status()})", $this->initiatorId);
