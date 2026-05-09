@@ -63,11 +63,14 @@ class Index extends Component implements HasTable, HasForms
                     ->label(__('Course'))
                     ->badge()
                     ->color('info'),
-                // ❌ تم إزالة searchable و sortable لأن العمود غير موجود في الداتابيس (مترجم)
 
                 // 3. عمود الفصل والسنة
                 TextColumn::make('semester')
                     ->label(__('Term'))
+                    ->icon('solar-calendar-date-linear'),
+
+                TextColumn::make('year')
+                    ->label(__('Year'))
                     ->icon('solar-calendar-date-linear'),
                 // تم إزالة sortable لتجنب المشاكل حالياً
 
@@ -119,18 +122,8 @@ class Index extends Component implements HasTable, HasForms
 
             Filter::make('year')
                 ->label(__('Academic Year'))
-                ->form([
-                    TextInput::make('year')
-                        ->label(__('Academic Year'))
-                        ->numeric()
-                        ->default(app(GeneralSettings::class)->year),
-                ])
-                ->query(function (Builder $query, array $data): Builder {
-                    return $query->when(
-                        filled($data['year'] ?? null),
-                        fn (Builder $query) => $query->where('year', (int) $data['year'])
-                    );
-                }),
+                ->default(app(GeneralSettings::class)->year)
+                ->native(false),
 
             // 4. فلتر المشرف
             SelectFilter::make('supervisor_id')
@@ -173,6 +166,27 @@ class Index extends Component implements HasTable, HasForms
         ksort($options);
 
         return $options ?: SemesterType::options();
+    }
+
+    private function getRegistrationYearOptions(): array
+    {
+        $options = $this->getRegistrationFilterOptionsQuery()
+            ->whereNotNull('year')
+            ->distinct()
+            ->orderByDesc('year')
+            ->pluck('year')
+            ->mapWithKeys(fn($year): array => [(string) $year => (string) $year])
+            ->toArray();
+
+        $currentYear = app(GeneralSettings::class)->year;
+
+        if ($currentYear !== null) {
+            $options[(string) $currentYear] = (string) $currentYear;
+        }
+
+        krsort($options, SORT_NATURAL);
+
+        return $options;
     }
 
     public function getTableBulkAction(): array
