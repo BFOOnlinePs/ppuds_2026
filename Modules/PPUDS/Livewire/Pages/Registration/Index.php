@@ -34,16 +34,16 @@ use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Enums\SemesterType;
 use Modules\PPUDS\Settings\GeneralSettings;
 
-class Index extends Component implements HasTable, HasForms
+class Index extends Component implements HasForms, HasTable
 {
-    use InteractsWithTable;
     use InteractsWithForms;
+    use InteractsWithTable;
 
     public function table(Table $table)
     {
         return $table
             ->query(
-                fn() => Registration::query()
+                fn () => Registration::query()
                     ->with(['student', 'course', 'supervisor'])
                     ->when(auth()->user()->hasRole(UserRole::STUDENT->value), function ($query) {
                         $query->where('student_id', auth()->user()->id);
@@ -63,21 +63,18 @@ class Index extends Component implements HasTable, HasForms
                     ->label(__('Course'))
                     ->badge()
                     ->color('info'),
+                // ❌ تم إزالة searchable و sortable لأن العمود غير موجود في الداتابيس (مترجم)
 
                 // 3. عمود الفصل والسنة
                 TextColumn::make('semester')
                     ->label(__('Term'))
-                    ->icon('solar-calendar-date-linear'),
-
-                TextColumn::make('year')
-                    ->label(__('Year'))
                     ->icon('solar-calendar-date-linear'),
                 // تم إزالة sortable لتجنب المشاكل حالياً
 
                 // 4. عمود المشرف
                 SelectColumn::make('supervisor_id')
                     ->label(__('Supervisor'))
-                    ->options(User::whereHas('roles', fn($q) => $q->where('name', UserRole::PRACTICAL_TRAINING_SUPERVISOR->value))->pluck('name', 'id'))
+                    ->options(User::whereHas('roles', fn ($q) => $q->where('name', UserRole::PRACTICAL_TRAINING_SUPERVISOR->value))->pluck('name', 'id'))
                     ->toggleable(),
 
                 // 5. عمود العلامة
@@ -100,7 +97,7 @@ class Index extends Component implements HasTable, HasForms
                 CreateAction::make('create')
                     ->label(__('Add Registration'))
                     ->url(route('registrations.add'))
-                    ->visible(fn() => auth()->user()->can('Registration Create'))
+                    ->visible(fn () => auth()->user()->can('Registration Create')),
             ])
             ->bulkActions($this->getTableBulkAction());
     }
@@ -116,19 +113,29 @@ class Index extends Component implements HasTable, HasForms
 
             SelectFilter::make('semester')
                 ->label(__('Semester'))
-                ->options(fn(): array => $this->getRegistrationSemesterOptions())
+                ->options(fn (): array => $this->getRegistrationSemesterOptions())
                 ->default(app(GeneralSettings::class)->semester_type?->value)
                 ->native(false),
 
             Filter::make('year')
                 ->label(__('Academic Year'))
-                ->default(app(GeneralSettings::class)->year)
-                ->native(false),
+                ->form([
+                    TextInput::make('year')
+                        ->label(__('Academic Year'))
+                        ->numeric()
+                        ->default(app(GeneralSettings::class)->year),
+                ])
+                ->query(function (Builder $query, array $data): Builder {
+                    return $query->when(
+                        filled($data['year'] ?? null),
+                        fn (Builder $query) => $query->where('year', (int) $data['year'])
+                    );
+                }),
 
             // 4. فلتر المشرف
             SelectFilter::make('supervisor_id')
                 ->label(__('Supervisor'))
-                ->options(User::whereHas('roles', fn($q) => $q->where('name', 'Practical Training Supervisor'))->pluck('name', 'id'))
+                ->options(User::whereHas('roles', fn ($q) => $q->where('name', 'Practical Training Supervisor'))->pluck('name', 'id'))
                 ->searchable(),
         ];
     }
@@ -175,7 +182,7 @@ class Index extends Component implements HasTable, HasForms
             ->distinct()
             ->orderByDesc('year')
             ->pluck('year')
-            ->mapWithKeys(fn($year): array => [(string) $year => (string) $year])
+            ->mapWithKeys(fn ($year): array => [(string) $year => (string) $year])
             ->toArray();
 
         $currentYear = app(GeneralSettings::class)->year;
@@ -198,9 +205,9 @@ class Index extends Component implements HasTable, HasForms
                     ->icon('solar-trash-bin-trash-bold')
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->action(fn(Collection $records) => $records->each->delete())
-                    ->after(fn() => Toaster::success(__('Selected registrations deleted successfully'))),
-            ])
+                    ->action(fn (Collection $records) => $records->each->delete())
+                    ->after(fn () => Toaster::success(__('Selected registrations deleted successfully'))),
+            ]),
         ];
     }
 
@@ -209,7 +216,7 @@ class Index extends Component implements HasTable, HasForms
         return [
             InfoAction::make('info')
                 ->label('')
-                ->visible(fn() => auth()->user()->can('Registration Info')),
+                ->visible(fn () => auth()->user()->can('Registration Info')),
             ViewAction::make('view')
                 ->label('')
                 ->tooltip(__('View Details'))
@@ -226,7 +233,7 @@ class Index extends Component implements HasTable, HasForms
                                 ->disabled(),
                             TextInput::make('semester')
                                 ->label(__('Semester'))
-                                ->default(fn() => $this->semesterLabel($record->semester))
+                                ->default(fn () => $this->semesterLabel($record->semester))
                                 ->disabled(),
                             TextInput::make('year')
                                 ->label(__('Year'))
@@ -245,17 +252,17 @@ class Index extends Component implements HasTable, HasForms
                                 ->default($record->grade)
                                 ->disabled()
                                 ->extraInputAttributes(['class' => 'text-primary-600 font-bold']),
-                        ])
+                        ]),
                     ]);
                 })
                 ->modalSubmitAction(false)
-                ->visible(fn() => auth()->user()->can('Registration View')),
+                ->visible(fn () => auth()->user()->can('Registration View')),
 
             EditAction::make('edit')
                 ->label('')
                 ->tooltip(__('Edit'))
-                ->url(fn(Registration $record) => route('registrations.edit', $record->id))
-                ->visible(fn() => auth()->user()->can('Registration Update')),
+                ->url(fn (Registration $record) => route('registrations.edit', $record->id))
+                ->visible(fn () => auth()->user()->can('Registration Update')),
 
             DeleteAction::make('delete')
                 ->label('')
@@ -264,7 +271,7 @@ class Index extends Component implements HasTable, HasForms
                     $record->delete();
                     Toaster::success(__('Registration deleted successfully'));
                 })
-                ->visible(fn() => auth()->user()->can('Registration Delete'))
+                ->visible(fn () => auth()->user()->can('Registration Delete')),
         ];
     }
 
@@ -274,7 +281,7 @@ class Index extends Component implements HasTable, HasForms
             'breadcrumbs' => [
                 ['title' => __('Home'), 'url' => route('home')],
                 ['title' => __('Registrations List'), 'url' => route('registrations.index')],
-            ]
+            ],
         ]);
     }
 
