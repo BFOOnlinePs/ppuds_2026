@@ -11,6 +11,7 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Filters\Filter;
@@ -45,15 +46,13 @@ class Index extends Component implements HasTable, HasForms
                 TextColumn::make('name')
                     ->label(__('Name'))
                     ->searchable(),
+                ToggleColumn::make('status')
+                    ->label(__('Status')),
                 TextColumn::make('hours')
                     ->label(__('Hours')),
                 TextColumn::make('course_type')
                     ->label(__('Course Type'))
                     ->badge(),
-                TextColumn::make('status')
-                    ->label(__('Status'))
-                    ->badge()
-                    ->color(CourseStatus::class),
             ])
             ->filters($this->getTableFilters())
             ->actions($this->getTableActions())

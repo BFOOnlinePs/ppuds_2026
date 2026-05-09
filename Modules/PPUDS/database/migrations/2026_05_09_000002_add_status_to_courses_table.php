@@ -11,7 +11,7 @@ return new class extends Migration
     {
         Schema::table(config('ppuds.table_prefix') . 'courses', function (Blueprint $table) {
             $table->integer('status')
-                ->default(CourseStatus::ACTIVE->value)
+                ->default(CourseStatus::INACTIVE->value)
                 ->index()
                 ->after('course_type');
         });
