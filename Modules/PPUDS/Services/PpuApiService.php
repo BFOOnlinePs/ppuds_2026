@@ -164,6 +164,53 @@ class PpuApiService
         }
     }
 
+    public function getCurrentSemesterSettings(): ?array
+    {
+        $userId = auth()->id();
+
+        self::logToTerminal('جلب إعدادات الفصل الحالي من API الجامعة...', $userId);
+
+        try {
+            $response = Http::withHeaders(['Accept' => 'application/json'])
+                ->withToken($this->getAccessToken())
+                ->connectTimeout(5)
+                ->get('https://api-core.ppu.edu/api/DualStudies/getCurrentSemesterSettings');
+
+            if (! $response->successful()) {
+                self::logToTerminal('✗ فشل جلب إعدادات الفصل من API الجامعة (كود: ' . $response->status() . ')', $userId);
+                Log::error('Failed to fetch current semester settings from API', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+
+                return null;
+            }
+
+            $data = $response->json('data') ?? [];
+            $academicYear = $data['academicYear'] ?? null;
+            $semesterNo = $data['semesterNo'] ?? null;
+
+            if (! $academicYear || ! $semesterNo) {
+                self::logToTerminal('✗ إعدادات الفصل من API الجامعة غير مكتملة.', $userId);
+                Log::warning('Incomplete current semester settings response', ['response' => $response->json()]);
+
+                return null;
+            }
+
+            self::logToTerminal("✓ تم اعتماد إعدادات الجامعة: السنة {$academicYear} / الفصل {$semesterNo}", $userId);
+
+            return [
+                'academicYear' => (string) $academicYear,
+                'semesterNo' => (string) $semesterNo,
+            ];
+        } catch (\Exception $e) {
+            self::logToTerminal('✗ خطأ في جلب إعدادات الفصل من API الجامعة: ' . $e->getMessage(), $userId);
+            Log::error('PPU Current Semester Settings Error: ' . $e->getMessage());
+
+            return null;
+        }
+    }
+
     public function syncStudents($academicYear, $semesterNo)
     {
         $userId = auth()->id();

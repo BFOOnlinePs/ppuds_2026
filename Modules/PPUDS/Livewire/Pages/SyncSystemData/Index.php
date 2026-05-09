@@ -17,6 +17,8 @@ class Index extends Component
 
     public string $semester;
 
+    public bool $useUniversitySettings = true;
+
     public function mount(GeneralSettings $settings)
     {
         $this->academicYear = $settings->year ?? date('Y');
@@ -35,22 +37,49 @@ class Index extends Component
         PpuApiService::logToTerminal('═══════════════════════════════════════');
 
         try {
-            $apiService->syncSystemData($this->academicYear, $this->semester);
+            [$academicYear, $semester] = $this->resolveSyncSettings($apiService);
+
+            if (! $academicYear || ! $semester) {
+                PpuApiService::logToTerminal('تم إيقاف المزامنة بسبب عدم توفر السنة أو الفصل.');
+                return;
+            }
+
+            $apiService->syncSystemData($academicYear, $semester);
         } catch (\Exception $e) {
             PpuApiService::logToTerminal('✗ خطأ في المزامنة الكاملة: ' . $e->getMessage());
+        } finally {
+            PpuApiService::logToTerminal('═══════════════════════════════════════');
+            PpuApiService::logToTerminal('   انتهت عملية المزامنة');
+            PpuApiService::logToTerminal('═══════════════════════════════════════');
+
+            $this->syncing = false;
+            $this->logs = PpuApiService::getTerminalLogs();
         }
-
-        PpuApiService::logToTerminal('═══════════════════════════════════════');
-        PpuApiService::logToTerminal('   انتهت عملية المزامنة');
-        PpuApiService::logToTerminal('═══════════════════════════════════════');
-
-        $this->syncing = false;
-        $this->logs = PpuApiService::getTerminalLogs();
     }
 
     public function refreshLogs()
     {
         $this->logs = PpuApiService::getTerminalLogs();
+    }
+
+    private function resolveSyncSettings(PpuApiService $apiService): array
+    {
+        if (! $this->useUniversitySettings) {
+            PpuApiService::logToTerminal("تم اعتماد الإعدادات اليدوية: السنة {$this->academicYear} / الفصل {$this->semester}");
+
+            return [$this->academicYear, $this->semester];
+        }
+
+        $settings = $apiService->getCurrentSemesterSettings();
+
+        if (! $settings) {
+            return [null, null];
+        }
+
+        $this->academicYear = $settings['academicYear'];
+        $this->semester = $settings['semesterNo'];
+
+        return [$this->academicYear, $this->semester];
     }
 
     public function render()

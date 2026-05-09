@@ -1,14 +1,20 @@
 <div>
-    <div class="mb-4 flex items-center gap-4">
+    <div class="mb-4 flex flex-wrap items-center gap-4">
+        <label class="inline-flex items-center gap-2 pt-5 text-sm font-medium text-gray-700 dark:text-gray-300">
+            <input type="checkbox" wire:model.live="useUniversitySettings"
+                   class="rounded border-gray-300 text-primary-600 shadow-sm focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800">
+            <span>{{ __('Use University Settings') }}</span>
+        </label>
+
         <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('Academic Year') }}</label>
-            <input type="text" wire:model="academicYear"
-                   class="mt-1 block w-40 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 sm:text-sm">
+            <input type="text" wire:model="academicYear" @disabled($useUniversitySettings)
+                   class="mt-1 block w-40 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 sm:text-sm">
         </div>
         <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('Semester') }}</label>
-            <input type="text" wire:model="semester"
-                   class="mt-1 block w-40 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 sm:text-sm">
+            <input type="text" wire:model="semester" @disabled($useUniversitySettings)
+                   class="mt-1 block w-40 rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 sm:text-sm">
         </div>
         <div class="pt-5">
             <button wire:click="startSync" wire:loading.attr="disabled"
