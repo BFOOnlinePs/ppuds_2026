@@ -15,6 +15,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Enums\FiltersLayout;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -116,12 +117,22 @@ class Index extends Component implements HasTable, HasForms
                 ->default(app(GeneralSettings::class)->semester_type?->value)
                 ->native(false),
 
-            SelectFilter::make('year')
+            Filter::make('year')
                 ->label(__('Academic Year'))
-                ->options(fn(): array => $this->getRegistrationYearOptions())
-                ->default(app(GeneralSettings::class)->year)
-                ->searchable()
-                ->native(false),
+                ->form([
+                    TextInput::make('year')
+                        ->label(__('Academic Year'))
+                        ->numeric()
+                        ->default(app(GeneralSettings::class)->year)
+                        ->placeholder(date('Y'))
+                        ->prefixIcon('solar-calendar-search-bold-duotone'),
+                ])
+                ->query(function (Builder $query, array $data): Builder {
+                    return $query->when(
+                        filled($data['year'] ?? null),
+                        fn (Builder $query) => $query->where('year', (int) $data['year'])
+                    );
+                }),
 
             // 4. فلتر المشرف
             SelectFilter::make('supervisor_id')
@@ -164,27 +175,6 @@ class Index extends Component implements HasTable, HasForms
         ksort($options);
 
         return $options ?: SemesterType::options();
-    }
-
-    private function getRegistrationYearOptions(): array
-    {
-        $options = $this->getRegistrationFilterOptionsQuery()
-            ->whereNotNull('year')
-            ->distinct()
-            ->orderByDesc('year')
-            ->pluck('year')
-            ->mapWithKeys(fn($year): array => [(string) $year => (string) $year])
-            ->toArray();
-
-        $currentYear = app(GeneralSettings::class)->year;
-
-        if ($currentYear !== null) {
-            $options[(string) $currentYear] = (string) $currentYear;
-        }
-
-        krsort($options, SORT_NATURAL);
-
-        return $options;
     }
 
     public function getTableBulkAction(): array
