@@ -123,9 +123,7 @@ class Index extends Component implements HasTable, HasForms
                     TextInput::make('year')
                         ->label(__('Academic Year'))
                         ->numeric()
-                        ->default(app(GeneralSettings::class)->year)
-                        ->placeholder(date('Y'))
-                        ->prefixIcon('solar-calendar-search-bold-duotone'),
+                        ->default(app(GeneralSettings::class)->year),
                 ])
                 ->query(function (Builder $query, array $data): Builder {
                     return $query->when(
