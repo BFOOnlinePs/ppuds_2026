@@ -4,6 +4,7 @@ namespace Modules\PPUDS\Livewire\Pages\SyncSystemData;
 
 use App\View\Components\AppLayout;
 use Livewire\Component;
+use Modules\PPUDS\Jobs\ProcessSystemDataSync;
 use Modules\PPUDS\Services\PpuApiService;
 use Modules\PPUDS\Settings\GeneralSettings;
 
@@ -29,6 +30,7 @@ class Index extends Component
     public function startSync(PpuApiService $apiService)
     {
         $this->syncing = true;
+        $userId = auth()->id();
         PpuApiService::clearTerminalLogs();
         $this->logs = [];
 
@@ -44,14 +46,18 @@ class Index extends Component
                 return;
             }
 
-            $apiService->syncSystemData($academicYear, $semester);
+            ProcessSystemDataSync::dispatch(
+                (string) $academicYear,
+                (string) $semester,
+                $apiService->getAccessToken(),
+                $userId,
+            );
+
+            PpuApiService::logToTerminal("تم إرسال المزامنة للخلفية للسنة {$academicYear} / الفصل {$semester}.", $userId);
+            PpuApiService::logToTerminal('اترك queue:work يعمل وستظهر النتائج هنا تلقائياً.', $userId);
         } catch (\Exception $e) {
             PpuApiService::logToTerminal('✗ خطأ في المزامنة الكاملة: ' . $e->getMessage());
         } finally {
-            PpuApiService::logToTerminal('═══════════════════════════════════════');
-            PpuApiService::logToTerminal('   انتهت عملية المزامنة');
-            PpuApiService::logToTerminal('═══════════════════════════════════════');
-
             $this->syncing = false;
             $this->logs = PpuApiService::getTerminalLogs();
         }

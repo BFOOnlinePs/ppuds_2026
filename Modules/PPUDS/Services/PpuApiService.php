@@ -98,11 +98,12 @@ class PpuApiService
         }
     }
 
-    public function syncSystemData($academicYear, $semesterNo): bool
+    public function syncSystemData($academicYear, $semesterNo, ?string $token = null, ?int $userId = null): bool
     {
-        $userId = auth()->id();
+        $userId = $userId ?? auth()->id();
+        $token = $token ?? $this->getAccessToken();
 
-        $majorsSynced = $this->syncMajors();
+        $majorsSynced = $this->syncMajors($token, $userId);
         if (! $majorsSynced) {
             self::logToTerminal('تم إيقاف المزامنة لأن مزامنة التخصصات فشلت.', $userId);
 
@@ -110,7 +111,6 @@ class PpuApiService
         }
 
         try {
-            $token = $this->getAccessToken();
             $students = $this->fetchStudentsFromUniversity($academicYear, $semesterNo, $token, $userId);
 
             if ($students === null) {
@@ -302,13 +302,13 @@ class PpuApiService
         }
     }
 
-    public function syncMajors()
+    public function syncMajors(?string $token = null, ?int $userId = null)
     {
-        $userId = auth()->id();
+        $userId = $userId ?? auth()->id();
         self::logToTerminal('جارٍ بدء مزامنة التخصصات...', $userId);
 
         try {
-            $token = $this->getAccessToken();
+            $token = $token ?? $this->getAccessToken();
 
             self::logToTerminal('جلب البيانات من API الجامعة...', $userId);
 
@@ -335,7 +335,7 @@ class PpuApiService
                     Major::updateOrCreate(
                         ['reference_code' => $majorNo],
                         [
-                            'created_by' => auth()->id() ?? 1,
+                            'created_by' => $userId ?? auth()->id() ?? 1,
                             'ar' => ['name' => $majorData['majorArabicName'] ?? $majorNo],
                             'en' => ['name' => $majorData['majorEnglishName'] ?? ($majorData['majorArabicName'] ?? $majorNo)],
                         ]
