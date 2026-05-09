@@ -37,10 +37,17 @@ class Index extends Component implements HasTable, HasForms
     use InteractsWithTable;
     use InteractsWithForms;
 
+    public ?int $studentId = null;
+
+    public function mount(?int $studentId = null)
+    {
+        $this->studentId = $studentId;
+    }
+
     public function table(Table $table)
     {
         return $table
-            ->query(fn() => Registration::query()->with(['student', 'course', 'supervisor']))
+            ->query(fn() => $this->studentRegistrationQuery()->with(['student', 'course', 'supervisor']))
             ->columns([
 
                 TextColumn::make('course.name')
@@ -48,12 +55,10 @@ class Index extends Component implements HasTable, HasForms
                     ->badge()
                     ->color('info'),
 
-                TextColumn::make('registration.semester')
+                TextColumn::make('semester')
                     ->label(__('Term'))
                     ->formatStateUsing(function ($state, $record) {
-                        $year = $record->registration?->year ?? $record->year;
-
-                        return $this->semesterLabel($state).' - '.$year;
+                        return $this->semesterLabel($state).' - '.$record->year;
                     })
                     ->icon('solar-calendar-date-linear'),
 
@@ -83,7 +88,11 @@ class Index extends Component implements HasTable, HasForms
         return [
             SelectFilter::make('course_id')
                 ->label(__('Course'))
-                ->options(Course::get()->pluck('name', 'id'))
+                ->options(fn(): array => Course::query()
+                    ->whereIn('id', $this->studentRegistrationQuery()->select('course_id'))
+                    ->get()
+                    ->pluck('name', 'id')
+                    ->toArray())
                 ->searchable()
                 ->preload(),
 
@@ -98,16 +107,31 @@ class Index extends Component implements HasTable, HasForms
                 ])
                 ->query(function (Builder $query, array $data): Builder {
                     return $query->when(
-                        $data['year'],
-                        fn(Builder $query, $year) => $query->where('year', $year)
+                        filled($data['year'] ?? null),
+                        fn(Builder $query) => $query->where('year', $data['year'])
                     );
                 }),
 
             SelectFilter::make('supervisor_id')
                 ->label(__('Supervisor'))
-                ->options(User::whereHas('roles', fn($q) => $q->where('name', 'Practical Training Supervisor'))->pluck('name', 'id'))
+                ->options(fn(): array => User::query()
+                    ->whereIn('id', $this->studentRegistrationQuery()
+                        ->whereNotNull('supervisor_id')
+                        ->select('supervisor_id'))
+                    ->pluck('name', 'id')
+                    ->toArray())
                 ->searchable(),
         ];
+    }
+
+    private function studentRegistrationQuery(): Builder
+    {
+        return Registration::query()
+            ->when(
+                $this->studentId,
+                fn (Builder $query) => $query->where('student_id', $this->studentId),
+                fn (Builder $query) => $query->whereRaw('1 = 0')
+            );
     }
 
     public function getTableBulkAction(): array
