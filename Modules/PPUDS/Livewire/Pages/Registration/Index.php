@@ -127,6 +127,7 @@ class Index extends Component implements HasForms, HasTable
                     TextInput::make('year')
                         ->label(__('Academic Year'))
                         ->numeric()
+                        ->live(onBlur: true)
                         ->default(app(GeneralSettings::class)->year),
                 ])
                 ->query(function (Builder $query, array $data): Builder {
@@ -177,27 +178,6 @@ class Index extends Component implements HasForms, HasTable
         ksort($options);
 
         return $options ?: SemesterType::options();
-    }
-
-    private function getRegistrationYearOptions(): array
-    {
-        $options = $this->getRegistrationFilterOptionsQuery()
-            ->whereNotNull('year')
-            ->distinct()
-            ->orderByDesc('year')
-            ->pluck('year')
-            ->mapWithKeys(fn ($year): array => [(string) $year => (string) $year])
-            ->toArray();
-
-        $currentYear = app(GeneralSettings::class)->year;
-
-        if ($currentYear !== null) {
-            $options[(string) $currentYear] = (string) $currentYear;
-        }
-
-        krsort($options, SORT_NATURAL);
-
-        return $options;
     }
 
     public function getTableBulkAction(): array
