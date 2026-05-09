@@ -69,6 +69,10 @@ class Index extends Component implements HasForms, HasTable
                 TextColumn::make('semester')
                     ->label(__('Term'))
                     ->icon('solar-calendar-date-linear'),
+
+                TextColumn::make('year')
+                    ->label(__('Year'))
+                    ->icon('solar-calendar-date-linear'),
                 // تم إزالة sortable لتجنب المشاكل حالياً
 
                 // 4. عمود المشرف
