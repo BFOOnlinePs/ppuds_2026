@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use Laravel\Socialite\Facades\Socialite;
 use Modules\PPUDS\Actions\AuthenticateViaKeycloakAction;
 use Modules\PPUDS\Enums\LoginMethod;
@@ -25,6 +26,8 @@ class KeycloakAuthController extends Controller
             $authAction->execute($keycloakUser);
 
             return redirect()->route('home');
+        } catch (ValidationException $e) {
+            return redirect()->route('login')->withErrors($e->errors());
         } catch (\Exception $e) {
             Log::error('Keycloak Auth Failed: '.$e->getMessage());
 

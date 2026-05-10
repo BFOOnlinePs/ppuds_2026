@@ -4,7 +4,7 @@ namespace Modules\PPUDS\Actions;
 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Laravel\Socialite\Contracts\User as KeycloakUser;
 use Modules\Core\Entities\User;
 use Modules\Core\Enums\UserRole;
@@ -18,13 +18,25 @@ class AuthenticateViaKeycloakAction
             $payload = json_decode(base64_decode(explode('.', $keycloakUser->token)[1]), true);
             $roles = $payload['realm_access']['roles'] ?? [];
 
-            $user = User::updateOrCreate(
-                ['email' => $keycloakUser->getEmail()],
-                [
-                    'name' => $keycloakUser->getName(),
-                    'password' => bcrypt('bfohost2026'),
-                ]
-            );
+            $email = $keycloakUser->getEmail();
+
+            if (! $email) {
+                throw ValidationException::withMessages([
+                    'auth' => 'لم يتم إرسال البريد الإلكتروني من نظام الجامعة.',
+                ]);
+            }
+
+            $user = User::where('email', $email)->first();
+
+            if (! $user) {
+                throw ValidationException::withMessages([
+                    'auth' => 'لا يوجد حساب مرتبط بهذا البريد في النظام.',
+                ]);
+            }
+
+            $user->update([
+                'name' => $keycloakUser->getName() ?: $user->name,
+            ]);
 
             // 3. مزامنة الأدوار (Spatie Roles) - نفترض وجود دور Student و Supervisor
             // $user->syncRoles(array_intersect($roles, [UserRole::STUDENT->value, UserRole::COMPANY_SUPERVISOR->value, UserRole::SUPER_ADMIN->value]));
