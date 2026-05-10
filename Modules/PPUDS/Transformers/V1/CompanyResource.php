@@ -21,7 +21,7 @@ class CompanyResource extends JsonResource
             'company_category_id' => $this->company_category_id,
             'website' => $this->website,
             'status' => $this->status,
-            'logo_url' => $this->getFirstMediaUrl('logo'),
+            'logo_url' => $this->getImageAttribute(),
 
             'branches' => BranchResource::collection($this->whenLoaded('branches')),
 

@@ -2,6 +2,7 @@
 
 namespace Modules\PPUDS\Entities;
 
+use ArPHP\I18N\Arabic;
 use Astrotomic\Translatable\Contracts\Translatable as TranslatableContract;
 use Astrotomic\Translatable\Translatable;
 use Illuminate\Database\Eloquent\Model;
@@ -9,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
+use Intervention\Image\Encoders\PngEncoder;
+use Laravolt\Avatar\Avatar;
 use Modules\Branch\Entities\Branch;
 use Modules\Core\Entities\User;
 use Modules\Core\Enums\ImageQuality;
@@ -23,19 +26,18 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-
-class Company extends Model implements TranslatableContract, HasMedia
+class Company extends Model implements HasMedia, TranslatableContract
 {
-    use LogsActivity;
-    use Translatable;
-    use softDeletes;
     use InteractsWithMedia;
+    use LogsActivity;
+    use softDeletes;
+    use Translatable;
 
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
 
-        $this->setTable(config('ppuds.table_prefix') . 'companies');
+        $this->setTable(config('ppuds.table_prefix').'companies');
     }
 
     protected $fillable = [
@@ -49,12 +51,12 @@ class Company extends Model implements TranslatableContract, HasMedia
 
     protected $casts = [
         'old_company_id' => 'integer',
-        'status'    => CompanyStatus::class
+        'status' => CompanyStatus::class,
     ];
 
     public $translatedAttributes = [
         'name',
-        'description'
+        'description',
     ];
 
     public $useTranslationFallback = true;
@@ -65,7 +67,7 @@ class Company extends Model implements TranslatableContract, HasMedia
             ->logOnly($this->getFillable())
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()
-            ->setDescriptionForEvent(fn(string $eventName) => "This model has been {$eventName} and value ")
+            ->setDescriptionForEvent(fn (string $eventName) => "This model has been {$eventName} and value ")
             ->useLogName(class_basename($this));
     }
 
@@ -82,7 +84,7 @@ class Company extends Model implements TranslatableContract, HasMedia
             $locale = app()->getLocale();
             $translationData = request()->only($model->translatedAttributes);
 
-            if (!empty($translationData)) {
+            if (! empty($translationData)) {
                 $model->translateOrNew($locale)->fill($translationData);
                 $model->save();
             }
@@ -102,6 +104,15 @@ class Company extends Model implements TranslatableContract, HasMedia
             ->nonQueued();
     }
 
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('logo')
+            ->singleFile();
+
+        $this->addMediaCollection('cover_photo')
+            ->singleFile();
+    }
+
     public function addImage($file)
     {
         if (is_array($file)) {
@@ -110,8 +121,8 @@ class Company extends Model implements TranslatableContract, HasMedia
 
         // التحقق من نوع الملف
         if (
-            !$file instanceof \Illuminate\Http\UploadedFile &&
-            !($file instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile)
+            ! $file instanceof \Illuminate\Http\UploadedFile &&
+            ! ($file instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile)
         ) {
             return null;
         }
@@ -122,7 +133,7 @@ class Company extends Model implements TranslatableContract, HasMedia
         try {
             $originalName = $file->getClientOriginalName();
             $extension = $file->getClientOriginalExtension();
-            $fileName = time() . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $extension;
+            $fileName = time().'_'.Str::slug(pathinfo($originalName, PATHINFO_FILENAME)).'.'.$extension;
 
             $media = $this
                 ->addMedia($file)
@@ -136,14 +147,61 @@ class Company extends Model implements TranslatableContract, HasMedia
 
             return $media;
         } catch (\Exception $e) {
-            \Log::error('Error uploading product image: ' . $e->getMessage());
+            \Log::error('Error uploading product image: '.$e->getMessage());
+
             return null;
         }
     }
 
-    public function getImageAttribute()
+    public function getImageAttribute(): string
     {
-        return $this->getFirstMediaUrl('logo');
+        return $this->hasMedia('logo')
+            ? $this->getFirstMediaUrl('logo')
+            : $this->getDefaultLogoUrlAttribute();
+    }
+
+    public function getDefaultLogoUrlAttribute(): string
+    {
+        return 'data:image/png;base64,'.base64_encode($this->generateDefaultLogo());
+    }
+
+    public function generateLogo(): void
+    {
+        $this->addMediaFromString($this->generateDefaultLogo())
+            ->usingFileName("company-{$this->id}-logo.png")
+            ->toMediaCollection('logo', 'media');
+    }
+
+    protected function generateDefaultLogo(): string
+    {
+        $initialsData = $this->generateInitials($this->getLogoName());
+        $processedText = $initialsData['initials'];
+
+        if ($initialsData['is_arabic']) {
+            $processedText = (new Arabic('Glyphs'))->utf8Glyphs($processedText);
+        }
+
+        $image = (new Avatar(config('laravolt.avatar')))
+            ->create($processedText)
+            ->setDimension(300, 300)
+            ->setFontSize(100)
+            ->getImageObject();
+
+        return (string) $image->encode(new PngEncoder);
+    }
+
+    protected function getLogoName(): string
+    {
+        return $this->name ?: ($this->website ?: 'Company_'.$this->id);
+    }
+
+    private function generateInitials(string $name): array
+    {
+        $name = trim($name);
+        $isArabic = (bool) preg_match('/[\p{Arabic}]/u', $name);
+        $initials = mb_strtoupper(mb_substr($name, 0, 1));
+
+        return ['initials' => $initials, 'is_arabic' => $isArabic];
     }
 
     public function category(): BelongsTo
@@ -160,7 +218,7 @@ class Company extends Model implements TranslatableContract, HasMedia
 
     public function students(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, config('ppuds.table_prefix') . 'company_student', 'company_id', 'student_id');
+        return $this->belongsToMany(User::class, config('ppuds.table_prefix').'company_student', 'company_id', 'student_id');
     }
 
     public function registrations(): BelongsToMany
