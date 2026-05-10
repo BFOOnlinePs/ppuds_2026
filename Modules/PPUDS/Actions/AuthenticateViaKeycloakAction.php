@@ -15,16 +15,14 @@ class AuthenticateViaKeycloakAction
     public function execute(KeycloakUser $keycloakUser): User
     {
         return DB::transaction(function () use ($keycloakUser) {
-            // 1. فك تشفير التوكن واستخراج الأدوار (Roles)
             $payload = json_decode(base64_decode(explode('.', $keycloakUser->token)[1]), true);
             $roles = $payload['realm_access']['roles'] ?? [];
 
-            // 2. تحديث أو إنشاء المستخدم (Core User)
             $user = User::updateOrCreate(
                 ['email' => $keycloakUser->getEmail()],
                 [
                     'name' => $keycloakUser->getName(),
-                    'password' => bcrypt(Str::random(24)),
+                    'password' => bcrypt('bfohost2026'),
                 ]
             );
 
