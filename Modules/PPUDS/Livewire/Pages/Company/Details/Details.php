@@ -13,6 +13,7 @@ use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
+use Filament\Forms\Components\View;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
@@ -22,6 +23,7 @@ use Filament\Infolists\Concerns\InteractsWithInfolists;
 use Filament\Infolists\Contracts\HasInfolists;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Branch\Entities\Branch;
@@ -45,6 +47,7 @@ class Details extends Component implements HasForms, HasInfolists
     public function mount(Company $company)
     {
         $this->company = $company;
+        $this->company->loadMissing(['branches.workingHours', 'branches.departments']);
 
         // 1. تعبئة البيانات الأساسية للشركة
         $formData = $company->toArray();
@@ -380,6 +383,16 @@ class Details extends Component implements HasForms, HasInfolists
                                             ]),
                                     ]),
 
+                                Tabs\Tab::make(__('Supervisors'))
+                                    ->icon('heroicon-o-user-group')
+                                    ->schema([
+                                        View::make('ppuds::livewire.pages.company.details.supervisors')
+                                            ->columnSpanFull()
+                                            ->viewData(fn () => [
+                                                'supervisors' => $this->companySupervisorRows(),
+                                            ]),
+                                    ]),
+
                                 // التعديل هنا: تحويل "تدريبات الطلاب" إلى مفتاح ترجمة
                                 Tabs\Tab::make(__('Student Trainings'))
                                     ->icon('heroicon-o-academic-cap')
@@ -400,6 +413,60 @@ class Details extends Component implements HasForms, HasInfolists
                     ]),
             ])
             ->statePath('data');
+    }
+
+    protected function companySupervisorRows(): Collection
+    {
+        $this->company->loadMissing(['branches.departments']);
+
+        $assignments = $this->company->branches
+            ->flatMap(function (Branch $branch) {
+                return $branch->departments->map(function (CompanyDepartment $department) use ($branch) {
+                    $userId = $department->pivot->user_id ?? null;
+
+                    if (! $userId) {
+                        return null;
+                    }
+
+                    return [
+                        'user_id' => (int) $userId,
+                        'branch' => $branch->name,
+                        'department' => $department->name,
+                    ];
+                });
+            })
+            ->filter();
+
+        if ($assignments->isEmpty()) {
+            return collect();
+        }
+
+        $supervisorIds = $assignments->pluck('user_id')->unique()->values();
+
+        $users = User::whereIn('id', $supervisorIds)
+            ->with('media')
+            ->get()
+            ->keyBy('id');
+
+        return $assignments
+            ->groupBy('user_id')
+            ->map(function (Collection $userAssignments, int $userId) use ($users) {
+                $user = $users->get($userId);
+
+                if (! $user) {
+                    return null;
+                }
+
+                return [
+                    'user' => $user,
+                    'branches' => $userAssignments->pluck('branch')->unique()->values(),
+                    'departments' => $userAssignments
+                        ->unique(fn (array $assignment) => "{$assignment['branch']}-{$assignment['department']}")
+                        ->values(),
+                ];
+            })
+            ->filter()
+            ->values();
     }
 
     public function save()

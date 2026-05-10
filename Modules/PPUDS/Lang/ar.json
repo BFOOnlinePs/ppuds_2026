@@ -126,6 +126,8 @@
     "Add New Department": "إضافة قسم جديد",
     "Add Department": "إضافة قسم",
     "Supervisor": "المشرف",
+    "Supervisors": "المشرفين",
+    "No supervisors found": "لا يوجد مشرفون لهذه الشركة",
     "User": "المستخدم",
     "Company Supervisor": "مشرف الشركة",
     "Location": "الموقع",
