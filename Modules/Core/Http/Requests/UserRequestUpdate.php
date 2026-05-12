@@ -29,7 +29,7 @@ class UserRequestUpdate extends FormRequest
             'studentProfile.gender' => 'sometimes|integer|in:' . implode(',', array_column(StudentGender::cases(), 'value')),
             'studentProfile.tawjihi_gpa' => 'sometimes|numeric|between:0,4',
             'studentProfile.enrollment_year' => 'sometimes|integer|min:1900|max:'.date('Y'),
-            'studentProfile.semester_level' => 'sometimes|integer|min:1|max:12',
+            'studentProfile.semester_level' => 'sometimes|nullable|integer|min:1|max:12',
             'studentProfile.major_id' => 'sometimes|integer|exists:ppu_ds_majors,id',
         ];
 

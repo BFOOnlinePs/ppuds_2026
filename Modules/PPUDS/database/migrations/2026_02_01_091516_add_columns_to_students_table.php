@@ -15,7 +15,7 @@ return new class extends Migration
             $table->string('student_number')->unique()->after('id');
 
             $table->year('enrollment_year')->nullable();
-            $table->unsignedTinyInteger('semester_level')->default(1);
+            $table->unsignedTinyInteger('semester_level')->nullable();
 
             $table->foreignId('major_id')->nullable()->constrained(config('ppuds.table_prefix') . 'majors')->nullOnDelete();
         });

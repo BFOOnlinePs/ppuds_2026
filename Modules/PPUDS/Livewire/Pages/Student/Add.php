@@ -127,8 +127,7 @@ class Add extends Component implements HasForms
                                     Select::make('semester_level')
                                         ->label(__('Semester Level'))
                                         ->options(array_combine(range(1, 10), range(1, 10))) // قائمة من 1 إلى 10
-                                        ->default(1)
-                                        ->required(),
+                                        ->nullable(),
                                 ]),
                         ]),
 
