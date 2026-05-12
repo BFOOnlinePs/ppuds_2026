@@ -1,8 +1,22 @@
 @php
+    $company = $company ?? null;
     $supervisors = collect($supervisors ?? []);
 @endphp
 
 <div class="space-y-4">
+    @if ($company)
+        <div class="flex justify-end">
+            @can('Company Update')
+                <a
+                    href="{{ route('companies.edit', $company) }}"
+                    class="inline-flex items-center rounded-md bg-primary-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                >
+                    {{ __('Edit Company') }}
+                </a>
+            @endcan
+        </div>
+    @endif
+
     @if ($supervisors->isEmpty())
         <div class="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center text-sm font-medium text-gray-500">
             {{ __('No supervisors found') }}
@@ -48,6 +62,14 @@
                                         @if ($user->name_en)
                                             <div class="text-sm text-gray-500">{{ $user->name_en }}</div>
                                         @endif
+                                        @can('User Update')
+                                            <a
+                                                href="{{ route('users.edit', $user) }}"
+                                                class="mt-1 inline-flex text-xs font-semibold text-primary-600 hover:text-primary-700"
+                                            >
+                                                {{ __('Open User') }}
+                                            </a>
+                                        @endcan
                                     </div>
                                 </div>
                             </td>
@@ -119,6 +141,14 @@
                             @if ($user->name_en)
                                 <div class="text-sm text-gray-500">{{ $user->name_en }}</div>
                             @endif
+                            @can('User Update')
+                                <a
+                                    href="{{ route('users.edit', $user) }}"
+                                    class="mt-1 inline-flex text-xs font-semibold text-primary-600 hover:text-primary-700"
+                                >
+                                    {{ __('Open User') }}
+                                </a>
+                            @endcan
                             <div class="mt-2 space-y-1 text-sm text-gray-600">
                                 <div class="break-all">{{ $user->email ?: '-' }}</div>
                                 <div dir="ltr">{{ $user->phone ?: '-' }}</div>

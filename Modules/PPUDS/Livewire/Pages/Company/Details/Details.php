@@ -389,6 +389,7 @@ class Details extends Component implements HasForms, HasInfolists
                                         View::make('ppuds::livewire.pages.company.details.supervisors')
                                             ->columnSpanFull()
                                             ->viewData(fn () => [
+                                                'company' => $this->company,
                                                 'supervisors' => $this->companySupervisorRows(),
                                             ]),
                                     ]),
