@@ -31,6 +31,7 @@ use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\Course;
 use Modules\PPUDS\Entities\Registration;
+use Modules\PPUDS\Enums\CourseStatus;
 use Modules\PPUDS\Enums\SemesterType;
 use Modules\PPUDS\Settings\GeneralSettings;
 
@@ -111,7 +112,7 @@ class Index extends Component implements HasForms, HasTable
         return [
             SelectFilter::make('course_id')
                 ->label(__('Course'))
-                ->options(Course::get()->pluck('name', 'id'))
+                ->options(Course::where('status', CourseStatus::ACTIVE->value)->get()->pluck('name', 'id'))
                 ->searchable()
                 ->preload(),
 
