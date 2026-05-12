@@ -6,6 +6,7 @@ use App\View\Components\AppLayout;
 use Livewire\Component;
 use Modules\PPUDS\Entities\Course;
 use Modules\PPUDS\Enums\CourseStatus;
+use Modules\PPUDS\Enums\SemesterType;
 use Modules\PPUDS\Jobs\ProcessCoursesSync;
 use Modules\PPUDS\Jobs\ProcessSystemDataSync;
 use Modules\PPUDS\Services\PpuApiService;
@@ -165,8 +166,27 @@ class Index extends Component
 
         $this->academicYear = $settings['academicYear'];
         $this->semester = $settings['semesterNo'];
+        $this->saveUniversitySettings($this->academicYear, $this->semester);
 
         return [$this->academicYear, $this->semester];
+    }
+
+    private function saveUniversitySettings(string $academicYear, string $semester): void
+    {
+        $semesterType = SemesterType::tryFrom((int) $semester);
+
+        if (! $semesterType) {
+            PpuApiService::logToTerminal("لم يتم حفظ إعدادات الجامعة لأن رقم الفصل غير معروف: {$semester}");
+
+            return;
+        }
+
+        $settings = app(GeneralSettings::class);
+        $settings->year = (int) $academicYear;
+        $settings->semester_type = $semesterType;
+        $settings->save();
+
+        PpuApiService::logToTerminal("تم حفظ إعدادات الجامعة في النظام: السنة {$academicYear} / الفصل {$semester}");
     }
 
     public function render()
