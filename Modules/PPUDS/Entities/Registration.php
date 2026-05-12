@@ -27,6 +27,7 @@ class Registration extends Model implements HasMedia
     use softDeletes;
     use InteractsWithMedia;
 
+
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);

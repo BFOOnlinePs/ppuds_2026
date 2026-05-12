@@ -64,6 +64,7 @@ class PPUDSServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->merge_config_from(base_path('Modules/PPUDS/config/config.php'), $this->nameLower);
         $this->app->register(EventServiceProvider::class);
         $this->app->register(RouteServiceProvider::class);
         $this->app->register(SidebarServiceProvider::class);
