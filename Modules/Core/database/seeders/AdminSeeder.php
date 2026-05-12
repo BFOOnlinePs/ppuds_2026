@@ -31,6 +31,18 @@ class AdminSeeder extends Seeder
 
         $user->generateAvatar();
 
+        $dstesting = User::updateOrCreate(
+            ['email' => 'dstesting@ppu.edu'],
+            [
+                'name' => 'DSTesting',
+                'password' => Hash::make('123456789'),
+            ]
+        );
+
+        $dstesting->assignRole('Super Admin');
+
+        $dstesting->generateAvatar();
+
         $roles = [
             'Student',                         // طالب
             'Head of Department',              // رئيس قسم

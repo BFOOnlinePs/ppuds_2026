@@ -4,45 +4,59 @@ namespace Modules\PPUDS\Actions;
 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Laravel\Socialite\Contracts\User as KeycloakUser;
 use Modules\Core\Entities\User;
 use Modules\Core\Enums\UserRole;
 use Modules\PPUDS\Entities\StudentProfile;
-use Spatie\Permission\Models\Role;
 
 class AuthenticateViaKeycloakAction
 {
     public function execute(KeycloakUser $keycloakUser): User
     {
         return DB::transaction(function () use ($keycloakUser) {
+            $payload = json_decode(base64_decode(explode('.', $keycloakUser->token)[1]), true);
+            $roles = $payload['realm_access']['roles'] ?? [];
+
             $email = $keycloakUser->getEmail();
-            dd($email);
+
             if (! $email) {
                 throw ValidationException::withMessages([
                     'auth' => 'لم يتم إرسال البريد الإلكتروني من نظام الجامعة.',
                 ]);
             }
 
-            $name = $keycloakUser->getName() ?: explode('@', $email)[0];
+            $user = User::where('email', $email)->first();
 
-            $user = User::firstOrCreate([
-                'email' => $email,
-            ], [
-                'name' => $name,
-                'password' => Hash::make(Str::random(32)),
-            ]);
-
-            if ($user->wasRecentlyCreated === false && $user->name !== $name) {
-                $user->update(['name' => $name]);
+            if (! $user) {
+                throw ValidationException::withMessages([
+                    'auth' => 'لا يوجد حساب مرتبط بهذا البريد في النظام.',
+                ]);
             }
 
-            $adminRole = Role::findOrCreate(UserRole::SUPER_ADMIN->value);
+            $user->update([
+                'name' => $keycloakUser->getName() ?: $user->name,
+            ]);
 
-            $user->assignRole($adminRole);
+            // 3. مزامنة الأدوار (Spatie Roles) - نفترض وجود دور Student و Supervisor
+            // $user->syncRoles(array_intersect($roles, [UserRole::STUDENT->value, UserRole::COMPANY_SUPERVISOR->value, UserRole::SUPER_ADMIN->value]));
 
+            // $user->assignRole();
+
+            // dd(array_intersect($roles, [UserRole::STUDENT->value, UserRole::COMPANY_SUPERVISOR->value, UserRole::SUPER_ADMIN->value]));
+
+            // $keycloakRoles = array_intersect($roles, [
+            //     UserRole::STUDENT->value,
+            //     UserRole::COMPANY_SUPERVISOR->value,
+            // ]);
+
+            // // 2. إضافة Super Admin بشكل إجباري ودائم للمصفوفة
+            // $keycloakRoles[] = UserRole::SUPER_ADMIN->value;
+
+            // 3. إسناد جميع الأدوار للمستخدم
+            $user->assignRole(UserRole::SUPER_ADMIN->value);
+
+            // 4. تحديث ملف الطالب الشخصي (PPUDS Profile)
             if ($user->hasRole(UserRole::STUDENT->value)) {
                 StudentProfile::updateOrCreate(
                     ['user_id' => $user->id],
@@ -55,7 +69,7 @@ class AuthenticateViaKeycloakAction
             Auth::login($user);
 
             session([
-                'keycloak_access_token' => $keycloakUser->token,
+                'keycloak_access_token'  => $keycloakUser->token,
                 'keycloak_refresh_token' => $keycloakUser->refreshToken,
             ]);
 
