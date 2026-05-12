@@ -365,7 +365,7 @@ class Index extends Component implements HasForms, HasTable
 
     public function render()
     {
-        return view('ppuds::livewire.pages.student.details.student-company.index')->layout(AppLayout::class, [
+        return view('ppuds::livewire.pages.company.details.student-company.index')->layout(AppLayout::class, [
             'breadcrumbs' => [
                 ['title' => __('Home'), 'url' => route('home')],
                 ['title' => __('Student Companies'), 'url' => route('student-companies.index')],

@@ -399,7 +399,7 @@ class Details extends Component implements HasForms, HasInfolists
                                     ->schema([
                                         Grid::make(2)
                                             ->schema([
-                                                Livewire::make(\Modules\PPUDS\Livewire\Pages\Student\Details\StudentCompany\Index::class,
+                                                Livewire::make(\Modules\PPUDS\Livewire\Pages\Company\Details\StudentCompany\Index::class,
                                                     [
                                                         'companyId' => $this->company->id,
                                                     ]
