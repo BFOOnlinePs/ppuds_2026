@@ -39,18 +39,18 @@ class DashboardStatsWidget extends StatsOverviewWidget
         $todayAttendance = $this->todayAttendanceStudentsQuery();
 
         return [
-            Stat::make(__('Current Semester Registrations'), $this->countRecords($currentRegistrations))
-                ->description($this->genderDescription($currentRegistrations, 'student.studentProfile'))
+            Stat::make(__('Current Semester Students'), $this->countDistinct($currentRegistrations, 'student_id'))
+                ->description($this->genderDescription($currentRegistrations, 'student.studentProfile', 'student_id'))
                 ->icon('heroicon-o-academic-cap')
                 ->color('primary'),
 
-            Stat::make(__('Registrations In Companies'), $this->countRecords($studentsInCompanies))
-                ->description($this->genderDescription($studentsInCompanies, 'student.studentProfile'))
+            Stat::make(__('Students In Companies'), $this->countDistinct($studentsInCompanies, 'student_id'))
+                ->description($this->genderDescription($studentsInCompanies, 'student.studentProfile', 'student_id'))
                 ->icon('heroicon-o-building-office-2')
                 ->color('success'),
 
-            Stat::make(__('Registrations Needing Company Registration'), $this->countRecords($studentsNeedingCompany))
-                ->description($this->genderDescription($studentsNeedingCompany, 'student.studentProfile'))
+            Stat::make(__('Students Needing Company Registration'), $this->countDistinct($studentsNeedingCompany, 'student_id'))
+                ->description($this->genderDescription($studentsNeedingCompany, 'student.studentProfile', 'student_id'))
                 ->icon('heroicon-o-user-plus')
                 ->color('warning'),
 
@@ -154,7 +154,7 @@ class DashboardStatsWidget extends StatsOverviewWidget
         ];
     }
 
-    private function genderDescription(Builder $query, string $profileRelation, ?string $distinctColumn = null): string
+    private function genderDescription(Builder $query, string $profileRelation, string $distinctColumn): string
     {
         return __('Gender Breakdown', [
             'male' => $this->countByGender($query, $profileRelation, $distinctColumn, StudentGender::MALE),
@@ -162,27 +162,18 @@ class DashboardStatsWidget extends StatsOverviewWidget
         ]);
     }
 
-    private function countByGender(Builder $query, string $profileRelation, ?string $distinctColumn, StudentGender $gender): int
+    private function countByGender(Builder $query, string $profileRelation, string $distinctColumn, StudentGender $gender): int
     {
-        $query = (clone $query)
-            ->whereHas($profileRelation, fn (Builder $profileQuery) => $profileQuery->where('gender', $gender->value));
-
-        if ($distinctColumn === null) {
-            return $query->count();
-        }
-
-        return $query->distinct($distinctColumn)->count($distinctColumn);
+        return (clone $query)
+            ->whereHas($profileRelation, fn (Builder $profileQuery) => $profileQuery->where('gender', $gender->value))
+            ->distinct($distinctColumn)
+            ->count($distinctColumn);
     }
 
 
     private function countDistinct(Builder $query, string $column): int
     {
         return (clone $query)->distinct($column)->count($column);
-    }
-
-    private function countRecords(Builder $query): int
-    {
-        return (clone $query)->count();
     }
 
     private function studentCompaniesQuery(): Builder
