@@ -55,6 +55,11 @@ class Edit extends Component implements HasForms
                                     ->required()
                                     ->unique('users', 'email', ignorable: $this->user)
                                     ->maxLength(255),
+
+                                TextInput::make('phone')
+                                    ->label(__('Phone'))
+                                    ->tel()
+                                    ->maxLength(255),
                                     
                                 TextInput::make('password')
                                     ->label(__('Password'))
