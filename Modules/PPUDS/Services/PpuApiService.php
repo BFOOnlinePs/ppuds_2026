@@ -296,7 +296,7 @@ class PpuApiService
         self::logToTerminal("جارٍ بدء مزامنة الطلاب للسنة: {$academicYear} الفصل: {$semesterNo}...", $userId);
 
         try {
-            $url = "https://api-core.ppu.edu/api/DualStudies/getAllDsStudents/{$academicYear}/{$semesterNo}";
+            $url = "https://api-core.ppu.edu/api/DualStudies/getDsStudentsByYear/{$academicYear}/{$semesterNo}";
             $token = $this->getAccessToken();
 
             self::logToTerminal('جلب البيانات من API الجامعة...', $userId);
@@ -441,7 +441,7 @@ class PpuApiService
     {
         self::logToTerminal('جلب الطلاب من API الجامعة...', $userId);
 
-        $studentsUrl = "https://api-core.ppu.edu/api/DualStudies/getAllDsStudents/{$academicYear}/{$semesterNo}";
+        $studentsUrl = "https://api-core.ppu.edu/api/DualStudies/getDsStudentsByYear/{$academicYear}/{$semesterNo}";
         try {
             $response = Http::withHeaders(['Accept' => 'application/json'])
                 ->withToken($token)
