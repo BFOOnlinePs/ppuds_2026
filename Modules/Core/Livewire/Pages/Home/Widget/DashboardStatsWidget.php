@@ -170,6 +170,7 @@ class DashboardStatsWidget extends StatsOverviewWidget
             ->count($distinctColumn);
     }
 
+
     private function countDistinct(Builder $query, string $column): int
     {
         return (clone $query)->distinct($column)->count($column);

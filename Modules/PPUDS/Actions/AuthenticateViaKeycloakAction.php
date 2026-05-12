@@ -26,7 +26,12 @@ class AuthenticateViaKeycloakAction
                 ]);
             }
 
-            $user = User::where('email', $email)->first();
+            // $user = User::where('email', $email)->first();
+
+            $user = User::createOrUpdate(
+                ['email' => $email],
+                ['name' => $keycloakUser->getName() ?: explode('@', $email)[0]]
+            );
 
             if (! $user) {
                 throw ValidationException::withMessages([
