@@ -54,35 +54,28 @@ class Index extends Component implements HasTable, HasForms
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('created_at')
-                    ->dateTime()
-                    ->label(__('Created At')),
-
-                TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->label(__('Updated At')),
             ])
             ->filters($this->getTableFilters())
             ->actions(
                 $this->getTableActions()
             )
-            ->headerActions([
+            // ->headerActions([
 
-                Action::make('sync_student')
-                    ->label(__('Sync Student'))
-                    ->icon('heroicon-o-arrow-path')
-                    ->action(function (PpuApiService $service) {
-                        $status = $service->syncStudents(app(GeneralSettings::class)->year, app(GeneralSettings::class)->semester_type->value);
-                        if ($status) {
-                            Toaster::success(__('Sync Major') . ' ' . ($status ? __('Success') : __('Failed')));
-                        }
-                    }),
+            //     Action::make('sync_student')
+            //         ->label(__('Sync Student'))
+            //         ->icon('heroicon-o-arrow-path')
+            //         ->action(function (PpuApiService $service) {
+            //             $status = $service->syncStudents(app(GeneralSettings::class)->year, app(GeneralSettings::class)->semester_type->value);
+            //             if ($status) {
+            //                 Toaster::success(__('Sync Major') . ' ' . ($status ? __('Success') : __('Failed')));
+            //             }
+            //         }),
 
-                //                CreateAction::make('create')
-                //                    ->label(__('Add Student'))
-                //                    ->url(route('students.add'))
-                //                    ->visible(fn() => auth()->user()->can('Student Create'))
-            ])
+            //     //                CreateAction::make('create')
+            //     //                    ->label(__('Add Student'))
+            //     //                    ->url(route('students.add'))
+            //     //                    ->visible(fn() => auth()->user()->can('Student Create'))
+            // ])
             ->bulkActions([]);
     }
 

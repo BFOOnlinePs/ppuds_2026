@@ -7,6 +7,7 @@ use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Route;
 use Modules\Core\Enums\UserRole;
 use Modules\PPUDS\Entities\LeaveRequest;
 use Modules\PPUDS\Entities\Registration;
@@ -39,25 +40,47 @@ class DashboardStatsWidget extends StatsOverviewWidget
         $todayAttendance = $this->todayAttendanceStudentsQuery();
 
         return [
-            Stat::make(__('Current Semester Students'), $this->countDistinct($currentRegistrations, 'student_id'))
+            $this->linkStat(
+                Stat::make(__('Current Semester Students'), $this->countDistinct($currentRegistrations, 'student_id'))
                 ->description($this->genderDescription($currentRegistrations, 'student.studentProfile', 'student_id'))
                 ->icon('heroicon-o-academic-cap')
                 ->color('primary'),
+                [
+                    ['route' => 'registrations.index', 'permission' => 'Registration View List'],
+                    ['route' => 'students.index', 'permission' => 'Student View List'],
+                ],
+            ),
 
-            Stat::make(__('Students In Companies'), $this->countDistinct($studentsInCompanies, 'student_id'))
+            $this->linkStat(
+                Stat::make(__('Students In Companies'), $this->countDistinct($studentsInCompanies, 'student_id'))
                 ->description($this->genderDescription($studentsInCompanies, 'student.studentProfile', 'student_id'))
                 ->icon('heroicon-o-building-office-2')
                 ->color('success'),
+                [
+                    ['route' => 'student-companies.index', 'permission' => 'StudentCompany View List'],
+                ],
+            ),
 
-            Stat::make(__('Students Needing Company Registration'), $this->countDistinct($studentsNeedingCompany, 'student_id'))
+            $this->linkStat(
+                Stat::make(__('Students Needing Company Registration'), $this->countDistinct($studentsNeedingCompany, 'student_id'))
                 ->description($this->genderDescription($studentsNeedingCompany, 'student.studentProfile', 'student_id'))
                 ->icon('heroicon-o-user-plus')
                 ->color('warning'),
+                [
+                    ['route' => 'student-companies.add', 'permission' => 'StudentCompany Create'],
+                    ['route' => 'registrations.index', 'permission' => 'Registration View List'],
+                ],
+            ),
 
-            Stat::make(__('Today Attendance'), $this->countDistinct($todayAttendance, 'student_id'))
+            $this->linkStat(
+                Stat::make(__('Today Attendance'), $this->countDistinct($todayAttendance, 'student_id'))
                 ->description($this->genderDescription($todayAttendance, 'student.studentProfile', 'student_id'))
                 ->icon('heroicon-o-calendar-days')
                 ->color('info'),
+                [
+                    ['route' => 'student-attendances.index', 'permission' => 'StudentAttendance View List'],
+                ],
+            ),
         ];
     }
 
@@ -70,24 +93,80 @@ class DashboardStatsWidget extends StatsOverviewWidget
         $hours = $this->studentWorkingHours();
 
         return [
-            Stat::make(__('Attendance Hours'), $this->formatHours($hours['actual']))
+            $this->linkStat(
+                Stat::make(__('Attendance Hours'), $this->formatHours($hours['actual']))
                 ->description(__('Worked Hours Of Total Hours', [
                     'worked' => $this->formatHours($hours['actual']),
                     'total' => $this->formatHours($hours['total']),
                 ]))
                 ->icon('heroicon-o-clock')
                 ->color('primary'),
+                [
+                    ['route' => 'student-attendances.index', 'permission' => 'StudentAttendance View List'],
+                ],
+            ),
 
-            Stat::make(__('Attendance Days'), $this->studentAttendanceDays())
+            $this->linkStat(
+                Stat::make(__('Attendance Days'), $this->studentAttendanceDays())
                 ->description(__('Total Attendance Days'))
                 ->icon('heroicon-o-calendar-days')
                 ->color('success'),
+                [
+                    ['route' => 'student-attendances.index', 'permission' => 'StudentAttendance View List'],
+                ],
+            ),
 
-            Stat::make(__('Attendance And Departure Permissions'), $this->studentLeaveRequestsCount())
+            $this->linkStat(
+                Stat::make(__('Attendance And Departure Permissions'), $this->studentLeaveRequestsCount())
                 ->description(__('Total Attendance And Departure Permissions'))
                 ->icon('heroicon-o-document-text')
                 ->color('warning'),
+                [
+                    ['route' => 'leave-requests.index', 'permission' => 'LeaveRequest View List'],
+                ],
+            ),
         ];
+    }
+
+    private function linkStat(Stat $stat, array $targets): Stat
+    {
+        $url = $this->firstAllowedUrl($targets);
+
+        if (! $url) {
+            return $stat;
+        }
+
+        return $stat
+            ->url($url)
+            ->extraAttributes([
+                'class' => 'transition hover:-translate-y-0.5 hover:ring-primary-500/30 focus:outline-none focus:ring-2 focus:ring-primary-500',
+            ]);
+    }
+
+    private function firstAllowedUrl(array $targets): ?string
+    {
+        $user = auth()->user();
+
+        if (! $user) {
+            return null;
+        }
+
+        foreach ($targets as $target) {
+            $route = $target['route'] ?? null;
+            $permission = $target['permission'] ?? null;
+
+            if (! $route || ! Route::has($route)) {
+                continue;
+            }
+
+            if ($permission && ! $user->can($permission)) {
+                continue;
+            }
+
+            return route($route);
+        }
+
+        return null;
     }
 
     private function currentRegistrationsQuery(): Builder
