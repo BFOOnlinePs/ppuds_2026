@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Intervention\Image\Encoders\PngEncoder;
 use Laravolt\Avatar\Avatar;
@@ -220,6 +221,42 @@ class Company extends Model implements HasMedia, TranslatableContract
         return $this->hasMany(StudentCompany::class, 'company_id');
     }
 
+    public function currentStudentCompanies(): HasMany
+    {
+        $settings = app(GeneralSettings::class);
+
+        return $this->studentCompanies()
+            ->whereHas('registration', function (Builder $query) use ($settings) {
+                $query->where('semester', $settings->semester_type?->value)
+                    ->where('year', $settings->year);
+            });
+    }
+
+    public function companySupervisors(): Collection
+    {
+        $branches = $this->relationLoaded('branches')
+            ? $this->branches
+            : $this->branches()->with('supervisors')->get();
+
+        return $branches
+            ->flatMap(function (Branch $branch) {
+                return $branch->relationLoaded('supervisors')
+                    ? $branch->supervisors
+                    : $branch->supervisors()->get();
+            })
+            ->unique('id')
+            ->values();
+    }
+
+    public function companySupervisorNames(): array
+    {
+        return $this->companySupervisors()
+            ->pluck('name')
+            ->filter()
+            ->values()
+            ->all();
+    }
+
     public function branches(): BelongsToMany
     {
         return $this->belongsToMany(Branch::class, 'ppu_ds_branch_company')
@@ -255,14 +292,17 @@ class Company extends Model implements HasMedia, TranslatableContract
     public function scopeWithCurrentStudentsCount(Builder $query): Builder
     {
         $settings = app(GeneralSettings::class);
+        $companiesTable = $this->getTable();
+        $studentCompaniesTable = (new StudentCompany)->getTable();
 
-        return $query->withCount([
-            'studentCompanies as current_students_count' => function (Builder $query) use ($settings) {
-                $query->whereHas('registration', function (Builder $query) use ($settings) {
+        return $query->addSelect([
+            'current_students_count' => StudentCompany::query()
+                ->selectRaw("COUNT(DISTINCT {$studentCompaniesTable}.student_id)")
+                ->whereColumn("{$studentCompaniesTable}.company_id", "{$companiesTable}.id")
+                ->whereHas('registration', function (Builder $query) use ($settings) {
                     $query->where('semester', $settings->semester_type?->value)
                         ->where('year', $settings->year);
-                });
-            },
+                }),
         ]);
     }
 }

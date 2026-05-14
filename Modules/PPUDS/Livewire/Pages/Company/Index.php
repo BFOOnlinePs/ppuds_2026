@@ -15,6 +15,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -29,6 +30,7 @@ use Modules\Core\Filament\Forms\Components\Textarea;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\CompanyCategory;
+use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\CompanyStatus;
 
 class Index extends Component implements HasForms, HasTable
@@ -40,7 +42,7 @@ class Index extends Component implements HasForms, HasTable
     {
         return $table
             ->query(fn () => Company::query()
-                ->with(['category.translations', 'media'])
+                ->with(['category.translations', 'media', 'branches.supervisors'])
                 ->withCurrentStudentsCount()
             )
             ->columns([
@@ -59,10 +61,30 @@ class Index extends Component implements HasForms, HasTable
 
                 TextColumn::make('category.name'),
 
+                TextColumn::make('supervisors')
+                    ->label(__('Supervisors'))
+                    ->getStateUsing(fn (Company $record): array => $record->companySupervisorNames())
+                    ->listWithLineBreaks()
+                    ->limitList(3)
+                    ->expandableLimitedList()
+                    ->placeholder(__('No supervisors found')),
+
                 TextColumn::make('current_students_count')
                     ->label(__('Current Semester Students'))
                     ->alignCenter()
-                    ->sortable(),
+                    ->sortable()
+                    ->color('primary')
+                    ->action(
+                        Action::make('viewCurrentStudents')
+                            ->label(__('Current Semester Students'))
+                            ->modalHeading(fn (Company $record): string => __('Current Semester Students').' - '.$record->name)
+                            ->modalContent(fn (Company $record) => view('ppuds::livewire.pages.company.partials.current-students-modal', [
+                                'students' => $this->currentStudentRows($record),
+                            ]))
+                            ->modalSubmitAction(false)
+                            ->modalCancelActionLabel(__('Close'))
+                            ->modalWidth('6xl')
+                    ),
 
                 ToggleColumn::make('status')
                     ->label(__('Status'))
@@ -81,7 +103,10 @@ class Index extends Component implements HasForms, HasTable
                     ->offColor('danger')
                     ->sortable(),
             ])
-            ->filters($this->getTableFilters())
+            ->filters(
+                filters: $this->getTableFilters(),
+                layout: FiltersLayout::AboveContentCollapsible,
+            )
             ->actions(
                 $this->getTableActions()
             )
@@ -169,6 +194,42 @@ class Index extends Component implements HasForms, HasTable
             //     })
             //     ->visible(fn () => auth()->user()->can('Company Delete')),
         ];
+    }
+
+    protected function currentStudentRows(Company $company)
+    {
+        return $company->currentStudentCompanies()
+            ->with([
+                'student.studentProfile.major.translations',
+                'registration.course.translations',
+                'branch.translations',
+                'department.translations',
+            ])
+            ->latest()
+            ->get()
+            ->unique('student_id')
+            ->values()
+            ->map(function (StudentCompany $studentCompany): array {
+                $student = $studentCompany->student;
+                $registration = $studentCompany->registration;
+
+                return [
+                    'student_name' => $student?->name ?? '-',
+                    'student_number' => $student?->studentProfile?->student_number ?? '-',
+                    'email' => $student?->email ?? '-',
+                    'course' => $registration?->course?->name ?? '-',
+                    'semester' => $registration?->semester?->getLabel() ?? '-',
+                    'year' => $registration?->year ?? '-',
+                    'branch' => $studentCompany->branch?->name ?? '-',
+                    'department' => $studentCompany->department?->name ?? '-',
+                    'student_url' => ($student && auth()->user()->can('Student Details List'))
+                        ? route('students.details', $student->id)
+                        : null,
+                    'record_url' => auth()->user()->can('StudentCompany Details')
+                        ? route('student-companies.details', $studentCompany)
+                        : null,
+                ];
+            });
     }
 
     public function render()
