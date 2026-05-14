@@ -105,7 +105,7 @@ class Index extends Component implements HasForms, HasTable
             ])
             ->filters(
                 filters: $this->getTableFilters(),
-                layout: FiltersLayout::AboveContentCollapsible,
+                layout: FiltersLayout::AboveContent,
             )
             ->actions(
                 $this->getTableActions()
