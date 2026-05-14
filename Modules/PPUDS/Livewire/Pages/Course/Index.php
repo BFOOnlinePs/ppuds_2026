@@ -38,7 +38,7 @@ class Index extends Component implements HasTable, HasForms
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn() => Course::query())
+            ->query(fn() => Course::query()->withCurrentRegisteredStudentsCount())
             ->columns([
                 TextColumn::make('course_code')
                     ->label(__('Course Code'))
@@ -46,6 +46,10 @@ class Index extends Component implements HasTable, HasForms
                 TextColumn::make('name')
                     ->label(__('Name'))
                     ->searchable(),
+                TextColumn::make('current_registered_students_count')
+                    ->label(__('Current Registered Students'))
+                    ->numeric()
+                    ->sortable(),
                 ToggleColumn::make('status')
                     ->label(__('Status'))
                     ->getStateUsing(fn (Course $record): bool => $record->status === CourseStatus::ACTIVE)

@@ -4,11 +4,14 @@ namespace Modules\PPUDS\Entities;
 
 use Astrotomic\Translatable\Contracts\Translatable as TranslatableContract;
 use Astrotomic\Translatable\Translatable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Modules\Core\Entities\User;
 use Modules\PPUDS\Enums\CourseStatus;
 use Modules\PPUDS\Enums\CourseType;
+use Modules\PPUDS\Settings\GeneralSettings;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\MediaLibrary\HasMedia;
@@ -62,6 +65,26 @@ class Course extends Model implements TranslatableContract, HasMedia
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function registrations(): HasMany
+    {
+        return $this->hasMany(Registration::class, 'course_id');
+    }
+
+    public function scopeWithCurrentRegisteredStudentsCount(Builder $query): Builder
+    {
+        $settings = app(GeneralSettings::class);
+        $coursesTable = $this->getTable();
+        $registrationsTable = (new Registration)->getTable();
+
+        return $query->addSelect([
+            'current_registered_students_count' => Registration::query()
+                ->selectRaw("COUNT(DISTINCT {$registrationsTable}.student_id)")
+                ->whereColumn("{$registrationsTable}.course_id", "{$coursesTable}.id")
+                ->where('semester', $settings->semester_type?->value)
+                ->where('year', $settings->year),
+        ]);
     }
 
     protected static function booted()
