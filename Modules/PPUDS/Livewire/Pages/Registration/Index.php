@@ -56,6 +56,7 @@ class Index extends Component implements HasForms, HasTable
                     ->label(__('Student'))
                     ->searchable()
                     ->sortable()
+                    ->url(fn (Registration $record) => route('students.view', $record->student_id))
                     ->icon('solar-user-id-bold-duotone')
                     ->weight('bold'),
 
