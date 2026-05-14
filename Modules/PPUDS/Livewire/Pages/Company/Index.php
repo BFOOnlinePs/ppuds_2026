@@ -49,6 +49,7 @@ class Index extends Component implements HasForms, HasTable
                     ->label(__('Name'))
                     ->searchable(query: fn (Builder $query, string $search): Builder => $query->whereTranslationLike('name', "%{$search}%")
                     )
+                    ->url(fn (Company $record) => route('companies.details', $record))
                     ->sortable(),
 
                 TextColumn::make('website')
@@ -101,47 +102,47 @@ class Index extends Component implements HasForms, HasTable
             InfoAction::make('info')
                 ->label('')
                 ->visible(fn () => auth()->user()->can('Company Info')),
-            ViewAction::make('view')
-                ->form(function (Forms\Form $form, $record) {
-                    return $form->schema([
-                        TextInput::make('name')
-                            ->label(__('Name'))
-                            ->default($record->name)
-                            ->disabled(),
-                        TextInput::make('website')
-                            ->label(__('Website'))
-                            ->default($record->website)
-                            ->disabled(),
-                        TextInput::make('category.name')
-                            ->label(__('Category'))
-                            ->default($record->category->name)
-                            ->disabled(),
-                        Textarea::make('description')
-                            ->default($record->description)
-                            ->disabled(),
-                    ]);
-                })
-                ->modalSubmitAction(false)
-                ->visible(fn () => auth()->user()->can('Company View')),
+            // ViewAction::make('view')
+            //     ->form(function (Forms\Form $form, $record) {
+            //         return $form->schema([
+            //             TextInput::make('name')
+            //                 ->label(__('Name'))
+            //                 ->default($record->name)
+            //                 ->disabled(),
+            //             TextInput::make('website')
+            //                 ->label(__('Website'))
+            //                 ->default($record->website)
+            //                 ->disabled(),
+            //             TextInput::make('category.name')
+            //                 ->label(__('Category'))
+            //                 ->default($record->category->name)
+            //                 ->disabled(),
+            //             Textarea::make('description')
+            //                 ->default($record->description)
+            //                 ->disabled(),
+            //         ]);
+            //     })
+            //     ->modalSubmitAction(false)
+            //     ->visible(fn () => auth()->user()->can('Company View')),
 
-            Action::make('details')
-                ->label('')
-                ->size('xl')
-                ->icon('heroicon-o-user')
-                ->url(fn ($record) => route('companies.details', $record))
-                ->visible(fn () => auth()->user()->can('Company Details List')),
+            // Action::make('details')
+            //     ->label('')
+            //     ->size('xl')
+            //     ->icon('heroicon-o-user')
+            //     ->url(fn ($record) => route('companies.details', $record))
+            //     ->visible(fn () => auth()->user()->can('Company Details List')),
 
             EditAction::make('edit')
                 ->url(fn (Company $record) => route('companies.edit', $record->id))
                 ->visible(fn () => auth()->user()->can('Company Update')),
 
-            DeleteAction::make('delete')
-                ->action(function ($record) {
-                    $this->authorize('Company Delete');
-                    $record->delete();
-                    Toaster::success(__('Company deleted successfully'));
-                })
-                ->visible(fn () => auth()->user()->can('Company Delete')),
+            // DeleteAction::make('delete')
+            //     ->action(function ($record) {
+            //         $this->authorize('Company Delete');
+            //         $record->delete();
+            //         Toaster::success(__('Company deleted successfully'));
+            //     })
+            //     ->visible(fn () => auth()->user()->can('Company Delete')),
         ];
     }
 
