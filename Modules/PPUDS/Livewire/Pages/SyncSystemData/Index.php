@@ -41,6 +41,8 @@ class Index extends Component
 
     public function syncCourses(PpuApiService $apiService)
     {
+        $this->authorize('Sync System Data Sync');
+
         $this->syncing = true;
         $userId = auth()->id();
         PpuApiService::clearTerminalLogs();
@@ -81,6 +83,8 @@ class Index extends Component
 
     public function startSync(PpuApiService $apiService)
     {
+        $this->authorize('Sync System Data Sync');
+
         $this->refreshCourseSyncingState();
 
         if ($this->courseSyncing) {
@@ -141,6 +145,8 @@ class Index extends Component
 
     public function updatedCourseStatuses($value, string $courseId): void
     {
+        $this->authorize('Sync System Data Sync');
+
         $isActive = filter_var($value, FILTER_VALIDATE_BOOLEAN);
 
         Course::whereKey($courseId)->update([

@@ -38,6 +38,7 @@ class Index extends Component implements HasTable, HasForms
                     ->label(__('Arabic Name'))
                     ->searchable()
                     ->url(fn (StudentProfile $record) => route('students.details', $record->user_id))
+                    ->color('primary')
                     ->sortable(),
 
                 TextColumn::make('user.name_en')

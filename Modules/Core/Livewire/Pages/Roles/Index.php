@@ -271,6 +271,7 @@ class Index extends Component implements HasTable, HasForms
             'Report List' => 90,
             'Print' => 100,
             'Invoice' => 110,
+            'Sync' => 120,
         ][$action] ?? 999;
     }
 
@@ -291,6 +292,7 @@ class Index extends Component implements HasTable, HasForms
             'Info',
             'Details',
             'Submit',
+            'Sync',
             'Print',
             'Invoice',
             'List',
@@ -387,6 +389,7 @@ class Index extends Component implements HasTable, HasForms
             'StudentAttendance' => 'الحضور والمغادرة',
             'StudentCompany' => 'تدريب الطلاب في الشركات',
             'StudentReport' => 'التقارير اليومية',
+            'Sync System Data' => 'مزامنة بيانات النظام',
             'Subscription' => 'الاشتراكات',
             'Survey' => 'الاستبيانات',
             'Tag' => 'الوسوم',
@@ -411,6 +414,7 @@ class Index extends Component implements HasTable, HasForms
             'Print' => 'طباعة',
             'Report List' => 'قائمة التقارير',
             'Submit' => 'تسليم',
+            'Sync' => 'مزامنة',
             'UniversityApprove' => 'موافقة الجامعة',
             'Update' => 'تعديل',
             'View' => 'عرض',
