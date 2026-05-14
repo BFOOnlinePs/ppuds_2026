@@ -5,9 +5,11 @@ namespace Modules\PPUDS\Entities;
 use ArPHP\I18N\Arabic;
 use Astrotomic\Translatable\Contracts\Translatable as TranslatableContract;
 use Astrotomic\Translatable\Translatable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 use Intervention\Image\Encoders\PngEncoder;
@@ -213,6 +215,11 @@ class Company extends Model implements HasMedia, TranslatableContract
         return $this->belongsTo(CompanyCategory::class, 'company_category_id');
     }
 
+    public function studentCompanies(): HasMany
+    {
+        return $this->hasMany(StudentCompany::class, 'company_id');
+    }
+
     public function branches(): BelongsToMany
     {
         return $this->belongsToMany(Branch::class, 'ppu_ds_branch_company')
@@ -243,5 +250,19 @@ class Company extends Model implements HasMedia, TranslatableContract
             $q->where('semester', $settings->semester_type?->value)
                 ->where('year', $settings->year);
         });
+    }
+
+    public function scopeWithCurrentStudentsCount(Builder $query): Builder
+    {
+        $settings = app(GeneralSettings::class);
+
+        return $query->withCount([
+            'studentCompanies as current_students_count' => function (Builder $query) use ($settings) {
+                $query->whereHas('registration', function (Builder $query) use ($settings) {
+                    $query->where('semester', $settings->semester_type?->value)
+                        ->where('year', $settings->year);
+                });
+            },
+        ]);
     }
 }

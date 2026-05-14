@@ -12,6 +12,7 @@ use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Filters\SelectFilter;
@@ -27,6 +28,7 @@ use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\Textarea;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\Company;
+use Modules\PPUDS\Entities\CompanyCategory;
 use Modules\PPUDS\Enums\CompanyStatus;
 
 class Index extends Component implements HasForms, HasTable
@@ -37,7 +39,10 @@ class Index extends Component implements HasForms, HasTable
     public function table(Table $table)
     {
         return $table
-            ->query(fn () => Company::query())
+            ->query(fn () => Company::query()
+                ->with(['category.translations', 'media'])
+                ->withCurrentStudentsCount()
+            )
             ->columns([
                 ImageColumn::make('logo')
                     ->label(__('Logo'))
@@ -52,14 +57,29 @@ class Index extends Component implements HasForms, HasTable
                     ->url(fn (Company $record) => route('companies.details', $record))
                     ->sortable(),
 
-                TextColumn::make('website')
-                    ->label(__('Website'))
-                    ->searchable()
-                    ->sortable(),
-
                 TextColumn::make('category.name'),
 
-                TextColumn::make('status'),
+                TextColumn::make('current_students_count')
+                    ->label(__('Current Semester Students'))
+                    ->alignCenter()
+                    ->sortable(),
+
+                ToggleColumn::make('status')
+                    ->label(__('Status'))
+                    ->getStateUsing(fn (Company $record): bool => $record->status === CompanyStatus::ACTIVE)
+                    ->updateStateUsing(function (Company $record, mixed $state): bool {
+                        $record->update([
+                            'status' => $state ? CompanyStatus::ACTIVE->value : CompanyStatus::INACTIVE->value,
+                        ]);
+
+                        Toaster::success(__('Updated successfully'));
+
+                        return (bool) $state;
+                    })
+                    ->disabled(fn (): bool => ! auth()->user()->can('Company Update'))
+                    ->onColor('success')
+                    ->offColor('danger')
+                    ->sortable(),
             ])
             ->filters($this->getTableFilters())
             ->actions(
@@ -77,6 +97,11 @@ class Index extends Component implements HasForms, HasTable
     protected function getTableFilters(): array
     {
         return [
+            SelectFilter::make('company_category_id')
+                ->label(__('Company Category'))
+                ->options(fn () => CompanyCategory::with('translations')->get()->pluck('name', 'id'))
+                ->searchable(),
+
             SelectFilter::make('status')
                 ->label(__('Company Status'))
                 ->options(CompanyStatus::options())
