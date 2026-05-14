@@ -33,6 +33,8 @@ class Company extends Model implements HasMedia, TranslatableContract
     use softDeletes;
     use Translatable;
 
+    private const DEFAULT_COVER_PHOTO_PATH = 'images/defaults/company-cover.jpeg';
+
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
@@ -110,6 +112,8 @@ class Company extends Model implements HasMedia, TranslatableContract
             ->singleFile();
 
         $this->addMediaCollection('cover_photo')
+            ->useFallbackUrl(asset(self::DEFAULT_COVER_PHOTO_PATH))
+            ->useFallbackPath(public_path(self::DEFAULT_COVER_PHOTO_PATH))
             ->singleFile();
     }
 
