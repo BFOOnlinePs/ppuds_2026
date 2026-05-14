@@ -80,10 +80,6 @@ class SidebarServiceProvider extends ServiceProvider
         );
 
         $sidebar->add(
-            new SidebarItem('Sync System Data', 'solar-users-group-rounded-bold-duotone', ['Survey Create'], 'sync-system-data.index', 115)
-        );
-
-        $sidebar->add(
             (new SidebarGroup('Reports', 'solar-users-group-rounded-bold-duotone', [], 120))
                 ->add(new SidebarItem('Report List', 'solar-users-group-rounded-bold-duotone', ['Report View List'], 'reports.index'))
         );

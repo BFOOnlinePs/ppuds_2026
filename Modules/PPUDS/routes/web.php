@@ -201,7 +201,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     'as' => 'sync-system-data.',
                     'namespace' => 'Modules\PPUDS\Livewire\Pages\SyncSystemData',
                 ], function () {
-                    Route::get('/', Index::class)->name('index')->can('Survey Create');
+                    Route::get('/', Index::class)->name('index')->can('Sync System Data View');
                 });
             });
         }
