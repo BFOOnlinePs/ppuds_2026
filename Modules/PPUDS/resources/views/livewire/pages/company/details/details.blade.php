@@ -1,8 +1,8 @@
 <div class="w-full bg-white rounded-xl shadow overflow-hidden border border-gray-100">
 
     <!-- Cover -->
-    <div class="relative w-full bg-cover bg-center"
-         style="height:260px; background-image:url('{{ $this->company->getFirstMediaUrl('cover_photo') }}');">
+    <div class="relative w-full h-[340px] md:h-[420px] bg-cover bg-center"
+         style="background-image:url('{{ $this->company->getFirstMediaUrl('cover_photo') }}');">
 
         <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent"></div>
 
