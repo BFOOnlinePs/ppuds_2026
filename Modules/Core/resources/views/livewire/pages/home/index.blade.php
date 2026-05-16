@@ -4,6 +4,10 @@
     @livewire(\Modules\Core\Livewire\Pages\Home\Widget\HomeActionsWidget::class)
     @livewire(\Modules\Core\Livewire\Pages\Home\Widget\AttendanceMapWidget::class)
 
+    @can('StudentCompany Create')
+        @livewire(\Modules\Core\Livewire\Pages\Home\StudentCompanyAssistant::class)
+    @endcan
+
     @if (count($chartWidgets = $this->chartWidgets()))
         <x-filament-widgets::widgets
             :widgets="$chartWidgets"
