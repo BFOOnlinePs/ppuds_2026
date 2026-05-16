@@ -1,6 +1,5 @@
-<x-filament-widgets::widget>
-    <section class="rounded-lg bg-white p-4 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
-        <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+<section class="rounded-lg bg-white p-4 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-center gap-2">
                 @svg('heroicon-o-sparkles', 'h-5 w-5 text-primary-600 dark:text-primary-400')
                 <h2 class="text-base font-semibold text-gray-950 dark:text-white">
@@ -152,6 +151,5 @@
                     </div>
                 @endforelse
             </div>
-        </div>
-    </section>
-</x-filament-widgets::widget>
+    </div>
+</section>
