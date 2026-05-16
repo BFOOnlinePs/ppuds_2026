@@ -53,6 +53,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 Route::group([
                     'prefix' => '',
                     'as' => '',
+                    'namespace' => 'Modules\PPUDS\Livewire\Pages\Supervisor',
+                ], function () {
+                    Route::get('/supervisors', Index::class)->name('supervisors.index')->can('Supervisor View List');
+                    Route::get('/supervisors/{user}/details', Details\Details::class)->name('supervisors.details')->can('Supervisor Details List');
+                });
+
+                Route::group([
+                    'prefix' => '',
+                    'as' => '',
                     'namespace' => 'Modules\PPUDS\Livewire\Pages\CompanyCategory',
                 ], function () {
                     Route::get('/company-category', Index::class)->name('company-category.index')->can('Company Category View List');

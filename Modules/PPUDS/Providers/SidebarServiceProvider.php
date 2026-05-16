@@ -45,6 +45,11 @@ class SidebarServiceProvider extends ServiceProvider
         );
 
         $sidebar->add(
+            (new SidebarGroup('Supervisors', 'solar-user-id-bold-duotone', [], 55))
+                ->add(new SidebarItem('Supervisors List', 'solar-user-id-bold-duotone', ['Supervisor View List'], 'supervisors.index'))
+        );
+
+        $sidebar->add(
             (new SidebarGroup('Registration', 'solar-users-group-rounded-bold-duotone', [], 60))
                 ->add(new SidebarItem('Registration List', 'solar-users-group-rounded-bold-duotone', ['Registration View List'], 'registrations.index'))
                 ->add(new SidebarItem('Add Registration', 'solar-users-group-rounded-bold-duotone', ['Registration Create'], 'registrations.add'))

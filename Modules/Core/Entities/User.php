@@ -18,6 +18,8 @@ use Modules\Customer\Entities\Customer;
 use Modules\Delivery\Entities\CustomerAddress;
 use Modules\Items\Entities\Order;
 use Modules\Marketing\Entities\LoyaltyTier;
+use Modules\PPUDS\Entities\FieldVisit;
+use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Entities\StudentProfile;
 use Spatie\MediaLibrary\HasMedia;
@@ -375,6 +377,16 @@ class User extends Authenticatable implements HasMedia, WirechatUser
     public function studentCompanies(): HasMany
     {
         return $this->hasMany(StudentCompany::class, 'student_id');
+    }
+
+    public function supervisedRegistrations(): HasMany
+    {
+        return $this->hasMany(Registration::class, 'supervisor_id');
+    }
+
+    public function fieldVisits(): HasMany
+    {
+        return $this->hasMany(FieldVisit::class, 'supervisor_id');
     }
 
     //    public function routeNotificationForFcm()

@@ -57,6 +57,22 @@ class PermissionSeeder extends Seeder
             ],
 
             [
+                'name' => 'Supervisor View List',
+                'guard_name' => 'web',
+                'module_name' => 'Supervisor',
+            ],
+            [
+                'name' => 'Supervisor View',
+                'guard_name' => 'web',
+                'module_name' => 'Supervisor',
+            ],
+            [
+                'name' => 'Supervisor Details List',
+                'guard_name' => 'web',
+                'module_name' => 'Supervisor',
+            ],
+
+            [
                 'name' => 'WorkExperience View List',
                 'guard_name' => 'web',
                 'module_name' => 'WorkExperience',
