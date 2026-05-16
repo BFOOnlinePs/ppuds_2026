@@ -49,7 +49,7 @@
                         </div>
                     @endforeach
 
-                    <div wire:loading wire:target="send,selectStudent,linkCompany,linkAllSuggestions" class="text-sm text-gray-500 dark:text-gray-400">
+                    <div wire:loading wire:target="send,selectStudent,selectCompany,linkCompany,linkAllSuggestions" class="text-sm text-gray-500 dark:text-gray-400">
                         جار المعالجة...
                     </div>
                 </div>
@@ -60,7 +60,7 @@
                             type="text"
                             wire:model.defer="studentName"
                             class="min-h-11 flex-1 rounded-lg border-gray-300 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-                            placeholder="اسم الطالب أو الرقم الجامعي"
+                            placeholder="{{ $selectedStudentName ? 'اسم الشركة أو: اربطه مع ...' : 'اسم الطالب أو الرقم الجامعي' }}"
                         >
 
                         <button
@@ -93,6 +93,26 @@
                                     <span class="block font-medium text-gray-950 dark:text-white">{{ $student['name'] }}</span>
                                     <span class="mt-1 block text-xs text-gray-500 dark:text-gray-400">
                                         {{ $student['student_number'] ?? '-' }} · {{ $student['major'] ?? $student['email'] }}
+                                    </span>
+                                </button>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
+                @if ($companyMatches !== [])
+                    <div class="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-gray-900">
+                        <div class="mb-3 text-sm font-medium text-gray-950 dark:text-white">نتائج الشركات</div>
+                        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                            @foreach ($companyMatches as $company)
+                                <button
+                                    type="button"
+                                    wire:click="selectCompany({{ $company['id'] }})"
+                                    class="rounded-lg border border-gray-200 bg-white p-3 text-start text-sm transition hover:border-primary-300 hover:bg-primary-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:border-primary-500 dark:hover:bg-primary-500/10"
+                                >
+                                    <span class="block font-medium text-gray-950 dark:text-white">{{ $company['name'] }}</span>
+                                    <span class="mt-1 block text-xs text-gray-500 dark:text-gray-400">
+                                        {{ $company['category'] ?? '-' }} · {{ $company['branch'] ?? '-' }}
                                     </span>
                                 </button>
                             @endforeach
@@ -146,9 +166,11 @@
                         </div>
                     </article>
                 @empty
-                    <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-800/60 dark:text-gray-400">
-                        لا توجد اقتراحات بعد.
-                    </div>
+                    @if ($studentMatches === [] && $companyMatches === [])
+                        <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-800/60 dark:text-gray-400">
+                            لا توجد اقتراحات بعد.
+                        </div>
+                    @endif
                 @endforelse
             </div>
     </div>

@@ -5,6 +5,7 @@ namespace Modules\Core\Livewire\Pages\Home;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
+use Modules\Core\Actions\StudentCompanyAssistant\FindCompaniesForCompanyAssistant;
 use Modules\Core\Actions\StudentCompanyAssistant\FindStudentsForCompanyAssistant;
 use Modules\Core\Actions\StudentCompanyAssistant\LinkSuggestedCompanyToStudent;
 use Modules\Core\Actions\StudentCompanyAssistant\ResolveStudentCompanyRegistration;
@@ -21,6 +22,8 @@ class StudentCompanyAssistant extends Component
     public array $messages = [];
 
     public array $studentMatches = [];
+
+    public array $companyMatches = [];
 
     public array $suggestions = [];
 
@@ -54,8 +57,14 @@ class StudentCompanyAssistant extends Component
         ]);
 
         $term = trim($this->studentName);
+        $this->studentName = '';
 
         $this->addMessage('user', $term);
+
+        if ($this->studentId && $this->registrationId && $this->handleCompanyLinkRequest($term)) {
+            return;
+        }
+
         $this->resetSelection();
 
         $findStudents = app(FindStudentsForCompanyAssistant::class);
@@ -83,6 +92,31 @@ class StudentCompanyAssistant extends Component
         $this->suggestForStudent($exactMatch ?? $matches->first());
     }
 
+    public function selectCompany(int $companyId): void
+    {
+        $this->authorize('StudentCompany Create');
+
+        if (! $this->studentId || ! $this->registrationId) {
+            $this->addMessage('assistant', 'اختر طالبًا قبل اختيار الشركة.');
+
+            return;
+        }
+
+        $findCompanies = app(FindCompaniesForCompanyAssistant::class);
+        $company = $findCompanies->find($companyId);
+
+        if (! $company) {
+            $this->addMessage('assistant', 'تعذر العثور على الشركة المختارة.');
+
+            return;
+        }
+
+        $this->companyMatches = [];
+        $this->linkSuggestion(
+            $findCompanies->toSuggestion($company),
+        );
+    }
+
     public function selectStudent(int $studentId): void
     {
         $this->authorize('StudentCompany Create');
@@ -99,6 +133,7 @@ class StudentCompanyAssistant extends Component
         }
 
         $this->studentMatches = [];
+        $this->companyMatches = [];
         $this->suggestForStudent($student);
     }
 
@@ -120,6 +155,11 @@ class StudentCompanyAssistant extends Component
             return;
         }
 
+        $this->linkSuggestion($suggestion);
+    }
+
+    private function linkSuggestion(array $suggestion): void
+    {
         $result = app(LinkSuggestedCompanyToStudent::class)->handle(
             $this->studentId,
             $this->registrationId,
@@ -127,7 +167,7 @@ class StudentCompanyAssistant extends Component
             auth()->id(),
         );
 
-        $this->markSuggestionLinked($companyId);
+        $this->showLinkedSuggestion($suggestion);
 
         $message = $result === 'created'
             ? "تم ربط {$suggestion['company_name']} بالطالب {$this->selectedStudentName}."
@@ -199,6 +239,36 @@ class StudentCompanyAssistant extends Component
         $this->addMessage('assistant', $result['message']);
     }
 
+    private function handleCompanyLinkRequest(string $term): bool
+    {
+        $findCompanies = app(FindCompaniesForCompanyAssistant::class);
+        $companies = $findCompanies->handle($term);
+
+        if ($companies->isEmpty()) {
+            $this->companyMatches = [];
+            $this->addMessage('assistant', 'لم أجد شركة مطابقة لهذا الاسم. اكتب اسم الشركة كما هو ظاهر في النظام أو اختر من الاقتراحات.');
+
+            return true;
+        }
+
+        if ($companies->count() > 1) {
+            $this->companyMatches = $companies
+                ->map(fn ($company) => $findCompanies->payload($company))
+                ->values()
+                ->all();
+
+            $this->addMessage('assistant', 'وجدت أكثر من شركة مطابقة. اختر الشركة التي تريد ربطها بالطالب.');
+
+            return true;
+        }
+
+        $company = $companies->first();
+        $this->companyMatches = [];
+        $this->linkSuggestion($findCompanies->toSuggestion($company, 'تم اختيار الشركة من الرسالة التي كتبتها.'));
+
+        return true;
+    }
+
     private function studentMatchPayload(User $student): array
     {
         return [
@@ -221,6 +291,7 @@ class StudentCompanyAssistant extends Component
     private function resetSelection(): void
     {
         $this->studentMatches = [];
+        $this->companyMatches = [];
         $this->suggestions = [];
         $this->studentId = null;
         $this->registrationId = null;
@@ -238,6 +309,17 @@ class StudentCompanyAssistant extends Component
 
                 return $suggestion;
             })
+            ->values()
+            ->all();
+    }
+
+    private function showLinkedSuggestion(array $suggestion): void
+    {
+        $suggestion['linked'] = true;
+
+        $this->suggestions = collect($this->suggestions)
+            ->reject(fn (array $existingSuggestion) => (int) $existingSuggestion['company_id'] === (int) $suggestion['company_id'])
+            ->prepend($suggestion)
             ->values()
             ->all();
     }
