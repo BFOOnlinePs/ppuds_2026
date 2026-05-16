@@ -16,6 +16,7 @@ use Modules\PPUDS\Http\Controllers\Api\V1\ReportController;
 use Modules\PPUDS\Http\Controllers\Api\V1\SettingsController;
 use Modules\PPUDS\Http\Controllers\Api\V1\StudentAttendanceController;
 use Modules\PPUDS\Http\Controllers\Api\V1\StudentAttendanceReportController;
+use Modules\PPUDS\Http\Controllers\Api\V1\StudentCompanyAssistantController;
 use Modules\PPUDS\Http\Controllers\Api\V1\StudentCompanyController;
 use Modules\PPUDS\Http\Controllers\Api\V1\SurveyAnswerController;
 use Modules\PPUDS\Http\Controllers\Api\V1\SurveyController;
@@ -74,6 +75,17 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
                     Route::get('/', 'index')->name('index');
                     Route::post('/', 'store')->name('store');
                     Route::get('/{studentCompany}', 'show')->name('show');
+                });
+
+            Route::controller(StudentCompanyAssistantController::class)
+                ->prefix('student-company-assistant')
+                ->as('student-company-assistant.')
+                ->group(function () {
+                    Route::post('/students/search', 'searchStudents')->name('students.search');
+                    Route::post('/companies/suggest', 'suggestCompanies')->name('companies.suggest');
+                    Route::post('/companies/search', 'searchCompanies')->name('companies.search');
+                    Route::post('/link', 'linkCompany')->name('link');
+                    Route::post('/link-all', 'linkAllCompanies')->name('link-all');
                 });
 
             Route::controller(StudentAttendanceController::class)
