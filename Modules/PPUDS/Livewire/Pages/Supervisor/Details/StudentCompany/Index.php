@@ -80,15 +80,6 @@ class Index extends Component implements HasForms, HasTable
                     ->toggleable()
                     ->placeholder('—'),
 
-                TextColumn::make('supervision_type')
-                    ->label(__('Supervisor Type'))
-                    ->getStateUsing(fn (StudentCompany $record): string => $record->registration?->supervisor_id === $this->supervisorId
-                        ? __('Practical Training Supervisor')
-                        : __('Company Supervisor')
-                    )
-                    ->badge()
-                    ->color(fn (string $state): string => $state === __('Company Supervisor') ? 'warning' : 'primary'),
-
                 TextColumn::make('status')
                     ->label(__('Status'))
                     ->badge()
@@ -215,24 +206,10 @@ class Index extends Component implements HasForms, HasTable
 
     protected function supervisedStudentCompaniesQuery(): Builder
     {
-        $studentCompaniesTable = (new StudentCompany)->getTable();
-        $branchDepartmentTable = config('ppuds.table_prefix').'branch_department';
-
         return StudentCompany::query()
             ->when(
                 $this->supervisorId,
-                fn (Builder $query) => $query->where(function (Builder $query) use ($studentCompaniesTable, $branchDepartmentTable) {
-                    $query
-                        ->whereHas('registration', fn (Builder $query) => $query->where('supervisor_id', $this->supervisorId))
-                        ->orWhereExists(function ($query) use ($studentCompaniesTable, $branchDepartmentTable) {
-                            $query
-                                ->selectRaw(1)
-                                ->from($branchDepartmentTable)
-                                ->where('user_id', $this->supervisorId)
-                                ->whereColumn("{$branchDepartmentTable}.branch_id", "{$studentCompaniesTable}.branch_id")
-                                ->whereColumn("{$branchDepartmentTable}.company_department_id", "{$studentCompaniesTable}.department_id");
-                        });
-                }),
+                fn (Builder $query) => $query->whereHas('registration', fn (Builder $query) => $query->where('supervisor_id', $this->supervisorId)),
                 fn (Builder $query) => $query->whereRaw('1 = 0')
             );
     }

@@ -202,22 +202,8 @@ class Details extends Component implements HasForms, HasInfolists
 
     protected function supervisedStudentCompaniesQuery(): Builder
     {
-        $studentCompaniesTable = (new StudentCompany)->getTable();
-        $branchDepartmentTable = config('ppuds.table_prefix').'branch_department';
-
         return StudentCompany::query()
-            ->where(function (Builder $query) use ($studentCompaniesTable, $branchDepartmentTable) {
-                $query
-                    ->whereHas('registration', fn (Builder $query) => $query->where('supervisor_id', $this->userId))
-                    ->orWhereExists(function ($query) use ($studentCompaniesTable, $branchDepartmentTable) {
-                        $query
-                            ->selectRaw(1)
-                            ->from($branchDepartmentTable)
-                            ->where('user_id', $this->userId)
-                            ->whereColumn("{$branchDepartmentTable}.branch_id", "{$studentCompaniesTable}.branch_id")
-                            ->whereColumn("{$branchDepartmentTable}.company_department_id", "{$studentCompaniesTable}.department_id");
-                    });
-            });
+            ->whereHas('registration', fn (Builder $query) => $query->where('supervisor_id', $this->userId));
     }
 
     public function save()
@@ -236,8 +222,8 @@ class Details extends Component implements HasForms, HasInfolists
         return view('ppuds::livewire.pages.supervisor.details.details')->layout(AppLayout::class, [
             'breadcrumbs' => [
                 ['title' => __('Home'), 'url' => route('home')],
-                ['title' => __('Supervisors List'), 'url' => route('supervisors.index')],
-                ['title' => __('Supervisor Details'), 'url' => route('supervisors.details', $this->userId)],
+                ['title' => __('University Supervisors List'), 'url' => route('supervisors.index')],
+                ['title' => __('University Supervisor Details'), 'url' => route('supervisors.details', $this->userId)],
             ],
         ]);
     }
