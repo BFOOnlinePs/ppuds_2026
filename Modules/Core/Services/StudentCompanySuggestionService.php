@@ -2,18 +2,16 @@
 
 namespace Modules\Core\Services;
 
-use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Laravel\Ai\Enums\Lab;
+use Modules\Core\Ai\StudentCompanySuggestionAgent;
 use Modules\Core\Entities\User;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Enums\CompanyStatus;
 use Throwable;
-
-use function Laravel\Ai\agent;
 
 class StudentCompanySuggestionService
 {
@@ -63,38 +61,9 @@ class StudentCompanySuggestionService
         ];
     }
 
-    public function placementForCompany(int $companyId, ?int $branchId = null, ?int $departmentId = null): array
-    {
-        $company = Company::query()
-            ->with(['category', 'branches.departments'])
-            ->find($companyId);
-
-        if (! $company) {
-            return [null, null, null, null];
-        }
-
-        return $this->resolvePlacement($this->companyPayload($company), $branchId, $departmentId);
-    }
-
     private function aiSuggestions(User $student, Registration $registration, Collection $candidates, int $limit): array
     {
-        $response = agent(
-            instructions: $this->instructions(),
-            schema: fn (JsonSchema $schema) => [
-                'summary' => $schema->string()->required(),
-                'suggestions' => $schema->array()
-                    ->min(1)
-                    ->max($limit)
-                    ->items($schema->object([
-                        'company_id' => $schema->integer()->required(),
-                        'branch_id' => $schema->integer()->nullable()->required(),
-                        'department_id' => $schema->integer()->nullable()->required(),
-                        'reason' => $schema->string()->max(280)->required(),
-                        'fit_score' => $schema->integer()->min(1)->max(100)->required(),
-                    ])->required())
-                    ->required(),
-            ],
-        )->prompt(
+        $response = StudentCompanySuggestionAgent::make(limit: $limit)->prompt(
             $this->prompt($student, $registration, $candidates, $limit),
             provider: $this->configuredProvider(),
             model: $this->configuredModel(),
@@ -102,17 +71,6 @@ class StudentCompanySuggestionService
         );
 
         return method_exists($response, 'toArray') ? $response->toArray() : [];
-    }
-
-    private function instructions(): string
-    {
-        return implode("\n", [
-            'أنت مساعد داخل نظام تدريب جامعي.',
-            'مهمتك اختيار شركات مناسبة لطالب واحد من قائمة شركات محددة فقط.',
-            'لا تقترح أي شركة غير موجودة في قائمة المرشحين، ولا تغيّر أرقام المعرفات.',
-            'فضّل الشركات ذات العلاقة بتخصص الطالب ومقرره، ووازن بين الملاءمة وعدد الطلاب الحاليين في الشركة.',
-            'اكتب سببًا قصيرًا وواضحًا بالعربية لكل اقتراح.',
-        ]);
     }
 
     private function prompt(User $student, Registration $registration, Collection $candidates, int $limit): string

@@ -2,20 +2,20 @@
 
 namespace Modules\Core\Livewire\Pages\Home;
 
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
+use Modules\Core\Actions\StudentCompanyAssistant\FindStudentsForCompanyAssistant;
+use Modules\Core\Actions\StudentCompanyAssistant\LinkSuggestedCompanyToStudent;
+use Modules\Core\Actions\StudentCompanyAssistant\ResolveStudentCompanyRegistration;
 use Modules\Core\Entities\User;
 use Modules\Core\Services\StudentCompanySuggestionService;
 use Modules\PPUDS\Entities\Registration;
-use Modules\PPUDS\Entities\StudentCompany;
-use Modules\PPUDS\Enums\TrainingStatus;
-use Modules\PPUDS\Settings\GeneralSettings as PPUDSSettings;
 
 class StudentCompanyAssistant extends Component
 {
+    use AuthorizesRequests;
+
     public string $studentName = '';
 
     public array $messages = [];
@@ -44,7 +44,7 @@ class StudentCompanyAssistant extends Component
 
     public function send(): void
     {
-        $this->ensureCanCreate();
+        $this->authorize('StudentCompany Create');
 
         $this->validate([
             'studentName' => ['required', 'string', 'min:2', 'max:120'],
@@ -58,7 +58,8 @@ class StudentCompanyAssistant extends Component
         $this->addMessage('user', $term);
         $this->resetSelection();
 
-        $matches = $this->findStudents($term);
+        $findStudents = app(FindStudentsForCompanyAssistant::class);
+        $matches = $findStudents->handle($term);
 
         if ($matches->isEmpty()) {
             $this->addMessage('assistant', 'لم أجد طالبًا مطابقًا لهذا الاسم أو الرقم الجامعي.');
@@ -66,7 +67,7 @@ class StudentCompanyAssistant extends Component
             return;
         }
 
-        $exactMatch = $this->exactStudentMatch($matches, $term);
+        $exactMatch = $findStudents->exactMatch($matches, $term);
 
         if (! $exactMatch && $matches->count() > 1) {
             $this->studentMatches = $matches
@@ -84,7 +85,7 @@ class StudentCompanyAssistant extends Component
 
     public function selectStudent(int $studentId): void
     {
-        $this->ensureCanCreate();
+        $this->authorize('StudentCompany Create');
 
         $student = User::query()
             ->with('studentProfile.major')
@@ -103,7 +104,7 @@ class StudentCompanyAssistant extends Component
 
     public function linkCompany(int $companyId): void
     {
-        $this->ensureCanCreate();
+        $this->authorize('StudentCompany Create');
 
         if (! $this->studentId || ! $this->registrationId) {
             $this->addMessage('assistant', 'اختر طالبًا واحصل على اقتراحات قبل تنفيذ الربط.');
@@ -119,7 +120,13 @@ class StudentCompanyAssistant extends Component
             return;
         }
 
-        $result = DB::transaction(fn () => $this->saveStudentCompany($suggestion));
+        $result = app(LinkSuggestedCompanyToStudent::class)->handle(
+            $this->studentId,
+            $this->registrationId,
+            $suggestion,
+            auth()->id(),
+        );
+
         $this->markSuggestionLinked($companyId);
 
         $message = $result === 'created'
@@ -132,7 +139,7 @@ class StudentCompanyAssistant extends Component
 
     public function linkAllSuggestions(): void
     {
-        $this->ensureCanCreate();
+        $this->authorize('StudentCompany Create');
 
         if (! $this->studentId || ! $this->registrationId || $this->suggestions === []) {
             $this->addMessage('assistant', 'لا توجد اقتراحات جاهزة للربط.');
@@ -140,17 +147,20 @@ class StudentCompanyAssistant extends Component
             return;
         }
 
-        [$created, $updated] = DB::transaction(function () {
-            $created = 0;
-            $updated = 0;
+        $created = 0;
+        $updated = 0;
+        $linkCompany = app(LinkSuggestedCompanyToStudent::class);
 
-            foreach ($this->suggestions as $suggestion) {
-                $result = $this->saveStudentCompany($suggestion);
-                $result === 'created' ? $created++ : $updated++;
-            }
+        foreach ($this->suggestions as $suggestion) {
+            $result = $linkCompany->handle(
+                $this->studentId,
+                $this->registrationId,
+                $suggestion,
+                auth()->id(),
+            );
 
-            return [$created, $updated];
-        });
+            $result === 'created' ? $created++ : $updated++;
+        }
 
         foreach ($this->suggestions as $suggestion) {
             $this->markSuggestionLinked((int) $suggestion['company_id']);
@@ -164,12 +174,16 @@ class StudentCompanyAssistant extends Component
 
     private function suggestForStudent(User $student): void
     {
-        $registration = $this->registrationFor($student);
+        [$registration, $warning] = app(ResolveStudentCompanyRegistration::class)->handle($student);
 
         if (! $registration) {
             $this->addMessage('assistant', 'وجدت الطالب، لكن لا يوجد له سجل تسجيل يمكن ربط الشركات به.');
 
             return;
+        }
+
+        if ($warning) {
+            $this->addMessage('assistant', $warning);
         }
 
         $this->studentId = $student->id;
@@ -185,35 +199,6 @@ class StudentCompanyAssistant extends Component
         $this->addMessage('assistant', $result['message']);
     }
 
-    private function findStudents(string $term): Collection
-    {
-        return User::query()
-            ->with('studentProfile.major')
-            ->whereHas('studentProfile')
-            ->where(function ($query) use ($term) {
-                $query
-                    ->where('name', 'like', "%{$term}%")
-                    ->orWhere('name_en', 'like', "%{$term}%")
-                    ->orWhere('email', 'like', "%{$term}%")
-                    ->orWhereHas('studentProfile', fn ($profileQuery) => $profileQuery->where('student_number', 'like', "%{$term}%"));
-            })
-            ->orderBy('name')
-            ->limit(6)
-            ->get();
-    }
-
-    private function exactStudentMatch(Collection $matches, string $term): ?User
-    {
-        $normalizedTerm = Str::lower($term);
-
-        return $matches->first(function (User $student) use ($normalizedTerm) {
-            return Str::lower((string) $student->name) === $normalizedTerm
-                || Str::lower((string) $student->name_en) === $normalizedTerm
-                || (string) $student->studentProfile?->student_number === $normalizedTerm
-                || Str::lower((string) $student->email) === $normalizedTerm;
-        });
-    }
-
     private function studentMatchPayload(User $student): array
     {
         return [
@@ -223,76 +208,6 @@ class StudentCompanyAssistant extends Component
             'major' => $student->studentProfile?->major?->name,
             'email' => $student->email,
         ];
-    }
-
-    private function registrationFor(User $student): ?Registration
-    {
-        $settings = app(PPUDSSettings::class);
-        $semester = $settings->semester_type?->value;
-        $year = $settings->year;
-
-        $currentRegistration = Registration::query()
-            ->with('course')
-            ->where('student_id', $student->id)
-            ->when($semester, fn ($query) => $query->where('semester', $semester))
-            ->when($year, fn ($query) => $query->where('year', $year))
-            ->latest('id')
-            ->first();
-
-        if ($currentRegistration) {
-            return $currentRegistration;
-        }
-
-        $latestRegistration = Registration::query()
-            ->with('course')
-            ->where('student_id', $student->id)
-            ->latest('id')
-            ->first();
-
-        if ($latestRegistration) {
-            $this->addMessage('assistant', 'لم أجد تسجيلًا للفصل الحالي، لذلك سأستخدم آخر سجل تسجيل متاح للطالب.');
-        }
-
-        return $latestRegistration;
-    }
-
-    private function saveStudentCompany(array $suggestion): string
-    {
-        [$branchId, , $departmentId] = app(StudentCompanySuggestionService::class)->placementForCompany(
-            (int) $suggestion['company_id'],
-            $suggestion['branch_id'] ?? null,
-            $suggestion['department_id'] ?? null,
-        );
-
-        $attributes = [
-            'student_id' => $this->studentId,
-            'branch_id' => $branchId,
-            'department_id' => $departmentId,
-            'status' => TrainingStatus::AVAILABLE,
-            'created_by' => auth()->id(),
-        ];
-
-        $studentCompany = StudentCompany::withTrashed()
-            ->where('registration_id', $this->registrationId)
-            ->where('company_id', $suggestion['company_id'])
-            ->first();
-
-        if ($studentCompany) {
-            if ($studentCompany->trashed()) {
-                $studentCompany->restore();
-            }
-
-            $studentCompany->fill($attributes)->save();
-
-            return 'updated';
-        }
-
-        StudentCompany::create($attributes + [
-            'registration_id' => $this->registrationId,
-            'company_id' => $suggestion['company_id'],
-        ]);
-
-        return 'created';
     }
 
     private function registrationLabel(Registration $registration): string
@@ -330,11 +245,6 @@ class StudentCompanyAssistant extends Component
     private function addMessage(string $role, string $text): void
     {
         $this->messages[] = compact('role', 'text');
-    }
-
-    private function ensureCanCreate(): void
-    {
-        abort_unless(auth()->user()?->can('StudentCompany Create'), 403);
     }
 
     public function render()
