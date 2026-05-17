@@ -5,7 +5,6 @@ namespace Modules\Core\Livewire\Pages\Home\Widget;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Route;
-use Modules\Core\Enums\UserRole;
 
 class HomeActionsWidget extends Widget
 {
@@ -69,8 +68,7 @@ class HomeActionsWidget extends Widget
             ],
             [
                 'label' => 'Attendance Map',
-                'permission' => 'StudentAttendance View List',
-                'roles' => [UserRole::STUDENT->value],
+                'permission' => 'Attendance Map View',
                 'icon' => 'heroicon-o-map',
                 'event' => 'open-attendance-map',
             ],

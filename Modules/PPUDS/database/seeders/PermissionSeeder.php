@@ -489,6 +489,11 @@ class PermissionSeeder extends Seeder
                 'guard_name' => 'web',
                 'module_name' => 'Student Attendance',
             ],
+            [
+                'name' => 'Attendance Map View',
+                'guard_name' => 'web',
+                'module_name' => 'Student Attendance',
+            ],
 
             // TODO StudentReport
             [

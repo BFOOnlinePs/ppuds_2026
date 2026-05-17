@@ -61,10 +61,7 @@ class AttendanceMapWidget extends Component
     {
         $user = auth()->user();
 
-        return $user && (
-            $user->hasRole(UserRole::STUDENT->value)
-            || $user->can('StudentAttendance View List')
-        );
+        return $user && $user->can('Attendance Map View');
     }
 
     public function attendancePoints(): array
