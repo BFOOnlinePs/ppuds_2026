@@ -2,7 +2,7 @@
 <html lang="{{ app()->getLocale() }}" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
     <meta charset='utf-8' />
     <meta http-equiv='X-UA-Compatible' content='IE=edge' />
-    <title>{{ $title ?? config('app.name', 'Laravel') }}</title>
+    <title>PPU Dual Study</title>
 
     <meta name='viewport' content='width=device-width, initial-scale=1' />
     <link rel="icon" type="image/svg" href="{{ asset('assets/dashboard/admin-theme/images/favicon.svg') }}" />
