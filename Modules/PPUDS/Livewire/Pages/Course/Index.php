@@ -20,6 +20,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
+use Matrix\Builder;
 use Modules\Core\Filament\Forms\Components\CreateAction;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
@@ -45,7 +46,10 @@ class Index extends Component implements HasTable, HasForms
                     ->searchable(),
                 TextColumn::make('name')
                     ->label(__('Name'))
-                    ->searchable(),
+                    ->searchable(
+                        query: function (Builder $query, string $search) {
+                            return $query->whereTranslationLike('name', "%{$search}%");
+                        }),
                 TextColumn::make('current_registered_students_count')
                     ->label(__('Current Registered Students'))
                     ->numeric()
