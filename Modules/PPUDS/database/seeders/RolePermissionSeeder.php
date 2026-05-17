@@ -45,14 +45,13 @@ class RolePermissionSeeder extends Seeder
 
         $role->syncPermissions($existingPermissions);
 
-        $this->command?->info("Role {$roleName} synced with ".count($existingPermissions).' permissions');
+        $this->command?->info("Role {$roleName} synced with " . count($existingPermissions) . ' permissions');
     }
 
     private function rolePermissions(): array
     {
         return [
             UserRole::STUDENT->value => [
-                ...$this->read('Company'),
                 ...$this->read('StudentCompany'),
                 'StudentCompany Details',
                 ...$this->read('LeaveRequest'),
