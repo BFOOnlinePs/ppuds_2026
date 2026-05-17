@@ -14,6 +14,7 @@ use Modules\Core\Services\StudentCompanySuggestionService;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Entities\StudentCompany;
+use Modules\PPUDS\Http\Controllers\Api\V1\Concerns\EnsuresCurrentRegistration;
 use Modules\PPUDS\Http\Requests\StudentCompanyAssistant\LinkAllAssistantCompaniesRequest;
 use Modules\PPUDS\Http\Requests\StudentCompanyAssistant\LinkAssistantCompanyRequest;
 use Modules\PPUDS\Http\Requests\StudentCompanyAssistant\SearchAssistantCompaniesRequest;
@@ -28,6 +29,7 @@ use Modules\PPUDS\Transformers\V1\StudentCompanyResource;
 class StudentCompanyAssistantController extends Controller
 {
     use ApiResponse;
+    use EnsuresCurrentRegistration;
 
     public function searchStudents(
         SearchAssistantStudentsRequest $request,
@@ -62,6 +64,10 @@ class StudentCompanyAssistantController extends Controller
 
         if (! $registration) {
             return $this->errorResponse(__('No valid registration was found for this student.'), 422);
+        }
+
+        if ($response = $this->ensureRegistrationInCurrentSemester($registration)) {
+            return $response;
         }
 
         $result = $suggestionService->suggest($student, $registration, $data['limit'] ?? 5);
@@ -103,6 +109,10 @@ class StudentCompanyAssistantController extends Controller
             return $this->errorResponse(__('The registration does not belong to this student.'), 422);
         }
 
+        if ($response = $this->ensureRegistrationInCurrentSemester($registration)) {
+            return $response;
+        }
+
         $suggestion = $this->suggestionFromPayload($data, $findCompanies);
 
         if (! $suggestion) {
@@ -137,6 +147,10 @@ class StudentCompanyAssistantController extends Controller
 
         if (! $student || ! $registration) {
             return $this->errorResponse(__('The registration does not belong to this student.'), 422);
+        }
+
+        if ($response = $this->ensureRegistrationInCurrentSemester($registration)) {
+            return $response;
         }
 
         $items = collect($data['companies'])

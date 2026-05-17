@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Entities\StudentCompany; // تأكدنا من استخدام هذا الكلاس
-use Modules\PPUDS\Http\Requests\CompanyRequest;
+use Modules\PPUDS\Http\Controllers\Api\V1\Concerns\EnsuresCurrentRegistration;
 use Modules\PPUDS\Http\Requests\StudentCompanyRequest;
 use Modules\PPUDS\Transformers\V1\StudentCompanyResource;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -14,6 +14,7 @@ use Spatie\QueryBuilder\QueryBuilder;
 class StudentCompanyController extends Controller
 {
     use ApiResponse;
+    use EnsuresCurrentRegistration;
 
     /**
      * @OA\Get(
@@ -22,32 +23,41 @@ class StudentCompanyController extends Controller
      * description="Retrieve a list of all student companies",
      * tags={"Student Companies"},
      * security={{"sanctum": {}}},
+     *
      * @OA\Parameter(
      * name="Accept-Language",
      * in="header",
      * required=true,
      * description="Language header (ar or en)",
+     *
      * @OA\Schema(type="string", default="ar", example="en")
      * ),
+     *
      * @OA\Parameter(
      * name="include",
      * in="query",
      * required=false,
      * description="Include relations (e.g. branches)",
+     *
      * @OA\Schema(type="string")
      * ),
+     *
      * @OA\Response(
      * response=200,
      * description="Student companies retrieved successfully",
+     *
      * @OA\JsonContent(
      * type="object",
+     *
      * @OA\Property(property="status", type="boolean", example=true),
      * @OA\Property(property="message", type="string", example="Companies retrieved successfully"),
      * @OA\Property(
      * property="data",
      * type="array",
+     *
      * @OA\Items(
      * type="object",
+     *
      * @OA\Property(property="id", type="integer", example=1),
      * @OA\Property(property="name", type="string", example="New Student Tech"),
      * @OA\Property(property="description", type="string", example="Student project"),
@@ -87,12 +97,16 @@ class StudentCompanyController extends Controller
      * description="Creates student company, branches, and links departments with supervisors.",
      * tags={"Student Companies"},
      * security={{"sanctum": {}}},
+     *
      * @OA\RequestBody(
      * required=true,
+     *
      * @OA\MediaType(
      * mediaType="multipart/form-data",
+     *
      * @OA\Schema(
      * required={"name", "company_category_id", "status", "branches"},
+     *
      * @OA\Property(property="name", type="string", example="New Tech Company"),
      * @OA\Property(property="website", type="string", example="https://example.com"),
      * @OA\Property(property="description", type="string", example="Leading tech solutions"),
@@ -102,9 +116,11 @@ class StudentCompanyController extends Controller
      * @OA\Property(
      * property="branches",
      * type="array",
+     *
      * @OA\Items(
      * type="object",
      * required={"name", "country_id", "city_id", "latitude", "longitude", "opening_time", "closing_time"},
+     *
      * @OA\Property(property="name", type="string", example="Main Branch"),
      * @OA\Property(property="country_id", type="integer", example=1),
      * @OA\Property(property="city_id", type="integer", example=1),
@@ -115,9 +131,11 @@ class StudentCompanyController extends Controller
      * @OA\Property(
      * property="departments",
      * type="array",
+     *
      * @OA\Items(
      * type="object",
      * required={"name", "user_id"},
+     *
      * @OA\Property(property="name", type="string", example="HR"),
      * @OA\Property(property="user_id", type="integer", example=5, description="Supervisor ID")
      * )
@@ -127,6 +145,7 @@ class StudentCompanyController extends Controller
      * )
      * )
      * ),
+     *
      * @OA\Response(response=201, description="Created successfully")
      * )
      */
@@ -135,6 +154,10 @@ class StudentCompanyController extends Controller
         $data = $request->validated();
 
         $registration = Registration::findOrFail($data['registration_id']);
+
+        if ($response = $this->ensureRegistrationInCurrentSemester($registration)) {
+            return $response;
+        }
 
         $data['student_id'] = $registration->student_id;
         $data['created_by'] = auth()->id();
@@ -157,36 +180,45 @@ class StudentCompanyController extends Controller
      * description="Retrieve details of a specific student company",
      * tags={"Student Companies"},
      * security={{"sanctum": {}}},
+     *
      * @OA\Parameter(
      * name="studentCompany",
      * in="path",
      * required=true,
      * description="Student Company ID",
+     *
      * @OA\Schema(type="integer", example=1)
      * ),
+     *
      * @OA\Parameter(
      * name="Accept-Language",
      * in="header",
      * required=true,
      * description="Language header (ar or en)",
+     *
      * @OA\Schema(type="string", default="ar", example="en")
      * ),
+     *
      * @OA\Response(
      * response=200,
      * description="Student Company retrieved successfully",
+     *
      * @OA\JsonContent(
      * type="object",
+     *
      * @OA\Property(property="status", type="boolean", example=true),
      * @OA\Property(property="message", type="string", example="Company retrieved successfully"),
      * @OA\Property(property="data", type="object")
      * )
      * ),
+     *
      * @OA\Response(response=404, description="Company not found")
      * )
      */
     public function show(StudentCompany $studentCompany)
     {
         $studentCompany = QueryBuilder::for(StudentCompany::class)
+            ->where('id', $studentCompany->id)
             ->allowedFilters(StudentCompanyResource::allowedFilters())
             ->allowedFields(StudentCompanyResource::allowedFields())
             ->allowedIncludes(StudentCompanyResource::allowedIncludes())

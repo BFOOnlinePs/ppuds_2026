@@ -7,6 +7,7 @@ use Modules\Core\Enums\UserRole;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\StudentAttendance;
 use Modules\PPUDS\Enums\AttendanceStatus;
+use Modules\PPUDS\Http\Controllers\Api\V1\Concerns\EnsuresCurrentRegistration;
 use Modules\PPUDS\Http\Requests\StudentAttendanceRequest;
 use Modules\PPUDS\Http\Requests\StudentAttendanceRequestUpdate;
 use Modules\PPUDS\Services\PpudsNotificationService;
@@ -22,6 +23,7 @@ use Spatie\QueryBuilder\QueryBuilder;
 class StudentAttendanceController extends Controller
 {
     use ApiResponse;
+    use EnsuresCurrentRegistration;
 
     /**
      *List Student Attendances
@@ -33,60 +35,77 @@ class StudentAttendanceController extends Controller
      * summary="List all attendances",
      * tags={"Student Attendances"},
      * security={{"sanctum": {}}},
+     *
      * @OA\Parameter(
      * name="filter[student_company_id]",
      * in="query",
      * description="Filter by Student Company ID",
      * required=false,
+     *
      * @OA\Schema(type="integer", example=10)
      * ),
+     *
      * @OA\Parameter(
      * name="filter[attendance_date]",
      * in="query",
      * description="Filter by specific date (YYYY-MM-DD)",
      * required=false,
+     *
      * @OA\Schema(type="string", format="date", example="2024-03-15")
      * ),
+     *
      * @OA\Parameter(
      * name="filter[status]",
      * in="query",
      * description="Filter by status (present, absent, late, excused)",
      * required=false,
+     *
      * @OA\Schema(type="string", example="present")
      * ),
+     *
      * @OA\Parameter(
      * name="sort",
      * in="query",
      * description="Sort results (e.g. -attendance_date, created_at)",
      * required=false,
+     *
      * @OA\Schema(type="string", example="-attendance_date")
      * ),
+     *
      * @OA\Parameter(
      * name="per_page",
      * in="query",
      * description="Number of items per page",
      * required=false,
+     *
      * @OA\Schema(type="integer", example=15)
      * ),
+     *
      * @OA\Parameter(
      * name="page",
      * in="query",
      * description="Page number",
      * required=false,
+     *
      * @OA\Schema(type="integer", example=1)
      * ),
+     *
      * @OA\Response(
      * response=200,
      * description="Successful retrieval",
+     *
      * @OA\JsonContent(
      * type="object",
+     *
      * @OA\Property(property="status", type="boolean", example=true),
      * @OA\Property(property="message", type="string", example="Attendances retrieved successfully"),
      * @OA\Property(
      * property="data",
      * type="array",
+     *
      * @OA\Items(
      * type="object",
+     *
      * @OA\Property(property="id", type="integer", example=1),
      * @OA\Property(property="student_company_id", type="integer", example=5),
      * @OA\Property(property="attendance_date", type="string", format="date", example="2024-03-15"),
@@ -107,10 +126,10 @@ class StudentAttendanceController extends Controller
      * )
      * )
      * ),
+     *
      * @OA\Response(response=401, description="Unauthenticated")
      * )
      */
-
     public function index()
     {
         $attendances = QueryBuilder::for(StudentAttendance::class)
@@ -136,26 +155,34 @@ class StudentAttendanceController extends Controller
      * summary="Update Student Attendance",
      * tags={"Student Attendances"},
      * security={{"sanctum": {}}},
+     *
      * @OA\Parameter(
      * name="id",
      * in="path",
      * description="ID of the attendance record to update",
      * required=true,
+     *
      * @OA\Schema(type="integer", example=1)
      * ),
+     *
      * @OA\RequestBody(
      * required=true,
      * description="Data to update the attendance record",
+     *
      * @OA\JsonContent(
+     *
      * @OA\Property(property="status", type="string", example="present", description="Update attendance status (e.g. present, absent, late, excused)"),
      * @OA\Property(property="description", type="string", example="Updated description for this attendance", description="Update notes/description")
      * )
      * ),
+     *
      * @OA\Response(
      * response=200,
      * description="Attendance updated successfully",
+     *
      * @OA\JsonContent(
      * type="object",
+     *
      * @OA\Property(property="status", type="boolean", example=true),
      * @OA\Property(property="message", type="string", example="Attendance updated successfully"),
      * @OA\Property(
@@ -168,25 +195,42 @@ class StudentAttendanceController extends Controller
      * )
      * )
      * ),
+     *
      * @OA\Response(
      * response=404,
      * description="Attendance record not found",
+     *
      * @OA\JsonContent(
+     *
      * @OA\Property(property="message", type="string", example="Record not found.")
      * )
      * ),
+     *
      * @OA\Response(
      * response=422,
      * description="Validation Error",
+     *
      * @OA\JsonContent(
+     *
      * @OA\Property(property="message", type="string", example="The given data was invalid.")
      * )
      * ),
+     *
      * @OA\Response(response=401, description="Unauthenticated")
      * )
      */
     public function update(StudentAttendanceRequestUpdate $request, StudentAttendance $studentAttendance)
     {
+        if ($response = $this->ensureStudentAttendanceInCurrentSemester($studentAttendance)) {
+            return $response;
+        }
+
+        if ($request->filled('student_company_id')) {
+            if ($response = $this->ensureStudentCompanyInCurrentSemester((int) $request->student_company_id)) {
+                return $response;
+            }
+        }
+
         $studentAttendance->update($request->validated());
 
         if ($request->has('status') && $studentAttendance->wasChanged('status') && ! auth()->user()?->hasRole(UserRole::STUDENT->value)) {
@@ -199,7 +243,6 @@ class StudentAttendanceController extends Controller
         );
     }
 
-
     /**
      * Student Check-In
      *
@@ -210,22 +253,28 @@ class StudentAttendanceController extends Controller
      * summary="Student Check-In",
      * tags={"Student Attendances"},
      * security={{"sanctum": {}}},
+     *
      * @OA\RequestBody(
      * required=true,
      * description="Check-in data including location",
+     *
      * @OA\JsonContent(
      * required={"student_company_id", "latitude", "longitude"},
+     *
      * @OA\Property(property="student_company_id", type="integer", example=10, description="The ID of the student company record"),
      * @OA\Property(property="latitude", type="number", format="float", example=31.9038, description="Current device latitude"),
      * @OA\Property(property="longitude", type="number", format="float", example=35.2034, description="Current device longitude"),
      * @OA\Property(property="description", type="string", example="Arrived on time", description="Optional notes")
      * )
      * ),
+     *
      * @OA\Response(
      * response=201,
      * description="Check-in successful",
+     *
      * @OA\JsonContent(
      * type="object",
+     *
      * @OA\Property(property="status", type="boolean", example=true),
      * @OA\Property(property="message", type="string", example="Checked in successfully"),
      * @OA\Property(property="data", type="object",
@@ -234,10 +283,13 @@ class StudentAttendanceController extends Controller
      * )
      * )
      * ),
+     *
      * @OA\Response(
      * response=422,
      * description="Validation Error or Already Checked In",
+     *
      * @OA\JsonContent(
+     *
      * @OA\Property(property="message", type="string", example="You have already checked in today.")
      * )
      * )
@@ -245,23 +297,27 @@ class StudentAttendanceController extends Controller
      */
     public function checkIn(StudentAttendanceRequest $request)
     {
-//        $existing = StudentAttendance::where('student_company_id', $request->student_company_id)
-//            ->where('attendance_date', now()->toDateString())
-//            ->first();
-//
-//        if ($existing) {
-//            return $this->errorResponse(__('You have already checked in today.'), 422);
-//        }
+        if ($response = $this->ensureStudentCompanyInCurrentSemester((int) $request->student_company_id)) {
+            return $response;
+        }
+
+        //        $existing = StudentAttendance::where('student_company_id', $request->student_company_id)
+        //            ->where('attendance_date', now()->toDateString())
+        //            ->first();
+        //
+        //        if ($existing) {
+        //            return $this->errorResponse(__('You have already checked in today.'), 422);
+        //        }
 
         $attendance = StudentAttendance::create([
-            'student_company_id'  => $request->student_company_id,
-            'attendance_date'     => now()->toDateString(),
-            'check_in'            => now(),
-            'check_in_latitude'   => $request->latitude,
-            'check_in_longitude'  => $request->longitude,
-            'status'              => AttendanceStatus::UNDETERMINED->value,
-            'description'         => $request->description,
-            'created_by'          => auth()->id(),
+            'student_company_id' => $request->student_company_id,
+            'attendance_date' => now()->toDateString(),
+            'check_in' => now(),
+            'check_in_latitude' => $request->latitude,
+            'check_in_longitude' => $request->longitude,
+            'status' => AttendanceStatus::UNDETERMINED->value,
+            'description' => $request->description,
+            'created_by' => auth()->id(),
         ]);
 
         if (auth()->user()?->hasRole(UserRole::STUDENT->value)) {
@@ -285,28 +341,37 @@ class StudentAttendanceController extends Controller
      * summary="Student Check-Out",
      * tags={"Student Attendances"},
      * security={{"sanctum": {}}},
+     *
      * @OA\RequestBody(
      * required=true,
+     *
      * @OA\JsonContent(
      * required={"student_company_id", "latitude", "longitude"},
+     *
      * @OA\Property(property="student_company_id", type="integer", example=10),
      * @OA\Property(property="latitude", type="number", format="float", example=31.9038),
      * @OA\Property(property="longitude", type="number", format="float", example=35.2034)
      * )
      * ),
+     *
      * @OA\Response(
      * response=200,
      * description="Check-out successful",
+     *
      * @OA\JsonContent(
      * type="object",
+     *
      * @OA\Property(property="status", type="boolean", example=true),
      * @OA\Property(property="message", type="string", example="Checked out successfully")
      * )
      * ),
+     *
      * @OA\Response(
      * response=404,
      * description="No active check-in found",
+     *
      * @OA\JsonContent(
+     *
      * @OA\Property(property="message", type="string", example="No active check-in found for today.")
      * )
      * )
@@ -314,18 +379,22 @@ class StudentAttendanceController extends Controller
      */
     public function checkOut(StudentAttendanceRequest $request)
     {
+        if ($response = $this->ensureStudentCompanyInCurrentSemester((int) $request->student_company_id)) {
+            return $response;
+        }
+
         $attendance = StudentAttendance::where('student_company_id', $request->student_company_id)
             ->where('attendance_date', now()->toDateString())
             ->whereNull('check_out')
             ->first();
 
-//        if (! $attendance) {
-//            return $this->errorResponse(__('No active check-in found for today.'), 404);
-//        }
+        if (! $attendance) {
+            return $this->errorResponse(__('No active check-in found for today.'), 404);
+        }
 
         $attendance->update([
-            'check_out'           => now(),
-            'check_out_latitude'  => $request->latitude,
+            'check_out' => now(),
+            'check_out_latitude' => $request->latitude,
             'check_out_longitude' => $request->longitude,
         ]);
 

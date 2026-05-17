@@ -5,6 +5,7 @@ namespace Modules\PPUDS\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\FieldVisit;
+use Modules\PPUDS\Http\Controllers\Api\V1\Concerns\EnsuresCurrentRegistration;
 use Modules\PPUDS\Http\Requests\FieldVisitRequest;
 use Modules\PPUDS\Http\Requests\FieldVisitUpdate;
 use Modules\PPUDS\Transformers\V1\FieldVisitResource;
@@ -19,6 +20,7 @@ use Spatie\QueryBuilder\QueryBuilder;
 class FieldVisitController extends Controller
 {
     use ApiResponse;
+    use EnsuresCurrentRegistration;
 
     /**
      * @OA\Get(
@@ -27,29 +29,38 @@ class FieldVisitController extends Controller
      * description="Retrieve a list of field visits with filtering and sorting",
      * tags={"Field Visits"},
      * security={{"sanctum": {}}},
+     *
      * @OA\Parameter(
      * name="filter[student_company_id]",
      * in="query",
      * description="Filter by Student Company ID",
+     *
      * @OA\Schema(type="integer")
      * ),
+     *
      * @OA\Parameter(
      * name="filter[supervisor_id]",
      * in="query",
      * description="Filter by Supervisor ID",
+     *
      * @OA\Schema(type="integer")
      * ),
+     *
      * @OA\Parameter(
      * name="filter[visit_date]",
      * in="query",
      * description="Filter by Visit Date",
+     *
      * @OA\Schema(type="string", format="date")
      * ),
+     *
      * @OA\Response(
      * response=200,
      * description="Field visits retrieved successfully",
+     *
      * @OA\JsonContent(
      * type="object",
+     *
      * @OA\Property(property="status", type="boolean", example=true),
      * @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/FieldVisitResource"))
      * )
@@ -83,12 +94,16 @@ class FieldVisitController extends Controller
      * description="Submit a new field visit record",
      * tags={"Field Visits"},
      * security={{"sanctum": {}}},
+     *
      * @OA\RequestBody(
      * required=true,
+     *
      * @OA\MediaType(
      * mediaType="application/json",
+     *
      * @OA\Schema(
      * required={"student_company_id", "supervisor_id", "visit_date", "visit_time", "visit_duration"},
+     *
      * @OA\Property(property="student_company_id", type="integer", example=1),
      * @OA\Property(property="supervisor_id", type="integer", example=3),
      * @OA\Property(property="visiting_place", type="string", example="Main Office"),
@@ -99,12 +114,18 @@ class FieldVisitController extends Controller
      * )
      * )
      * ),
+     *
      * @OA\Response(response=201, description="Created successfully")
      * )
      */
     public function store(FieldVisitRequest $request)
     {
         $data = $request->validated();
+
+        if ($response = $this->ensureStudentCompanyInCurrentSemester((int) $data['student_company_id'])) {
+            return $response;
+        }
+
         $data['created_by'] = auth()->id();
 
         $fieldVisit = FieldVisit::create($data);
@@ -122,7 +143,9 @@ class FieldVisitController extends Controller
      * summary="Get field visit details",
      * tags={"Field Visits"},
      * security={{"sanctum": {}}},
+     *
      * @OA\Parameter(name="fieldVisit", in="path", required=true, @OA\Schema(type="integer")),
+     *
      * @OA\Response(response=200, description="Success")
      * )
      */
@@ -147,11 +170,16 @@ class FieldVisitController extends Controller
      * description="Update field visit details. Use _method=PUT for multipart support.",
      * tags={"Field Visits"},
      * security={{"sanctum": {}}},
+     *
      * @OA\Parameter(name="fieldVisit", in="path", required=true, @OA\Schema(type="integer")),
+     *
      * @OA\RequestBody(
+     *
      * @OA\MediaType(
      * mediaType="application/json",
+     *
      * @OA\Schema(
+     *
      * @OA\Property(property="_method", type="string", example="PUT"),
      * @OA\Property(property="visiting_place", type="string", example="Branch Office"),
      * @OA\Property(property="notes", type="string", example="Updated notes"),
@@ -159,11 +187,22 @@ class FieldVisitController extends Controller
      * )
      * )
      * ),
+     *
      * @OA\Response(response=200, description="Updated successfully")
      * )
      */
     public function update(FieldVisitUpdate $request, FieldVisit $fieldVisit)
     {
+        if ($response = $this->ensureRelatedStudentCompanyInCurrentSemester($fieldVisit)) {
+            return $response;
+        }
+
+        if ($request->filled('student_company_id')) {
+            if ($response = $this->ensureStudentCompanyInCurrentSemester((int) $request->student_company_id)) {
+                return $response;
+            }
+        }
+
         $fieldVisit->update($request->validated());
 
         return $this->successResponse(

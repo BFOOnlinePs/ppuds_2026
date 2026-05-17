@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\LeaveRequest;
 use Modules\PPUDS\Enums\LeaveRequestStatus;
+use Modules\PPUDS\Http\Controllers\Api\V1\Concerns\EnsuresCurrentRegistration;
 use Modules\PPUDS\Http\Requests\LeaveRequestRequest;
 use Modules\PPUDS\Http\Requests\LeaveRequestUpdate;
 use Modules\PPUDS\Services\PpudsNotificationService;
@@ -21,6 +22,7 @@ use Spatie\QueryBuilder\QueryBuilder;
 class LeaveRequestController extends Controller
 {
     use ApiResponse;
+    use EnsuresCurrentRegistration;
 
     /**
      * @OA\Get(
@@ -29,23 +31,30 @@ class LeaveRequestController extends Controller
      * description="Retrieve a list of leave requests with filtering and sorting",
      * tags={"Leave Requests"},
      * security={{"sanctum": {}}},
+     *
      * @OA\Parameter(
      * name="filter[student_company_id]",
      * in="query",
      * description="Filter by Student Company ID",
+     *
      * @OA\Schema(type="integer")
      * ),
+     *
      * @OA\Parameter(
      * name="filter[type]",
      * in="query",
      * description="Filter by type (leave, absence)",
+     *
      * @OA\Schema(type="string")
      * ),
+     *
      * @OA\Response(
      * response=200,
      * description="Leave requests retrieved successfully",
+     *
      * @OA\JsonContent(
      * type="object",
+     *
      * @OA\Property(property="status", type="boolean", example=true),
      * @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/LeaveRequestResource"))
      * )
@@ -80,12 +89,16 @@ class LeaveRequestController extends Controller
      * description="Submit a new request for absence or hourly leave",
      * tags={"Leave Requests"},
      * security={{"sanctum": {}}},
+     *
      * @OA\RequestBody(
      * required=true,
+     *
      * @OA\MediaType(
      * mediaType="multipart/form-data",
+     *
      * @OA\Schema(
      * required={"student_company_id", "type", "start_at", "end_at", "reason"},
+     *
      * @OA\Property(property="student_company_id", type="integer", example=1),
      * @OA\Property(property="type", type="string", enum={"leave", "absence"}, example="leave"),
      * @OA\Property(property="start_at", type="string", format="date-time", example="2024-05-20 08:00:00"),
@@ -101,12 +114,18 @@ class LeaveRequestController extends Controller
      * )
      * )
      * ),
+     *
      * @OA\Response(response=201, description="Created successfully")
      * )
      */
     public function store(LeaveRequestRequest $request)
     {
         $data = $request->validated();
+
+        if ($response = $this->ensureStudentCompanyInCurrentSemester((int) $data['student_company_id'])) {
+            return $response;
+        }
+
         $data['created_by'] = auth()->id();
         $data['status'] = 'pending';
 
@@ -114,7 +133,6 @@ class LeaveRequestController extends Controller
         $data['university_approval'] = LeaveRequestStatus::PENDING ?? LeaveRequestStatus::APPROVED;
 
         $leaveRequest = LeaveRequest::create($data);
-
 
         if ($request->hasFile('attachment_file')) {
             $leaveRequest->addImage($request->file('attachment_file'));
@@ -135,7 +153,9 @@ class LeaveRequestController extends Controller
      * summary="Get leave request details",
      * tags={"Leave Requests"},
      * security={{"sanctum": {}}},
+     *
      * @OA\Parameter(name="leaveRequest", in="path", required=true, @OA\Schema(type="integer")),
+     *
      * @OA\Response(response=200, description="Success")
      * )
      */
@@ -160,22 +180,38 @@ class LeaveRequestController extends Controller
      * description="Update details. Use _method=PUT for multipart support.",
      * tags={"Leave Requests"},
      * security={{"sanctum": {}}},
+     *
      * @OA\Parameter(name="leaveRequest", in="path", required=true, @OA\Schema(type="integer")),
+     *
      * @OA\RequestBody(
+     *
      * @OA\MediaType(
      * mediaType="multipart/form-data",
+     *
      * @OA\Schema(
+     *
      * @OA\Property(property="_method", type="string", example="PUT"),
      * @OA\Property(property="reason", type="string"),
      * @OA\Property(property="attachment", type="string", format="binary")
      * )
      * )
      * ),
+     *
      * @OA\Response(response=200, description="Updated successfully")
      * )
      */
     public function update(LeaveRequestUpdate $request, LeaveRequest $leaveRequest)
     {
+        if ($response = $this->ensureRelatedStudentCompanyInCurrentSemester($leaveRequest)) {
+            return $response;
+        }
+
+        if ($request->filled('student_company_id')) {
+            if ($response = $this->ensureStudentCompanyInCurrentSemester((int) $request->student_company_id)) {
+                return $response;
+            }
+        }
+
         $leaveRequest->update($request->validated());
 
         $changedApprovalFields = collect(['company_approval', 'university_approval'])

@@ -5,6 +5,7 @@ namespace Modules\PPUDS\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\Registration;
+use Modules\PPUDS\Http\Controllers\Api\V1\Concerns\EnsuresCurrentRegistration;
 use Modules\PPUDS\Http\Requests\RegistrationRequest;
 use Modules\PPUDS\Http\Requests\RegistrationUpdateRequest;
 use Modules\PPUDS\Transformers\V1\RegistrationResource;
@@ -19,6 +20,7 @@ use Spatie\QueryBuilder\QueryBuilder;
 class RegistrationController extends Controller
 {
     use ApiResponse;
+    use EnsuresCurrentRegistration;
 
     /**
      * @OA\Get(
@@ -27,35 +29,46 @@ class RegistrationController extends Controller
      * description="Retrieve a list of registrations with filtering and sorting",
      * tags={"Registrations"},
      * security={{"sanctum": {}}},
+     *
      * @OA\Parameter(
      * name="filter[student_id]",
      * in="query",
      * description="Filter by Student ID",
+     *
      * @OA\Schema(type="integer")
      * ),
+     *
      * @OA\Parameter(
      * name="filter[course_id]",
      * in="query",
      * description="Filter by Course ID",
+     *
      * @OA\Schema(type="integer")
      * ),
+     *
      * @OA\Parameter(
      * name="filter[semester]",
      * in="query",
      * description="Filter by Semester (e.g., First, Second, Summer)",
+     *
      * @OA\Schema(type="string")
      * ),
+     *
      * @OA\Parameter(
      * name="filter[year]",
      * in="query",
      * description="Filter by Year",
+     *
      * @OA\Schema(type="string")
      * ),
+     *
      * @OA\Response(
      * response=200,
      * description="Registrations retrieved successfully",
+     *
      * @OA\JsonContent(
      * type="object",
+     *
      * @OA\Property(property="status", type="boolean", example=true),
      * @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/RegistrationResource"))
      * )
@@ -89,12 +102,16 @@ class RegistrationController extends Controller
      * description="Submit a new registration record with optional image upload",
      * tags={"Registrations"},
      * security={{"sanctum": {}}},
+     *
      * @OA\RequestBody(
      * required=true,
+     *
      * @OA\MediaType(
      * mediaType="multipart/form-data",
+     *
      * @OA\Schema(
      * required={"student_id", "course_id", "semester", "year"},
+     *
      * @OA\Property(property="student_id", type="integer", example=10),
      * @OA\Property(property="course_id", type="integer", example=2),
      * @OA\Property(property="grade", type="string", example="A"),
@@ -107,6 +124,7 @@ class RegistrationController extends Controller
      * )
      * )
      * ),
+     *
      * @OA\Response(response=201, description="Created successfully")
      * )
      */
@@ -134,7 +152,9 @@ class RegistrationController extends Controller
      * summary="Get registration details",
      * tags={"Registrations"},
      * security={{"sanctum": {}}},
+     *
      * @OA\Parameter(name="registration", in="path", required=true, @OA\Schema(type="integer")),
+     *
      * @OA\Response(response=200, description="Success")
      * )
      */
@@ -159,11 +179,16 @@ class RegistrationController extends Controller
      * description="Update registration details. Use _method=PUT for multipart form-data to update image.",
      * tags={"Registrations"},
      * security={{"sanctum": {}}},
+     *
      * @OA\Parameter(name="registration", in="path", required=true, @OA\Schema(type="integer")),
+     *
      * @OA\RequestBody(
+     *
      * @OA\MediaType(
      * mediaType="multipart/form-data",
+     *
      * @OA\Schema(
+     *
      * @OA\Property(property="_method", type="string", example="PUT"),
      * @OA\Property(property="grade", type="string", example="A+"),
      * @OA\Property(property="university_score", type="number", format="float", example=95.0),
@@ -172,11 +197,16 @@ class RegistrationController extends Controller
      * )
      * )
      * ),
+     *
      * @OA\Response(response=200, description="Updated successfully")
      * )
      */
     public function update(RegistrationUpdateRequest $request, Registration $registration)
     {
+        if ($response = $this->ensureRegistrationInCurrentSemester($registration)) {
+            return $response;
+        }
+
         $registration->update($request->validated());
 
         if ($request->hasFile('final_file')) {

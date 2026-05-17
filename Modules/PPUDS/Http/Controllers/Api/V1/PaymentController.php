@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use Modules\Core\Enums\UserRole;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\Payment;
-use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Enums\PaymentStatus;
+use Modules\PPUDS\Http\Controllers\Api\V1\Concerns\EnsuresCurrentRegistration;
 use Modules\PPUDS\Http\Requests\PaymentRequest;
 use Modules\PPUDS\Http\Requests\PaymentRequestUpdate;
 use Modules\PPUDS\Services\PpudsNotificationService;
@@ -17,6 +17,7 @@ use Spatie\QueryBuilder\QueryBuilder;
 class PaymentController extends Controller
 {
     use ApiResponse;
+    use EnsuresCurrentRegistration;
 
     /**
      * @OA\Get(
@@ -25,30 +26,38 @@ class PaymentController extends Controller
      * description="Retrieve a list of all payments with filtering and sorting",
      * tags={"Payments"},
      * security={{"sanctum": {}}},
+     *
      * @OA\Parameter(
      * name="Accept-Language",
      * in="header",
      * required=true,
      * description="Language header (ar or en)",
+     *
      * @OA\Schema(type="string", default="ar", example="en")
      * ),
+     *
      * @OA\Parameter(
      * name="filter[student_company_id]",
      * in="query",
      * required=false,
      * description="Filter by Student Company ID",
+     *
      * @OA\Schema(type="integer")
      * ),
+     *
      * @OA\Response(
      * response=200,
      * description="Payments retrieved successfully",
+     *
      * @OA\JsonContent(
      * type="object",
+     *
      * @OA\Property(property="status", type="boolean", example=true),
      * @OA\Property(property="message", type="string", example="Payments retrieved successfully"),
      * @OA\Property(
      * property="data",
      * type="array",
+     *
      * @OA\Items(type="object")
      * )
      * )
@@ -83,12 +92,16 @@ class PaymentController extends Controller
      * description="Create a new payment record and upload receipt",
      * tags={"Payments"},
      * security={{"sanctum": {}}},
+     *
      * @OA\RequestBody(
      * required=true,
+     *
      * @OA\MediaType(
      * mediaType="multipart/form-data",
+     *
      * @OA\Schema(
      * required={"student_company_id", "payment_value", "currency_id", "status"},
+     *
      * @OA\Property(property="student_company_id", type="integer", example=1),
      * @OA\Property(property="payment_value", type="number", format="float", example=150.50),
      * @OA\Property(property="currency_id", type="integer", example=1),
@@ -99,12 +112,18 @@ class PaymentController extends Controller
      * )
      * )
      * ),
+     *
      * @OA\Response(response=201, description="Payment created successfully")
      * )
      */
     public function store(PaymentRequest $request)
     {
         $data = $request->validated();
+
+        if ($response = $this->ensureStudentCompanyInCurrentSemester((int) $data['student_company_id'])) {
+            return $response;
+        }
+
         $data['created_by'] = auth()->id();
 
         $payment = Payment::create($data);
@@ -132,25 +151,33 @@ class PaymentController extends Controller
      * **Note:** You must use `POST` method with `_method` parameter set to `PUT` or `PATCH` to support file uploads in PHP.",
      * tags={"Payments"},
      * security={{"sanctum": {}}},
+     *
      * @OA\Parameter(
      * name="payment",
      * in="path",
      * description="Payment ID",
      * required=true,
+     *
      * @OA\Schema(type="integer", example=1)
      * ),
+     *
      * @OA\Parameter(
      * name="Accept-Language",
      * in="header",
      * description="Language (ar or en)",
+     *
      * @OA\Schema(type="string", default="ar", example="en")
      * ),
+     *
      * @OA\RequestBody(
      * required=true,
+     *
      * @OA\MediaType(
      * mediaType="multipart/form-data",
+     *
      * @OA\Schema(
      * required={"_method"},
+     *
      * @OA\Property(
      * property="_method",
      * type="string",
@@ -215,23 +242,30 @@ class PaymentController extends Controller
      * )
      * )
      * ),
+     *
      * @OA\Response(
      * response=200,
      * description="Payment updated successfully",
+     *
      * @OA\JsonContent(
      * type="object",
+     *
      * @OA\Property(property="status", type="boolean", example=true),
      * @OA\Property(property="message", type="string", example="Payment updated successfully"),
      * )
      * ),
+     *
      * @OA\Response(
      * response=422,
      * description="Validation Error",
+     *
      * @OA\JsonContent(
+     *
      * @OA\Property(property="message", type="string", example="The given data was invalid."),
      * @OA\Property(property="errors", type="object")
      * )
      * ),
+     *
      * @OA\Response(
      * response=404,
      * description="Payment not found"
@@ -240,6 +274,10 @@ class PaymentController extends Controller
      */
     public function update(PaymentRequestUpdate $request, Payment $payment)
     {
+        if ($response = $this->ensureRelatedStudentCompanyInCurrentSemester($payment)) {
+            return $response;
+        }
+
         $oldStatus = $payment->status;
 
         $payment->update($request->validated());
@@ -267,29 +305,37 @@ class PaymentController extends Controller
      * description="Retrieve details of a specific payment",
      * tags={"Payments"},
      * security={{"sanctum": {}}},
+     *
      * @OA\Parameter(
      * name="payment",
      * in="path",
      * required=true,
      * description="Payment ID",
+     *
      * @OA\Schema(type="integer", example=1)
      * ),
+     *
      * @OA\Parameter(
      * name="Accept-Language",
      * in="header",
      * required=true,
      * description="Language header (ar or en)",
+     *
      * @OA\Schema(type="string", default="ar", example="en")
      * ),
+     *
      * @OA\Response(
      * response=200,
      * description="Payment retrieved successfully",
+     *
      * @OA\JsonContent(
      * type="object",
+     *
      * @OA\Property(property="status", type="boolean", example=true),
      * @OA\Property(property="data", type="object")
      * )
      * ),
+     *
      * @OA\Response(response=404, description="Payment not found")
      * )
      */
