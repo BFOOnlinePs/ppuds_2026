@@ -24,9 +24,11 @@
             </h1>
         </div>
 
-        <x-core::button.primary wire:click="save">
-            {{ __('Save') }}
-        </x-core::button.primary>
+        @can('Company Update')
+            <x-core::button.primary wire:click="save">
+                {{ __('Save') }}
+            </x-core::button.primary>
+        @endcan
     </div>
 
     <!-- Form -->

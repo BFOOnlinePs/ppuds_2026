@@ -21,9 +21,11 @@
             </h1>
         </div>
 
-        <x-core::button.primary wire:click="save">
-            {{ __('Save') }}
-        </x-core::button.primary>
+        @can('Student Update')
+            <x-core::button.primary wire:click="save">
+                {{ __('Save') }}
+            </x-core::button.primary>
+        @endcan
     </div>
 
     <div class="px-6 py-8 border-t border-gray-100 bg-gray-50/50">

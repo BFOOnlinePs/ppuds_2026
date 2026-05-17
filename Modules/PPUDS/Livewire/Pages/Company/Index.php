@@ -141,7 +141,12 @@ class Index extends Component implements HasForms, HasTable
                 BulkAction::make('delete')
                     ->label(__('Delete'))
                     ->requiresConfirmation()
-                    ->action(fn (Collection $records) => $records->each->delete()),
+                    ->action(function (Collection $records) {
+                        abort_unless(auth()->user()?->can('Company Delete'), 403);
+
+                        $records->each->delete();
+                    })
+                    ->visible(fn () => auth()->user()->can('Company Delete')),
             ]),
         ];
     }

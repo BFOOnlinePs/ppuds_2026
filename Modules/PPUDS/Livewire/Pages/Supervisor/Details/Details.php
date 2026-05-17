@@ -208,6 +208,8 @@ class Details extends Component implements HasForms, HasInfolists
 
     public function save()
     {
+        abort_unless(auth()->user()?->can('User Update'), 403);
+
         $this->validate();
 
         $this->form->model($this->userRecord)->saveRelationships();

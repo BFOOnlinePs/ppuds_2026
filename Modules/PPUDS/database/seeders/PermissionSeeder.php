@@ -281,6 +281,11 @@ class PermissionSeeder extends Seeder
                 'module_name' => 'Registration',
             ],
             [
+                'name' => 'Registration Select Supervisor',
+                'guard_name' => 'web',
+                'module_name' => 'Registration',
+            ],
+            [
                 'name' => 'Registration Delete',
                 'guard_name' => 'web',
                 'module_name' => 'Registration',

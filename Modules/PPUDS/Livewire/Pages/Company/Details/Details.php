@@ -472,6 +472,8 @@ class Details extends Component implements HasForms, HasInfolists
 
     public function save()
     {
+        abort_unless(auth()->user()?->can('Company Update'), 403);
+
         // 1. التحقق من البيانات
         $this->validate();
 

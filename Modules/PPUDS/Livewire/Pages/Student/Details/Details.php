@@ -364,7 +364,7 @@ class Details extends Component implements HasForms, HasInfolists
 
     public function save()
     {
-        // $this->authorize('');
+        abort_unless(auth()->user()?->can('Student Update'), 403);
 
         $this->validate();
 

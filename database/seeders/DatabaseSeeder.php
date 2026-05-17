@@ -6,6 +6,7 @@ use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Modules\Core\database\seeders\CoreDatabaseSeeder;
+use Modules\PPUDS\database\seeders\RolePermissionSeeder;
 use Nwidart\Modules\Facades\Module;
 
 class DatabaseSeeder extends Seeder
@@ -33,6 +34,9 @@ class DatabaseSeeder extends Seeder
         }
 
         $this->command->info('✅ All enabled modules have been seeded!');
+        if (class_exists(RolePermissionSeeder::class)) {
+            $this->call(RolePermissionSeeder::class);
+        }
     }
 
     private function seedModule($module): void

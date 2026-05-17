@@ -163,7 +163,8 @@ class Index extends Component implements HasForms, HasTable
 
                         Toaster::success('Checked In Successfully');
 
-                    }),
+                    })
+                    ->visible(fn () => auth()->user()->can('StudentAttendance Create')),
 
                 //                CreateAction::make('create')
                 //                    ->label(__('Add Major'))
@@ -287,7 +288,10 @@ class Index extends Component implements HasForms, HasTable
 
                     Toaster::success('Checked Out Successfully');
                 })
-                ->visible(fn ($record) => $record->check_out === null),
+                ->visible(fn ($record) => $record->check_out === null && (
+                    auth()->user()->can('StudentAttendance Create')
+                    || auth()->user()->can('StudentAttendance Update')
+                )),
             Action::make('report')
                     // Removed ->model() as it was causing confusion
                 ->button()

@@ -73,6 +73,8 @@ class Index extends Component implements HasTable, HasForms
                     ->label(__('Add Work Experience'))
                     ->form(fn() => $this->getWorkExperienceForm())
                     ->action(function (array $data) {
+                        abort_unless(auth()->user()?->can('WorkExperience Create'), 403);
+
                         $data['user_id'] = $this->studentId;
                         $data['created_by'] = auth()->id();
                         if (!empty($data['is_current'])) {
@@ -80,7 +82,8 @@ class Index extends Component implements HasTable, HasForms
                         }
                         WorkExperience::create($data);
                         Toaster::success(__('Work experience added successfully'));
-                    }),
+                    })
+                    ->visible(fn() => auth()->user()->can('WorkExperience Create')),
             ])
             ->bulkActions($this->getTableBulkAction());
     }
@@ -137,27 +140,34 @@ class Index extends Component implements HasTable, HasForms
                             ->disabled(),
                     ]),
                 ])
-                ->modalSubmitAction(false),
+                ->modalSubmitAction(false)
+                ->visible(fn() => auth()->user()->can('WorkExperience View List')),
 
             EditAction::make('edit')
                 ->label('')
                 ->tooltip(__('Edit'))
                 ->form(fn() => $this->getWorkExperienceForm())
                 ->action(function (array $data, WorkExperience $record) {
+                    abort_unless(auth()->user()?->can('WorkExperience Update'), 403);
+
                     if (!empty($data['is_current'])) {
                         $data['end_date'] = null;
                     }
                     $record->update($data);
                     Toaster::success(__('Work experience updated successfully'));
-                }),
+                })
+                ->visible(fn() => auth()->user()->can('WorkExperience Update')),
 
             DeleteAction::make('delete')
                 ->label('')
                 ->tooltip(__('Delete'))
                 ->action(function (WorkExperience $record) {
+                    abort_unless(auth()->user()?->can('WorkExperience Delete'), 403);
+
                     $record->delete();
                     Toaster::success(__('Work experience deleted successfully'));
                 })
+                ->visible(fn() => auth()->user()->can('WorkExperience Delete'))
         ];
     }
 
@@ -217,8 +227,13 @@ class Index extends Component implements HasTable, HasForms
                     ->icon('solar-trash-bin-trash-bold-duotone')
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->action(fn(Collection $records) => $records->each->delete())
-                    ->after(fn() => Toaster::success(__('Selected records deleted successfully'))),
+                    ->action(function (Collection $records) {
+                        abort_unless(auth()->user()?->can('WorkExperience Delete'), 403);
+
+                        $records->each->delete();
+                    })
+                    ->after(fn() => Toaster::success(__('Selected records deleted successfully')))
+                    ->visible(fn() => auth()->user()->can('WorkExperience Delete')),
             ]),
         ];
     }

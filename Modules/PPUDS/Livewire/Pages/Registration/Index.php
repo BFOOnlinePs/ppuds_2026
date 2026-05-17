@@ -44,7 +44,7 @@ class Index extends Component implements HasForms, HasTable
     {
         return $table
             ->query(
-                fn () => Registration::query()
+                fn() => Registration::query()
                     ->with(['student', 'course', 'supervisor'])
                     ->when(auth()->user()->hasRole(UserRole::STUDENT->value), function ($query) {
                         $query->where('student_id', auth()->user()->id);
@@ -56,7 +56,7 @@ class Index extends Component implements HasForms, HasTable
                     ->label(__('Student'))
                     ->searchable()
                     ->sortable()
-                    ->url(fn (Registration $record) => route('students.details', $record->student_id))
+                    ->url(fn(Registration $record) => route('students.details', $record->student_id))
                     ->color('primary')
                     ->icon('solar-user-id-bold-duotone')
                     ->weight('bold'),
@@ -81,8 +81,11 @@ class Index extends Component implements HasForms, HasTable
                 // 4. عمود المشرف
                 SelectColumn::make('supervisor_id')
                     ->label(__('Supervisor'))
-                    ->options(User::whereHas('roles', fn ($q) => $q->where('name', UserRole::PRACTICAL_TRAINING_SUPERVISOR->value))->pluck('name', 'id'))
-                    ->toggleable(),
+                    ->options(User::whereHas('roles', fn($q) => $q->where('name', UserRole::PRACTICAL_TRAINING_SUPERVISOR->value))->pluck('name', 'id'))
+                    ->disabled(fn() => ! auth()->user()->can('Registration Select Supervisor'))
+                    ->toggleable()
+                    ->visible(fn() => auth()->user()->can('Registration Select Supervisor'))
+                    ->searchable(),
 
                 // 5. عمود العلامة
                 //                TextColumn::make('grade')
@@ -104,7 +107,7 @@ class Index extends Component implements HasForms, HasTable
                 CreateAction::make('create')
                     ->label(__('Add Registration'))
                     ->url(route('registrations.add'))
-                    ->visible(fn () => auth()->user()->can('Registration Create')),
+                    ->visible(fn() => auth()->user()->can('Registration Create')),
             ])
             ->bulkActions($this->getTableBulkAction());
     }
@@ -120,7 +123,7 @@ class Index extends Component implements HasForms, HasTable
 
             SelectFilter::make('semester')
                 ->label(__('Semester'))
-                ->options(fn (): array => $this->getRegistrationSemesterOptions())
+                ->options(fn(): array => $this->getRegistrationSemesterOptions())
                 ->default(app(GeneralSettings::class)->semester_type?->value)
                 ->native(false),
 
@@ -136,14 +139,14 @@ class Index extends Component implements HasForms, HasTable
                 ->query(function (Builder $query, array $data): Builder {
                     return $query->when(
                         filled($data['year'] ?? null),
-                        fn (Builder $query) => $query->where('year', (int) $data['year'])
+                        fn(Builder $query) => $query->where('year', (int) $data['year'])
                     );
                 }),
 
             // 4. فلتر المشرف
             SelectFilter::make('supervisor_id')
                 ->label(__('Supervisor'))
-                ->options(User::whereHas('roles', fn ($q) => $q->where('name', 'Practical Training Supervisor'))->pluck('name', 'id'))
+                ->options(User::whereHas('roles', fn($q) => $q->where('name', 'Practical Training Supervisor'))->pluck('name', 'id'))
                 ->searchable(),
         ];
     }
@@ -192,8 +195,13 @@ class Index extends Component implements HasForms, HasTable
                     ->icon('solar-trash-bin-trash-bold')
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->action(fn (Collection $records) => $records->each->delete())
-                    ->after(fn () => Toaster::success(__('Selected registrations deleted successfully'))),
+                    ->action(function (Collection $records) {
+                        abort_unless(auth()->user()?->can('Registration Delete'), 403);
+
+                        $records->each->delete();
+                    })
+                    ->after(fn() => Toaster::success(__('Selected registrations deleted successfully')))
+                    ->visible(fn() => auth()->user()->can('Registration Delete')),
             ]),
         ];
     }
@@ -203,7 +211,7 @@ class Index extends Component implements HasForms, HasTable
         return [
             InfoAction::make('info')
                 ->label('')
-                ->visible(fn () => auth()->user()->can('Registration Info')),
+                ->visible(fn() => auth()->user()->can('Registration Info')),
             ViewAction::make('view')
                 ->label('')
                 ->tooltip(__('View Details'))
@@ -220,7 +228,7 @@ class Index extends Component implements HasForms, HasTable
                                 ->disabled(),
                             TextInput::make('semester')
                                 ->label(__('Semester'))
-                                ->default(fn () => $this->semesterLabel($record->semester))
+                                ->default(fn() => $this->semesterLabel($record->semester))
                                 ->disabled(),
                             TextInput::make('year')
                                 ->label(__('Year'))
@@ -243,13 +251,13 @@ class Index extends Component implements HasForms, HasTable
                     ]);
                 })
                 ->modalSubmitAction(false)
-                ->visible(fn () => auth()->user()->can('Registration View')),
+                ->visible(fn() => auth()->user()->can('Registration View')),
 
             EditAction::make('edit')
                 ->label('')
                 ->tooltip(__('Edit'))
-                ->url(fn (Registration $record) => route('registrations.edit', $record->id))
-                ->visible(fn () => auth()->user()->can('Registration Update')),
+                ->url(fn(Registration $record) => route('registrations.edit', $record->id))
+                ->visible(fn() => auth()->user()->can('Registration Update')),
 
             DeleteAction::make('delete')
                 ->label('')
@@ -258,7 +266,7 @@ class Index extends Component implements HasForms, HasTable
                     $record->delete();
                     Toaster::success(__('Registration deleted successfully'));
                 })
-                ->visible(fn () => auth()->user()->can('Registration Delete')),
+                ->visible(fn() => auth()->user()->can('Registration Delete')),
         ];
     }
 
