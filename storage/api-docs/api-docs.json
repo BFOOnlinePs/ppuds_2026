@@ -11583,6 +11583,40 @@
                         "format": "float",
                         "example": 120.5
                     },
+                    "total_payment_amount": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 250.5
+                    },
+                    "total_payment_summary": {
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "currency_id": {
+                                    "type": "integer",
+                                    "example": 1
+                                },
+                                "currency_name": {
+                                    "type": "string",
+                                    "example": "شيكل"
+                                },
+                                "currency_code": {
+                                    "type": "string",
+                                    "example": "ILS"
+                                },
+                                "currency_symbol": {
+                                    "type": "string",
+                                    "example": "₪"
+                                },
+                                "total_payment_amount": {
+                                    "type": "number",
+                                    "format": "float",
+                                    "example": 150.5
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
                     "semester": {
                         "type": "string",
                         "example": "First Semester"
