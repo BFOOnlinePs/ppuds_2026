@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Modules\Core\Enums\UserRole;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\Payment;
+use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Enums\PaymentStatus;
 use Modules\PPUDS\Http\Requests\PaymentRequest;
 use Modules\PPUDS\Http\Requests\PaymentRequestUpdate;
@@ -109,7 +110,6 @@ class PaymentController extends Controller
         $payment = Payment::create($data);
 
         if ($request->hasFile('receipt')) {
-            // نستخدم الدالة الموجودة في موديل Payment
             $payment->addImage($request->file('receipt'));
         }
 

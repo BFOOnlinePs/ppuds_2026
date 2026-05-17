@@ -27,6 +27,21 @@ use Spatie\QueryBuilder\AllowedSort;
  * @OA\Property(property="required_training_days", type="integer", example=40),
  * @OA\Property(property="attended_training_days", type="integer", example=15),
  * @OA\Property(property="actual_working_hours", type="number", format="float", example=120.5),
+ * @OA\Property(property="total_payment_amount", type="number", format="float", example=250.5),
+ * @OA\Property(
+ * property="total_payment_summary",
+ * type="array",
+ *
+ * @OA\Items(
+ * type="object",
+ *
+ * @OA\Property(property="currency_id", type="integer", example=1),
+ * @OA\Property(property="currency_name", type="string", example="شيكل"),
+ * @OA\Property(property="currency_code", type="string", example="ILS"),
+ * @OA\Property(property="currency_symbol", type="string", example="₪"),
+ * @OA\Property(property="total_payment_amount", type="number", format="float", example=150.5)
+ * )
+ * ),
  * @OA\Property(property="semester", type="string", example="First Semester"),
  * @OA\Property(property="year", type="integer", example=2024),
  * @OA\Property(property="created_at", type="string", format="date-time")
@@ -37,30 +52,54 @@ class ReportResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'                        => $this->id,
+            'id' => $this->id,
 
-            'student_number'            => $this->student?->studentProfile?->student_number,
-            'student_name'              => $this->student?->name,
-            'gender'                    => $this->student?->studentProfile?->gender,
-            'company_name'              => $this->company?->name,
+            'student_number' => $this->student?->studentProfile?->student_number,
+            'student_name' => $this->student?->name,
+            'gender' => $this->student?->studentProfile?->gender,
+            'company_name' => $this->company?->name,
 
             // Computed/Appended Attributes
-            'attendance_days'           => $this->attendance_days,
-            'required_training_days'    => $this->branch?->required_training_days,
-            'attended_training_days'    => $this->branch?->attended_training_days,
-            'actual_working_hours'      => $this->actual_working_hours,
-            'total_payment_amount'      => (float) $this->total_payment_amount ?? 0,
-            'total_attendance_leaves_days'          => $this->total_attendance_leaves_days,
+            'attendance_days' => $this->attendance_days,
+            'required_training_days' => $this->branch?->required_training_days,
+            'attended_training_days' => $this->branch?->attended_training_days,
+            'actual_working_hours' => $this->actual_working_hours,
+            'total_payment_amount' => (float) $this->total_payment_amount ?? 0,
+            'total_payment_summary' => $this->totalPaymentSummary(),
+            'total_attendance_leaves_days' => $this->total_attendance_leaves_days,
 
             // Registration Details
-            'semester'                  => $this->registration?->semester->getLabel(),
-            'year'                      => $this->registration?->year,
+            'semester' => $this->registration?->semester->getLabel(),
+            'year' => $this->registration?->year,
 
-            'created_at'                => $this->created_at,
+            'created_at' => $this->created_at,
 
-            'student'                   => new UserResource($this->whenLoaded('student')),
-            'company'                   => new CompanyResource($this->whenLoaded('company')),
+            'student' => new UserResource($this->whenLoaded('student')),
+            'company' => new CompanyResource($this->whenLoaded('company')),
         ];
+    }
+
+    private function totalPaymentSummary(): array
+    {
+        if (! $this->relationLoaded('payments')) {
+            return [];
+        }
+
+        return $this->payments
+            ->groupBy('currency_id')
+            ->map(function ($payments) {
+                $currency = $payments->first()?->currency;
+
+                return [
+                    'currency_id' => $payments->first()?->currency_id,
+                    'currency_name' => $currency?->name,
+                    'currency_code' => $currency?->code,
+                    'currency_symbol' => $currency?->symbol,
+                    'total_payment_amount' => (float) $payments->sum('payment_value'),
+                ];
+            })
+            ->values()
+            ->toArray();
     }
 
     public static function allowedFields(): array

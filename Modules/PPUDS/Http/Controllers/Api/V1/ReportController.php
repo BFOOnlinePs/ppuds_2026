@@ -3,7 +3,9 @@
 namespace Modules\PPUDS\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Database\Eloquent\Builder;
 use Modules\Core\Traits\ApiResponse;
+use Modules\PPUDS\Entities\Payment;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Transformers\V1\ReportResource;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -25,6 +27,7 @@ class ReportController extends Controller
      * in="header",
      * required=true,
      * description="Language header (ar or en)",
+     *
      * @OA\Schema(type="string", default="ar", example="en")
      * ),
      *
@@ -39,8 +42,10 @@ class ReportController extends Controller
      * @OA\Response(
      * response=200,
      * description="Reports retrieved successfully",
+     *
      * @OA\JsonContent(
      * type="object",
+     *
      * @OA\Property(property="status", type="boolean", example=true),
      * @OA\Property(property="message", type="string", example="Reports retrieved successfully"),
      * @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/ReportResource"))
@@ -54,13 +59,9 @@ class ReportController extends Controller
         $maxPerPage = config('core.pagination.max_per_page', 100);
         $perPage = min(request('per_page', $defaultPerPage), $maxPerPage);
 
-        $baseQuery = StudentCompany::query()
-            ->withAttendanceDays()
-            ->withActualWorkingHours()
-            ->withTotalPaymentAmount()
-            ->withAttendaceLeavesDays();
+        $baseQuery = $this->reportBaseQuery();
 
-        $reports = QueryBuilder::for($baseQuery)
+        $reportsQuery = QueryBuilder::for($baseQuery)
             ->allowedFields(ReportResource::allowedFields())
             ->allowedFilters(ReportResource::allowedFilters())
             ->allowedSorts(ReportResource::allowedSorts())
@@ -73,13 +74,27 @@ class ReportController extends Controller
                 'branch',
                 'branch.workingHours',
                 'department',
-                'attendances'
-            ])
+                'attendances',
+            ]);
+
+        $totalSummary = $this->totalPaymentSummary(
+            QueryBuilder::for($this->reportBaseQuery())
+                ->allowedFilters(ReportResource::allowedFilters())
+        );
+
+        $reports = $reportsQuery
             ->paginate($perPage)
             ->appends(request()->query());
 
         return $this->successResponse(
-            ReportResource::collection($reports),
+            ReportResource::collection($reports)
+                ->additional([
+                    'meta' => [
+                        'total_summary' => [
+                            'payments' => $totalSummary,
+                        ],
+                    ],
+                ]),
             __('Reports retrieved successfully')
         );
     }
@@ -96,14 +111,17 @@ class ReportController extends Controller
      * in="path",
      * required=true,
      * description="Student Company ID",
+     *
      * @OA\Schema(type="integer")
      * ),
      *
      * @OA\Response(
      * response=200,
      * description="Report retrieved successfully",
+     *
      * @OA\JsonContent(
      * type="object",
+     *
      * @OA\Property(property="status", type="boolean", example=true),
      * @OA\Property(property="message", type="string", example="Report retrieved successfully"),
      * @OA\Property(property="data", ref="#/components/schemas/ReportResource")
@@ -113,11 +131,7 @@ class ReportController extends Controller
      */
     public function show($id)
     {
-        $baseQuery = StudentCompany::query()
-            ->withAttendanceDays()
-            ->withActualWorkingHours()
-            ->withTotalPaymentAmount()
-            ->withAttendaceLeavesDays()
+        $baseQuery = $this->reportBaseQuery()
             ->where('id', $id);
 
         $report = QueryBuilder::for($baseQuery)
@@ -131,7 +145,7 @@ class ReportController extends Controller
                 'branch',
                 'branch.workingHours',
                 'department',
-                'attendances'
+                'attendances',
             ])
             ->firstOrFail();
 
@@ -139,5 +153,43 @@ class ReportController extends Controller
             new ReportResource($report),
             __('Report retrieved successfully')
         );
+    }
+
+    private function reportBaseQuery(): Builder
+    {
+        return StudentCompany::query()
+            ->withAttendanceDays()
+            ->withActualWorkingHours()
+            ->withTotalPaymentAmount()
+            ->withTotalPaymentSummary()
+            ->withAttendaceLeavesDays();
+    }
+
+    private function totalPaymentSummary(QueryBuilder $reportsQuery): array
+    {
+        $studentCompaniesTable = (new StudentCompany)->getTable();
+        $studentCompaniesQuery = $reportsQuery
+            ->getEloquentBuilder()
+            ->select("{$studentCompaniesTable}.id")
+            ->reorder();
+
+        return Payment::query()
+            ->select('currency_id')
+            ->selectRaw('SUM(payment_value) as total_payment_amount')
+            ->with('currency')
+            ->whereIn('student_company_id', $studentCompaniesQuery)
+            ->groupBy('currency_id')
+            ->get()
+            ->map(function ($payment) {
+                return [
+                    'currency_id' => $payment->currency_id,
+                    'currency_name' => $payment->currency?->name,
+                    'currency_code' => $payment->currency?->code,
+                    'currency_symbol' => $payment->currency?->symbol,
+                    'total_payment_amount' => (float) $payment->total_payment_amount,
+                ];
+            })
+            ->values()
+            ->toArray();
     }
 }

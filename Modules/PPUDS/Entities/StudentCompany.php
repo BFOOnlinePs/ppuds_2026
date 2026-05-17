@@ -189,6 +189,11 @@ class StudentCompany extends Model implements HasMedia
         return $query->withSum('payments as total_payment_amount', 'payment_value');
     }
 
+    public function scopeWithTotalPaymentSummary($query)
+    {
+        return $query->with(['payments.currency']);
+    }
+
     public function scopeWithAttendaceLeavesDays($query)
     {
         return $query->withCount([
