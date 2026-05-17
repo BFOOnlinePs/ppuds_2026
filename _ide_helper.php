@@ -26770,6 +26770,20 @@ namespace Illuminate\Support {
             return \Illuminate\Support\Collection::storeExcel($filePath, $disk, $writerType, $withHeadings);
         }
 
+        /**
+         * @see \Laravel\Ai\AiServiceProvider::boot()
+         * @param \Closure|array|string $by
+         * @param string $query
+         * @param int|null $limit
+         * @param \Laravel\Ai\Enums\Lab|array|string|null $provider
+         * @param string|null $model
+         * @static
+         */
+        public static function rerank($by, $query, $limit = null, $provider = null, $model = null)
+        {
+            return \Illuminate\Support\Collection::rerank($by, $query, $limit, $provider, $model);
+        }
+
             }
     /**
      */
@@ -26797,6 +26811,35 @@ namespace Illuminate\Support {
         public static function sanitizeHtml()
         {
             return \Illuminate\Support\Stringable::sanitizeHtml();
+        }
+
+        /**
+         * @see \Laravel\Ai\AiServiceProvider::boot()
+         * @param \Laravel\Ai\Enums\Lab|array|string|null $provider
+         * @param int|null $dimensions
+         * @param string|null $model
+         * @param int|bool|null $cache
+         * @param int|null $timeout
+         * @param \Closure|array $providerOptions
+         * @static
+         */
+        public static function toEmbeddings($provider = null, $dimensions = null, $model = null, $cache = null, $timeout = null, $providerOptions = [])
+        {
+            return \Illuminate\Support\Stringable::toEmbeddings($provider, $dimensions, $model, $cache, $timeout, $providerOptions);
+        }
+
+        /**
+         * @see \Laravel\Ai\AiServiceProvider::boot()
+         * @param \Laravel\Ai\Enums\Lab|array|string|null $provider
+         * @param string|null $voice
+         * @param string|null $instructions
+         * @param string|null $model
+         * @param int|null $timeout
+         * @static
+         */
+        public static function toAudio($provider = null, $voice = null, $instructions = null, $model = null, $timeout = null)
+        {
+            return \Illuminate\Support\Stringable::toAudio($provider, $voice, $instructions, $model, $timeout);
         }
 
             }

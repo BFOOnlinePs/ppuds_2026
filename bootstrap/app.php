@@ -32,7 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (\Throwable $e, \Illuminate\Http\Request $request) {
 
             // تطبيق هذه الهيكلية فقط على مسارات الـ API لعدم كسر واجهات الويب (Blade/Livewire)
-            if ($request->expectsJson() || $request->is('api/*')) {
+            if (($request->expectsJson() || $request->is('api/*')) && ! $request->routeIs('l5-swagger.*')) {
 
                 $options = JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE;
 
