@@ -26,19 +26,19 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
 
     Route::prefix('ppuds')->as('ppuds.')->group(function () {
         Route::controller(SettingsController::class)
-                ->prefix('settings')
-                ->as('settings.')
-                ->group(function () {
-                    Route::get('/', 'index')->name('index');
-                    Route::patch('/', 'update')->name('update');
-                });
+            ->prefix('settings')
+            ->as('settings.')
+            ->group(function () {
+                Route::get('/', 'index')->name('index');
+                Route::patch('/', 'update')->name('update');
+            });
     });
 
     Route::middleware(['auth:api,sanctum', 'api.localize'])->group(function () {
 
         Route::prefix('ppuds')->as('ppuds.')->group(function () {
 
-        Route::get('/me', [ProfileController::class, 'show'])->name('profile.me');
+            Route::get('/me', [ProfileController::class, 'show'])->name('profile.me');
 
             Route::controller(CompanyController::class)
                 ->prefix('companies')
@@ -178,6 +178,7 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
                 ->as('chats.')
                 ->group(function () {
                     Route::get('/', 'index')->name('index');
+                    Route::get('/contacts', 'contacts')->name('contacts');
                     Route::post('/', 'store')->name('store');
                     Route::get('/{conversation}/messages', 'messages')->name('messages');
                     Route::post('/{conversation}/send', 'sendMessage')->name('send');
