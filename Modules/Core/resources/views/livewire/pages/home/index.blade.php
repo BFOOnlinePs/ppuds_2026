@@ -4,6 +4,8 @@
     @livewire(\Modules\Core\Livewire\Pages\Home\Widget\HomeActionsWidget::class)
     @livewire(\Modules\Core\Livewire\Pages\Home\Widget\AttendanceMapWidget::class)
 
+    {{ $this->form }}
+    
     @can('StudentCompany Create')
         @livewire(\Modules\Core\Livewire\Pages\Home\StudentCompanyAssistant::class)
     @endcan
@@ -14,6 +16,4 @@
             :columns="['default' => 1, 'xl' => 2]"
         />
     @endif
-
-    {{ $this->form }}
 </div>
