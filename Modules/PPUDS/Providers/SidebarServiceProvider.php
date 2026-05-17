@@ -3,7 +3,6 @@
 namespace Modules\PPUDS\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use Modules\Core\Enums\UserRole;
 use Modules\Core\Services\SidebarGroup;
 use Modules\Core\Services\SidebarItem;
 use Modules\Core\Services\SidebarService;
@@ -34,7 +33,6 @@ class SidebarServiceProvider extends ServiceProvider
 
         $sidebar->add(
             (new SidebarGroup('Companies', 'solar-users-group-rounded-bold-duotone', [], 40))
-                ->exceptRoles([UserRole::STUDENT->value])
                 ->add(new SidebarItem('Companies List', 'solar-users-group-rounded-bold-duotone', ['Company View List'], 'companies.index'))
                 ->add(new SidebarItem('Add Company', 'solar-users-group-rounded-bold-duotone', ['Company Create'], 'companies.add'))
                 ->add(new SidebarItem('Companies Category List', 'solar-users-group-rounded-bold-duotone', ['Company Category View List'], 'company-category.index'))

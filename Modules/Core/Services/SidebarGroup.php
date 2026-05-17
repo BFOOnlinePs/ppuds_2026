@@ -10,7 +10,6 @@ class SidebarGroup implements SidebarItemsInterface
     protected string $icon;
     protected array $children = [];
     protected array $permissions = [];
-    protected array $exceptRoles = [];
     protected int $sort = 1000;
 
 
@@ -39,19 +38,8 @@ class SidebarGroup implements SidebarItemsInterface
         return $this;
     }
 
-    public function exceptRoles(array $roles): static
-    {
-        $this->exceptRoles = $roles;
-
-        return $this;
-    }
-
     public function canSee(): bool
     {
-        if (! empty($this->exceptRoles) && auth()->check() && auth()->user()->hasAnyRole($this->exceptRoles)) {
-            return false;
-        }
-
         if (empty($this->permissions)) {
             return empty($this->children) || collect($this->children)->contains(fn($item) => $item->canSee());
         }

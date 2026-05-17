@@ -10,7 +10,6 @@ class SidebarItem implements SidebarItemsInterface
     protected string $icon;
     protected ?string $route = null;
     protected ?array $permissions = [];
-    protected array $exceptRoles = [];
     protected ?string $badge = null;
     protected int $sort = 0;
 
@@ -34,13 +33,6 @@ class SidebarItem implements SidebarItemsInterface
         return $this;
     }
 
-    public function exceptRoles(array $roles): static
-    {
-        $this->exceptRoles = $roles;
-
-        return $this;
-    }
-
     public function isActive() {
         return request()->routeIs($this->route);
     }
@@ -51,10 +43,6 @@ class SidebarItem implements SidebarItemsInterface
     }
 
     public function canSee() {
-        if (! empty($this->exceptRoles) && auth()->check() && auth()->user()->hasAnyRole($this->exceptRoles)) {
-            return false;
-        }
-
         if (empty($this->permissions)) return true;
         foreach ($this->permissions as $perm) {
             if (!auth()->check() || !auth()->user()->can($perm)) {
