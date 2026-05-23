@@ -564,5 +564,7 @@
     "Star Rating": "تقييم بالنجوم",
     "Registration Select Supervisor": "تحديد مشرف التسجيل",
     "Attendance Map View": "عرض خارطة الحضور",
-    "Assign Supervisor": "تعيين مشرف"
+    "Assign Supervisor": "تعيين مشرف",
+    "Student is already assigned to this company.": "الطالب مسجل مسبقًا في هذه الشركة.",
+    "Companies processed successfully": "تمت معالجة الشركات بنجاح"
 }

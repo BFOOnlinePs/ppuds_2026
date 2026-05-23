@@ -127,13 +127,16 @@ class StudentCompanyAssistantController extends Controller
         );
 
         $studentCompany = $this->linkedStudentCompany($registration->id, $suggestion['company_id']);
+        $message = $operation === 'already_exists'
+            ? __('Student is already assigned to this company.')
+            : __('Company linked to student successfully');
 
         return $this->successResponse([
             'operation' => $operation,
             'student_company' => $studentCompany
                 ? StudentCompanyResource::make($studentCompany)->resolve($request)
                 : null,
-        ], __('Company linked to student successfully'));
+        ], $message);
     }
 
     public function linkAllCompanies(
@@ -179,11 +182,14 @@ class StudentCompanyAssistantController extends Controller
             })
             ->filter()
             ->values();
+        $operationCounts = $items->countBy('operation');
 
         return $this->successResponse([
-            'linked_count' => $items->count(),
+            'linked_count' => $items->where('operation', 'created')->count(),
+            'already_exists_count' => $operationCounts->get('already_exists', 0),
+            'updated_count' => $operationCounts->get('updated', 0),
             'items' => $items->all(),
-        ], __('Companies linked to student successfully'));
+        ], __('Companies processed successfully'));
     }
 
     private function student(int $studentId): ?User

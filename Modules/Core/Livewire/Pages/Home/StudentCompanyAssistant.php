@@ -172,11 +172,20 @@ class StudentCompanyAssistant extends Component
             auth()->id(),
         );
 
+        if ($result === 'already_exists') {
+            $this->markSuggestionLinked((int) $suggestion['company_id']);
+
+            $message = "الطالب {$this->selectedStudentName} مسجل مسبقًا في شركة {$suggestion['company_name']}، لذلك لم يتم إنشاء ربط جديد.";
+
+            $this->addMessage('assistant', $message);
+            Toaster::error($message);
+
+            return;
+        }
+
         $this->showLinkedSuggestion($suggestion);
 
-        $message = $result === 'created'
-            ? "تم ربط {$suggestion['company_name']} بالطالب {$this->selectedStudentName}."
-            : "تم تحديث ربط {$suggestion['company_name']} بالطالب {$this->selectedStudentName}.";
+        $message = "تم ربط {$suggestion['company_name']} بالطالب {$this->selectedStudentName}.";
 
         $this->addMessage('assistant', $message);
         Toaster::success($message);
@@ -198,6 +207,7 @@ class StudentCompanyAssistant extends Component
 
         $created = 0;
         $updated = 0;
+        $alreadyExists = 0;
         $linkCompany = app(LinkSuggestedCompanyToStudent::class);
 
         foreach ($this->suggestions as $suggestion) {
@@ -208,14 +218,18 @@ class StudentCompanyAssistant extends Component
                 auth()->id(),
             );
 
-            $result === 'created' ? $created++ : $updated++;
+            match ($result) {
+                'created' => $created++,
+                'already_exists' => $alreadyExists++,
+                default => $updated++,
+            };
         }
 
         foreach ($this->suggestions as $suggestion) {
             $this->markSuggestionLinked((int) $suggestion['company_id']);
         }
 
-        $message = "تم ربط الاقتراحات بالطالب {$this->selectedStudentName}. الجديد: {$created}، المحدّث: {$updated}.";
+        $message = "تمت معالجة الاقتراحات للطالب {$this->selectedStudentName}. الجديد: {$created}، المسجل مسبقًا: {$alreadyExists}، المحدّث: {$updated}.";
 
         $this->addMessage('assistant', $message);
         Toaster::success($message);
