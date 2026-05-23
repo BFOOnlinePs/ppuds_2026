@@ -11,6 +11,17 @@
     "Company updated successfully": "تم تحديث بيانات الشركة بنجاح",
     "Company deleted successfully": "تم حذف الشركة بنجاح",
     "Company Information": "معلومات الشركة",
+    "Company Attachments": "مرفقات الشركة",
+    "Attachments": "المرفقات",
+    "Current Attachments": "المرفقات الحالية",
+    "Add Attachment": "إضافة مرفق",
+    "Add Another Attachment": "إضافة مرفق آخر",
+    "Attachment Name": "اسم المرفق",
+    "Attachment File": "ملف المرفق",
+    "Download": "تحميل",
+    "Attachment not found": "المرفق غير موجود",
+    "Attachment deleted successfully": "تم حذف المرفق بنجاح",
+    "Are you sure you want to delete this attachment?": "هل أنت متأكد من حذف هذا المرفق؟",
     "Website": "الموقع الإلكتروني",
     "Website URL": "رابط الموقع الإلكتروني",
     "General Profile": "الملف التعريفي",
@@ -551,6 +562,10 @@
     "Date Picker": "منتقي التاريخ",
     "File Upload": "رفع ملف",
     "Star Rating": "تقييم بالنجوم",
+<<<<<<< HEAD
     "Registration Select Supervisor":"تحديد مشرف التسجيل",
     "Attendance Map View": "عرض خارطة الحضور"
+=======
+    "Assign Supervisor": "تعيين مشرف"
+>>>>>>> c0e1dd7 (Make Changes)
 }

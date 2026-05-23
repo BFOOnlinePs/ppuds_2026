@@ -118,7 +118,6 @@ class Add extends Component implements HasForms, HasActions
                                     ->schema([
                                         Select::make('supervisor_id')
                                             ->label(__('Academic Supervisor'))
-                                            ->required()
                                             ->searchable()
                                             ->preload()
                                             ->prefixIcon('solar-user-speak-rounded-linear')
@@ -147,7 +146,6 @@ class Add extends Component implements HasForms, HasActions
             'data.course_id.required' => __('Please select a course.'),
             'data.semester.required' => __('Please select the semester.'),
             'data.year.required' => __('Please enter the academic year.'),
-            'data.supervisor_id.required' => __('Please assign an academic supervisor.'),
             'data.grade.numeric' => __('The grade must be a number.'),
         ];
     }

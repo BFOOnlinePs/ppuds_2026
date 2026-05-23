@@ -102,11 +102,11 @@ class Details extends Component implements HasForms, HasInfolists
                                                             ->unique(ignoreRecord: true, ignorable: $this->userRecord) // استخدم الدالة المحسوبة هنا
                                                             ->required(),
 
-                                                        TextInput::make('password')
-                                                            ->label(__('Password'))
-                                                            ->password()
-                                                            ->dehydrated(fn ($state) => filled($state))
-                                                            ->required(fn (string $context): bool => $context === 'create'),
+                                                        // TextInput::make('password')
+                                                        //     ->label(__('Password'))
+                                                        //     ->password()
+                                                        //     ->dehydrated(fn ($state) => filled($state))
+                                                        //     ->required(fn (string $context): bool => $context === 'create'),
 
                                                         Grid::make(2)
                                                             ->schema([

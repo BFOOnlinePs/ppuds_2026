@@ -29,6 +29,7 @@ use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Branch\Entities\Branch;
 use Modules\Core\Entities\User;
+use Modules\Core\Filament\Forms\Components\MapPicker;
 use Modules\GeoLocation\Entities\City;
 use Modules\GeoLocation\Entities\Country;
 use Modules\PPUDS\Entities\Company;
@@ -98,6 +99,10 @@ class Edit extends Component implements HasActions, HasForms
                 'city_id' => $branch->city_id,
                 'latitude' => $branch->latitude,
                 'longitude' => $branch->longitude,
+                'location' => [
+                    'lat' => (float) ($branch->latitude ?: 31.5326),
+                    'lng' => (float) ($branch->longitude ?: 35.0998),
+                ],
 
                 // نضع المصفوفة المجهزة هنا
                 'working_hours' => $workingHoursData,
@@ -152,6 +157,7 @@ class Edit extends Component implements HasActions, HasForms
                                                     ]),
                                                     Textarea::make('description')
                                                         ->label(__('About Company'))
+                                                        ->dehydrateStateUsing(fn (?string $state): ?string => blank($state) ? null : $state)
                                                         ->rows(4)
                                                         ->columnSpanFull(),
                                                 ]),
@@ -334,6 +340,16 @@ class Edit extends Component implements HasActions, HasForms
                                                                     ->prefixIcon('solar-city-linear')
                                                                     ->required(),
 
+                                                                MapPicker::make('location')
+                                                                    ->default(fn (Get $get): array => [
+                                                                        'lat' => (float) ($get('latitude') ?: 31.5326),
+                                                                        'lng' => (float) ($get('longitude') ?: 35.0998),
+                                                                    ])
+                                                                    ->defaultLocation(latitude: 31.5326, longitude: 35.0998)
+                                                                    ->clickable(true)
+                                                                    ->zoom(13)
+                                                                    ->dehydrated(false),
+
                                                                 TextInput::make('latitude')->numeric()->placeholder('31.xxxx')
                                                                     ->prefixIcon('solar-map-arrow-up-linear'),
                                                                 TextInput::make('longitude')->numeric()->placeholder('35.xxxx')
@@ -469,6 +485,7 @@ class Edit extends Component implements HasActions, HasForms
 
         // 2. تحديث بيانات الشركة الأساسية (مع استبعاد الفروع والشعار)
         $companyData = Arr::except($this->data, ['branches', 'logo']);
+        $companyData['description'] = blank($companyData['description'] ?? null) ? null : $companyData['description'];
         $this->company->update($companyData);
 
         // 3. حفظ الصور (الشعار) عبر Filament Spatie Plugin
@@ -496,7 +513,7 @@ class Edit extends Component implements HasActions, HasForms
             $workingHoursData = $branchData['working_hours'] ?? []; // المصفوفة اليدوية لساعات العمل
 
             // تنظيف بيانات الفرع (إبقاء الحقول الأساسية فقط)
-            $branchAttributes = Arr::except($branchData, ['departments', 'working_hours', 'id']);
+            $branchAttributes = Arr::except($branchData, ['departments', 'working_hours', 'id', 'location']);
 
             $branch = null;
 

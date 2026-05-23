@@ -57,6 +57,7 @@ class Index extends Component implements HasForms, HasTable
                     ->searchable(query: fn (Builder $query, string $search): Builder => $query->whereTranslationLike('name', "%{$search}%")
                     )
                     ->url(fn (Company $record) => route('companies.details', $record))
+                    ->color('primary')
                     ->sortable(),
 
                 TextColumn::make('category.name'),

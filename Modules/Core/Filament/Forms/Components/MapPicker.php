@@ -19,7 +19,14 @@ class MapPicker extends Map
             ->label(__('Location On Map'))
             ->default(['lat' => 32.2211, 'lng' => 35.2544])
             ->defaultLocation(latitude: 32.2211, longitude: 35.2544) // نابلس
-            ->tilesUrl("https://tile.openstreetmap.de/{z}/{x}/{y}.png") // خريطة OSM
+            ->tilesUrl('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png') // خريطة OSM
+            ->extraTileControl([
+                'attribution' => '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                'tileSize' => 256,
+                'zoomOffset' => 0,
+                'detectRetina' => false,
+                'fallbackTilesUrl' => 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+            ])
             ->markerColor("#22c55eff")
 
             // ============ الحالة الافتراضية (Marker Picker) ============
@@ -43,8 +50,8 @@ class MapPicker extends Map
 
             // ============ التلميحات والمساعدة ============
             // --- (مُعدل) ---
-            ->helperText(__('core.map-picker.helper_text')) // 3.
-            ->hint(__('core.map-picker.hint')) // 4.
+            ->helperText(__('Click on the map or move the marker to fill latitude and longitude.')) // 3.
+            ->hint(__('Select location from map')) // 4.
             ->hintIcon('heroicon-o-information-circle')
             ->hintColor('primary')
 

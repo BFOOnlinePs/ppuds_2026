@@ -5,6 +5,7 @@ namespace Modules\PPUDS\Livewire\Pages\Registration;
 use App\View\Components\AppLayout;
 use Filament\Forms;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -81,11 +82,17 @@ class Index extends Component implements HasForms, HasTable
                 // 4. عمود المشرف
                 SelectColumn::make('supervisor_id')
                     ->label(__('Supervisor'))
+<<<<<<< HEAD
                     ->options(User::whereHas('roles', fn($q) => $q->where('name', UserRole::PRACTICAL_TRAINING_SUPERVISOR->value))->pluck('name', 'id'))
                     ->disabled(fn() => ! auth()->user()->can('Registration Select Supervisor'))
                     ->toggleable()
                     ->visible(fn() => auth()->user()->can('Registration Select Supervisor'))
                     ->searchable(),
+=======
+                    ->options(fn (): array => $this->supervisorOptions())
+                    ->placeholder(__('No Supervisor'))
+                    ->toggleable(),
+>>>>>>> c0e1dd7 (Make Changes)
 
                 // 5. عمود العلامة
                 //                TextColumn::make('grade')
@@ -104,10 +111,17 @@ class Index extends Component implements HasForms, HasTable
             ->filtersFormColumns(4)
             ->actions($this->getTableActions())
             ->headerActions([
+<<<<<<< HEAD
                 CreateAction::make('create')
                     ->label(__('Add Registration'))
                     ->url(route('registrations.add'))
                     ->visible(fn() => auth()->user()->can('Registration Create')),
+=======
+                // CreateAction::make('create')
+                //     ->label(__('Add Registration'))
+                //     ->url(route('registrations.add'))
+                //     ->visible(fn () => auth()->user()->can('Registration Create')),
+>>>>>>> c0e1dd7 (Make Changes)
             ])
             ->bulkActions($this->getTableBulkAction());
     }
@@ -146,7 +160,11 @@ class Index extends Component implements HasForms, HasTable
             // 4. فلتر المشرف
             SelectFilter::make('supervisor_id')
                 ->label(__('Supervisor'))
+<<<<<<< HEAD
                 ->options(User::whereHas('roles', fn($q) => $q->where('name', 'Practical Training Supervisor'))->pluck('name', 'id'))
+=======
+                ->options(fn (): array => $this->supervisorOptions())
+>>>>>>> c0e1dd7 (Make Changes)
                 ->searchable(),
         ];
     }
@@ -190,6 +208,50 @@ class Index extends Component implements HasForms, HasTable
     {
         return [
             BulkActionGroup::make([
+                BulkAction::make('assignSupervisor')
+                    ->label(__('Assign Supervisor'))
+                    ->icon('solar-user-id-bold-duotone')
+                    ->color('primary')
+                    ->form([
+                        Select::make('supervisor_id')
+                            ->label(__('Supervisor'))
+                            ->options(fn (): array => $this->supervisorOptions())
+                            ->searchable()
+                            ->preload()
+                            ->required()
+                            ->native(false),
+                    ])
+                    ->modalHeading(__('Assign Supervisor'))
+                    ->modalSubmitActionLabel(__('Assign'))
+                    ->visible(fn () => auth()->user()->can('Registration Update'))
+                    ->action(function (Collection $records, array $data): void {
+                        $supervisorId = (int) $data['supervisor_id'];
+
+                        $records->each(fn (Registration $registration) => $registration->update([
+                            'supervisor_id' => $supervisorId,
+                        ]));
+
+                        Toaster::success(__('Supervisor assigned to selected registrations successfully'));
+                    })
+                    ->deselectRecordsAfterCompletion(),
+
+                BulkAction::make('clearSupervisor')
+                    ->label(__('Clear Supervisor'))
+                    ->icon('heroicon-o-user-minus')
+                    ->color('gray')
+                    ->requiresConfirmation()
+                    ->modalHeading(__('Clear Supervisor'))
+                    ->modalSubmitActionLabel(__('Clear'))
+                    ->visible(fn () => auth()->user()->can('Registration Update'))
+                    ->action(function (Collection $records): void {
+                        $records->each(fn (Registration $registration) => $registration->update([
+                            'supervisor_id' => null,
+                        ]));
+
+                        Toaster::success(__('Supervisor cleared from selected registrations successfully'));
+                    })
+                    ->deselectRecordsAfterCompletion(),
+
                 BulkAction::make('delete')
                     ->label(__('Delete Selected'))
                     ->icon('solar-trash-bin-trash-bold')
@@ -204,6 +266,14 @@ class Index extends Component implements HasForms, HasTable
                     ->visible(fn() => auth()->user()->can('Registration Delete')),
             ]),
         ];
+    }
+
+    private function supervisorOptions(): array
+    {
+        return User::whereHas('roles', fn ($q) => $q->where('name', UserRole::PRACTICAL_TRAINING_SUPERVISOR->value))
+            ->orderBy('name')
+            ->pluck('name', 'id')
+            ->toArray();
     }
 
     protected function getTableActions(): array

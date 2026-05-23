@@ -12,6 +12,7 @@ use Modules\Core\Actions\StudentCompanyAssistant\ResolveStudentCompanyRegistrati
 use Modules\Core\Entities\User;
 use Modules\Core\Services\StudentCompanySuggestionService;
 use Modules\PPUDS\Entities\Registration;
+use Modules\PPUDS\Settings\GeneralSettings as PPUDSSettings;
 
 class StudentCompanyAssistant extends Component
 {
@@ -160,6 +161,10 @@ class StudentCompanyAssistant extends Component
 
     private function linkSuggestion(array $suggestion): void
     {
+        if (! $this->ensureCurrentRegistrationSelected()) {
+            return;
+        }
+
         $result = app(LinkSuggestedCompanyToStudent::class)->handle(
             $this->studentId,
             $this->registrationId,
@@ -184,6 +189,10 @@ class StudentCompanyAssistant extends Component
         if (! $this->studentId || ! $this->registrationId || $this->suggestions === []) {
             $this->addMessage('assistant', 'لا توجد اقتراحات جاهزة للربط.');
 
+            return;
+        }
+
+        if (! $this->ensureCurrentRegistrationSelected()) {
             return;
         }
 
@@ -217,7 +226,7 @@ class StudentCompanyAssistant extends Component
         [$registration, $warning] = app(ResolveStudentCompanyRegistration::class)->handle($student);
 
         if (! $registration) {
-            $this->addMessage('assistant', 'وجدت الطالب، لكن لا يوجد له سجل تسجيل يمكن ربط الشركات به.');
+            $this->addMessage('assistant', $warning ?: 'وجدت الطالب، لكن لا يوجد له سجل تسجيل يمكن ربط الشركات به.');
 
             return;
         }
@@ -286,6 +295,34 @@ class StudentCompanyAssistant extends Component
         $course = $registration->course?->name ?? 'بدون مقرر';
 
         return "{$course} - {$semester}/{$registration->year}";
+    }
+
+    private function ensureCurrentRegistrationSelected(): bool
+    {
+        if ($this->currentRegistrationIsStillValid()) {
+            return true;
+        }
+
+        $this->resetSelection();
+        $this->addMessage('assistant', 'التسجيل المختار لم يعد مطابقًا للفصل والسنة في الإعدادات. اختر الطالب مرة أخرى.');
+
+        return false;
+    }
+
+    private function currentRegistrationIsStillValid(): bool
+    {
+        if (! $this->studentId || ! $this->registrationId) {
+            return false;
+        }
+
+        $settings = app(PPUDSSettings::class);
+
+        return Registration::query()
+            ->whereKey($this->registrationId)
+            ->where('student_id', $this->studentId)
+            ->where('semester', $settings->semester_type?->value)
+            ->where('year', $settings->year)
+            ->exists();
     }
 
     private function resetSelection(): void

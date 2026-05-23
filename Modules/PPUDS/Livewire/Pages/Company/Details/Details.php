@@ -3,9 +3,11 @@
 namespace Modules\PPUDS\Livewire\Pages\Company\Details;
 
 use App\View\Components\AppLayout;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Group;
 use Filament\Forms\Components\Livewire;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -24,16 +26,20 @@ use Filament\Infolists\Contracts\HasInfolists;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\HtmlString;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Branch\Entities\Branch;
 use Modules\Core\Entities\User;
+use Modules\Core\Filament\Forms\Components\MapPicker;
 use Modules\Core\Filament\Forms\Components\Textarea;
 use Modules\GeoLocation\Entities\City;
 use Modules\GeoLocation\Entities\Country;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\CompanyCategory;
 use Modules\PPUDS\Entities\CompanyDepartment;
+use Spatie\MediaLibrary\MediaCollections\Models\Media as SpatieMedia;
 
 class Details extends Component implements HasForms, HasInfolists
 {
@@ -51,6 +57,7 @@ class Details extends Component implements HasForms, HasInfolists
 
         // 1. تعبئة البيانات الأساسية للشركة
         $formData = $company->toArray();
+        $formData['attachment_uploads'] = [];
 
         // 2. تعبئة الفروع مع ساعات العمل والأقسام
         $formData['branches'] = $company->branches->map(function ($branch) {
@@ -89,6 +96,10 @@ class Details extends Component implements HasForms, HasInfolists
                 'city_id' => $branch->city_id,
                 'latitude' => $branch->latitude,
                 'longitude' => $branch->longitude,
+                'location' => [
+                    'lat' => (float) ($branch->latitude ?: 31.5326),
+                    'lng' => (float) ($branch->longitude ?: 35.0998),
+                ],
                 'working_hours' => $workingHoursData,
                 'departments' => $branch->departments->map(function ($dept) {
                     return [
@@ -137,9 +148,9 @@ class Details extends Component implements HasForms, HasInfolists
 
                                                         Textarea::make('description')
                                                             ->label(__('Description'))
+                                                            ->dehydrateStateUsing(fn (?string $state): ?string => blank($state) ? null : $state)
                                                             ->columnSpanFull()
-                                                            ->rows(3)
-                                                            ->required(),
+                                                            ->rows(3),
                                                     ])
                                                     ->columnSpan(2),
 
@@ -160,6 +171,85 @@ class Details extends Component implements HasForms, HasInfolists
                                                             ->alignCenter(),
                                                     ])
                                                     ->columnSpan(1),
+                                            ]),
+                                    ]),
+
+                                Tabs\Tab::make(__('Company Attachments'))
+                                    ->icon('heroicon-o-paper-clip')
+                                    ->schema([
+                                        Section::make(__('Company Attachments'))
+                                            ->icon('heroicon-o-paper-clip')
+                                            ->schema([
+                                                Placeholder::make('current_attachments')
+                                                    ->label(__('Current Attachments'))
+                                                    ->visible(fn (): bool => $this->company->getMedia('attachments')->isNotEmpty())
+                                                    ->content(fn (): HtmlString => new HtmlString(
+                                                        Blade::render(<<<'HTML'
+                                                            <div class="grid gap-2">
+                                                                @foreach ($attachments as $attachment)
+                                                                    <div
+                                                                        class="flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm transition hover:border-primary-300 hover:bg-primary-50/40 dark:border-gray-700 dark:bg-gray-900 dark:hover:border-primary-500"
+                                                                    >
+                                                                        <div class="min-w-0">
+                                                                            <div class="truncate font-medium text-gray-800 dark:text-gray-100">
+                                                                                {{ $attachment->name ?: $attachment->file_name }}
+                                                                            </div>
+                                                                            <div class="truncate text-xs text-gray-500">
+                                                                                {{ $attachment->file_name }}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="flex shrink-0 items-center gap-2">
+                                                                            <span class="text-xs text-gray-500">
+                                                                                {{ $attachment->human_readable_size }}
+                                                                            </span>
+                                                                            <button
+                                                                                type="button"
+                                                                                wire:click="downloadAttachment({{ $attachment->id }})"
+                                                                                class="rounded-md px-2 py-1 text-xs font-medium text-primary-600 transition hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-500/10"
+                                                                            >
+                                                                                {{ __('Download') }}
+                                                                            </button>
+                                                                            <button
+                                                                                type="button"
+                                                                                wire:click="deleteAttachment({{ $attachment->id }})"
+                                                                                wire:confirm="{{ __('Are you sure you want to delete this attachment?') }}"
+                                                                                class="rounded-md px-2 py-1 text-xs font-medium text-danger-600 transition hover:bg-danger-50 dark:text-danger-400 dark:hover:bg-danger-500/10"
+                                                                            >
+                                                                                {{ __('Delete') }}
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                @endforeach
+                                                            </div>
+                                                        HTML, [
+                                                            'attachments' => $this->company->getMedia('attachments'),
+                                                        ])
+                                                    ))
+                                                    ->columnSpanFull(),
+
+                                                Repeater::make('attachment_uploads')
+                                                    ->label(__('Add Attachment'))
+                                                    ->schema([
+                                                        Grid::make(2)
+                                                            ->schema([
+                                                                TextInput::make('name')
+                                                                    ->label(__('Attachment Name'))
+                                                                    ->required()
+                                                                    ->maxLength(255),
+
+                                                                FileUpload::make('file')
+                                                                    ->label(__('Attachment File'))
+                                                                    ->required()
+                                                                    ->storeFiles(false)
+                                                                    ->preserveFilenames()
+                                                                    ->maxSize(10240),
+                                                            ]),
+                                                    ])
+                                                    ->defaultItems(1)
+                                                    ->addActionLabel(__('Add Another Attachment'))
+                                                    ->reorderable(false)
+                                                    ->collapsible()
+                                                    ->columnSpanFull(),
                                             ]),
                                     ]),
 
@@ -301,6 +391,16 @@ class Details extends Component implements HasForms, HasInfolists
                                                                                         ->orWhereTranslation('name', 'Hebron')->first()?->id)
                                                                                     ->searchable()
                                                                                     ->required(),
+
+                                                                                MapPicker::make('location')
+                                                                                    ->default(fn (Get $get): array => [
+                                                                                        'lat' => (float) ($get('latitude') ?: 31.5326),
+                                                                                        'lng' => (float) ($get('longitude') ?: 35.0998),
+                                                                                    ])
+                                                                                    ->defaultLocation(latitude: 31.5326, longitude: 35.0998)
+                                                                                    ->clickable(true)
+                                                                                    ->zoom(13)
+                                                                                    ->dehydrated(false),
 
                                                                                 TextInput::make('latitude')->numeric()->placeholder('31.xxxx'),
                                                                                 TextInput::make('longitude')->numeric()->placeholder('35.xxxx'),
@@ -470,6 +570,44 @@ class Details extends Component implements HasForms, HasInfolists
             ->values();
     }
 
+    public function downloadAttachment(int $mediaId)
+    {
+        $media = $this->companyAttachment($mediaId);
+
+        abort_unless($media, 404);
+
+        return response()->download($media->getPath(), $media->file_name, [
+            'Content-Type' => $media->mime_type ?: 'application/octet-stream',
+        ]);
+    }
+
+    public function deleteAttachment(int $mediaId): void
+    {
+        $media = $this->companyAttachment($mediaId);
+
+        if (! $media) {
+            Toaster::error(__('Attachment not found'));
+
+            return;
+        }
+
+        $media->delete();
+        $this->company->unsetRelation('media');
+        $this->company->load('media');
+
+        Toaster::success(__('Attachment deleted successfully'));
+    }
+
+    protected function companyAttachment(int $mediaId): ?SpatieMedia
+    {
+        return SpatieMedia::query()
+            ->whereKey($mediaId)
+            ->where('model_type', $this->company->getMorphClass())
+            ->where('model_id', $this->company->getKey())
+            ->where('collection_name', 'attachments')
+            ->first();
+    }
+
     public function save()
     {
         abort_unless(auth()->user()?->can('Company Update'), 403);
@@ -478,11 +616,16 @@ class Details extends Component implements HasForms, HasInfolists
         $this->validate();
 
         // 2. تحديث بيانات الشركة الأساسية (استبعاد الفروع والشعار مؤقتاً)
-        $companyData = Arr::except($this->data, ['branches', 'logo', 'cover_photo']);
+        $attachmentUploads = $this->data['attachment_uploads'] ?? [];
+        $companyData = Arr::except($this->data, ['branches', 'logo', 'cover_photo', 'attachments', 'attachment_files', 'attachment_uploads']);
+        $companyData['description'] = blank($companyData['description'] ?? null) ? null : $companyData['description'];
         $this->company->update($companyData);
 
         // 3. حفظ الصور (الشعار والغلاف)
         $this->form->model($this->company)->saveRelationships();
+
+        // 3.1 حفظ مرفقات الشركة بنفس أسلوب الإضافة اليدوية
+        $this->saveAttachments($attachmentUploads);
 
         // 4. حفظ الفروع والأقسام وساعات العمل
         $this->saveBranchesAndDepartments();
@@ -492,6 +635,18 @@ class Details extends Component implements HasForms, HasInfolists
 
         // إعادة التوجيه للصفحة الحالية لتحديث البيانات
         return redirect()->route('companies.details', $this->company);
+    }
+
+    protected function saveAttachments(array $attachmentUploads): void
+    {
+        foreach ($attachmentUploads as $attachmentUpload) {
+            $files = Arr::wrap($attachmentUpload['file'] ?? []);
+            $name = $attachmentUpload['name'] ?? null;
+
+            foreach (array_filter($files) as $attachmentFile) {
+                $this->company->addAttachment($attachmentFile, $name);
+            }
+        }
     }
 
     protected function saveBranchesAndDepartments()
@@ -508,7 +663,7 @@ class Details extends Component implements HasForms, HasInfolists
             $workingHoursData = $branchData['working_hours'] ?? [];
 
             // تنظيف بيانات الفرع
-            $branchAttributes = Arr::except($branchData, ['departments', 'working_hours', 'id']);
+            $branchAttributes = Arr::except($branchData, ['departments', 'working_hours', 'id', 'location']);
 
             $branch = null;
 

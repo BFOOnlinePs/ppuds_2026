@@ -13,9 +13,7 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Component;
-use Modules\Branch\Entities\Branch;
 use Modules\Core\Entities\User;
-use Nwidart\Modules\Facades\Module;
 use Spatie\Permission\Models\Role;
 
 class Add extends Component implements HasForms
@@ -42,7 +40,7 @@ class Add extends Component implements HasForms
                                     ->label(__('Name'))
                                     ->required()
                                     ->maxLength(255),
-                                    
+
                                 TextInput::make('email')
                                     ->label(__('Email'))
                                     ->email()
@@ -54,7 +52,7 @@ class Add extends Component implements HasForms
                                     ->label(__('Phone'))
                                     ->tel()
                                     ->maxLength(255),
-                                    
+
                                 TextInput::make('password')
                                     ->label(__('Password'))
                                     ->password()
@@ -62,7 +60,7 @@ class Add extends Component implements HasForms
                                     ->minLength(8)
                                     ->dehydrateStateUsing(fn (string $state): string => Hash::make($state)),
                             ]),
-                            
+
                         Section::make(__('Roles'))
                             ->columnSpan(1)
                             ->schema([
@@ -75,18 +73,18 @@ class Add extends Component implements HasForms
                                     ->required()
                                     ->placeholder(__('Select Roles')),
                             ]),
-                            
-                        Section::make(__('Branches'))
-                            ->columnSpan(1)
-                            ->schema([
-                                Select::make('branch_id')
-                                    ->label(__('Branches'))
-                                    ->preload()
-                                    ->options(fn() => Branch::get()->pluck('name', 'id'))
-                                    ->searchable()
-                                    ->placeholder(__('Select Branch'))
-                            ])
-                            ->visible(fn() => Module::isEnabled('branch')),
+
+                        // Section::make(__('Branches'))
+                        //     ->columnSpan(1)
+                        //     ->schema([
+                        //         Select::make('branch_id')
+                        //             ->label(__('Branches'))
+                        //             ->preload()
+                        //             ->options(fn() => Branch::get()->pluck('name', 'id'))
+                        //             ->searchable()
+                        //             ->placeholder(__('Select Branch'))
+                        //     ])
+                        //     ->visible(fn() => Module::isEnabled('branch')),
                     ]),
             ])
             ->statePath('data');

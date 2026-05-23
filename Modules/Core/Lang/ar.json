@@ -191,5 +191,8 @@
     "View Permissions": "عرض الصلاحيات",
     "Groups": "مجموعات",
     "more groups": "مجموعات أخرى",
-    "No permissions assigned": "لا توجد صلاحيات مضافة"
+    "No permissions assigned": "لا توجد صلاحيات مضافة",
+    "Location On Map": "الموقع على الخريطة",
+    "Select location from map": "اختر الموقع من الخريطة",
+    "Click on the map or move the marker to fill latitude and longitude.": "اضغط على الخريطة أو حرّك المؤشر لتعبئة خط العرض وخط الطول."
 }

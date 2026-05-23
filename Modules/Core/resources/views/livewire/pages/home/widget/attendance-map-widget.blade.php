@@ -187,13 +187,13 @@
 
                         this.map = leaflet.map(element, {
                             center: [this.center.lat, this.center.lng],
-                            zoom: 12,
+                            zoom: 9,
                             zoomControl: true,
                             scrollWheelZoom: true,
                         });
 
                         leaflet.tileLayer(config.tilesUrl, {
-                            minZoom: 5,
+                            minZoom: 3,
                             maxZoom: 20,
                             attribution: '&copy; OpenStreetMap',
                         }).addTo(this.map);
@@ -269,9 +269,9 @@
                         });
 
                         if (this.markerLayer.getLayers().length) {
-                            this.map.fitBounds(this.markerLayer.getBounds().pad(0.18), { maxZoom: 15 });
+                            this.map.fitBounds(this.markerLayer.getBounds().pad(0.35), { maxZoom: 12 });
                         } else {
-                            this.map.setView([this.center.lat, this.center.lng], 12);
+                            this.map.setView([this.center.lat, this.center.lng], 9);
                         }
 
                         this.refreshSize();

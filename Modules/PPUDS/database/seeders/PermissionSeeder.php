@@ -62,6 +62,11 @@ class PermissionSeeder extends Seeder
                 'module_name' => 'Supervisor',
             ],
             [
+                'name' => 'Supervisor Create',
+                'guard_name' => 'web',
+                'module_name' => 'Supervisor',
+            ],
+            [
                 'name' => 'Supervisor View',
                 'guard_name' => 'web',
                 'module_name' => 'Supervisor',

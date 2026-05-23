@@ -1,4 +1,13 @@
 <div class="w-full bg-white rounded-xl shadow overflow-hidden border border-gray-100">
+    <style>
+        .fi-modal.fi-modal-open .fi-modal-close-overlay {
+            z-index: 19990 !important;
+        }
+
+        .fi-modal.fi-modal-open .fi-modal-close-overlay + .fixed.inset-0 {
+            z-index: 20000 !important;
+        }
+    </style>
 
     <!-- Cover -->
     <div class="relative w-full h-[340px] md:h-[420px] bg-cover bg-center"

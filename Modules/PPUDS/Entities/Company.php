@@ -118,6 +118,9 @@ class Company extends Model implements HasMedia, TranslatableContract
             ->useFallbackUrl(asset(self::DEFAULT_COVER_PHOTO_PATH))
             ->useFallbackPath(public_path(self::DEFAULT_COVER_PHOTO_PATH))
             ->singleFile();
+
+        $this->addMediaCollection('attachments')
+            ->useDisk('companies');
     }
 
     public function addImage($file)
@@ -155,6 +158,37 @@ class Company extends Model implements HasMedia, TranslatableContract
             return $media;
         } catch (\Exception $e) {
             \Log::error('Error uploading product image: '.$e->getMessage());
+
+            return null;
+        }
+    }
+
+    public function addAttachment($file, ?string $name = null): ?Media
+    {
+        if (is_array($file)) {
+            $file = reset($file);
+        }
+
+        if (
+            ! $file instanceof \Illuminate\Http\UploadedFile &&
+            ! ($file instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile)
+        ) {
+            return null;
+        }
+
+        try {
+            $originalName = $file->getClientOriginalName();
+            $extension = $file->getClientOriginalExtension();
+            $fileName = time().'_'.Str::slug(pathinfo($originalName, PATHINFO_FILENAME)).'.'.$extension;
+            $mediaName = blank($name) ? pathinfo($originalName, PATHINFO_FILENAME) : $name;
+
+            return $this
+                ->addMedia($file)
+                ->usingName($mediaName)
+                ->usingFileName($fileName)
+                ->toMediaCollection('attachments', 'companies');
+        } catch (\Exception $e) {
+            \Log::error('Error uploading company attachment: '.$e->getMessage());
 
             return null;
         }

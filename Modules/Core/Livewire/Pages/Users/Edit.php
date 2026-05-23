@@ -13,9 +13,7 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Component;
-use Modules\Branch\Entities\Branch;
 use Modules\Core\Entities\User;
-use Nwidart\Modules\Facades\Module;
 use Spatie\Permission\Models\Role;
 
 class Edit extends Component implements HasForms
@@ -28,10 +26,10 @@ class Edit extends Component implements HasForms
     public function mount($user)
     {
         $this->user = $user;
-        
+
         $this->data = $this->user->toArray();
         $this->data['roles'] = $this->user->roles->pluck('id')->toArray();
-        
+
         $this->form->fill($this->data);
     }
 
@@ -48,7 +46,7 @@ class Edit extends Component implements HasForms
                                     ->label(__('Name'))
                                     ->required()
                                     ->maxLength(255),
-                                    
+
                                 TextInput::make('email')
                                     ->label(__('Email'))
                                     ->email()
@@ -60,7 +58,7 @@ class Edit extends Component implements HasForms
                                     ->label(__('Phone'))
                                     ->tel()
                                     ->maxLength(255),
-                                    
+
                                 TextInput::make('password')
                                     ->label(__('Password'))
                                     ->password()
@@ -70,7 +68,7 @@ class Edit extends Component implements HasForms
                                     ->dehydrated(fn (?string $state): bool => filled($state))
                                     ->helperText(__('Leave blank to keep the current password.')),
                             ]),
-                            
+
                         Section::make(__('Roles'))
                             ->columnSpan(1)
                             ->schema([
@@ -84,17 +82,17 @@ class Edit extends Component implements HasForms
                                     ->placeholder(__('Select Roles')),
                             ]),
 
-                        Section::make(__('Branches'))
-                            ->columnSpan(1)
-                            ->schema([
-                                Select::make('branch_id')
-                                    ->label(__('Branches'))
-                                    ->preload()
-                                    ->options(fn() => Branch::get()->pluck('name', 'id'))
-                                    ->searchable()
-                                    ->placeholder(__('Select Branch'))
-                            ])
-                            ->visible(fn() => Module::isEnabled('branch')),
+                        // Section::make(__('Branches'))
+                        //     ->columnSpan(1)
+                        //     ->schema([
+                        //         Select::make('branch_id')
+                        //             ->label(__('Branches'))
+                        //             ->preload()
+                        //             ->options(fn() => Branch::get()->pluck('name', 'id'))
+                        //             ->searchable()
+                        //             ->placeholder(__('Select Branch'))
+                        //     ])
+                        //     ->visible(fn() => Module::isEnabled('branch')),
                     ]),
             ])
             ->statePath('data');

@@ -26,17 +26,13 @@ class ResolveStudentCompanyRegistration
             return [$currentRegistration, null];
         }
 
-        $latestRegistration = Registration::query()
-            ->with('course')
-            ->where('student_id', $student->id)
-            ->latest('id')
-            ->first();
-
         return [
-            $latestRegistration,
-            $latestRegistration
-                ? 'لم أجد تسجيلًا للفصل الحالي، لذلك سأستخدم آخر سجل تسجيل متاح للطالب.'
-                : null,
+            null,
+            sprintf(
+                'وجدت الطالب، لكن لا يوجد له تسجيل ضمن الفصل والسنة المحددين في الإعدادات: %s / %s.',
+                $settings->semester_type?->getLabel() ?? $semester ?? '-',
+                $year ?? '-',
+            ),
         ];
     }
 }

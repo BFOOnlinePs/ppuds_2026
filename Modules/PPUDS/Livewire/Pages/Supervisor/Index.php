@@ -17,12 +17,16 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Livewire\Component;
+use Masmerise\Toaster\Toaster;
 use Modules\Core\Entities\User;
 use Modules\Core\Enums\UserRole;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\FieldVisit;
 use Modules\PPUDS\Entities\StudentCompany;
+use Spatie\Permission\Models\Role;
 
 class Index extends Component implements HasTable, HasForms
 {
@@ -79,6 +83,7 @@ class Index extends Component implements HasTable, HasForms
             ])
             ->filters($this->getTableFilters(), layout: FiltersLayout::AboveContent)
             ->filtersFormColumns(3)
+            ->headerActions($this->getTableHeaderActions())
             ->actions($this->getTableActions())
             ->bulkActions([]);
     }
@@ -111,6 +116,72 @@ class Index extends Component implements HasTable, HasForms
                         );
                 })
                 ->columns(2),
+        ];
+    }
+
+    protected function getTableHeaderActions(): array
+    {
+        return [
+            Action::make('createSupervisor')
+                ->label(__('Add Supervisor'))
+                ->icon('heroicon-o-user-plus')
+                ->color('primary')
+                ->modalHeading(__('Add Supervisor'))
+                ->modalSubmitActionLabel(__('Save'))
+                ->form([
+                    Grid::make(2)->schema([
+                        TextInput::make('name')
+                            ->label(__('Name'))
+                            ->required()
+                            ->maxLength(255),
+
+                        TextInput::make('name_en')
+                            ->label(__('Name (English)'))
+                            ->required()
+                            ->maxLength(255),
+
+                        TextInput::make('email')
+                            ->label(__('Email'))
+                            ->email()
+                            ->required()
+                            ->unique('users', 'email')
+                            ->maxLength(255),
+
+                        TextInput::make('phone')
+                            ->label(__('Phone'))
+                            ->numeric()
+                            ->required()
+                            ->maxLength(255),
+
+                        TextInput::make('password')
+                            ->label(__('Password'))
+                            ->password()
+                            ->revealable()
+                            ->required()
+                            ->confirmed(),
+
+                        TextInput::make('password_confirmation')
+                            ->label(__('Confirm Password'))
+                            ->password()
+                            ->revealable()
+                            ->required(),
+                    ]),
+                ])
+                ->visible(fn (): bool => $this->canCreateSupervisor())
+                ->action(function (array $data): void {
+                    abort_unless($this->canCreateSupervisor(), 403);
+
+                    DB::transaction(function () use ($data): void {
+                        unset($data['password_confirmation']);
+                        $data['password'] = Hash::make($data['password']);
+
+                        $user = User::create($data);
+                        $user->assignRole(Role::findOrCreate(UserRole::PRACTICAL_TRAINING_SUPERVISOR->value, 'web'));
+                        $user->generateAvatar();
+                    });
+
+                    Toaster::success(__('Supervisor created successfully'));
+                }),
         ];
     }
 
@@ -160,6 +231,17 @@ class Index extends Component implements HasTable, HasForms
                 ->url(fn (User $record) => route('supervisors.details', $record))
                 ->visible(fn () => auth()->user()->can('Supervisor Details List')),
         ];
+    }
+
+    protected function canCreateSupervisor(): bool
+    {
+        $user = auth()->user();
+
+        return (bool) (
+            $user?->can('Supervisor Create')
+            || $user?->can('User Create')
+            || $user?->hasRole(UserRole::SUPER_ADMIN->value)
+        );
     }
 
     protected function supervisedStudentsCount(User $supervisor): int

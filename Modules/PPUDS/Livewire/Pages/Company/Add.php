@@ -30,6 +30,7 @@ use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Branch\Entities\Branch;
 use Modules\Core\Entities\User;
+use Modules\Core\Filament\Forms\Components\MapPicker;
 use Modules\GeoLocation\Entities\City;
 use Modules\GeoLocation\Entities\Country;
 use Modules\PPUDS\Entities\Company;
@@ -145,6 +146,7 @@ class Add extends Component implements HasActions, HasForms
                                                     ]),
                                                     Textarea::make('description')
                                                         ->label(__('About Company'))
+                                                        ->dehydrateStateUsing(fn (?string $state): ?string => blank($state) ? null : $state)
                                                         ->rows(4)
                                                         ->columnSpanFull(),
                                                 ]),
@@ -337,6 +339,13 @@ class Add extends Component implements HasActions, HasForms
                                                                     ->prefixIcon('solar-city-linear') // Solar Icon
                                                                     ->required(),
 
+                                                                MapPicker::make('location')
+                                                                    ->default(['lat' => 31.5326, 'lng' => 35.0998])
+                                                                    ->defaultLocation(latitude: 31.5326, longitude: 35.0998)
+                                                                    ->clickable(true)
+                                                                    ->zoom(13)
+                                                                    ->dehydrated(false),
+
                                                                 TextInput::make('latitude')->numeric()->placeholder('31.xxxx')
                                                                     ->prefixIcon('solar-map-arrow-up-linear'),
                                                                 TextInput::make('longitude')->numeric()->placeholder('35.xxxx')
@@ -474,6 +483,7 @@ class Add extends Component implements HasActions, HasForms
 
         // 1. فصل بيانات الشركة الأساسية عن الفروع والشعار
         $companyData = Arr::except($this->data, ['branches', 'logo']);
+        $companyData['description'] = blank($companyData['description'] ?? null) ? null : $companyData['description'];
 
         if (auth()->user()->hasRole('Student')) {
             $companyData['status'] = CompanyStatus::PENDING->value;
@@ -499,7 +509,7 @@ class Add extends Component implements HasActions, HasForms
                 $workingHoursData = $branchData['working_hours'] ?? []; // المصفوفة الجديدة لساعات العمل
 
                 // تنظيف بيانات الفرع
-                $branchCleanData = Arr::except($branchData, ['departments', 'working_hours']);
+                $branchCleanData = Arr::except($branchData, ['departments', 'working_hours', 'location']);
                 $branchCleanData['created_by'] = auth()->id();
 
                 // إنشاء الفرع

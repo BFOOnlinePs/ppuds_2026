@@ -63,7 +63,7 @@ class StudentCompanyAssistantController extends Controller
         );
 
         if (! $registration) {
-            return $this->errorResponse(__('No valid registration was found for this student.'), 422);
+            return $this->errorResponse($warning ?: __('No valid registration was found for this student.'), 422);
         }
 
         if ($response = $this->ensureRegistrationInCurrentSemester($registration)) {
