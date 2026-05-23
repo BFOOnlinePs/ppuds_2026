@@ -586,6 +586,12 @@ class Add extends Component implements HasActions, HasForms
         );
 
         if ($result !== null) {
+            if (($result['operation'] ?? null) === 'already_exists') {
+                Toaster::success(__('Company already exists in university system'));
+
+                return;
+            }
+
             Toaster::success(__('Company sent to university successfully'));
         }
     }

@@ -2,6 +2,7 @@
 
 namespace Modules\PPUDS\Services;
 
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -303,6 +304,27 @@ class PpuApiService
         $userId = $userId ?? auth()->id();
         $company->loadMissing(['branches.supervisors', 'translations']);
 
+        if (filled($company->old_company_id)) {
+            self::logToTerminal("الشركة {$company->name} مضافة مسبقًا في نظام الجامعة، لذلك تم تخطي الإرسال.", $userId);
+
+            return [
+                'operation' => 'already_exists',
+                'old_company_id' => $company->old_company_id,
+            ];
+        }
+
+        $syncedCompany = $this->syncedCompanyWithSameName($company);
+
+        if ($syncedCompany) {
+            self::logToTerminal("الشركة {$company->name} موجودة مسبقًا في النظام ومضافة للجامعة، لذلك تم تخطي الإرسال.", $userId);
+
+            return [
+                'operation' => 'already_exists',
+                'company_id' => $syncedCompany->id,
+                'old_company_id' => $syncedCompany->old_company_id,
+            ];
+        }
+
         $payload = $this->universityCompanyPayload($company, $password, $supervisorId);
 
         if ($payload === null) {
@@ -333,7 +355,24 @@ class PpuApiService
             return null;
         }
 
+        $responseData = $response->json() ?? [];
+        $universityCompanyId = $this->universityCompanyIdFromResponse($responseData);
+
         if (! $response->successful()) {
+            if ($this->companyAlreadyExistsResponse($response, $responseData)) {
+                if ($universityCompanyId && blank($company->old_company_id)) {
+                    $company->forceFill(['old_company_id' => $universityCompanyId])->save();
+                }
+
+                self::logToTerminal("الشركة {$company->name} مضافة مسبقًا في API الجامعة، لذلك لم يتم إنشاؤها مرة أخرى.", $userId);
+
+                return [
+                    'operation' => 'already_exists',
+                    'old_company_id' => $universityCompanyId,
+                    'response' => $responseData,
+                ];
+            }
+
             self::logToTerminal("✗ فشل إرسال الشركة {$company->name} إلى API الجامعة (كود: {$response->status()})", $userId);
             Log::error('Failed to add company to PPU API', [
                 'company_id' => $company->id,
@@ -344,16 +383,27 @@ class PpuApiService
             return null;
         }
 
-        $responseData = $response->json() ?? [];
-        $universityCompanyId = $this->universityCompanyIdFromResponse($responseData);
-
         if ($universityCompanyId && blank($company->old_company_id)) {
             $company->forceFill(['old_company_id' => $universityCompanyId])->save();
         }
 
+        if ($this->universityCompanyAlreadyExists($responseData)) {
+            self::logToTerminal("الشركة {$company->name} مضافة مسبقًا في API الجامعة، لذلك لم يتم إنشاؤها مرة أخرى.", $userId);
+
+            return [
+                'operation' => 'already_exists',
+                'old_company_id' => $universityCompanyId,
+                'response' => $responseData,
+            ];
+        }
+
         self::logToTerminal("✓ تم إرسال الشركة {$company->name} إلى API الجامعة.", $userId);
 
-        return $responseData;
+        return [
+            'operation' => 'created',
+            'old_company_id' => $universityCompanyId,
+            'response' => $responseData,
+        ];
     }
 
     public function syncStudents($academicYear, $semesterNo)
@@ -636,6 +686,31 @@ class PpuApiService
         ];
     }
 
+    private function syncedCompanyWithSameName(Company $company): ?Company
+    {
+        $names = collect([
+            $this->companyName($company, 'ar'),
+            $this->companyName($company, 'en'),
+        ])
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($names->isEmpty()) {
+            return null;
+        }
+
+        return Company::query()
+            ->whereKeyNot($company->id)
+            ->whereNotNull('old_company_id')
+            ->where(function ($query) use ($names) {
+                foreach ($names as $name) {
+                    $query->orWhereTranslation('name', $name);
+                }
+            })
+            ->first();
+    }
+
     private function companySupervisorForUniversityPayload(Company $company, ?int $supervisorId = null): ?User
     {
         if ($supervisorId) {
@@ -671,6 +746,45 @@ class PpuApiService
             ?? data_get($responseData, 'c_id');
 
         return is_numeric($id) ? (int) $id : null;
+    }
+
+    private function companyAlreadyExistsResponse(Response $response, array $responseData): bool
+    {
+        if (! in_array($response->status(), [400, 409, 422], true)) {
+            return false;
+        }
+
+        return $this->universityCompanyAlreadyExists($responseData)
+            || $this->containsAlreadyExistsText($response->body());
+    }
+
+    private function universityCompanyAlreadyExists(array $responseData): bool
+    {
+        $text = collect([
+            data_get($responseData, 'status'),
+            data_get($responseData, 'message'),
+            data_get($responseData, 'msg'),
+            data_get($responseData, 'error'),
+            data_get($responseData, 'errors'),
+        ])
+            ->filter()
+            ->map(fn ($value) => is_array($value) ? json_encode($value, JSON_UNESCAPED_UNICODE) : (string) $value)
+            ->implode(' ');
+
+        return $this->containsAlreadyExistsText($text);
+    }
+
+    private function containsAlreadyExistsText(string $text): bool
+    {
+        $text = Str::lower($text);
+
+        foreach (['already', 'exist', 'duplicate', 'موجود', 'مضافة', 'مكرر'] as $needle) {
+            if (str_contains($text, $needle)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function ppuApiUrl(string $path): string
