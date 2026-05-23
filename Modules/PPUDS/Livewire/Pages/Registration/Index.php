@@ -31,6 +31,7 @@ use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\Course;
+use Modules\PPUDS\Entities\Major;
 use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Enums\CourseStatus;
 use Modules\PPUDS\Enums\SemesterType;
@@ -103,7 +104,7 @@ class Index extends Component implements HasForms, HasTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters($this->getTableFilters(), layout: FiltersLayout::AboveContent)
-            ->filtersFormColumns(4)
+            ->filtersFormColumns(5)
             ->actions($this->getTableActions())
             ->headerActions([
                 CreateAction::make('create')
@@ -122,6 +123,22 @@ class Index extends Component implements HasForms, HasTable
                 ->options(Course::where('status', CourseStatus::ACTIVE->value)->get()->pluck('name', 'id'))
                 ->searchable()
                 ->preload(),
+
+            SelectFilter::make('major_id')
+                ->label(__('Major'))
+                ->options(fn (): array => Major::get()->pluck('name', 'id')->toArray())
+                ->searchable()
+                ->preload()
+                ->native(false)
+                ->query(function (Builder $query, array $data): Builder {
+                    return $query->when(
+                        filled($data['value'] ?? null),
+                        fn (Builder $query) => $query->whereHas(
+                            'student.studentProfile',
+                            fn (Builder $profileQuery) => $profileQuery->where('major_id', (int) $data['value'])
+                        )
+                    );
+                }),
 
             SelectFilter::make('semester')
                 ->label(__('Semester'))
