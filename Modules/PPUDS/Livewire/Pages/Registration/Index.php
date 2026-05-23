@@ -207,7 +207,7 @@ class Index extends Component implements HasForms, HasTable
                     ])
                     ->modalHeading(__('Assign Supervisor'))
                     ->modalSubmitActionLabel(__('Assign'))
-                    ->visible(fn () => auth()->user()->can('Registration Update'))
+                    ->visible(fn () => auth()->user()->can('Registration Select Supervisor'))
                     ->action(function (Collection $records, array $data): void {
                         $supervisorId = (int) $data['supervisor_id'];
 
@@ -226,7 +226,7 @@ class Index extends Component implements HasForms, HasTable
                     ->requiresConfirmation()
                     ->modalHeading(__('Clear Supervisor'))
                     ->modalSubmitActionLabel(__('Clear'))
-                    ->visible(fn () => auth()->user()->can('Registration Update'))
+                    ->visible(fn () => auth()->user()->can('Registration Select Supervisor'))
                     ->action(function (Collection $records): void {
                         $records->each(fn (Registration $registration) => $registration->update([
                             'supervisor_id' => null,
