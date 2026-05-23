@@ -562,10 +562,7 @@
     "Date Picker": "منتقي التاريخ",
     "File Upload": "رفع ملف",
     "Star Rating": "تقييم بالنجوم",
-<<<<<<< HEAD
-    "Registration Select Supervisor":"تحديد مشرف التسجيل",
-    "Attendance Map View": "عرض خارطة الحضور"
-=======
+    "Registration Select Supervisor": "تحديد مشرف التسجيل",
+    "Attendance Map View": "عرض خارطة الحضور",
     "Assign Supervisor": "تعيين مشرف"
->>>>>>> c0e1dd7 (Make Changes)
 }

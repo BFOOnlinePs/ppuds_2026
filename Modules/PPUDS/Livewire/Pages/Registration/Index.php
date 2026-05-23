@@ -82,17 +82,12 @@ class Index extends Component implements HasForms, HasTable
                 // 4. عمود المشرف
                 SelectColumn::make('supervisor_id')
                     ->label(__('Supervisor'))
-<<<<<<< HEAD
-                    ->options(User::whereHas('roles', fn($q) => $q->where('name', UserRole::PRACTICAL_TRAINING_SUPERVISOR->value))->pluck('name', 'id'))
-                    ->disabled(fn() => ! auth()->user()->can('Registration Select Supervisor'))
-                    ->toggleable()
-                    ->visible(fn() => auth()->user()->can('Registration Select Supervisor'))
-                    ->searchable(),
-=======
                     ->options(fn (): array => $this->supervisorOptions())
                     ->placeholder(__('No Supervisor'))
-                    ->toggleable(),
->>>>>>> c0e1dd7 (Make Changes)
+                    ->disabled(fn () => ! auth()->user()->can('Registration Select Supervisor'))
+                    ->toggleable()
+                    ->visible(fn () => auth()->user()->can('Registration Select Supervisor'))
+                    ->searchable(),
 
                 // 5. عمود العلامة
                 //                TextColumn::make('grade')
@@ -111,17 +106,10 @@ class Index extends Component implements HasForms, HasTable
             ->filtersFormColumns(4)
             ->actions($this->getTableActions())
             ->headerActions([
-<<<<<<< HEAD
                 CreateAction::make('create')
                     ->label(__('Add Registration'))
                     ->url(route('registrations.add'))
-                    ->visible(fn() => auth()->user()->can('Registration Create')),
-=======
-                // CreateAction::make('create')
-                //     ->label(__('Add Registration'))
-                //     ->url(route('registrations.add'))
-                //     ->visible(fn () => auth()->user()->can('Registration Create')),
->>>>>>> c0e1dd7 (Make Changes)
+                    ->visible(fn () => auth()->user()->can('Registration Create')),
             ])
             ->bulkActions($this->getTableBulkAction());
     }
@@ -160,11 +148,7 @@ class Index extends Component implements HasForms, HasTable
             // 4. فلتر المشرف
             SelectFilter::make('supervisor_id')
                 ->label(__('Supervisor'))
-<<<<<<< HEAD
-                ->options(User::whereHas('roles', fn($q) => $q->where('name', 'Practical Training Supervisor'))->pluck('name', 'id'))
-=======
                 ->options(fn (): array => $this->supervisorOptions())
->>>>>>> c0e1dd7 (Make Changes)
                 ->searchable(),
         ];
     }
