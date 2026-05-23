@@ -13,6 +13,7 @@
                 <button
                     type="button"
                     wire:click="linkAllSuggestions"
+                    wire:confirm="هل تريد ربط كل الاقتراحات بالطالب المحدد؟"
                     wire:loading.attr="disabled"
                     @disabled($allLinked)
                     class="inline-flex min-h-10 items-center gap-2 rounded-lg bg-primary-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-primary-500 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-600 dark:disabled:bg-gray-700 dark:disabled:text-gray-400"
@@ -108,6 +109,7 @@
                                 <button
                                     type="button"
                                     wire:click="selectCompany({{ $company['id'] }})"
+                                    wire:confirm="هل تريد ربط هذه الشركة بالطالب المحدد؟"
                                     class="rounded-lg border border-gray-200 bg-white p-3 text-start text-sm transition hover:border-primary-300 hover:bg-primary-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:border-primary-500 dark:hover:bg-primary-500/10"
                                 >
                                     <span class="block font-medium text-gray-950 dark:text-white">{{ $company['name'] }}</span>
@@ -156,6 +158,7 @@
                             <button
                                 type="button"
                                 wire:click="linkCompany({{ $suggestion['company_id'] }})"
+                                wire:confirm="هل تريد ربط هذه الشركة بالطالب المحدد؟"
                                 wire:loading.attr="disabled"
                                 @disabled($suggestion['linked'] ?? false)
                                 class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-primary-200 bg-primary-50 px-3 py-2 text-sm font-medium text-primary-700 transition hover:border-primary-300 hover:bg-primary-100 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-500 dark:border-primary-400/20 dark:bg-primary-400/10 dark:text-primary-300 dark:hover:bg-primary-400/20 dark:disabled:border-gray-700 dark:disabled:bg-gray-800 dark:disabled:text-gray-500"

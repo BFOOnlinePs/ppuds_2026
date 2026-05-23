@@ -272,8 +272,11 @@ class StudentCompanyAssistant extends Component
         }
 
         $company = $companies->first();
-        $this->companyMatches = [];
-        $this->linkSuggestion($findCompanies->toSuggestion($company, 'تم اختيار الشركة من الرسالة التي كتبتها.'));
+        $this->companyMatches = [
+            $findCompanies->payload($company),
+        ];
+
+        $this->addMessage('assistant', 'وجدت شركة مطابقة. اضغط على الشركة لتأكيد ربطها بالطالب.');
 
         return true;
     }
