@@ -10,6 +10,7 @@ use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\CompanyDepartment; // تأكد من استدعاء هذا الكلاس
 use Modules\PPUDS\Http\Requests\CompanyRequest;
 use Modules\PPUDS\Http\Requests\CompanyUpdateRequest;
+use Modules\PPUDS\Services\PpuApiService;
 use Modules\PPUDS\Transformers\V1\CompanyResource;
 use Spatie\QueryBuilder\QueryBuilder;
 
@@ -221,6 +222,8 @@ class CompanyController extends Controller
             'branches.supervisors',
             'translations',
         ]);
+
+        app(PpuApiService::class)->addCompanyToUniversity($company, userId: auth()->id());
 
         return $this->successResponse(
             new CompanyResource($company),

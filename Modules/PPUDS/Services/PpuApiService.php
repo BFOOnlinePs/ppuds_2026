@@ -4,6 +4,9 @@ namespace Modules\PPUDS\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Modules\Core\Entities\User;
+use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\Course;
 use Modules\PPUDS\Entities\Major;
 use Modules\PPUDS\Enums\CourseType;
@@ -290,6 +293,69 @@ class PpuApiService
         }
     }
 
+    public function addCompanyToUniversity(
+        Company $company,
+        ?string $password = null,
+        ?int $supervisorId = null,
+        ?string $token = null,
+        ?int $userId = null,
+    ): ?array {
+        $userId = $userId ?? auth()->id();
+        $company->loadMissing(['branches.supervisors', 'translations']);
+
+        $payload = $this->universityCompanyPayload($company, $password, $supervisorId);
+
+        if ($payload === null) {
+            self::logToTerminal("لم يتم إرسال الشركة {$company->name} إلى API الجامعة بسبب نقص بيانات التواصل.", $userId);
+
+            return null;
+        }
+
+        $url = $this->ppuApiUrl('/api/DualStudies/Company/Add');
+
+        try {
+            $response = Http::withHeaders([
+                'Accept' => 'application/json',
+            ])
+                ->withToken($token ?? $this->getAccessToken())
+                ->asJson()
+                ->connectTimeout(10)
+                ->timeout(30)
+                ->post($url, $payload);
+        } catch (\Exception $e) {
+            self::logToTerminal("✗ تعذر إرسال الشركة {$company->name} إلى API الجامعة: ".$e->getMessage(), $userId);
+            Log::error('Failed to connect to PPU add company API', [
+                'company_id' => $company->id,
+                'url' => $url,
+                'exception' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+
+        if (! $response->successful()) {
+            self::logToTerminal("✗ فشل إرسال الشركة {$company->name} إلى API الجامعة (كود: {$response->status()})", $userId);
+            Log::error('Failed to add company to PPU API', [
+                'company_id' => $company->id,
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            return null;
+        }
+
+        $responseData = $response->json() ?? [];
+        $universityCompanyId = $this->universityCompanyIdFromResponse($responseData);
+
+        if ($universityCompanyId && blank($company->old_company_id)) {
+            $company->forceFill(['old_company_id' => $universityCompanyId])->save();
+        }
+
+        self::logToTerminal("✓ تم إرسال الشركة {$company->name} إلى API الجامعة.", $userId);
+
+        return $responseData;
+    }
+
     public function syncStudents($academicYear, $semesterNo)
     {
         $userId = auth()->id();
@@ -545,5 +611,70 @@ class PpuApiService
         $courseCode = $courseData['courseNo'] ?? $courseData['courseCode'] ?? $courseData['course_code'] ?? null;
 
         return $courseCode === null ? null : (string) $courseCode;
+    }
+
+    private function universityCompanyPayload(Company $company, ?string $password = null, ?int $supervisorId = null): ?array
+    {
+        $supervisor = $this->companySupervisorForUniversityPayload($company, $supervisorId);
+        $branch = $company->branches->first();
+        $email = $supervisor?->email ?: $branch?->email;
+        $mobile = $supervisor?->phone ?: $branch?->phone;
+
+        if (blank($email) || blank($mobile)) {
+            return null;
+        }
+
+        return [
+            'caName' => $this->companyName($company, 'ar'),
+            'ceName' => $this->companyName($company, 'en'),
+            'cpaName' => $supervisor?->name ?: $this->companyName($company, 'ar'),
+            'cpeName' => $supervisor?->name_en ?: ($supervisor?->name ?: $this->companyName($company, 'en')),
+            'email12' => $email,
+            'mobile' => $mobile,
+            'pw' => $password ?: '',
+            'userName' => $supervisor?->email ?: $this->companyUsername($company),
+        ];
+    }
+
+    private function companySupervisorForUniversityPayload(Company $company, ?int $supervisorId = null): ?User
+    {
+        if ($supervisorId) {
+            return User::find($supervisorId);
+        }
+
+        return $company->companySupervisors()->first();
+    }
+
+    private function companyName(Company $company, string $locale): string
+    {
+        return $company->translate($locale)?->name
+            ?: $company->name
+            ?: "Company {$company->id}";
+    }
+
+    private function companyUsername(Company $company): string
+    {
+        return Str::slug($this->companyName($company, 'en')) ?: "company-{$company->id}";
+    }
+
+    private function universityCompanyIdFromResponse(array $responseData): ?int
+    {
+        $id = data_get($responseData, 'data.id')
+            ?? data_get($responseData, 'data.companyId')
+            ?? data_get($responseData, 'data.companyID')
+            ?? data_get($responseData, 'data.cId')
+            ?? data_get($responseData, 'data.c_id')
+            ?? data_get($responseData, 'id')
+            ?? data_get($responseData, 'companyId')
+            ?? data_get($responseData, 'companyID')
+            ?? data_get($responseData, 'cId')
+            ?? data_get($responseData, 'c_id');
+
+        return is_numeric($id) ? (int) $id : null;
+    }
+
+    private function ppuApiUrl(string $path): string
+    {
+        return rtrim(config('services.ppu_api.base_url', 'https://api-core.ppu.edu'), '/').'/'.ltrim($path, '/');
     }
 }

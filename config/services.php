@@ -52,4 +52,8 @@ return [
         'issuer'        => env('KEYCLOAK_ISSUER'),
     ],
 
+    'ppu_api' => [
+        'base_url' => env('PPU_API_BASE_URL', 'https://api-core.ppu.edu'),
+    ],
+
 ];

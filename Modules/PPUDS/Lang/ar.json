@@ -566,5 +566,6 @@
     "Attendance Map View": "عرض خارطة الحضور",
     "Assign Supervisor": "تعيين مشرف",
     "Student is already assigned to this company.": "الطالب مسجل مسبقًا في هذه الشركة.",
-    "Companies processed successfully": "تمت معالجة الشركات بنجاح"
+    "Companies processed successfully": "تمت معالجة الشركات بنجاح",
+    "Company sent to university successfully": "تم إرسال الشركة إلى نظام الجامعة بنجاح"
 }

@@ -38,6 +38,7 @@ use Modules\PPUDS\Entities\CompanyCategory;
 use Modules\PPUDS\Entities\CompanyDepartment;
 use Modules\PPUDS\Entities\CompanyTranslation;
 use Modules\PPUDS\Enums\CompanyStatus;
+use Modules\PPUDS\Services\PpuApiService;
 
 class Add extends Component implements HasActions, HasForms
 {
@@ -412,9 +413,11 @@ class Add extends Component implements HasActions, HasForms
                                                                                 ]),
                                                                             ])
                                                                             ->createOptionUsing(function (array $data) {
+                                                                                $plainPassword = $data['password'];
                                                                                 $data['password'] = bcrypt($data['password']);
                                                                                 $user = User::create($data);
                                                                                 $user->assignRole('Company Supervisor');
+                                                                                session()->put($this->supervisorPasswordSessionKey($user->id), $plainPassword);
 
                                                                                 return $user->id;
                                                                             })
@@ -555,6 +558,8 @@ class Add extends Component implements HasActions, HasForms
             }
         }
 
+        $this->syncCompanyToUniversity($company);
+
         Toaster::success(__('Created successfully'));
         $this->redirect(route('companies.index'));
     }
@@ -568,5 +573,38 @@ class Add extends Component implements HasActions, HasForms
                 ['title' => __('New Company'), 'url' => route('companies.add')],
             ],
         ]);
+    }
+
+    private function syncCompanyToUniversity(Company $company): void
+    {
+        $supervisorId = $this->firstCompanySupervisorId();
+        $password = $supervisorId ? session()->pull($this->supervisorPasswordSessionKey($supervisorId)) : null;
+        $result = app(PpuApiService::class)->addCompanyToUniversity(
+            $company,
+            $password,
+            $supervisorId,
+        );
+
+        if ($result !== null) {
+            Toaster::success(__('Company sent to university successfully'));
+        }
+    }
+
+    private function firstCompanySupervisorId(): ?int
+    {
+        foreach ($this->data['branches'] ?? [] as $branch) {
+            foreach ($branch['departments'] ?? [] as $department) {
+                if (filled($department['user_id'] ?? null)) {
+                    return (int) $department['user_id'];
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function supervisorPasswordSessionKey(int $supervisorId): string
+    {
+        return "company_supervisor_plain_password_{$supervisorId}";
     }
 }
