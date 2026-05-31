@@ -5894,6 +5894,240 @@
                 ]
             }
         },
+        "/api/v1/ppuds/announcement-categories": {
+            "get": {
+                "tags": [
+                    "Announcement Categories"
+                ],
+                "summary": "Get all announcement categories",
+                "description": "Retrieve a list of all announcement categories",
+                "operationId": "e39dc71008ecfc9955f0ed9f38a19860",
+                "parameters": [
+                    {
+                        "name": "Accept-Language",
+                        "in": "header",
+                        "description": "Language header (ar or en)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "default": "ar",
+                            "example": "en"
+                        }
+                    },
+                    {
+                        "name": "fields",
+                        "in": "query",
+                        "description": "Comma separated list of fields to be returned",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filter[name]",
+                        "in": "query",
+                        "description": "Filter by translated name (LIKE)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "Sort fields. Use leading '-' for DESC. Examples: id, -created_at",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "-id"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Number of items per page",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Announcement categories retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Announcement categories retrieved successfully"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/AnnouncementCategoryResource"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Announcement Categories"
+                ],
+                "summary": "Create a new announcement category",
+                "description": "Creates a new category for announcements.",
+                "operationId": "7c6c92b5b13ca8cba6f79f2940f2ce1a",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "description": "Category name",
+                                        "type": "string",
+                                        "example": "General"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Announcement category created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Announcement category created successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/AnnouncementCategoryResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/announcement-categories/{announcement_category}": {
+            "get": {
+                "tags": [
+                    "Announcement Categories"
+                ],
+                "summary": "Get a single announcement category",
+                "description": "Retrieve details of a specific announcement category by ID",
+                "operationId": "fd0625697fcde3e448ece3ad7ddb3ebf",
+                "parameters": [
+                    {
+                        "name": "Accept-Language",
+                        "in": "header",
+                        "description": "Language header (ar or en)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "default": "ar",
+                            "example": "en"
+                        }
+                    },
+                    {
+                        "name": "announcement_category",
+                        "in": "path",
+                        "description": "Announcement category ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Announcement category retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Announcement category retrieved successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/AnnouncementCategoryResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Announcement category not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/ppuds/announcements": {
             "get": {
                 "tags": [
@@ -11298,6 +11532,25 @@
                 },
                 "type": "object"
             },
+            "AnnouncementCategoryResource": {
+                "title": "Announcement Category Resource",
+                "description": "Announcement category details",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "General"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "example": "2026-05-31 12:00:00"
+                    }
+                },
+                "type": "object"
+            },
             "AnnouncementResource": {
                 "title": "Announcement Resource",
                 "description": "Announcement details",
@@ -11845,6 +12098,10 @@
         {
             "name": "Marketing",
             "description": "Marketing"
+        },
+        {
+            "name": "Announcement Categories",
+            "description": "Announcement Categories"
         },
         {
             "name": "Announcements",

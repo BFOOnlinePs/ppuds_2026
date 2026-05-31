@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\PPUDS\Http\Controllers\Api\V1\AnnouncementCategoryController;
 use Modules\PPUDS\Http\Controllers\Api\V1\AnnouncementController;
 use Modules\PPUDS\Http\Controllers\Api\V1\ChatController;
 use Modules\PPUDS\Http\Controllers\Api\V1\CompanyCategoryController;
@@ -124,6 +125,15 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
                     Route::get('/', 'index')->name('index');
                     Route::post('/', 'store')->name('store');
                     Route::get('/{announcement}', 'show')->name('show');
+                });
+
+            Route::controller(AnnouncementCategoryController::class)
+                ->prefix('announcement-categories')
+                ->as('announcement-categories.')
+                ->group(function () {
+                    Route::get('/', 'index')->name('index');
+                    Route::post('/', 'store')->name('store');
+                    Route::get('/{announcement_category}', 'show')->name('show');
                 });
 
             Route::controller(SurveyController::class)
