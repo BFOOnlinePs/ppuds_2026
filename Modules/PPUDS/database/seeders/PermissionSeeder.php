@@ -414,6 +414,38 @@ class PermissionSeeder extends Seeder
                 'module_name' => 'Announcement',
             ],
 
+            // TODO Announcement Category
+            [
+                'name' => 'Announcement Category View List',
+                'guard_name' => 'web',
+                'module_name' => 'Announcement Category',
+            ],
+            [
+                'name' => 'Announcement Category Create',
+                'guard_name' => 'web',
+                'module_name' => 'Announcement Category',
+            ],
+            [
+                'name' => 'Announcement Category Update',
+                'guard_name' => 'web',
+                'module_name' => 'Announcement Category',
+            ],
+            [
+                'name' => 'Announcement Category Delete',
+                'guard_name' => 'web',
+                'module_name' => 'Announcement Category',
+            ],
+            [
+                'name' => 'Announcement Category View',
+                'guard_name' => 'web',
+                'module_name' => 'Announcement Category',
+            ],
+            [
+                'name' => 'Announcement Category Info',
+                'guard_name' => 'web',
+                'module_name' => 'Announcement Category',
+            ],
+
 
             // TODO LeaveRequest
             [

@@ -71,7 +71,7 @@ class AnnouncementController extends Controller
             ->allowedFilters(AnnouncementResource::allowedFilters())
             ->allowedSorts(AnnouncementResource::allowedSorts())
             ->allowedIncludes(AnnouncementResource::allowedIncludes())
-            ->with(['media', 'translations'])
+            ->with(['media', 'translations', 'category.translations'])
             ->paginate($perPage)
             ->appends(request()->query());
 
@@ -130,7 +130,7 @@ class AnnouncementController extends Controller
             return $announcment;
         });
 
-        $announcment->load(['media', 'translations']);
+        $announcment->load(['media', 'translations', 'category.translations']);
 
         app(PpudsNotificationService::class)->announcementCreated($announcment);
 
@@ -176,7 +176,7 @@ class AnnouncementController extends Controller
         $announcment = QueryBuilder::for(Announcement::class)
             ->where('id', $announcment->id)
             ->allowedFields(AnnouncementResource::allowedFields())
-            ->with(['media', 'translations'])
+            ->with(['media', 'translations', 'category.translations'])
             ->firstOrFail();
 
         return $this->successResponse(

@@ -143,6 +143,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 });
 
                 Route::group([
+                    'prefix' => '',
+                    'as' => '',
+                    'namespace' => 'Modules\PPUDS\Livewire\Pages\AnnouncementCategory',
+                ], function () {
+                    Route::get('/announcement-category', Index::class)->name('announcement-category.index')->can('Announcement Category View List');
+                });
+
+                Route::group([
                     'prefix' => 'leave-requests',
                     'as' => 'leave-requests.',
                     'namespace' => 'Modules\PPUDS\Livewire\Pages\LeaveRequest',

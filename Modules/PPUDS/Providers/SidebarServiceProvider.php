@@ -76,6 +76,7 @@ class SidebarServiceProvider extends ServiceProvider
         $sidebar->add(
             (new SidebarGroup('Announcements', 'solar-bell-bing-bold-duotone', [], 100))
                 ->add(new SidebarItem('Announcements List', 'solar-notification-unread-lines-bold-duotone', ['Announcement View List'], 'announcements.index'))
+                ->add(new SidebarItem('Announcement Categories', 'solar-widget-4-bold-duotone', ['Announcement Category View List'], 'announcement-category.index'))
         );
 
         $sidebar->add(

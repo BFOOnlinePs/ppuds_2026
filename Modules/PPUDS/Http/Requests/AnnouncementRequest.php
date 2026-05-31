@@ -3,7 +3,7 @@
 namespace Modules\PPUDS\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rules\Enum;
+use Illuminate\Validation\Rule;
 use Modules\Core\Enums\UserRole;
 
 class AnnouncementRequest extends FormRequest
@@ -14,6 +14,7 @@ class AnnouncementRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'announcement_category_id' => ['required', Rule::exists(config('ppuds.table_prefix') . 'announcement_categories', 'id')],
             'target_roles'   => ['required', 'array'],
             'target_roles.*' => ['required', 'integer', 'in:' . implode(',', array_column(UserRole::cases(), 'value'))],
             'filters'        => ['nullable', 'array'],

@@ -29,6 +29,11 @@ class AnnouncementResource extends JsonResource
     {
         return [
             'id'            => $this->id,
+            'announcement_category_id' => $this->announcement_category_id,
+            'category'      => $this->whenLoaded('category', fn () => [
+                'id' => $this->category?->id,
+                'name' => $this->category?->name,
+            ]),
             'name'          => $this->name,
             'content'       => $this->content,
             'target_roles'  => $this->target_roles,
@@ -46,6 +51,7 @@ class AnnouncementResource extends JsonResource
     {
         return [
             'id',
+            'announcement_category_id',
             'name',
             'content',
             'target_roles',
@@ -62,6 +68,7 @@ class AnnouncementResource extends JsonResource
         return [
             AllowedFilter::callback('name', fn(Builder $query, $value) => $query->whereTranslationLike('name', "%{$value}%")),
             AllowedFilter::callback('content', fn(Builder $query, $value) => $query->whereTranslationLike('content', "%{$value}%")),
+            AllowedFilter::exact('announcement_category_id'),
             AllowedFilter::exact('is_pinned'),
             AllowedFilter::scope('active'),
             AllowedFilter::callback('target_roles', function (Builder $query, $value) {
@@ -90,6 +97,7 @@ class AnnouncementResource extends JsonResource
     {
         return [
             'createdBy',
+            'category',
         ];
     }
 }

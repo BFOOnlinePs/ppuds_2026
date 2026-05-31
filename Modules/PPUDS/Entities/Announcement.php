@@ -33,6 +33,7 @@ class Announcement extends Model implements TranslatableContract, HasMedia
     }
 
     protected $fillable = [
+        'announcement_category_id',
         'target_roles',
         'filters',
         'published_at',
@@ -68,6 +69,11 @@ class Announcement extends Model implements TranslatableContract, HasMedia
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function category()
+    {
+        return $this->belongsTo(AnnouncementCategory::class, 'announcement_category_id');
     }
 
     public function scopeActive(Builder $query)

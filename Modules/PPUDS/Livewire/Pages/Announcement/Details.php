@@ -13,7 +13,7 @@ class Details extends Component
 
     public function mount(Announcement $announcement)
     {
-        $this->announcement = $announcement;
+        $this->announcement = $announcement->load(['category.translations']);
     }
 
     public function targetRoleLabels(): array

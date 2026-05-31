@@ -48,6 +48,13 @@
 
                 <dl class="space-y-4 text-sm">
                     <div>
+                        <dt class="text-gray-500 dark:text-gray-400">{{ __('Announcement Category') }}</dt>
+                        <dd class="mt-1 font-medium text-gray-950 dark:text-white">
+                            {{ $announcement->category?->name ?? '-' }}
+                        </dd>
+                    </div>
+
+                    <div>
                         <dt class="text-gray-500 dark:text-gray-400">{{ __('Publisher') }}</dt>
                         <dd class="mt-1 font-medium text-gray-950 dark:text-white">
                             {{ $announcement->createdBy?->name ?? __('System') }}

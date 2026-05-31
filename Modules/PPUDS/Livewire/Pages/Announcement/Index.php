@@ -37,6 +37,7 @@ use Modules\PPUDS\Entities\Announcement;
 use Modules\PPUDS\Entities\Major;
 use Modules\Core\Enums\UserRole;
 use Modules\PPUDS\Services\PpudsNotificationService;
+use Modules\PPUDS\Entities\AnnouncementCategory;
 
 class Index extends Component implements HasTable, HasForms
 {
@@ -47,7 +48,7 @@ class Index extends Component implements HasTable, HasForms
     {
         return $table
             ->query(fn() => Announcement::query()
-                ->with('createdBy')
+                ->with(['createdBy', 'category.translations'])
                 ->orderByDesc('is_pinned')
                 ->latest('published_at'))
             ->columns([
@@ -65,6 +66,12 @@ class Index extends Component implements HasTable, HasForms
                     ->weight('medium')
                     ->limit(48)
                     ->description(fn (Announcement $record) => str($record->content)->stripTags()->limit(90)),
+
+                TextColumn::make('category.name')
+                    ->label(__('Announcement Category'))
+                    ->placeholder('-')
+                    ->badge()
+                    ->color('info'),
 
                 TextColumn::make('target_roles')
                     ->label(__('Target Roles'))
@@ -137,6 +144,10 @@ class Index extends Component implements HasTable, HasForms
     protected function getTableFilters(): array
     {
         return [
+            SelectFilter::make('announcement_category_id')
+                ->label(__('Announcement Category'))
+                ->options(fn () => AnnouncementCategory::with('translations')->get()->pluck('name', 'id')),
+
             // تعديل: فلتر مخصص للبحث داخل JSON Array
             SelectFilter::make('target_roles')
                 ->label(__('Target Role'))
@@ -179,6 +190,11 @@ class Index extends Component implements HasTable, HasForms
                                 TextInput::make('name')
                                     ->label(__('Title'))
                                     ->default($record->name)
+                                    ->disabled(),
+
+                                TextInput::make('category_name')
+                                    ->label(__('Announcement Category'))
+                                    ->default($record->category?->name ?? '-')
                                     ->disabled(),
 
                                 // عرض الأدوار كنص مفصول بفواصل
@@ -242,6 +258,7 @@ class Index extends Component implements HasTable, HasForms
                 ->mountUsing(function (Forms\ComponentContainer $form, Announcement $record) {
                     $form->fill([
                         'name' => $record->name,
+                        'announcement_category_id' => $record->announcement_category_id,
                         'content' => $record->content,
                         'target_roles' => $record->target_roles,
                         'filters' => $record->filters,
@@ -287,6 +304,13 @@ class Index extends Component implements HasTable, HasForms
                             ->label(__('Title'))
                             ->required()
                             ->maxLength(255),
+
+                        Select::make('announcement_category_id')
+                            ->label(__('Announcement Category'))
+                            ->options(fn () => AnnouncementCategory::with('translations')->get()->pluck('name', 'id'))
+                            ->searchable()
+                            ->preload()
+                            ->required(),
 
                         Textarea::make('content')
                             ->label(__('Content'))
