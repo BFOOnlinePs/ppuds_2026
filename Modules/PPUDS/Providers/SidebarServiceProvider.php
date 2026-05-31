@@ -3,6 +3,7 @@
 namespace Modules\PPUDS\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Modules\Core\Enums\UserRole;
 use Modules\Core\Services\SidebarGroup;
 use Modules\Core\Services\SidebarItem;
 use Modules\Core\Services\SidebarService;
@@ -33,7 +34,8 @@ class SidebarServiceProvider extends ServiceProvider
 
         $sidebar->add(
             (new SidebarGroup('Companies', 'solar-buildings-bold-duotone', [], 40))
-                ->add(new SidebarItem('Companies List', 'solar-buildings-3-bold-duotone', ['Company View List'], 'companies.index'))
+                ->add((new SidebarItem('Companies List', 'solar-buildings-3-bold-duotone', ['Company View List'], 'companies.index'))
+                    ->hiddenForRoles($this->companyRoles()))
                 ->add(new SidebarItem('Add Company', 'solar-add-square-bold-duotone', ['Company Create'], 'companies.add'))
                 ->add(new SidebarItem('Companies Category List', 'solar-widget-4-bold-duotone', ['Company Category View List'], 'company-category.index'))
                 ->add(new SidebarItem('Companies Department List', 'solar-structure-bold-duotone', ['Company Department View List'], 'company-department.index'))
@@ -103,5 +105,14 @@ class SidebarServiceProvider extends ServiceProvider
     public function provides(): array
     {
         return [];
+    }
+
+    private function companyRoles(): array
+    {
+        return [
+            UserRole::COMPANY_SUPERVISOR->value,
+            'Company Manager',
+            'مدير الشركة',
+        ];
     }
 }

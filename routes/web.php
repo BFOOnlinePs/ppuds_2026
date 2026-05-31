@@ -22,6 +22,10 @@ use Wirechat\Wirechat\Livewire\Chats\Chats;
 
 Route::view('/privacy-policy', 'privacy')->name('privacy.policy');
 
+Route::middleware(['auth', 'verified'])->get('/dashboard', function () {
+    return redirect()->route('home');
+});
+
 Route::get('/test-realtime', function () {
     // نضع هنا نفس اسم القناة التي نجحت في الاشتراك بها في Postman
     $channelName = 'flutter.chats.conversation.019c9906-7928-7009-94f8-487cb30f176f';

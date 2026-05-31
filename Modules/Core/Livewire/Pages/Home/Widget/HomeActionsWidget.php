@@ -5,6 +5,7 @@ namespace Modules\Core\Livewire\Pages\Home\Widget;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Route;
+use Modules\Core\Enums\UserRole;
 
 class HomeActionsWidget extends Widget
 {
@@ -35,6 +36,11 @@ class HomeActionsWidget extends Widget
                 'route' => 'companies.index',
                 'permission' => 'Company View List',
                 'icon' => 'heroicon-o-building-office-2',
+                'hidden_roles' => [
+                    UserRole::COMPANY_SUPERVISOR->value,
+                    'Company Manager',
+                    'مدير الشركة',
+                ],
             ],
             [
                 'label' => 'Attendance And Departure Log',
@@ -98,6 +104,12 @@ class HomeActionsWidget extends Widget
         $user = auth()->user();
 
         if (! $user) {
+            return false;
+        }
+
+        $hiddenRoles = Arr::wrap($item['hidden_roles'] ?? []);
+
+        if (filled($hiddenRoles) && $user->hasAnyRole($hiddenRoles)) {
             return false;
         }
 

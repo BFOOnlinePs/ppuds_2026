@@ -58,7 +58,7 @@ class ModuleSelector extends Component
         });
 
         session()->put('selected_module', $feature);
-        return $this->redirectRoute('dashboard');
+        return $this->redirectRoute('home');
     }
 
     public function render()

@@ -204,7 +204,8 @@ class RolePermissionSeeder extends Seeder
             ],
 
             UserRole::COMPANY_SUPERVISOR->value => [
-                ...$this->read('Company'),
+                'Company View',
+                'Company Info',
                 ...$this->read('StudentCompany'),
                 'StudentCompany Details',
                 ...$this->read('LeaveRequest'),

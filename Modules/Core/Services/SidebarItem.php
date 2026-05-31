@@ -10,6 +10,7 @@ class SidebarItem implements SidebarItemsInterface
     protected string $icon;
     protected ?string $route = null;
     protected ?array $permissions = [];
+    protected array $hiddenRoles = [];
     protected ?string $badge = null;
     protected int $sort = 0;
 
@@ -33,6 +34,13 @@ class SidebarItem implements SidebarItemsInterface
         return $this;
     }
 
+    public function hiddenForRoles(array $roles): static
+    {
+        $this->hiddenRoles = $roles;
+
+        return $this;
+    }
+
     public function isActive() {
         return request()->routeIs($this->route);
     }
@@ -43,6 +51,10 @@ class SidebarItem implements SidebarItemsInterface
     }
 
     public function canSee() {
+        if (! empty($this->hiddenRoles) && auth()->check() && auth()->user()->hasAnyRole($this->hiddenRoles)) {
+            return false;
+        }
+
         if (empty($this->permissions)) return true;
         foreach ($this->permissions as $perm) {
             if (!auth()->check() || !auth()->user()->can($perm)) {
@@ -59,6 +71,7 @@ class SidebarItem implements SidebarItemsInterface
             'icon' => $this->icon,
             'route' => $this->route,
             'permissions' => $this->permissions,
+            'hidden_roles' => $this->hiddenRoles,
             'badge' => $this->badge,
             'sort' => $this->sort,
         ];

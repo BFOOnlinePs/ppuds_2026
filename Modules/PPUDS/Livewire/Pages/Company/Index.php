@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
+use Modules\Core\Enums\UserRole;
 use Modules\Core\Filament\Forms\Components\CreateAction;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
@@ -37,6 +38,11 @@ class Index extends Component implements HasForms, HasTable
 {
     use InteractsWithForms;
     use InteractsWithTable;
+
+    public function mount(): void
+    {
+        abort_if($this->isCompanyRole(), 403);
+    }
 
     public function table(Table $table)
     {
@@ -236,6 +242,15 @@ class Index extends Component implements HasForms, HasTable
                         : null,
                 ];
             });
+    }
+
+    private function isCompanyRole(): bool
+    {
+        return auth()->user()?->hasAnyRole([
+            UserRole::COMPANY_SUPERVISOR->value,
+            'Company Manager',
+            'مدير الشركة',
+        ]) ?? false;
     }
 
     public function render()
