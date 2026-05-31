@@ -62,7 +62,7 @@ class GeneralNotification extends Notification implements ShouldBroadcastNow
 
     public function toBroadcast($notifiable): BroadcastMessage
     {
-        return (new BroadcastMessage([
+        return new BroadcastMessage([
             'title'     => $this->title,
             'message'   => $this->message,
             'url'       => $this->url,
@@ -70,7 +70,7 @@ class GeneralNotification extends Notification implements ShouldBroadcastNow
             'color'     => $this->color,
             'image'     => $this->image,
             'sent_at'   => now()->toIso8601String(),
-        ]))->onConnection('sync');
+        ]);
     }
 
     public function toFcm($notifiable): FcmMessage

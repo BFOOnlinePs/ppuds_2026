@@ -261,7 +261,7 @@ class ChatController extends Controller
 
         $message = auth()->user()->sendMessageTo($conversation, $request->body);
 
-        broadcast((new MessageCreated($message, 'chats'))->onConnection('sync'));
+        broadcast(new MessageCreated($message, 'chats'))->toOthers();
 
         app(PpudsNotificationService::class)->chatMessageCreated($message);
 

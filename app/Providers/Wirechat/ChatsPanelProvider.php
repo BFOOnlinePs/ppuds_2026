@@ -13,6 +13,7 @@ class ChatsPanelProvider extends PanelProvider
              ->id('chats')
              ->path('admin/chats')
              ->middleware(['web', 'auth'])
+             ->messagesQueue('default')
              ->default();
     }
 }
