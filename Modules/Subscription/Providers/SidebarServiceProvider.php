@@ -23,7 +23,7 @@ class SidebarServiceProvider extends ServiceProvider
 
         $sidebar->add(
             (new SidebarGroup('Subscriptions', 'solar-card-bold-duotone', ['Subscription View'] , 3))
-                ->add(new SidebarItem('Subscriptions List' , 'solar-box-bold-duotone', ['Subscription View'] , 'subscriptions.index'))
+                ->add(new SidebarItem('Subscriptions List' , 'solar-card-2-bold-duotone', ['Subscription View'] , 'subscriptions.index'))
         );
     }
 

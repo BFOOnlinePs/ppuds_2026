@@ -112,13 +112,13 @@
                                     <li>
                                         {{--  Link to the subitem's route --}}
                                         {{--  The active class is applied if the subitem's route is the current route --}}
-                                        <a href="{{ route($subitem['route']) }}" class="{{ request()->routeIs($subitem['route']) ? 'active' : '' }}">
+                                        <a href="{{ route($subitem['route']) }}" class="{{ request()->routeIs($subitem['route']) ? 'active' : '' }} {{ isset($subitem['icon']) ? 'before:!hidden' : '' }}">
                                             {{--  Display the subitem's icon if it exists --}}
                                             @if(isset($subitem['icon']))
                                                 @if(Str::startsWith($subitem['icon'], 'http') || Str::contains($subitem['icon'], '/'))
-                                                    <img src="{{ asset($subitem['icon']) }}" alt="img" class="h-4 w-4" />
+                                                    <img src="{{ asset($subitem['icon']) }}" alt="img" class="h-4 w-4 shrink-0 ltr:mr-2 rtl:ml-2" />
                                                 @else
-                                                    {{--  Placeholder for SVG icon if needed --}}
+                                                    @svg($subitem['icon'], 'h-4 w-4 shrink-0 text-black/40 ltr:mr-2 rtl:ml-2 dark:text-white/40')
                                                 @endif
                                             @endif
                                             {{--  Display the subitem's title --}}

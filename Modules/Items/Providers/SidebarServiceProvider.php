@@ -22,20 +22,20 @@ class SidebarServiceProvider extends ServiceProvider
         $sidebar = $this->app->make(SidebarService::class);
 
         $sidebar->add(
-            (new SidebarItem('Orders List' , 'solar-box-bold-duotone', ['Order View'] , 'orders.index', 1))
+            (new SidebarItem('Orders List' , 'solar-cart-check-bold-duotone', ['Order View'] , 'orders.index', 1))
         );
 
         $sidebar->add(
-            (new SidebarGroup('Products', 'solar-box-bold-duotone', ['Product View']))
-                ->add(new SidebarItem('Products List' , 'solar-box-bold-duotone', ['Product View'] , 'products.index'))
-                ->add(new SidebarItem('Add Product' , 'solar-box-bold-duotone', ['Product Create'] , 'products.add'))
-                ->add(new SidebarItem('Categories List' , 'solar-box-bold-duotone', ['Category View'] , 'categories.index'))
-                ->add(new SidebarItem('Attributes List' , 'solar-box-bold-duotone', ['Attribute View'] , 'attributes.index'))
-                ->add(new SidebarItem('Tags List' , 'solar-box-bold-duotone', ['Tag View'] , 'tags.index'))
-                ->add(new SidebarItem('Labels List' , 'solar-box-bold-duotone', ['Label View'] , 'labels.index'))
-                ->add(new SidebarItem('Brands List' , 'solar-box-bold-duotone', ['Brand View'] , 'brands.index'))
-                ->add(new SidebarItem('Offers List' , 'solar-box-bold-duotone', ['Offer View'] , 'offers.index'))
-                ->add(new SidebarItem('Addons List' , 'solar-box-bold-duotone', ['Addon View'] , 'addons.index'))
+            (new SidebarGroup('Products', 'solar-bag-4-bold-duotone', ['Product View']))
+                ->add(new SidebarItem('Products List' , 'solar-box-minimalistic-bold-duotone', ['Product View'] , 'products.index'))
+                ->add(new SidebarItem('Add Product' , 'solar-cart-plus-bold-duotone', ['Product Create'] , 'products.add'))
+                ->add(new SidebarItem('Categories List' , 'solar-widget-4-bold-duotone', ['Category View'] , 'categories.index'))
+                ->add(new SidebarItem('Attributes List' , 'solar-tuning-2-bold-duotone', ['Attribute View'] , 'attributes.index'))
+                ->add(new SidebarItem('Tags List' , 'solar-tag-bold-duotone', ['Tag View'] , 'tags.index'))
+                ->add(new SidebarItem('Labels List' , 'solar-tag-horizontal-bold-duotone', ['Label View'] , 'labels.index'))
+                ->add(new SidebarItem('Brands List' , 'solar-shop-bold-duotone', ['Brand View'] , 'brands.index'))
+                ->add(new SidebarItem('Offers List' , 'solar-sale-square-bold-duotone', ['Offer View'] , 'offers.index'))
+                ->add(new SidebarItem('Addons List' , 'solar-widget-add-bold-duotone', ['Addon View'] , 'addons.index'))
         );
     }
 

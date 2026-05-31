@@ -22,9 +22,9 @@ class SidebarServiceProvider extends ServiceProvider
         $sidebar = $this->app->make(SidebarService::class);
 
         $sidebar->add(
-            (new SidebarGroup('Customers', 'solar-user-bold-duotone', ['Customer View'] ,2))
-                ->add(new SidebarItem('Customers List' , 'solar-box-bold-duotone', ['Customer View'] , 'customers.index'))
-                ->add(new SidebarItem('Add Customer' , 'solar-box-bold-duotone', ['Customer Create'] , 'customers.add'))
+            (new SidebarGroup('Customers', 'solar-users-group-rounded-bold-duotone', ['Customer View'] ,2))
+                ->add(new SidebarItem('Customers List' , 'solar-users-group-two-rounded-bold-duotone', ['Customer View'] , 'customers.index'))
+                ->add(new SidebarItem('Add Customer' , 'solar-user-plus-rounded-bold-duotone', ['Customer Create'] , 'customers.add'))
         );
     }
 

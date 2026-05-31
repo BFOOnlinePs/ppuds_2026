@@ -22,9 +22,9 @@ class SidebarServiceProvider extends ServiceProvider
         $sidebar = $this->app->make(SidebarService::class);
 
         $sidebar->add(
-            (new SidebarGroup('Marketing', 'solar-users-group-rounded-bold-duotone' , ['Marketing View'] ))
-            ->add(new SidebarItem('Loyalty Rules List' , 'solar-users-group-rounded-bold-duotone' , ['Loyalty Rules View'] ,  'loyalty-rules.index' ))
-            ->add(new SidebarItem('Loyalty Tiers List' , 'solar-users-group-rounded-bold-duotone' , ['Loyalty Tiers View'] ,  'loyalty-tiers.index' ))
+            (new SidebarGroup('Marketing', 'solar-graph-up-bold-duotone' , ['Marketing View'] ))
+            ->add(new SidebarItem('Loyalty Rules List' , 'solar-checklist-bold-duotone' , ['Loyalty Rules View'] ,  'loyalty-rules.index' ))
+            ->add(new SidebarItem('Loyalty Tiers List' , 'solar-medal-star-square-bold-duotone' , ['Loyalty Tiers View'] ,  'loyalty-tiers.index' ))
         );
     }
 

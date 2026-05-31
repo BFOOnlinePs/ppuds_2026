@@ -22,9 +22,9 @@ class SidebarServiceProvider extends ServiceProvider
         $sidebar = $this->app->make(SidebarService::class);
 
         $sidebar->add(
-            (new SidebarGroup('Coupons', 'solar-box-bold-duotone', ['Coupon View']))
-                ->add(new SidebarItem('Coupons List' , 'solar-box-bold-duotone', ['Coupon View'] , 'coupons.index'))
-                ->add(new SidebarItem('Add Coupon' , 'solar-box-bold-duotone', ['Coupon Create'] , 'coupons.add'))
+            (new SidebarGroup('Coupons', 'solar-ticket-sale-bold-duotone', ['Coupon View']))
+                ->add(new SidebarItem('Coupons List' , 'solar-ticket-bold-duotone', ['Coupon View'] , 'coupons.index'))
+                ->add(new SidebarItem('Add Coupon' , 'solar-add-square-bold-duotone', ['Coupon Create'] , 'coupons.add'))
         );
     }
 

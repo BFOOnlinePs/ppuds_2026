@@ -27,28 +27,28 @@ class SidebarServiceProvider extends ServiceProvider
 //        );
 
         $sidebar->add(
-            new SidebarItem('Appointments List' , 'solar-virus-bold-duotone', ['Appointment View'] , 'appointments.index' , 2)
+            new SidebarItem('Appointments List' , 'solar-calendar-date-bold-duotone', ['Appointment View'] , 'appointments.index' , 2)
         );
 
         $sidebar->add(
-            (new SidebarGroup('Foods', 'solar-virus-bold-duotone', ['Food View'] , 4))
-                ->add(new SidebarItem('Food Categories List' , 'solar-virus-bold-duotone', ['Food Category View'] , 'food.categories.index'))
-                ->add(new SidebarItem('Food Items List' , 'solar-virus-bold-duotone', ['Food Item View'] , 'food.items.index'))
+            (new SidebarGroup('Foods', 'solar-chef-hat-bold-duotone', ['Food View'] , 4))
+                ->add(new SidebarItem('Food Categories List' , 'solar-widget-4-bold-duotone', ['Food Category View'] , 'food.categories.index'))
+                ->add(new SidebarItem('Food Items List' , 'solar-plate-bold-duotone', ['Food Item View'] , 'food.items.index'))
         );
 
         $sidebar->add(
             (new SidebarGroup('Programs', 'solar-clipboard-bold-duotone', ['Program View'] , 5))
-                ->add(new SidebarItem('Categories List' , 'solar-virus-bold-duotone', ['Category View'] , 'program.categories.index'))
-                ->add(new SidebarItem('Instructions List' , 'solar-virus-bold-duotone', ['Program Instruction View'] , 'program.instructions.index'))
-                ->add(new SidebarItem('Type of Meal List' , 'solar-virus-bold-duotone', ['Program Type Of Meal View'] , 'program.types-of-meals.index'))
-                ->add(new SidebarItem('Programs List' , 'solar-virus-bold-duotone', ['Program View'] , 'program.programs.index'))
-                ->add(new SidebarItem('Customer Programs List' , 'solar-virus-bold-duotone', ['Customer Program View'] , 'program.customer-programs.index'))
+                ->add(new SidebarItem('Categories List' , 'solar-widget-4-bold-duotone', ['Category View'] , 'program.categories.index'))
+                ->add(new SidebarItem('Instructions List' , 'solar-document-text-bold-duotone', ['Program Instruction View'] , 'program.instructions.index'))
+                ->add(new SidebarItem('Type of Meal List' , 'solar-chef-hat-minimalistic-bold-duotone', ['Program Type Of Meal View'] , 'program.types-of-meals.index'))
+                ->add(new SidebarItem('Programs List' , 'solar-clipboard-list-bold-duotone', ['Program View'] , 'program.programs.index'))
+                ->add(new SidebarItem('Customer Programs List' , 'solar-user-heart-bold-duotone', ['Customer Program View'] , 'program.customer-programs.index'))
         );
 
         $sidebar->add(
-            (new SidebarGroup('اعدادات العيادة', 'solar-virus-bold-duotone', ['Clinic Setting View'] , 7))
-                ->add(new SidebarItem('Rooms List' , 'solar-box-bold-duotone', ['Room View'] , 'rooms.index'))
-                ->add(new SidebarItem('Surveys List' , 'solar-virus-bold-duotone', ['Survey View'] , 'surveys.index'))
+            (new SidebarGroup('اعدادات العيادة', 'solar-hospital-bold-duotone', ['Clinic Setting View'] , 7))
+                ->add(new SidebarItem('Rooms List' , 'solar-bed-bold-duotone', ['Room View'] , 'rooms.index'))
+                ->add(new SidebarItem('Surveys List' , 'solar-checklist-bold-duotone', ['Survey View'] , 'surveys.index'))
         );
     }
 
