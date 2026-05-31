@@ -3,15 +3,27 @@ import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 window.Pusher = Pusher;
 
-const reverbScheme = import.meta.env.VITE_REVERB_SCHEME ?? 'https';
+const configuredReverbHost = import.meta.env.VITE_REVERB_HOST;
+const shouldUseCurrentHost = ! configuredReverbHost
+    || (
+        configuredReverbHost.endsWith('.test')
+        && configuredReverbHost !== window.location.hostname
+    );
+
+const reverbScheme = import.meta.env.VITE_REVERB_SCHEME
+    ?? (window.location.protocol === 'https:' ? 'https' : 'http');
 const isSecureReverb = reverbScheme === 'https';
+const reverbHost = shouldUseCurrentHost ? window.location.hostname : configuredReverbHost;
+const reverbPort = shouldUseCurrentHost
+    ? (isSecureReverb ? 443 : 80)
+    : (import.meta.env.VITE_REVERB_PORT ?? (isSecureReverb ? 443 : 80));
 
 window.Echo = new Echo({
     broadcaster: 'reverb',
     key: import.meta.env.VITE_REVERB_APP_KEY,
-    wsHost: import.meta.env.VITE_REVERB_HOST,
-    wsPort: import.meta.env.VITE_REVERB_PORT ?? 80,
-    wssPort: import.meta.env.VITE_REVERB_PORT ?? 443,
+    wsHost: reverbHost,
+    wsPort: reverbPort,
+    wssPort: reverbPort,
     forceTLS: isSecureReverb,
-    enabledTransports: [isSecureReverb ? 'wss' : 'ws'],
+    enabledTransports: ['ws'],
 });
