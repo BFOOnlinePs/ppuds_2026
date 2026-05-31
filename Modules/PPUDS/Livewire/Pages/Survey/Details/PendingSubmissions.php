@@ -13,13 +13,16 @@ use Illuminate\Database\Eloquent\Builder;
 use Livewire\Component;
 use Modules\Core\Entities\User;
 use Modules\Core\Enums\UserRole;
+use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Entities\Survey;
 use Modules\PPUDS\Entities\SurveyAnswer;
+use Modules\PPUDS\Support\HandlesCompanySupervisorSurveyEvaluations;
 
 class PendingSubmissions extends Component implements HasForms, HasTable
 {
     use InteractsWithForms;
     use InteractsWithTable;
+    use HandlesCompanySupervisorSurveyEvaluations;
 
     public int $surveyId;
 
@@ -33,6 +36,10 @@ class PendingSubmissions extends Component implements HasForms, HasTable
 
     public function table(Table $table): Table
     {
+        if ($this->survey && $this->isCompanySupervisorSurvey($this->survey)) {
+            return $this->companyPendingEvaluationTable($table);
+        }
+
         return $table
             ->query(fn () => User::query()
                 ->with(['roles', 'studentProfile.major'])
@@ -84,6 +91,66 @@ class PendingSubmissions extends Component implements HasForms, HasTable
                     ->state(fn (): string => $this->formatTargetGroup())
                     ->badge()
                     ->color('primary'),
+
+                TextColumn::make('submission_status')
+                    ->label(__('Status'))
+                    ->state(fn (): string => __('Not Submitted'))
+                    ->badge()
+                    ->color('warning'),
+            ])
+            ->emptyStateHeading(__('No pending submissions found'));
+    }
+
+    protected function companyPendingEvaluationTable(Table $table): Table
+    {
+        $studentCompaniesTable = (new StudentCompany)->getTable();
+
+        return $table
+            ->query(fn () => $this->currentSurveyStudentCompaniesQuery($this->survey)
+                ->select("{$studentCompaniesTable}.*")
+                ->whereNotIn("{$studentCompaniesTable}.id", SurveyAnswer::query()
+                    ->select('student_company_id')
+                    ->where('survey_id', $this->surveyId)
+                    ->whereNotNull('student_company_id')
+                    ->distinct()
+                )
+            )
+            ->columns([
+                TextColumn::make('student.name')
+                    ->label(__('Evaluated Student'))
+                    ->searchable()
+                    ->sortable(),
+
+                TextColumn::make('student.email')
+                    ->label(__('Email'))
+                    ->searchable()
+                    ->sortable(),
+
+                TextColumn::make('student.studentProfile.student_number')
+                    ->label(__('Student Number'))
+                    ->searchable()
+                    ->toggleable()
+                    ->placeholder('-'),
+
+                TextColumn::make('student.studentProfile.major.name')
+                    ->label(__('Major'))
+                    ->toggleable()
+                    ->placeholder('-'),
+
+                TextColumn::make('company.name')
+                    ->label(__('Company'))
+                    ->toggleable()
+                    ->placeholder('-'),
+
+                TextColumn::make('branch.name')
+                    ->label(__('Branch'))
+                    ->toggleable()
+                    ->placeholder('-'),
+
+                TextColumn::make('department.name')
+                    ->label(__('Department'))
+                    ->toggleable()
+                    ->placeholder('-'),
 
                 TextColumn::make('submission_status')
                     ->label(__('Status'))

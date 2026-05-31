@@ -28,11 +28,13 @@ use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\PPUDS\Entities\Survey;
 use Modules\PPUDS\Entities\SurveyAnswer;
 use Modules\PPUDS\Exports\SurveySubmissionsExport;
+use Modules\PPUDS\Support\HandlesCompanySupervisorSurveyEvaluations;
 
 class Index extends Component implements HasForms, HasTable
 {
     use InteractsWithForms;
     use InteractsWithTable;
+    use HandlesCompanySupervisorSurveyEvaluations;
 
     public function table(Table $table): Table
     {
@@ -259,6 +261,10 @@ class Index extends Component implements HasForms, HasTable
 
                     if (! $user->can('Survey Submit')) {
                         return false;
+                    }
+
+                    if ($this->shouldEvaluateStudentsForSurvey($record, $user)) {
+                        return $this->pendingStudentCompaniesForSupervisorQuery($record, $user->id)->exists();
                     }
 
                     $hasSubmitted = SurveyAnswer::where('survey_id', $record->id)

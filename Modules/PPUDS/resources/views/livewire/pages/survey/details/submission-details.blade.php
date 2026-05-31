@@ -15,11 +15,19 @@
                     {{ $user->name }}
                 </p>
 
+                @if($studentCompany)
+                    <p>{{ __('Evaluated Student') }}: {{ $studentCompany->student?->name }}</p>
+
+                    @if($studentCompany->student?->studentProfile?->student_number)
+                        <p>{{ __('Student Number') }}: {{ $studentCompany->student->studentProfile->student_number }}</p>
+                    @endif
+                @endif
+
                 @if($user->studentProfile?->student_number)
                     <p>{{ __('Student Number') }}: {{ $user->studentProfile->student_number }}</p>
                 @endif
 
-                <p>{{ __('Submitted At') }}: {{ optional($survey->answers()->where('submitted_by', $user->id)->latest()->first()?->created_at)->format('Y-m-d H:i') }}</p>
+                <p>{{ __('Submitted At') }}: {{ $this->submittedAt() }}</p>
             </div>
 
             @if($survey->description)

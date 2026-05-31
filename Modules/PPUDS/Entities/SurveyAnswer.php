@@ -37,6 +37,8 @@ class SurveyAnswer extends Model implements HasMedia
         'text_answer',
         'selected_option_id',
         'submitted_by',
+        'student_company_id',
+        'evaluated_student_id',
         'created_by',
     ];
 
@@ -74,5 +76,15 @@ class SurveyAnswer extends Model implements HasMedia
     public function submittedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'submitted_by');
+    }
+
+    public function studentCompany(): BelongsTo
+    {
+        return $this->belongsTo(StudentCompany::class, 'student_company_id');
+    }
+
+    public function evaluatedStudent(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'evaluated_student_id');
     }
 }

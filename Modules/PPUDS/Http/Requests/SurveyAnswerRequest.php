@@ -13,9 +13,10 @@ class SurveyAnswerRequest extends FormRequest
     {
         return [
             'survey_id'                 => ['required', 'integer', 'exists:ppu_ds_surveys,id'],
+            'student_company_id'        => ['nullable', 'integer', 'exists:ppu_ds_students_companies,id'],
             'answers'                   => ['required', 'array'],
             'answers.*.question_id'     => ['required', 'integer', 'exists:ppu_ds_survey_questions,id'],
-            'answers.*.value'           => ['nullable', 'string'],
+            'answers.*.value'           => ['nullable'],
         ];
     }
 

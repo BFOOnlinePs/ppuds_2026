@@ -10223,6 +10223,12 @@
                                         "type": "integer",
                                         "example": 1
                                     },
+                                    "student_company_id": {
+                                        "description": "Required when a company supervisor evaluates a student",
+                                        "type": "integer",
+                                        "example": 10,
+                                        "nullable": true
+                                    },
                                     "answers": {
                                         "type": "array",
                                         "items": {

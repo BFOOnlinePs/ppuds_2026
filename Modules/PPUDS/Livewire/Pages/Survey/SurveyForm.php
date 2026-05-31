@@ -8,6 +8,7 @@ use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Radio;
+use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -15,15 +16,18 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Livewire\Component;
-use Modules\Core\Settings\GeneralSettings;
+use Masmerise\Toaster\Toaster;
+use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Entities\Survey;
 use Modules\PPUDS\Entities\SurveyAnswer;
 use Modules\PPUDS\Enums\SurveyQuestionType;
+use Modules\PPUDS\Support\HandlesCompanySupervisorSurveyEvaluations;
 
 class SurveyForm extends Component implements HasActions, HasForms
 {
     use InteractsWithActions;
     use InteractsWithForms;
+    use HandlesCompanySupervisorSurveyEvaluations;
 
     public Survey $survey;
 
@@ -35,11 +39,6 @@ class SurveyForm extends Component implements HasActions, HasForms
         $this->form->fill();
     }
 
-    public function getSettings()
-    {
-        return app(GeneralSettings::class);
-    }
-
     public function form(Form $form): Form
     {
         $schema = [];
@@ -48,6 +47,22 @@ class SurveyForm extends Component implements HasActions, HasForms
             'questions.translations',
             'questions.options.translations',
         ]);
+
+        if ($this->isCompanySupervisorEvaluation()) {
+            $schema[] = Section::make(__('Student Evaluation'))
+                ->schema([
+                    Select::make('student_company_id')
+                        ->label(__('Student To Evaluate'))
+                        ->options(fn (): array => $this->companyStudentOptions())
+                        ->searchable()
+                        ->preload()
+                        ->live()
+                        ->required(),
+                ])
+                ->extraAttributes([
+                    'class' => 'bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 rounded-xl mb-6',
+                ]);
+        }
 
         foreach ($this->survey->questions->sortBy('sort_order') as $question) {
             $fieldName = "question_{$question->id}";
@@ -71,7 +86,7 @@ class SurveyForm extends Component implements HasActions, HasForms
             $field->label($question->content)
                 ->required($question->is_required);
 
-            $schema[] = \Filament\Forms\Components\Section::make()
+            $schema[] = Section::make()
                 ->schema([
                     $field
                 ])
@@ -90,17 +105,31 @@ class SurveyForm extends Component implements HasActions, HasForms
             return;
         }
 
-        $hasSubmitted = SurveyAnswer::where('survey_id', $this->survey->id)
-            ->where('submitted_by', $user->id)
-            ->exists();
+        $formData = $this->form->getState();
+        $studentCompany = null;
 
-        if ($hasSubmitted) {
-            // Notification::make()->danger()->title(__('You have already submitted this survey'))->send();
+        if ($this->isCompanySupervisorEvaluation()) {
+            $studentCompanyId = (int) ($formData['student_company_id'] ?? 0);
+            $studentCompany = $this->currentSurveyStudentCompaniesQuery($this->survey, $user->id)
+                ->find($studentCompanyId);
+
+            if (! $studentCompany) {
+                Toaster::error(__('Selected student is not available for evaluation'));
+
+                return;
+            }
+
+            if ($this->survey->hasBeenSubmittedBy($user->id, $studentCompany->id)) {
+                Toaster::error(__('This student has already been evaluated for this survey'));
+
+                return;
+            }
+        } elseif ($this->survey->hasBeenSubmittedBy($user->id)) {
+            Toaster::error(__('You have already submitted this survey.'));
 
             return;
         }
 
-        $formData = $this->form->getState();
         $answers = [];
         $now = now();
 
@@ -111,10 +140,10 @@ class SurveyForm extends Component implements HasActions, HasForms
 
                 if (is_array($value)) {
                     foreach ($value as $val) {
-                        $answers[] = $this->prepareAnswerData($question, $val, $user->id, $now);
+                        $answers[] = $this->prepareAnswerData($question, $val, $user->id, $now, $studentCompany);
                     }
                 } else {
-                    $answers[] = $this->prepareAnswerData($question, $value, $user->id, $now);
+                    $answers[] = $this->prepareAnswerData($question, $value, $user->id, $now, $studentCompany);
                 }
             }
         }
@@ -122,9 +151,14 @@ class SurveyForm extends Component implements HasActions, HasForms
         if (! empty($answers)) {
             SurveyAnswer::insert($answers);
         }
+
+        Toaster::success(__('Survey submitted successfully'));
+
+        $this->data = [];
+        $this->form->fill();
     }
 
-    protected function prepareAnswerData($question, $value, $userId, $timestamp)
+    protected function prepareAnswerData($question, $value, $userId, $timestamp, ?StudentCompany $studentCompany = null)
     {
         $type = (int) $question->type;
 
@@ -141,9 +175,88 @@ class SurveyForm extends Component implements HasActions, HasForms
             'selected_option_id' => $isOptionType ? (int) $value : null,
             'text_answer' => $isOptionType ? null : $value,
             'submitted_by' => $userId,
+            'student_company_id' => $studentCompany?->id,
+            'evaluated_student_id' => $studentCompany?->student_id,
             'created_at' => $timestamp,
             'updated_at' => $timestamp,
         ];
+    }
+
+    public function hasSubmitted(): bool
+    {
+        $user = auth()->user();
+
+        if (! $user) {
+            return false;
+        }
+
+        if ($this->isCompanySupervisorEvaluation()) {
+            return $this->totalCompanyStudentsCount() > 0
+                && $this->pendingCompanyStudentsCount() === 0;
+        }
+
+        return $this->survey->hasBeenSubmittedBy($user->id);
+    }
+
+    public function isCompanySupervisorEvaluation(): bool
+    {
+        return $this->shouldEvaluateStudentsForSurvey($this->survey, auth()->user());
+    }
+
+    public function totalCompanyStudentsCount(): int
+    {
+        $user = auth()->user();
+
+        if (! $user || ! $this->isCompanySupervisorEvaluation()) {
+            return 0;
+        }
+
+        return $this->currentSurveyStudentCompaniesQuery($this->survey, $user->id)->count();
+    }
+
+    public function pendingCompanyStudentsCount(): int
+    {
+        $user = auth()->user();
+
+        if (! $user || ! $this->isCompanySupervisorEvaluation()) {
+            return 0;
+        }
+
+        return $this->pendingStudentCompaniesForSupervisorQuery($this->survey, $user->id)->count();
+    }
+
+    public function evaluatedCompanyStudentsCount(): int
+    {
+        return max($this->totalCompanyStudentsCount() - $this->pendingCompanyStudentsCount(), 0);
+    }
+
+    protected function companyStudentOptions(): array
+    {
+        $user = auth()->user();
+
+        if (! $user) {
+            return [];
+        }
+
+        return $this->pendingStudentCompaniesForSupervisorQuery($this->survey, $user->id)
+            ->orderBy('id')
+            ->get()
+            ->mapWithKeys(fn (StudentCompany $studentCompany): array => [
+                $studentCompany->id => $this->studentCompanyOptionLabel($studentCompany),
+            ])
+            ->toArray();
+    }
+
+    protected function studentCompanyOptionLabel(StudentCompany $studentCompany): string
+    {
+        $studentName = trim((string) $studentCompany->student?->name) ?: __('Student').' #'.$studentCompany->student_id;
+        $studentNumber = trim((string) $studentCompany->student?->studentProfile?->student_number);
+        $companyName = trim((string) $studentCompany->company?->name);
+        $departmentName = trim((string) $studentCompany->department?->name);
+
+        return collect([$studentName, $studentNumber, $companyName, $departmentName])
+            ->filter()
+            ->implode(' - ');
     }
 
     public function render()

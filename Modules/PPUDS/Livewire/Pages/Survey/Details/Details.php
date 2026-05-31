@@ -21,11 +21,13 @@ use Modules\Core\Entities\User;
 use Modules\Core\Enums\UserRole;
 use Modules\PPUDS\Entities\Survey;
 use Modules\PPUDS\Entities\SurveyAnswer;
+use Modules\PPUDS\Support\HandlesCompanySupervisorSurveyEvaluations;
 
 class Details extends Component implements HasForms, HasInfolists
 {
     use InteractsWithForms;
     use InteractsWithInfolists;
+    use HandlesCompanySupervisorSurveyEvaluations;
 
     public Survey $survey;
 
@@ -199,6 +201,20 @@ class Details extends Component implements HasForms, HasInfolists
 
     protected function loadSubmissionStats(): void
     {
+        if ($this->isCompanySupervisorSurvey($this->survey)) {
+            $this->targetUsersCount = $this->currentSurveyStudentCompaniesQuery($this->survey)->count();
+
+            $this->submittedUsersCount = SurveyAnswer::query()
+                ->where('survey_id', $this->survey->id)
+                ->whereNotNull('student_company_id')
+                ->distinct('student_company_id')
+                ->count('student_company_id');
+
+            $this->pendingUsersCount = max($this->targetUsersCount - $this->submittedUsersCount, 0);
+
+            return;
+        }
+
         $this->targetUsersCount = $this->survey->serve_group
             ? $this->targetUsersQuery()->count()
             : 0;

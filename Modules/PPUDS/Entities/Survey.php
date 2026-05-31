@@ -111,8 +111,11 @@ class Survey extends Model implements HasMedia, TranslatableContract
         }]);
     }
 
-    public function hasBeenSubmittedBy($userId): bool
+    public function hasBeenSubmittedBy($userId, ?int $studentCompanyId = null): bool
     {
-        return $this->answers()->where('submitted_by', $userId)->exists();
+        return $this->answers()
+            ->where('submitted_by', $userId)
+            ->when($studentCompanyId, fn ($query) => $query->where('student_company_id', $studentCompanyId))
+            ->exists();
     }
 }

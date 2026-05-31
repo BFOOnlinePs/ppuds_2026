@@ -8,12 +8,14 @@ use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\Survey;
 use Modules\PPUDS\Entities\SurveyAnswer;
 use Modules\PPUDS\Http\Requests\SurveyAnswerRequest;
+use Modules\PPUDS\Support\HandlesCompanySupervisorSurveyEvaluations;
 use Modules\PPUDS\Transformers\V1\SurveyAnswerResource;
 use Spatie\QueryBuilder\QueryBuilder;
 
 class SurveyAnswerController extends Controller
 {
     use ApiResponse;
+    use HandlesCompanySupervisorSurveyEvaluations;
 
     /**
      * @OA\Get(
@@ -63,6 +65,7 @@ class SurveyAnswerController extends Controller
      * @OA\JsonContent(
      * required={"survey_id", "answers"},
      * @OA\Property(property="survey_id", type="integer", example=1),
+     * @OA\Property(property="student_company_id", type="integer", nullable=true, example=10, description="Required when a company supervisor evaluates a student"),
      * @OA\Property(
      * property="answers",
      * type="array",
@@ -82,17 +85,44 @@ class SurveyAnswerController extends Controller
     {
         $survey = Survey::findOrFail($request->survey_id);
         $userId = auth()->id();
+        $studentCompany = null;
 
         $surveyId = $survey->id;
 
-        if ($survey->hasBeenSubmittedBy($userId)) {
+        if ($this->shouldEvaluateStudentsForSurvey($survey, auth()->user())) {
+            $studentCompanyId = (int) $request->input('student_company_id');
+
+            if (! $studentCompanyId) {
+                return response()->json([
+                    'status' => false,
+                    'message' => __('Please select a student.'),
+                ], 422);
+            }
+
+            $studentCompany = $this->currentSurveyStudentCompaniesQuery($survey, $userId)
+                ->find($studentCompanyId);
+
+            if (! $studentCompany) {
+                return response()->json([
+                    'status' => false,
+                    'message' => __('Selected student is not available for evaluation'),
+                ], 403);
+            }
+
+            if ($survey->hasBeenSubmittedBy($userId, $studentCompany->id)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => __('This student has already been evaluated for this survey'),
+                ], 403);
+            }
+        } elseif ($survey->hasBeenSubmittedBy($userId)) {
             return response()->json([
                 'status' => false,
                 'message' => __('You have already submitted this survey.'),
             ], 403);
         }
 
-        DB::transaction(function () use ($request, $surveyId, $userId) {
+        DB::transaction(function () use ($request, $surveyId, $userId, $studentCompany) {
 
             foreach ($request->answers as $answerData) {
                 $questionId = $answerData['question_id'];
@@ -108,6 +138,9 @@ class SurveyAnswerController extends Controller
                             'survey_id' => $surveyId,
                             'survey_question_id' => $questionId,
                             'selected_option_id' => $optionId,
+                            'submitted_by' => $userId,
+                            'student_company_id' => $studentCompany?->id,
+                            'evaluated_student_id' => $studentCompany?->student_id,
                         ]);
                     }
                 } else {
@@ -123,6 +156,8 @@ class SurveyAnswerController extends Controller
                     }
 
                     $data['submitted_by'] = $userId;
+                    $data['student_company_id'] = $studentCompany?->id;
+                    $data['evaluated_student_id'] = $studentCompany?->student_id;
 
                     SurveyAnswer::create($data);
                 }

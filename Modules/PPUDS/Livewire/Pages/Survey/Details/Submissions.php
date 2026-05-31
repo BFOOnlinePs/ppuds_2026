@@ -17,14 +17,17 @@ use Maatwebsite\Excel\Excel as WriterType;
 use Modules\Core\Entities\User;
 use Modules\Core\Enums\UserRole;
 use Modules\Core\Interfaces\ExcelServiceInterface;
+use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Entities\Survey;
 use Modules\PPUDS\Entities\SurveyAnswer;
 use Modules\PPUDS\Exports\SurveySubmissionsExport;
+use Modules\PPUDS\Support\HandlesCompanySupervisorSurveyEvaluations;
 
 class Submissions extends Component implements HasForms, HasTable
 {
     use InteractsWithForms;
     use InteractsWithTable;
+    use HandlesCompanySupervisorSurveyEvaluations;
 
     public int $surveyId;
 
@@ -39,6 +42,10 @@ class Submissions extends Component implements HasForms, HasTable
     public function table(Table $table): Table
     {
         $answersTable = (new SurveyAnswer)->getTable();
+
+        if ($this->survey && $this->isCompanySupervisorSurvey($this->survey)) {
+            return $this->companyEvaluationTable($table);
+        }
 
         return $table
             ->query(fn () => User::query()
@@ -107,6 +114,123 @@ class Submissions extends Component implements HasForms, HasTable
                     ->state(fn (): string => $this->formatTargetGroup())
                     ->badge()
                     ->color('primary'),
+
+                TextColumn::make('survey_answers_count')
+                    ->label(__('Answers Count'))
+                    ->badge()
+                    ->color('info')
+                    ->sortable(),
+
+                TextColumn::make('survey_submitted_at')
+                    ->label(__('Submitted At'))
+                    ->dateTime('Y-m-d H:i')
+                    ->sortable(),
+            ])
+            ->headerActions([
+                TablesAction::make('export_submissions')
+                    ->label(__('Export Submissions'))
+                    ->icon('heroicon-m-arrow-down-tray')
+                    ->color('success')
+                    ->action(fn () => app(ExcelServiceInterface::class)->download(
+                        new SurveySubmissionsExport($this->survey),
+                        $this->exportFilename(),
+                        WriterType::XLSX
+                    ))
+                    ->visible(fn (): bool => $this->canViewSurveyDetails()),
+            ])
+            ->emptyStateHeading(__('No submissions found'));
+    }
+
+    protected function companyEvaluationTable(Table $table): Table
+    {
+        $answersTable = (new SurveyAnswer)->getTable();
+        $studentCompaniesTable = (new StudentCompany)->getTable();
+
+        return $table
+            ->query(fn () => $this->currentSurveyStudentCompaniesQuery($this->survey)
+                ->select("{$studentCompaniesTable}.*")
+                ->selectSub(
+                    SurveyAnswer::query()
+                        ->selectRaw('COUNT(*)')
+                        ->where('survey_id', $this->surveyId)
+                        ->whereColumn("{$answersTable}.student_company_id", "{$studentCompaniesTable}.id"),
+                    'survey_answers_count'
+                )
+                ->selectSub(
+                    SurveyAnswer::query()
+                        ->selectRaw('MAX(created_at)')
+                        ->where('survey_id', $this->surveyId)
+                        ->whereColumn("{$answersTable}.student_company_id", "{$studentCompaniesTable}.id"),
+                    'survey_submitted_at'
+                )
+                ->selectSub(
+                    SurveyAnswer::query()
+                        ->select('submitted_by')
+                        ->where('survey_id', $this->surveyId)
+                        ->whereColumn("{$answersTable}.student_company_id", "{$studentCompaniesTable}.id")
+                        ->orderByDesc("{$answersTable}.created_at")
+                        ->limit(1),
+                    'survey_submitted_by'
+                )
+                ->selectSub(
+                    SurveyAnswer::query()
+                        ->join('users', 'users.id', '=', "{$answersTable}.submitted_by")
+                        ->select('users.name')
+                        ->where('survey_id', $this->surveyId)
+                        ->whereColumn("{$answersTable}.student_company_id", "{$studentCompaniesTable}.id")
+                        ->orderByDesc("{$answersTable}.created_at")
+                        ->limit(1),
+                    'survey_submitted_by_name'
+                )
+                ->whereIn("{$studentCompaniesTable}.id", SurveyAnswer::query()
+                    ->select('student_company_id')
+                    ->where('survey_id', $this->surveyId)
+                    ->whereNotNull('student_company_id')
+                    ->distinct()
+                )
+            )
+            ->columns([
+                TextColumn::make('student.name')
+                    ->label(__('Evaluated Student'))
+                    ->url(fn (StudentCompany $record): ?string => $record->survey_submitted_by ? route('surveys.submission-details', [
+                        'survey' => $this->surveyId,
+                        'user' => $record->survey_submitted_by,
+                        'studentCompany' => $record->id,
+                    ]) : null)
+                    ->color('primary')
+                    ->searchable()
+                    ->sortable(),
+
+                TextColumn::make('student.email')
+                    ->label(__('Email'))
+                    ->searchable()
+                    ->toggleable()
+                    ->placeholder('-'),
+
+                TextColumn::make('student.studentProfile.student_number')
+                    ->label(__('Student Number'))
+                    ->searchable()
+                    ->toggleable()
+                    ->placeholder('-'),
+
+                TextColumn::make('company.name')
+                    ->label(__('Company'))
+                    ->toggleable()
+                    ->placeholder('-'),
+
+                TextColumn::make('branch.name')
+                    ->label(__('Branch'))
+                    ->toggleable()
+                    ->placeholder('-'),
+
+                TextColumn::make('department.name')
+                    ->label(__('Department'))
+                    ->toggleable()
+                    ->placeholder('-'),
+
+                TextColumn::make('survey_submitted_by_name')
+                    ->label(__('Submitted By'))
+                    ->placeholder('-'),
 
                 TextColumn::make('survey_answers_count')
                     ->label(__('Answers Count'))

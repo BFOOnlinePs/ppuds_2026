@@ -17,6 +17,7 @@ use Illuminate\Support\Collection;
 use Livewire\Component;
 use Modules\Core\Entities\User;
 use Modules\Core\Enums\UserRole;
+use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Entities\Survey;
 use Modules\PPUDS\Entities\SurveyAnswer;
 use Modules\PPUDS\Enums\SurveyQuestionType;
@@ -29,9 +30,11 @@ class SubmissionDetails extends Component implements HasForms
 
     public User $user;
 
+    public ?StudentCompany $studentCompany = null;
+
     public ?array $data = [];
 
-    public function mount(Survey $survey, User $user)
+    public function mount(Survey $survey, User $user, ?StudentCompany $studentCompany = null)
     {
         abort_unless($this->canViewSurveyDetails(), 403);
 
@@ -42,7 +45,14 @@ class SubmissionDetails extends Component implements HasForms
 
         $this->user = $user->loadMissing('studentProfile');
 
-        abort_unless($this->survey->hasBeenSubmittedBy($this->user->id), 404);
+        $this->studentCompany = $studentCompany?->loadMissing([
+            'student.studentProfile',
+            'company',
+            'branch',
+            'department',
+        ]);
+
+        abort_unless($this->hasSubmission(), 404);
 
         $this->form->fill($this->answerState());
     }
@@ -88,6 +98,7 @@ class SubmissionDetails extends Component implements HasForms
         $answers = SurveyAnswer::query()
             ->where('survey_id', $this->survey->id)
             ->where('submitted_by', $this->user->id)
+            ->when($this->studentCompany, fn ($query) => $query->where('student_company_id', $this->studentCompany->id))
             ->get()
             ->groupBy('survey_question_id');
 
@@ -130,6 +141,27 @@ class SubmissionDetails extends Component implements HasForms
             ->toArray();
     }
 
+    public function submittedAt(): ?string
+    {
+        return SurveyAnswer::query()
+            ->where('survey_id', $this->survey->id)
+            ->where('submitted_by', $this->user->id)
+            ->when($this->studentCompany, fn ($query) => $query->where('student_company_id', $this->studentCompany->id))
+            ->latest()
+            ->first()
+            ?->created_at
+            ?->format('Y-m-d H:i');
+    }
+
+    protected function hasSubmission(): bool
+    {
+        return SurveyAnswer::query()
+            ->where('survey_id', $this->survey->id)
+            ->where('submitted_by', $this->user->id)
+            ->when($this->studentCompany, fn ($query) => $query->where('student_company_id', $this->studentCompany->id))
+            ->exists();
+    }
+
     protected function canViewSurveyDetails(): bool
     {
         return auth()->user()?->hasAnyRole([
@@ -148,7 +180,9 @@ class SubmissionDetails extends Component implements HasForms
                 ['title' => __('Home'), 'url' => route('home')],
                 ['title' => __('Surveys'), 'url' => route('surveys.index')],
                 ['title' => __('Survey Details'), 'url' => route('surveys.details', $this->survey)],
-                ['title' => __('Submission Details'), 'url' => route('surveys.submission-details', [$this->survey, $this->user])],
+                ['title' => __('Submission Details'), 'url' => $this->studentCompany
+                    ? route('surveys.submission-details', [$this->survey, $this->user, $this->studentCompany])
+                    : route('surveys.submission-details', [$this->survey, $this->user])],
             ],
         ]);
     }

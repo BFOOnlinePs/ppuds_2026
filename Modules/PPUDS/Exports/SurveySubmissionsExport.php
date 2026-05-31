@@ -9,13 +9,17 @@ use Maatwebsite\Excel\Concerns\FromGenerator;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Modules\Core\Entities\User;
+use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Entities\Survey;
 use Modules\PPUDS\Entities\SurveyAnswer;
 use Modules\PPUDS\Entities\SurveyQuestion;
 use Modules\PPUDS\Enums\SurveyQuestionType;
+use Modules\PPUDS\Support\HandlesCompanySupervisorSurveyEvaluations;
 
 class SurveySubmissionsExport implements FromGenerator, ShouldAutoSize, WithHeadings
 {
+    use HandlesCompanySupervisorSurveyEvaluations;
+
     protected Collection $questions;
 
     public function __construct(protected Survey $survey)
@@ -35,7 +39,9 @@ class SurveySubmissionsExport implements FromGenerator, ShouldAutoSize, WithHead
     public function headings(): array
     {
         return array_merge(
-            [__('Submitted By')],
+            $this->isCompanySupervisorSurvey($this->survey)
+                ? [__('Submitted By'), __('Evaluated Student'), __('Student Number'), __('Company')]
+                : [__('Submitted By')],
             $this->questions
                 ->map(fn (SurveyQuestion $question): string => $this->questionHeading($question))
                 ->all()
@@ -44,6 +50,12 @@ class SurveySubmissionsExport implements FromGenerator, ShouldAutoSize, WithHead
 
     public function generator(): Generator
     {
+        if ($this->isCompanySupervisorSurvey($this->survey)) {
+            yield from $this->companyEvaluationGenerator();
+
+            return;
+        }
+
         $users = $this->submittedUsersQuery()->get();
 
         if ($users->isEmpty()) {
@@ -60,6 +72,37 @@ class SurveySubmissionsExport implements FromGenerator, ShouldAutoSize, WithHead
 
         foreach ($users as $user) {
             yield $this->rowFor($user, $answers->get($user->id, collect()));
+        }
+    }
+
+    protected function companyEvaluationGenerator(): Generator
+    {
+        $studentCompaniesTable = (new StudentCompany)->getTable();
+
+        $studentCompanies = $this->currentSurveyStudentCompaniesQuery($this->survey)
+            ->whereIn("{$studentCompaniesTable}.id", SurveyAnswer::query()
+                ->select('student_company_id')
+                ->where('survey_id', $this->survey->id)
+                ->whereNotNull('student_company_id')
+                ->distinct()
+            )
+            ->orderBy('id')
+            ->get();
+
+        if ($studentCompanies->isEmpty()) {
+            return;
+        }
+
+        $answers = SurveyAnswer::query()
+            ->where('survey_id', $this->survey->id)
+            ->whereIn('student_company_id', $studentCompanies->pluck('id'))
+            ->with(['option.translations', 'submittedBy'])
+            ->orderBy('id')
+            ->get()
+            ->groupBy(['student_company_id', 'survey_question_id']);
+
+        foreach ($studentCompanies as $studentCompany) {
+            yield $this->rowForStudentCompany($studentCompany, $answers->get($studentCompany->id, collect()));
         }
     }
 
@@ -88,6 +131,26 @@ class SurveySubmissionsExport implements FromGenerator, ShouldAutoSize, WithHead
     protected function rowFor(User $user, Collection $answersByQuestion): array
     {
         $row = [$this->submittedPerson($user)];
+
+        foreach ($this->questions as $question) {
+            $row[] = $this->answerText($question, $answersByQuestion->get($question->id, collect()));
+        }
+
+        return $row;
+    }
+
+    protected function rowForStudentCompany(StudentCompany $studentCompany, Collection $answersByQuestion): array
+    {
+        $firstAnswer = $answersByQuestion
+            ->flatten(1)
+            ->first();
+
+        $row = [
+            $firstAnswer instanceof SurveyAnswer ? $this->submittedPerson($firstAnswer->submittedBy) : '',
+            $this->studentPerson($studentCompany),
+            (string) $studentCompany->student?->studentProfile?->student_number,
+            (string) $studentCompany->company?->name,
+        ];
 
         foreach ($this->questions as $question) {
             $row[] = $this->answerText($question, $answersByQuestion->get($question->id, collect()));
@@ -156,6 +219,15 @@ class SurveySubmissionsExport implements FromGenerator, ShouldAutoSize, WithHead
     {
         $name = trim((string) $user->name) ?: __('User').' #'.$user->id;
         $email = trim((string) $user->email);
+
+        return $email ? "{$name} ({$email})" : $name;
+    }
+
+    protected function studentPerson(StudentCompany $studentCompany): string
+    {
+        $student = $studentCompany->student;
+        $name = trim((string) $student?->name) ?: __('Student').' #'.$studentCompany->student_id;
+        $email = trim((string) $student?->email);
 
         return $email ? "{$name} ({$email})" : $name;
     }
