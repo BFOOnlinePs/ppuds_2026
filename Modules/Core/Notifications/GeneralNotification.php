@@ -11,10 +11,12 @@ use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Log;
+use Modules\Core\Entities\Settings;
+use Modules\Core\Settings\GeneralSettings;
 use NotificationChannels\Fcm\FcmChannel;
 use NotificationChannels\Fcm\FcmMessage;
 use NotificationChannels\Fcm\Resources\Notification as FcmNotification;
+use Throwable;
 
 class GeneralNotification extends Notification implements ShouldBroadcastNow
 {
@@ -40,7 +42,7 @@ class GeneralNotification extends Notification implements ShouldBroadcastNow
         $this->url = $url;
         $this->icon = $icon;
         $this->color = $color;
-        $this->image = $image;
+        $this->image = $image ?: $this->defaultImage();
     }
 
     public function via($notifiable): array
@@ -109,5 +111,26 @@ class GeneralNotification extends Notification implements ShouldBroadcastNow
     public function broadcastAs(): string
     {
         return 'BroadcastNotificationCreated';
+    }
+
+    private function defaultImage(): ?string
+    {
+        try {
+            $settingsLogo = app(GeneralSettings::class)->site_logo_url;
+
+            if (filled($settingsLogo)) {
+                return $settingsLogo;
+            }
+
+            $mediaLogo = Settings::query()->first()?->getLogoUrl();
+
+            if (filled($mediaLogo)) {
+                return $mediaLogo;
+            }
+        } catch (Throwable $exception) {
+            report($exception);
+        }
+
+        return asset('assets/images/user-profile.jpeg');
     }
 }

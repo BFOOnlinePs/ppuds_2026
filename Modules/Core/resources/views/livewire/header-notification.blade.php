@@ -20,7 +20,7 @@
                         <div class="relative h-12 w-12">
                             {{-- تم تعديل مصدر الصورة ليتناسب مع Blade --}}
                             <img class="h-12 w-12 rounded-full object-cover"
-                                 src="{{ asset('assets/images/user-profile.jpeg') }}"
+                                 src="{{ data_get($notification->data, 'image') ?: $defaultNotificationImage }}"
                                  alt="image" />
                             <span class="absolute right-[6px] bottom-0 block h-2 w-2 rounded-full bg-success"></span>
                         </div>
