@@ -9,15 +9,22 @@
         navbar: 'navbar-sticky', // navbar-sticky, navbar-floating, navbar-static
         semidark: false,
     };
-    window.addEventListener('load', function () {
-        // screen loader
+    const hideScreenLoader = () => {
         const screen_loader = document.getElementsByClassName('screen_loader');
         if (screen_loader?.length) {
             screen_loader[0].classList.add('animate__fadeOut');
             setTimeout(() => {
-                document.body.removeChild(screen_loader[0]);
+                screen_loader[0]?.parentNode?.removeChild(screen_loader[0]);
             }, 200);
         }
+    };
+
+    requestAnimationFrame(() => {
+        setTimeout(hideScreenLoader, 100);
+    });
+
+    window.addEventListener('load', function () {
+        hideScreenLoader();
 
         // set rtl layout
         Alpine.store('app').setRTLLayout();
