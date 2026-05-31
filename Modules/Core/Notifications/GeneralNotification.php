@@ -3,13 +3,10 @@
 namespace Modules\Core\Notifications;
 
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
-use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Queue\SerializesModels;
 use Modules\Core\Entities\Settings;
 use Modules\Core\Settings\GeneralSettings;
@@ -65,7 +62,7 @@ class GeneralNotification extends Notification implements ShouldBroadcastNow
 
     public function toBroadcast($notifiable): BroadcastMessage
     {
-        return new BroadcastMessage([
+        return (new BroadcastMessage([
             'title'     => $this->title,
             'message'   => $this->message,
             'url'       => $this->url,
@@ -73,14 +70,7 @@ class GeneralNotification extends Notification implements ShouldBroadcastNow
             'color'     => $this->color,
             'image'     => $this->image,
             'sent_at'   => now()->toIso8601String(),
-        ]);
-    }
-
-    public function broadcastOn(): array
-    {
-        return [
-            new PrivateChannel('App.Models.User.' . $this->notifiable->id)
-        ];
+        ]))->onConnection('sync');
     }
 
     public function toFcm($notifiable): FcmMessage
