@@ -33,6 +33,15 @@ class AnnouncementController extends Controller
      * ),
      *
      * @OA\Parameter(
+     * name="filter[announcement_category_id]",
+     * in="query",
+     * required=false,
+     * description="Filter by announcement category ID",
+     *
+     * @OA\Schema(type="integer", example=1)
+     * ),
+     *
+     * @OA\Parameter(
      * name="filter[name]",
      * in="query",
      * required=false,

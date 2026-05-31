@@ -6149,6 +6149,16 @@
                         }
                     },
                     {
+                        "name": "filter[announcement_category_id]",
+                        "in": "query",
+                        "description": "Filter by announcement category ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
                         "name": "filter[name]",
                         "in": "query",
                         "description": "Filter by name",
@@ -11555,6 +11565,28 @@
                 "title": "Announcement Resource",
                 "description": "Announcement details",
                 "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "announcement_category_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "category": {
+                        "properties": {
+                            "id": {
+                                "type": "integer",
+                                "example": 1
+                            },
+                            "name": {
+                                "type": "string",
+                                "example": "General"
+                            }
+                        },
+                        "type": "object",
+                        "nullable": true
+                    },
                     "name": {
                         "type": "string",
                         "example": "إعلان هام"

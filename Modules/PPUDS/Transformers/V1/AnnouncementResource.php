@@ -16,6 +16,15 @@ use Spatie\QueryBuilder\AllowedSort;
  * title="Announcement Resource",
  * description="Announcement details",
  * @OA\Xml(name="AnnouncementResource"),
+ * @OA\Property(property="id", type="integer", example=1),
+ * @OA\Property(property="announcement_category_id", type="integer", example=1),
+ * @OA\Property(
+ * property="category",
+ * type="object",
+ * nullable=true,
+ * @OA\Property(property="id", type="integer", example=1),
+ * @OA\Property(property="name", type="string", example="General")
+ * ),
  * @OA\Property(property="name", type="string", example="إعلان هام"),
  * @OA\Property(property="target_roles[]", type="array", @OA\Items(type="string"), example={"student", "company"}),
  * @OA\Property(property="content", type="string", example="تفاصيل الإعلان..."),
