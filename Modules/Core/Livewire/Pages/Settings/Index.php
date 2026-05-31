@@ -226,14 +226,13 @@ class Index extends Component implements HasForms
     {
         $this->authorize('Setting Update');
 
-        $validatedData = $this->form->validate();
-        $state = $this->form->getState();
-        $data = $validatedData['data'];
+        $data = $this->form->getState();
 
         $generalSettings = app(GeneralSettings::class);
         $generalSettings->site_name = $data['site_name'];
         $generalSettings->email_address_for_contact = $data['email_address_for_contact'];
         $generalSettings->site_description = $data['site_description'];
+        $generalSettings->site_logo_url = $this->settingsModel->load('media')->getLogoUrl() ?: null;
 
         $generalSettings->save();
 
@@ -253,14 +252,10 @@ class Index extends Component implements HasForms
 
         $ppudsSettings->save();
 
-        if (isset($data['logo'])) {
-            $this->settingsModel->handleLogoUpload($data['logo']);
-        }
-
-        if (isset($state['app_versions'])) {
+        if (isset($data['app_versions'])) {
             $platformsToKeep = [];
 
-            foreach ($state['app_versions'] as $versionData) {
+            foreach ($data['app_versions'] as $versionData) {
                 DB::table('app_versions')->updateOrInsert(
                     ['platform' => $versionData['platform']], // عمود فريد لتحديد التحديث أو الإضافة
                     [
