@@ -319,8 +319,6 @@ class Index extends Component implements HasForms, HasInfolists
 
     public function save()
     {
-        $this->authorize('update');
-
         $this->validate();
 
         $data = $this->form->getState();
@@ -329,24 +327,30 @@ class Index extends Component implements HasForms, HasInfolists
 
             $user = $this->userRecord;
 
-            $updateData = [
-                'name' => $data['name'],
-                'email' => $data['email'],
-            ];
+            $updateData = [];
+
+            foreach (['name', 'email'] as $field) {
+                if (array_key_exists($field, $data)) {
+                    $updateData[$field] = $data[$field];
+                }
+            }
 
             if (! empty($data['password'])) {
                 $updateData['password'] = Hash::make($data['password']);
             }
 
-            $user->update($updateData);
+            if ($updateData !== []) {
+                $user->update($updateData);
+            }
 
             if ($user->hasRole('Student')) {
-                $user->studentProfile()->updateOrCreate(
-                    ['user_id' => $user->id],
-                    collect($data['student_profile'] ?? [])
-                        ->only(['linkedin_url', 'behance_url', 'github_url'])
-                        ->toArray()
-                );
+                $socialLinks = collect($data['student_profile'] ?? [])
+                    ->only(['linkedin_url', 'behance_url', 'github_url'])
+                    ->toArray();
+
+                if ($socialLinks !== [] && $user->studentProfile) {
+                    $user->studentProfile->update($socialLinks);
+                }
             }
 
             $this->form->model($user)->saveRelationships();
