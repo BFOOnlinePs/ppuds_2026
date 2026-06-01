@@ -22,12 +22,11 @@ Route::middleware('guest')->group(function () {
 // مسار تسجيل الخروج الخاص بالنظامين
 Route::middleware('auth')->post('/logout', [KeycloakAuthController::class, 'logout'])->name('logout');
 
-
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::group(
         [
             'prefix' => \Mcamara\LaravelLocalization\Facades\LaravelLocalization::setLocale(),
-            'middleware' => ['localeSessionRedirect', 'localizationRedirect', 'localeViewPath']
+            'middleware' => ['localeSessionRedirect', 'localizationRedirect', 'localeViewPath'],
         ],
         function () {
 
@@ -209,6 +208,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     'prefix' => 'reports',
                     'as' => 'reports.',
                     'namespace' => 'Modules\PPUDS\Livewire\Pages\Report',
+                ], function () {
+                    Route::get('/', Index::class)->name('index')->can('Report View List');
+                });
+
+                Route::group([
+                    'prefix' => 'absence-reports',
+                    'as' => 'absence-reports.',
+                    'namespace' => 'Modules\PPUDS\Livewire\Pages\AbsenceReport',
                 ], function () {
                     Route::get('/', Index::class)->name('index')->can('Report View List');
                 });

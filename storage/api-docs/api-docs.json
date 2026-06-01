@@ -9568,6 +9568,18 @@
                                         "format": "float",
                                         "example": 35.2034
                                     },
+                                    "attendance_date": {
+                                        "description": "Optional attendance date from the mobile device",
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2026-06-01"
+                                    },
+                                    "check_in": {
+                                        "description": "Optional check-in timestamp from the mobile device; defaults to server time",
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "example": "2026-06-01 08:05:00"
+                                    },
                                     "description": {
                                         "description": "Optional notes",
                                         "type": "string",
@@ -9643,7 +9655,7 @@
                     "Student Attendances"
                 ],
                 "summary": "Student Check-Out",
-                "description": "Student Check-Out\n\nRecord a student's departure. Must have an existing check-in for today.",
+                "description": "Student Check-Out\n\nRecord a student's departure. Must have an existing check-in for the attendance date.",
                 "operationId": "a0e231a5ee8ae02dfcf687824c54d56c",
                 "requestBody": {
                     "required": true,
@@ -9669,6 +9681,18 @@
                                         "type": "number",
                                         "format": "float",
                                         "example": 35.2034
+                                    },
+                                    "attendance_date": {
+                                        "description": "Optional attendance date from the mobile device",
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2026-06-01"
+                                    },
+                                    "check_out": {
+                                        "description": "Optional check-out timestamp from the mobile device; defaults to server time",
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "example": "2026-06-01 16:10:00"
                                     }
                                 },
                                 "type": "object"
@@ -9705,7 +9729,7 @@
                                     "properties": {
                                         "message": {
                                             "type": "string",
-                                            "example": "No active check-in found for today."
+                                            "example": "No active check-in found for this attendance date."
                                         }
                                     },
                                     "type": "object"

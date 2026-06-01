@@ -508,10 +508,17 @@
 
     "Reports": "التقارير",
     "Report List": "قائمة التقارير",
+    "Absence Report": "تقرير الغياب",
     "Sync System Data": "مزامنة بيانات النظام",
 
     "Student Name": "اسم الطالب",
     "Attendance Days": "أيام الحضور",
+    "Scheduled Training Days": "أيام الدوام خلال الفترة التدريبية",
+    "Total Absence Days": "عدد أيام الغياب",
+    "Excused Absence Days": "غياب بعذر",
+    "Unexcused Absence Days": "غياب بدون عذر",
+    "Actual Absence Days": "عدد أيام الغياب الفعلي",
+    "Leave Request Days": "عدد أيام طلبات الغياب",
     "Required Training Days (Until Training End)": "أيام التدريب المطلوبة (حتى نهاية التدريب)",
     "Attended Days (Until Today)": "أيام الحضور المطلوبة (حتى اليوم)",
     "Actual Working Hours": "ساعات العمل الفعلية",

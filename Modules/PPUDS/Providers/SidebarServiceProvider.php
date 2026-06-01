@@ -54,7 +54,7 @@ class SidebarServiceProvider extends ServiceProvider
         $sidebar->add(
             (new SidebarGroup('Registration', 'solar-clipboard-check-bold-duotone', [], 60))
                 ->add(new SidebarItem('Registration List', 'solar-list-check-bold-duotone', ['Registration View List'], 'registrations.index'))
-                // ->add(new SidebarItem('Add Registration', 'solar-users-group-rounded-bold-duotone', ['Registration Create'], 'registrations.add'))
+            // ->add(new SidebarItem('Add Registration', 'solar-users-group-rounded-bold-duotone', ['Registration Create'], 'registrations.add'))
         );
 
         $sidebar->add(
@@ -90,6 +90,7 @@ class SidebarServiceProvider extends ServiceProvider
         $sidebar->add(
             (new SidebarGroup('Reports', 'solar-chart-square-bold-duotone', [], 120))
                 ->add(new SidebarItem('Report List', 'solar-presentation-graph-bold-duotone', ['Report View List'], 'reports.index'))
+                ->add(new SidebarItem('Absence Report', 'solar-calendar-search-bold-duotone', ['Report View List'], 'absence-reports.index'))
         );
 
         $sidebar->add(
