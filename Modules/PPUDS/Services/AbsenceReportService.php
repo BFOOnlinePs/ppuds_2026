@@ -105,6 +105,7 @@ class AbsenceReportService
     private function attendanceDates(StudentCompany $studentCompany): Collection
     {
         return $studentCompany->attendances
+            ->toBase()
             ->filter(fn (StudentAttendance $attendance) => $attendance->attendance_date && $attendance->check_in)
             ->map(fn (StudentAttendance $attendance) => $attendance->attendance_date->toDateString())
             ->unique()
@@ -119,6 +120,7 @@ class AbsenceReportService
         bool $approvedOnly = false
     ): Collection {
         return $studentCompany->leaveRequests
+            ->toBase()
             ->filter(fn (LeaveRequest $leaveRequest) => ! $approvedOnly || $leaveRequest->isFullyApproved())
             ->flatMap(fn (LeaveRequest $leaveRequest) => $this->leaveDatesWithinPeriod($leaveRequest, $periodStart, $periodEnd))
             ->unique()
