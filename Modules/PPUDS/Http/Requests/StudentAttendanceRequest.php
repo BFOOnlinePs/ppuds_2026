@@ -5,7 +5,6 @@ namespace Modules\PPUDS\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Modules\PPUDS\Entities\StudentCompany;
-use Modules\PPUDS\Enums\Enums\CompanyStatus;
 
 class StudentAttendanceRequest extends FormRequest
 {
@@ -24,13 +23,12 @@ class StudentAttendanceRequest extends FormRequest
 
             'check_in' => [
                 'nullable',
-                // يقبل التاريخ والوقت بصيغة Y-m-d H:i:s
-                'date_format:Y-m-d H:i:s',
+                'date',
             ],
 
             'check_out' => [
                 'nullable',
-                'date_format:Y-m-d H:i:s',
+                'date',
                 // يفضل إضافة هذا الشرط لضمان أن وقت الخروج بعد وقت الدخول
                 'after:check_in',
             ],

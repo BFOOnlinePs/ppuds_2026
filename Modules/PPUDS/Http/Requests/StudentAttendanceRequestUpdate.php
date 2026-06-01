@@ -26,12 +26,12 @@ class StudentAttendanceRequestUpdate extends FormRequest
 
             'check_in' => [
                 'sometimes',
-                'date_format:Y-m-d H:i:s',
+                'date',
             ],
 
             'check_out' => [
                 'sometimes',
-                'date_format:Y-m-d H:i:s',
+                'date',
                 'after:check_in',
             ],
 

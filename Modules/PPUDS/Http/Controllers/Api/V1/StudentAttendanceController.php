@@ -3,6 +3,7 @@
 namespace Modules\PPUDS\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Carbon;
 use Modules\Core\Enums\UserRole;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\StudentAttendance;
@@ -264,6 +265,8 @@ class StudentAttendanceController extends Controller
      * @OA\Property(property="student_company_id", type="integer", example=10, description="The ID of the student company record"),
      * @OA\Property(property="latitude", type="number", format="float", example=31.9038, description="Current device latitude"),
      * @OA\Property(property="longitude", type="number", format="float", example=35.2034, description="Current device longitude"),
+     * @OA\Property(property="attendance_date", type="string", format="date", example="2026-06-01", description="Optional attendance date from the mobile device"),
+     * @OA\Property(property="check_in", type="string", format="date-time", example="2026-06-01 08:05:00", description="Optional check-in timestamp from the mobile device; defaults to server time"),
      * @OA\Property(property="description", type="string", example="Arrived on time", description="Optional notes")
      * )
      * ),
@@ -301,8 +304,11 @@ class StudentAttendanceController extends Controller
             return $response;
         }
 
+        $checkInAt = $this->resolveAttendanceTimestamp($request, 'check_in');
+        $attendanceDate = $this->resolveAttendanceDate($request, $checkInAt);
+
         //        $existing = StudentAttendance::where('student_company_id', $request->student_company_id)
-        //            ->where('attendance_date', now()->toDateString())
+        //            ->where('attendance_date', $attendanceDate)
         //            ->first();
         //
         //        if ($existing) {
@@ -311,8 +317,8 @@ class StudentAttendanceController extends Controller
 
         $attendance = StudentAttendance::create([
             'student_company_id' => $request->student_company_id,
-            'attendance_date' => now()->toDateString(),
-            'check_in' => now(),
+            'attendance_date' => $attendanceDate,
+            'check_in' => $checkInAt,
             'check_in_latitude' => $request->latitude,
             'check_in_longitude' => $request->longitude,
             'status' => AttendanceStatus::UNDETERMINED->value,
@@ -334,7 +340,7 @@ class StudentAttendanceController extends Controller
     /**
      * Student Check-Out
      *
-     * Record a student's departure. Must have an existing check-in for today.
+     * Record a student's departure. Must have an existing check-in for the attendance date.
      *
      * @OA\Post(
      * path="/api/v1/ppuds/attendances/check-out",
@@ -350,7 +356,9 @@ class StudentAttendanceController extends Controller
      *
      * @OA\Property(property="student_company_id", type="integer", example=10),
      * @OA\Property(property="latitude", type="number", format="float", example=31.9038),
-     * @OA\Property(property="longitude", type="number", format="float", example=35.2034)
+     * @OA\Property(property="longitude", type="number", format="float", example=35.2034),
+     * @OA\Property(property="attendance_date", type="string", format="date", example="2026-06-01", description="Optional attendance date from the mobile device"),
+     * @OA\Property(property="check_out", type="string", format="date-time", example="2026-06-01 16:10:00", description="Optional check-out timestamp from the mobile device; defaults to server time")
      * )
      * ),
      *
@@ -372,7 +380,7 @@ class StudentAttendanceController extends Controller
      *
      * @OA\JsonContent(
      *
-     * @OA\Property(property="message", type="string", example="No active check-in found for today.")
+     * @OA\Property(property="message", type="string", example="No active check-in found for this attendance date.")
      * )
      * )
      * )
@@ -383,17 +391,20 @@ class StudentAttendanceController extends Controller
             return $response;
         }
 
+        $checkOutAt = $this->resolveAttendanceTimestamp($request, 'check_out');
+        $attendanceDate = $this->resolveAttendanceDate($request, $checkOutAt);
+
         $attendance = StudentAttendance::where('student_company_id', $request->student_company_id)
-            ->where('attendance_date', now()->toDateString())
+            ->where('attendance_date', $attendanceDate)
             ->whereNull('check_out')
             ->first();
 
         if (! $attendance) {
-            return $this->errorResponse(__('No active check-in found for today.'), 404);
+            return $this->errorResponse(__('No active check-in found for this attendance date.'), 404);
         }
 
         $attendance->update([
-            'check_out' => now(),
+            'check_out' => $checkOutAt,
             'check_out_latitude' => $request->latitude,
             'check_out_longitude' => $request->longitude,
         ]);
@@ -406,5 +417,19 @@ class StudentAttendanceController extends Controller
             new StudentAttendanceResource($attendance),
             __('Checked out successfully')
         );
+    }
+
+    private function resolveAttendanceTimestamp(StudentAttendanceRequest $request, string $field): Carbon
+    {
+        return $request->filled($field)
+            ? Carbon::parse($request->input($field))
+            : now();
+    }
+
+    private function resolveAttendanceDate(StudentAttendanceRequest $request, Carbon $timestamp): string
+    {
+        return $request->filled('attendance_date')
+            ? Carbon::parse($request->input('attendance_date'))->toDateString()
+            : $timestamp->toDateString();
     }
 }
