@@ -24,15 +24,15 @@ use Modules\PPUDS\Enums\StudentGender;
 use Modules\PPUDS\Services\PpuApiService;
 use Modules\PPUDS\Settings\GeneralSettings;
 
-class Index extends Component implements HasTable, HasForms
+class Index extends Component implements HasForms, HasTable
 {
-    use InteractsWithTable;
     use InteractsWithForms;
+    use InteractsWithTable;
 
     public function table(Table $table)
     {
         return $table
-            ->query(fn() => StudentProfile::query()->with('user'))
+            ->query(fn () => StudentProfile::query()->with('user'))
             ->columns([
                 TextColumn::make('user.name')
                     ->label(__('Arabic Name'))
@@ -95,17 +95,17 @@ class Index extends Component implements HasTable, HasForms
                     }
 
                     return $query->whereHas('user', function ($q) use ($data) {
-                        $q->where('email', 'like', '%' . $data['email'] . '%');
+                        $q->where('email', 'like', '%'.$data['email'].'%');
                     });
                 }),
             Filter::make('user_name')
                 ->form([
                     Forms\Components\TextInput::make('name')
-                        ->label(__('Name'))
+                        ->label(__('Name')),
                 ])
                 ->query(function ($query, array $data) {
                     return $query->whereHas('user', function ($q) use ($data) {
-                        $q->where('name', 'like', '%' . $data['name'] . '%');
+                        $q->where('name', 'like', '%'.$data['name'].'%');
                     });
                 }),
         ];
@@ -203,24 +203,43 @@ class Index extends Component implements HasTable, HasForms
                                                     ->default($record->user->roles->pluck('name')->implode(', '))
                                                     ->disabled(),
                                             ]),
+
+                                        Section::make(__('Social Links'))
+                                            ->icon('heroicon-o-link')
+                                            ->schema([
+                                                TextInput::make('linkedin_url')
+                                                    ->label(__('LinkedIn'))
+                                                    ->default($record->linkedin_url)
+                                                    ->disabled(),
+
+                                                TextInput::make('behance_url')
+                                                    ->label(__('Behance'))
+                                                    ->default($record->behance_url)
+                                                    ->disabled(),
+
+                                                TextInput::make('github_url')
+                                                    ->label(__('GitHub'))
+                                                    ->default($record->github_url)
+                                                    ->disabled(),
+                                            ]),
                                     ]),
-                            ])
+                            ]),
                     ];
                 })
                 ->modalSubmitAction(false)
-                ->visible(fn() => auth()->user()->can('Student View')),
+                ->visible(fn () => auth()->user()->can('Student View')),
 
             Action::make('details')
                 ->label('')
                 ->icon('heroicon-o-user')
-                ->url(fn($record) => route('students.details', $record->user_id))
-                ->visible(fn() => auth()->user()->can('Student Details List')),
+                ->url(fn ($record) => route('students.details', $record->user_id))
+                ->visible(fn () => auth()->user()->can('Student Details List')),
 
             //            EditAction::make('edit')
             //                ->url(fn(StudentProfile $record) => route('students.edit', $record->user_id))
             //                ->visible(fn() => auth()->user()->can('Student Update')),
             DeleteAction::make('delete')
-                ->visible(fn() => auth()->user()->can('Student Delete'))
+                ->visible(fn () => auth()->user()->can('Student Delete')),
         ];
     }
 
@@ -230,7 +249,7 @@ class Index extends Component implements HasTable, HasForms
             'breadcrumbs' => [
                 ['title' => __('Home'), 'url' => route('home')],
                 ['title' => __('Students List'), 'url' => route('students.index')],
-            ]
+            ],
         ]);
     }
 }

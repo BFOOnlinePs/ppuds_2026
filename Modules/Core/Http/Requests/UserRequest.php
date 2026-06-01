@@ -29,6 +29,9 @@ class UserRequest extends FormRequest
             'studentProfile.enrollment_year' => 'sometimes|integer|min:1900|max:'.date('Y'),
             'studentProfile.semester_level' => 'sometimes|nullable|integer|min:1|max:12',
             'studentProfile.major_id' => 'sometimes|integer|exists:ppu_ds_majors,id',
+            'studentProfile.linkedin_url' => 'sometimes|nullable|url|max:255',
+            'studentProfile.behance_url' => 'sometimes|nullable|url|max:255',
+            'studentProfile.github_url' => 'sometimes|nullable|url|max:255',
         ];
     }
 

@@ -17,14 +17,15 @@ use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Modules\Core\Entities\User;
 use Modules\Core\Filament\Forms\Components\Textarea;
-use Modules\PPUDS\Entities\StudentProfile;
 use Modules\PPUDS\Entities\Major;
+use Modules\PPUDS\Entities\StudentProfile;
 
 class Edit extends Component implements HasForms
 {
     use InteractsWithForms;
 
     public User $user;
+
     public ?array $data = [];
 
     public function mount(User $user)
@@ -103,7 +104,8 @@ class Edit extends Component implements HasForms
                                             // استثناء الرقم الجامعي الحالي (نستثني الـ ID الخاص بالبروفايل)
                                             ->rule(function () {
                                                 $profileId = $this->user->studentProfile?->id;
-                                                return Rule::unique(config('ppuds.table_prefix') . 'student_profiles', 'student_number')
+
+                                                return Rule::unique(config('ppuds.table_prefix').'student_profiles', 'student_number')
                                                     ->ignore($profileId);
                                             }),
 
@@ -116,10 +118,11 @@ class Edit extends Component implements HasForms
                                             ->createOptionForm([
                                                 TextInput::make('reference_code')->label(__('Reference code'))->required(),
                                                 TextInput::make('name')->label(__('Name'))->required(),
-                                                Textarea::make('description')->label(__('Description'))
+                                                Textarea::make('description')->label(__('Description')),
                                             ])
-                                            ->createOptionUsing(function (array $data){
+                                            ->createOptionUsing(function (array $data) {
                                                 $data['created_by'] = auth()->id();
+
                                                 return Major::create($data);
                                             })
                                             ->searchable()
@@ -162,6 +165,25 @@ class Edit extends Component implements HasForms
                                             ->maxValue(100)
                                             ->suffix('%'),
                                     ]),
+
+                                Section::make(__('Social Links'))
+                                    ->icon('heroicon-o-link')
+                                    ->schema([
+                                        TextInput::make('linkedin_url')
+                                            ->label(__('LinkedIn'))
+                                            ->url()
+                                            ->maxLength(255),
+
+                                        TextInput::make('behance_url')
+                                            ->label(__('Behance'))
+                                            ->url()
+                                            ->maxLength(255),
+
+                                        TextInput::make('github_url')
+                                            ->label(__('GitHub'))
+                                            ->url()
+                                            ->maxLength(255),
+                                    ]),
                             ]),
                     ]),
             ])
@@ -177,14 +199,14 @@ class Edit extends Component implements HasForms
 
             // 1. تحديث بيانات المستخدم الأساسية
             $userData = [
-                'name'      => $this->data['name'],
-                'name_en'   => $this->data['name_en'],
-                'email'     => $this->data['email'],
-                'phone'     => $this->data['phone'],
+                'name' => $this->data['name'],
+                'name_en' => $this->data['name_en'],
+                'email' => $this->data['email'],
+                'phone' => $this->data['phone'],
             ];
 
             // تحديث كلمة المرور فقط إذا تم إدخالها
-            if (!empty($this->data['password'])) {
+            if (! empty($this->data['password'])) {
                 $userData['password'] = Hash::make($this->data['password']);
             }
 
@@ -217,7 +239,7 @@ class Edit extends Component implements HasForms
                 ['title' => __('Home'), 'url' => route('home')],
                 ['title' => __('Students List'), 'url' => route('students.index')],
                 ['title' => __('Edit Student'), 'url' => '#'], // الرابط الحالي
-            ]
+            ],
         ]);
     }
 }

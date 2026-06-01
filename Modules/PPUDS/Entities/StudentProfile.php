@@ -20,14 +20,14 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 class StudentProfile extends Model implements HasMedia
 {
     use InteractsWithMedia;
-    use SoftDeletes;
     use LogsActivity;
+    use SoftDeletes;
 
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
 
-        $this->setTable(config('ppuds.table_prefix') . 'student_profiles');
+        $this->setTable(config('ppuds.table_prefix').'student_profiles');
     }
 
     /**
@@ -42,12 +42,15 @@ class StudentProfile extends Model implements HasMedia
         'student_number',
         'enrollment_year',
         'semester_level',
-        'major_id'
+        'major_id',
+        'linkedin_url',
+        'behance_url',
+        'github_url',
     ];
 
     protected $casts = [
-        'dob'       => 'date',
-        'gender'    => StudentGender::class,
+        'dob' => 'date',
+        'gender' => StudentGender::class,
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -56,7 +59,7 @@ class StudentProfile extends Model implements HasMedia
             ->logOnly($this->getFillable())
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()
-            ->setDescriptionForEvent(fn(string $eventName) => "This model has been {$eventName} and value ")
+            ->setDescriptionForEvent(fn (string $eventName) => "This model has been {$eventName} and value ")
             ->useLogName(class_basename($this));
     }
 
@@ -78,8 +81,8 @@ class StudentProfile extends Model implements HasMedia
         }
 
         if (
-            !$file instanceof \Illuminate\Http\UploadedFile &&
-            !($file instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile)
+            ! $file instanceof \Illuminate\Http\UploadedFile &&
+            ! ($file instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile)
         ) {
             return null;
         }
@@ -89,7 +92,7 @@ class StudentProfile extends Model implements HasMedia
         try {
             $originalName = $file->getClientOriginalName();
             $extension = $file->getClientOriginalExtension();
-            $fileName = time() . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $extension;
+            $fileName = time().'_'.Str::slug(pathinfo($originalName, PATHINFO_FILENAME)).'.'.$extension;
 
             $media = $this
                 ->addMedia($file)
@@ -103,7 +106,8 @@ class StudentProfile extends Model implements HasMedia
 
             return $media;
         } catch (\Exception $e) {
-            Log::error('Error uploading student profile cv: ' . $e->getMessage());
+            Log::error('Error uploading student profile cv: '.$e->getMessage());
+
             return null;
         }
     }

@@ -161,6 +161,21 @@ class Details extends Component implements HasForms, HasInfolists
                                                                         'approved' => __('Approved'),
                                                                         'rejected' => __('Rejected'),
                                                                     ]),
+
+                                                                TextInput::make('student_profile.linkedin_url')
+                                                                    ->label(__('LinkedIn'))
+                                                                    ->disabled()
+                                                                    ->url(),
+
+                                                                TextInput::make('student_profile.behance_url')
+                                                                    ->label(__('Behance'))
+                                                                    ->disabled()
+                                                                    ->url(),
+
+                                                                TextInput::make('student_profile.github_url')
+                                                                    ->label(__('GitHub'))
+                                                                    ->disabled()
+                                                                    ->url(),
                                                             ]),
                                                     ])
                                                     ->columnSpan(2),

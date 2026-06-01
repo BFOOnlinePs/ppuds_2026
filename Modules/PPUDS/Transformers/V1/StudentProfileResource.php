@@ -12,28 +12,30 @@ class StudentProfileResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'                    => $this->id,
-            'student_number'        => $this->student_number,
-            'user_id'               => $this->user_id,
-            'dob'                   => $this->dob,
-            'gender'                => $this->gender,
-            'cv_status'             => $this->cv_status,
-            'tawjihi_gpa'           => $this->tawjihi_gpa,
-            'enrollment_year'       => $this->enrollment_year,
-            'semester_level'        => $this->semester_level,
-            'major_id'              => $this->major_id,
-            'major'                 => $this->whenLoaded('major'),
-            'cv'                => $this->getFirstMediaUrl('cv'),
-            'created_by'            => $this->created_by,
-            'created_at'            => $this->created_at
+            'id' => $this->id,
+            'student_number' => $this->student_number,
+            'user_id' => $this->user_id,
+            'dob' => $this->dob,
+            'gender' => $this->gender,
+            'cv_status' => $this->cv_status,
+            'tawjihi_gpa' => $this->tawjihi_gpa,
+            'enrollment_year' => $this->enrollment_year,
+            'semester_level' => $this->semester_level,
+            'major_id' => $this->major_id,
+            'linkedin_url' => $this->linkedin_url,
+            'behance_url' => $this->behance_url,
+            'github_url' => $this->github_url,
+            'major' => $this->whenLoaded('major'),
+            'cv' => $this->getFirstMediaUrl('cv'),
+            'created_by' => $this->created_by,
+            'created_at' => $this->created_at,
         ];
     }
-
 
     public static function allowedFields(): array
     {
         return [
-            'id', 'student_number', 'user_id', 'dob', 'gender', 'cv_status', 'tawjihi_gpa', 'enrollment_year', 'semester_level', 'major_id', 'created_by', 'created_at',
+            'id', 'student_number', 'user_id', 'dob', 'gender', 'cv_status', 'tawjihi_gpa', 'enrollment_year', 'semester_level', 'major_id', 'linkedin_url', 'behance_url', 'github_url', 'created_by', 'created_at',
         ];
     }
 

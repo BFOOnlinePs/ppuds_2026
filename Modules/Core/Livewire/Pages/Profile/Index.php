@@ -10,7 +10,6 @@ use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\Tabs;
-use Filament\Forms\Components\Tabs\Tab;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -22,8 +21,8 @@ use Filament\Infolists\Contracts\HasInfolists;
 use Filament\Infolists\Infolist;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Livewire\Component;
 use Livewire\Attributes\Computed;
+use Livewire\Component;
 use Modules\Core\Entities\User;
 
 class Index extends Component implements HasForms, HasInfolists
@@ -46,7 +45,7 @@ class Index extends Component implements HasForms, HasInfolists
             'studentProfile',
             'studentProfile.media',
             'roles',
-            'media'
+            'media',
         ])->findOrFail(auth()->id());
     }
 
@@ -59,14 +58,14 @@ class Index extends Component implements HasForms, HasInfolists
                     ->schema([
                         ImageEntry::make('avatar')
                             ->label('')
-                            ->getStateUsing(fn($record) => $record->getAvatarUrlAttribute()),
+                            ->getStateUsing(fn ($record) => $record->getAvatarUrlAttribute()),
 
                         TextEntry::make('name'),
 
                         TextEntry::make('email'),
 
                         TextEntry::make('student_profile.student_number'),
-                    ])
+                    ]),
             ]);
     }
 
@@ -103,8 +102,8 @@ class Index extends Component implements HasForms, HasInfolists
                                                         TextInput::make('password')
                                                             ->label(__('Password'))
                                                             ->password()
-                                                            ->dehydrated(fn($state) => filled($state))
-                                                            ->required(fn(string $context): bool => $context === 'create'),
+                                                            ->dehydrated(fn ($state) => filled($state))
+                                                            ->required(fn (string $context): bool => $context === 'create'),
                                                     ])
                                                     ->columnSpan(2),
 
@@ -122,10 +121,10 @@ class Index extends Component implements HasForms, HasInfolists
                                                             ->image()
                                                             ->imageEditor()
                                                             ->avatar()
-                                                            ->alignCenter()
+                                                            ->alignCenter(),
                                                     ])
-                                                    ->columnSpan(1)
-                                            ])
+                                                    ->columnSpan(1),
+                                            ]),
                                     ]),
 
                                 Tabs\Tab::make('student-profile')
@@ -190,7 +189,22 @@ class Index extends Component implements HasForms, HasInfolists
                                                                         'approved' => __('Approved'),
                                                                         'rejected' => __('Rejected'),
                                                                     ]),
-                                                            ])
+
+                                                                TextInput::make('student_profile.linkedin_url')
+                                                                    ->label(__('LinkedIn'))
+                                                                    ->url()
+                                                                    ->maxLength(255),
+
+                                                                TextInput::make('student_profile.behance_url')
+                                                                    ->label(__('Behance'))
+                                                                    ->url()
+                                                                    ->maxLength(255),
+
+                                                                TextInput::make('student_profile.github_url')
+                                                                    ->label(__('GitHub'))
+                                                                    ->url()
+                                                                    ->maxLength(255),
+                                                            ]),
                                                     ]),
 
                                                 Section::make()
@@ -206,7 +220,7 @@ class Index extends Component implements HasForms, HasInfolists
                                                     ]),
                                             ]),
                                     ])
-                                    ->visible(fn() => auth()->user()->hasRole('Student')),
+                                    ->visible(fn () => auth()->user()->hasRole('Student')),
 
                                 Tabs\Tab::make('work-experience')
                                     ->label(__('Work Experience'))
@@ -217,13 +231,13 @@ class Index extends Component implements HasForms, HasInfolists
                                                 Livewire::make(
                                                     \Modules\PPUDS\Livewire\Pages\Student\Details\WorkExperience\Index::class,
                                                     [
-                                                        'studentId' => auth()->id()
+                                                        'studentId' => auth()->id(),
                                                     ]
                                                 )
-                                                    ->columnSpanFull()
+                                                    ->columnSpanFull(),
                                             ]),
                                     ])
-                                    ->visible(fn() => auth()->user()->hasRole('Student')),
+                                    ->visible(fn () => auth()->user()->hasRole('Student')),
 
                                 Tabs\Tab::make('training-history')
                                     ->label(__('Training History'))
@@ -234,11 +248,11 @@ class Index extends Component implements HasForms, HasInfolists
                                                 Livewire::make(
                                                     \Modules\PPUDS\Livewire\Pages\Student\Details\StudentCompany\Index::class,
                                                     [
-                                                        'studentId' => auth()->id()
+                                                        'studentId' => auth()->id(),
                                                     ]
                                                 )
                                                     ->columnSpanFull()
-                                                    ->lazy()
+                                                    ->lazy(),
                                             ]),
                                     ]),
 
@@ -251,14 +265,14 @@ class Index extends Component implements HasForms, HasInfolists
                                                 Livewire::make(
                                                     \Modules\PPUDS\Livewire\Pages\Student\Details\Registration\Index::class,
                                                     [
-                                                        'studentId' => auth()->id()
+                                                        'studentId' => auth()->id(),
                                                     ]
                                                 )
                                                     ->columnSpanFull()
-                                                    ->lazy()
+                                                    ->lazy(),
                                             ]),
                                     ])
-                                    ->visible(fn() => auth()->user()->hasRole('Student')),
+                                    ->visible(fn () => auth()->user()->hasRole('Student')),
 
                                 Tabs\Tab::make('attendance')
                                     ->label(__('Attendance'))
@@ -269,14 +283,14 @@ class Index extends Component implements HasForms, HasInfolists
                                                 Livewire::make(
                                                     \Modules\PPUDS\Livewire\Pages\Student\Details\StudentAttendance\Index::class,
                                                     [
-                                                        'studentId' => auth()->id()
+                                                        'studentId' => auth()->id(),
                                                     ]
                                                 )
                                                     ->columnSpanFull()
-                                                    ->lazy()
+                                                    ->lazy(),
                                             ]),
                                     ])
-                                    ->visible(fn() => auth()->user()->hasRole('Student')),
+                                    ->visible(fn () => auth()->user()->hasRole('Student')),
 
                                 Tabs\Tab::make('payment')
                                     ->label(__('Payment'))
@@ -287,17 +301,17 @@ class Index extends Component implements HasForms, HasInfolists
                                                 Livewire::make(
                                                     \Modules\PPUDS\Livewire\Pages\Student\Details\Payment\Index::class,
                                                     [
-                                                        'studentId' => auth()->id()
+                                                        'studentId' => auth()->id(),
                                                     ]
                                                 )
                                                     ->columnSpanFull()
-                                                    ->lazy()
+                                                    ->lazy(),
                                             ]),
                                     ])
-                                    ->visible(fn() => auth()->user()->hasRole('Student')),
+                                    ->visible(fn () => auth()->user()->hasRole('Student')),
 
                             ])
-                            ->columnSpanFull()
+                            ->columnSpanFull(),
                     ]),
             ])
             ->statePath('data');
@@ -320,11 +334,20 @@ class Index extends Component implements HasForms, HasInfolists
                 'email' => $data['email'],
             ];
 
-            if (!empty($data['password'])) {
+            if (! empty($data['password'])) {
                 $updateData['password'] = Hash::make($data['password']);
             }
 
             $user->update($updateData);
+
+            if ($user->hasRole('Student')) {
+                $user->studentProfile()->updateOrCreate(
+                    ['user_id' => $user->id],
+                    collect($data['student_profile'] ?? [])
+                        ->only(['linkedin_url', 'behance_url', 'github_url'])
+                        ->toArray()
+                );
+            }
 
             $this->form->model($user)->saveRelationships();
 
@@ -341,7 +364,7 @@ class Index extends Component implements HasForms, HasInfolists
             'breadcrumbs' => [
                 ['title' => __('Home'), 'url' => route('home')],
                 ['title' => __('Profile'), 'url' => route('profile.index')],
-            ]
+            ],
         ]);
     }
 }

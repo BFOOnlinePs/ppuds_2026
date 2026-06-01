@@ -596,5 +596,9 @@
     "Student is already assigned to this company.": "الطالب مسجل مسبقًا في هذه الشركة.",
     "Companies processed successfully": "تمت معالجة الشركات بنجاح",
     "Company sent to university successfully": "تم إرسال الشركة إلى نظام الجامعة بنجاح",
-    "Company already exists in university system": "الشركة مضافة مسبقًا في نظام الجامعة"
+    "Company already exists in university system": "الشركة مضافة مسبقًا في نظام الجامعة",
+    "Social Links": "الروابط الاجتماعية",
+    "LinkedIn": "لينكدإن",
+    "Behance": "بيهانس",
+    "GitHub": "جيت هب"
 }
