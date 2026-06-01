@@ -68,11 +68,10 @@ class Index extends Component implements HasForms, HasTable
                     ->label(__('Branch'))
                     ->toggleable(),
 
-                TextColumn::make('scheduled_training_days')
-                    ->label(__('Scheduled Training Days'))
-                    ->getStateUsing(fn (StudentCompany $record) => $this->summaryValue($record, 'scheduled_training_days'))
-                    ->wrapHeader()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('required_working_days')
+                    ->label(__('Required Working Days'))
+                    ->getStateUsing(fn (StudentCompany $record) => $this->summaryValue($record, 'required_working_days'))
+                    ->wrapHeader(),
 
                 TextColumn::make('attendance_days')
                     ->label(__('Attendance Days'))

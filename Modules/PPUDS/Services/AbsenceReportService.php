@@ -42,6 +42,7 @@ class AbsenceReportService
         return [
             'training_start' => $start->toDateString(),
             'training_end' => $end->toDateString(),
+            'required_working_days' => $workingDates->count(),
             'scheduled_training_days' => $workingDates->count(),
             'attendance_days' => $attendanceDates->count(),
             'total_absence_days' => $excusedAbsenceDates->count() + $unexcusedAbsenceDates->count(),
@@ -163,6 +164,7 @@ class AbsenceReportService
         return [
             'training_start' => null,
             'training_end' => null,
+            'required_working_days' => 0,
             'scheduled_training_days' => 0,
             'attendance_days' => 0,
             'total_absence_days' => 0,

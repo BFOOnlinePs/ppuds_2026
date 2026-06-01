@@ -8091,6 +8091,33 @@
                         "schema": {
                             "type": "boolean"
                         }
+                    },
+                    {
+                        "name": "filter[month]",
+                        "in": "query",
+                        "description": "Filter notes by month. Use YYYY-MM, or use a month number with filter[year].",
+                        "schema": {
+                            "type": "string",
+                            "example": "2026-06"
+                        }
+                    },
+                    {
+                        "name": "filter[year]",
+                        "in": "query",
+                        "description": "Filter notes by year. Useful with filter[month]=6.",
+                        "schema": {
+                            "type": "integer",
+                            "example": 2026
+                        }
+                    },
+                    {
+                        "name": "filter[current_month]",
+                        "in": "query",
+                        "description": "When true, return notes from the current month.",
+                        "schema": {
+                            "type": "boolean",
+                            "example": true
+                        }
                     }
                 ],
                 "responses": {

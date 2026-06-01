@@ -30,19 +30,49 @@ class NoteController extends Controller
      * name="filter[name]",
      * in="query",
      * description="Filter by note title",
+     *
      * @OA\Schema(type="string")
      * ),
+     *
      * @OA\Parameter(
      * name="filter[is_pinned]",
      * in="query",
      * description="Filter by pinned status",
+     *
      * @OA\Schema(type="boolean")
      * ),
+     *
+     * @OA\Parameter(
+     * name="filter[month]",
+     * in="query",
+     * description="Filter notes by month. Use YYYY-MM, or use a month number with filter[year].",
+     *
+     * @OA\Schema(type="string", example="2026-06")
+     * ),
+     *
+     * @OA\Parameter(
+     * name="filter[year]",
+     * in="query",
+     * description="Filter notes by year. Useful with filter[month]=6.",
+     *
+     * @OA\Schema(type="integer", example=2026)
+     * ),
+     *
+     * @OA\Parameter(
+     * name="filter[current_month]",
+     * in="query",
+     * description="When true, return notes from the current month.",
+     *
+     * @OA\Schema(type="boolean", example=true)
+     * ),
+     *
      * @OA\Response(
      * response=200,
      * description="Notes retrieved successfully",
+     *
      * @OA\JsonContent(
      * type="object",
+     *
      * @OA\Property(property="status", type="boolean", example=true),
      * @OA\Property(property="message", type="string", example="Notes retrieved successfully"),
      * @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/NoteResource"))
@@ -57,7 +87,7 @@ class NoteController extends Controller
         $perPage = min(request('per_page', $defaultPerPage), $maxPerPage);
 
         $notes = QueryBuilder::for(Note::class)
-            ->where('user_id', auth()->id()) 
+            ->where('user_id', auth()->id())
             ->allowedFields(NoteResource::allowedFields())
             ->allowedFilters(NoteResource::allowedFilters())
             ->allowedSorts(NoteResource::allowedSorts())
@@ -78,12 +108,16 @@ class NoteController extends Controller
      * summary="Create a new note",
      * tags={"Notes"},
      * security={{"sanctum": {}}},
+     *
      * @OA\RequestBody(
      * required=true,
+     *
      * @OA\MediaType(
      * mediaType="multipart/form-data",
+     *
      * @OA\Schema(
      * required={"name", "content", "note_date"},
+     *
      * @OA\Property(property="name", type="string", example="اجتماع التدريب الميداني"),
      * @OA\Property(property="content", type="string", example="تم مناقشة خطة العمل للأسبوع القادم"),
      * @OA\Property(property="note_date", type="string", format="date", example="2026-03-01"),
@@ -92,11 +126,14 @@ class NoteController extends Controller
      * )
      * )
      * ),
+     *
      * @OA\Response(
      * response=201,
      * description="Note created successfully",
+     *
      * @OA\JsonContent(
      * type="object",
+     *
      * @OA\Property(property="status", type="boolean", example=true),
      * @OA\Property(property="message", type="string", example="Note created successfully"),
      * @OA\Property(property="data", ref="#/components/schemas/NoteResource")
@@ -108,7 +145,7 @@ class NoteController extends Controller
     {
         $note = DB::transaction(function () use ($request) {
             $data = $request->validated();
-            
+
             $data['user_id'] = auth()->id();
             $data['created_by'] = auth()->id();
 
@@ -135,18 +172,24 @@ class NoteController extends Controller
      * description="Update note details. Use _method=PUT in form-data if uploading a new image.",
      * tags={"Notes"},
      * security={{"sanctum": {}}},
+     *
      * @OA\Parameter(
      * name="id",
      * in="path",
      * required=true,
      * description="Note ID",
+     *
      * @OA\Schema(type="integer")
      * ),
+     *
      * @OA\RequestBody(
      * required=true,
+     *
      * @OA\MediaType(
      * mediaType="multipart/form-data",
+     *
      * @OA\Schema(
+     *
      * @OA\Property(property="_method", type="string", example="PUT"),
      * @OA\Property(property="name", type="string", example="تحديث عنوان الملاحظة"),
      * @OA\Property(property="content", type="string", example="تحديث التفاصيل..."),
@@ -156,11 +199,14 @@ class NoteController extends Controller
      * )
      * )
      * ),
+     *
      * @OA\Response(
      * response=200,
      * description="Note updated successfully",
+     *
      * @OA\JsonContent(
      * type="object",
+     *
      * @OA\Property(property="status", type="boolean", example=true),
      * @OA\Property(property="message", type="string", example="Note updated successfully"),
      * @OA\Property(property="data", ref="#/components/schemas/NoteResource")
@@ -200,18 +246,23 @@ class NoteController extends Controller
      * summary="Get note details",
      * tags={"Notes"},
      * security={{"sanctum": {}}},
+     *
      * @OA\Parameter(
      * name="id",
      * in="path",
      * required=true,
      * description="Note ID",
+     *
      * @OA\Schema(type="integer")
      * ),
+     *
      * @OA\Response(
      * response=200,
      * description="Note retrieved successfully",
+     *
      * @OA\JsonContent(
      * type="object",
+     *
      * @OA\Property(property="status", type="boolean", example=true),
      * @OA\Property(property="data", ref="#/components/schemas/NoteResource")
      * )
