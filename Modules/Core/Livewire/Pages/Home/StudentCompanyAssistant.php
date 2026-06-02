@@ -11,6 +11,7 @@ use Modules\Core\Actions\StudentCompanyAssistant\LinkSuggestedCompanyToStudent;
 use Modules\Core\Actions\StudentCompanyAssistant\ResolveStudentCompanyRegistration;
 use Modules\Core\Entities\User;
 use Modules\Core\Services\StudentCompanySuggestionService;
+use Modules\Core\Services\StudentTrainingChatService;
 use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Settings\GeneralSettings as PPUDSSettings;
 
@@ -28,6 +29,8 @@ class StudentCompanyAssistant extends Component
 
     public array $suggestions = [];
 
+    public array $studentContext = [];
+
     public ?int $studentId = null;
 
     public ?int $registrationId = null;
@@ -36,12 +39,16 @@ class StudentCompanyAssistant extends Component
 
     public ?string $selectedRegistrationLabel = null;
 
+    public string $pendingStudentAction = 'info';
+
+    public ?string $pendingQuestion = null;
+
     public function mount(): void
     {
         $this->messages = [
             [
                 'role' => 'assistant',
-                'text' => 'اكتب اسم الطالب أو رقمه الجامعي، وسأقترح شركات مناسبة ثم يمكنك ربطها مباشرة بسجل الطالب.',
+                'text' => 'أهلاً، اسألني عن أي طالب أو عن معلومات تدريبه، وإذا أردت اقتراح شركات اكتب ذلك صراحة.',
             ],
         ];
     }
@@ -62,14 +69,49 @@ class StudentCompanyAssistant extends Component
 
         $this->addMessage('user', $term);
 
-        if ($this->studentId && $this->registrationId && $this->handleCompanyLinkRequest($term)) {
+        $wantsCompanySuggestions = $this->wantsCompanySuggestions($term);
+        $wantsStudentInformation = $this->wantsStudentInformation($term) || (! $this->studentId && ! $wantsCompanySuggestions);
+
+        if ($this->studentId && $this->registrationId && ! $wantsCompanySuggestions && ! $wantsStudentInformation && $this->handleCompanyLinkRequest($term)) {
             return;
         }
 
+        if ($wantsStudentInformation) {
+            $this->answerStudentQuestion($term);
+
+            return;
+        }
+
+        $this->searchStudentForSuggestions($term);
+    }
+
+    private function searchStudentForSuggestions(string $term): void
+    {
+        $studentTerm = app(StudentTrainingChatService::class)->studentLookupTerm($term);
+
+        if (blank($studentTerm) && $this->studentId) {
+            $student = User::query()
+                ->with('studentProfile.major')
+                ->whereHas('studentProfile')
+                ->find($this->studentId);
+
+            if ($student) {
+                $this->studentMatches = [];
+                $this->companyMatches = [];
+                $this->suggestions = [];
+                $this->suggestForStudent($student);
+
+                return;
+            }
+        }
+
         $this->resetSelection();
+        $this->pendingStudentAction = 'suggest';
+        $this->pendingQuestion = $term;
 
         $findStudents = app(FindStudentsForCompanyAssistant::class);
-        $matches = $findStudents->handle($term);
+        $studentTerm = $studentTerm ?: $term;
+        $matches = $findStudents->handle($studentTerm);
 
         if ($matches->isEmpty()) {
             $this->addMessage('assistant', 'لم أجد طالبًا مطابقًا لهذا الاسم أو الرقم الجامعي.');
@@ -77,7 +119,7 @@ class StudentCompanyAssistant extends Component
             return;
         }
 
-        $exactMatch = $findStudents->exactMatch($matches, $term);
+        $exactMatch = $findStudents->exactMatch($matches, $studentTerm);
 
         if (! $exactMatch && $matches->count() > 1) {
             $this->studentMatches = $matches
@@ -135,6 +177,13 @@ class StudentCompanyAssistant extends Component
 
         $this->studentMatches = [];
         $this->companyMatches = [];
+
+        if ($this->pendingStudentAction === 'info') {
+            $this->answerStudentQuestion($this->pendingQuestion ?: 'معلومات الطالب', $student);
+
+            return;
+        }
+
         $this->suggestForStudent($student);
     }
 
@@ -253,6 +302,12 @@ class StudentCompanyAssistant extends Component
         $this->registrationId = $registration->id;
         $this->selectedStudentName = $student->name;
         $this->selectedRegistrationLabel = $this->registrationLabel($registration);
+        $this->studentContext = [
+            'student_name' => $student->name,
+            'student_number' => $student->studentProfile?->student_number,
+            'major' => $student->studentProfile?->major?->name,
+            'registration' => $this->selectedRegistrationLabel,
+        ];
 
         $this->addMessage('assistant', "تم اختيار {$student->name}. أبحث الآن عن أفضل الشركات المناسبة.");
 
@@ -293,6 +348,105 @@ class StudentCompanyAssistant extends Component
         $this->addMessage('assistant', 'وجدت شركة مطابقة. اضغط على الشركة لتأكيد ربطها بالطالب.');
 
         return true;
+    }
+
+    private function answerStudentQuestion(string $question, ?User $student = null): void
+    {
+        $this->companyMatches = [];
+        $this->suggestions = [];
+        $this->pendingStudentAction = 'info';
+        $this->pendingQuestion = $question;
+
+        $service = app(StudentTrainingChatService::class);
+        $result = $student
+            ? $service->answerForStudent($question, $student->id)
+            : $service->answer($question, $this->studentId);
+
+        $this->studentMatches = $result['student_matches'] ?? [];
+
+        if ($this->studentMatches !== []) {
+            $this->addMessage('assistant', $result['message']);
+
+            return;
+        }
+
+        if (filled($result['student_id'] ?? null)) {
+            $this->studentId = (int) $result['student_id'];
+            $this->registrationId = $this->currentOrLatestRegistrationId($this->studentId);
+            $this->selectedStudentName = $result['student_name'] ?? null;
+            $this->selectedRegistrationLabel = $result['registration_label'] ?? null;
+            $this->studentContext = $result['context'] ?? [];
+        }
+
+        $this->addMessage('assistant', $result['message']);
+    }
+
+    private function currentOrLatestRegistrationId(int $studentId): ?int
+    {
+        $settings = app(PPUDSSettings::class);
+        $currentRegistration = Registration::query()
+            ->where('student_id', $studentId)
+            ->when($settings->semester_type?->value, fn ($query, $semester) => $query->where('semester', $semester))
+            ->when($settings->year, fn ($query, $year) => $query->where('year', $year))
+            ->latest('id')
+            ->value('id');
+
+        if ($currentRegistration) {
+            return (int) $currentRegistration;
+        }
+
+        $latestRegistration = Registration::query()
+            ->where('student_id', $studentId)
+            ->latest('id')
+            ->value('id');
+
+        return $latestRegistration ? (int) $latestRegistration : null;
+    }
+
+    private function wantsStudentInformation(string $term): bool
+    {
+        $term = mb_strtolower($term);
+
+        return str_contains($term, 'معلومات')
+            || str_contains($term, 'تفاصيل')
+            || str_contains($term, 'استعلام')
+            || str_contains($term, 'تدريب')
+            || str_contains($term, 'يتدرب')
+            || str_contains($term, 'بتدرب')
+            || str_contains($term, 'شركته')
+            || str_contains($term, 'شركة الطالب')
+            || str_contains($term, 'اسم الشركة')
+            || ((str_contains($term, 'شركة') || str_contains($term, 'الشركة')) && (
+                str_contains($term, 'ما')
+                || str_contains($term, 'وين')
+                || str_contains($term, 'اين')
+                || str_contains($term, 'أين')
+            ))
+            || str_contains($term, 'حضور')
+            || str_contains($term, 'غياب')
+            || str_contains($term, 'دوام')
+            || str_contains($term, 'مشرف')
+            || str_contains($term, 'زيارة')
+            || str_contains($term, 'زيارات')
+            || str_contains($term, 'تقرير')
+            || str_contains($term, 'تقارير')
+            || str_contains($term, 'تقييم')
+            || str_contains($term, 'علامة')
+            || str_contains($term, 'حالة');
+    }
+
+    private function wantsCompanySuggestions(string $term): bool
+    {
+        $term = mb_strtolower($term);
+
+        return str_contains($term, 'اقترح')
+            || str_contains($term, 'اقتراح')
+            || str_contains($term, 'رشح')
+            || str_contains($term, 'ترشيح')
+            || str_contains($term, 'أفضل شركات')
+            || str_contains($term, 'افضل شركات')
+            || str_contains($term, 'شركات مناسبة')
+            || str_contains($term, 'شركة مناسبة');
     }
 
     private function studentMatchPayload(User $student): array
@@ -347,10 +501,13 @@ class StudentCompanyAssistant extends Component
         $this->studentMatches = [];
         $this->companyMatches = [];
         $this->suggestions = [];
+        $this->studentContext = [];
         $this->studentId = null;
         $this->registrationId = null;
         $this->selectedStudentName = null;
         $this->selectedRegistrationLabel = null;
+        $this->pendingStudentAction = 'info';
+        $this->pendingQuestion = null;
     }
 
     private function markSuggestionLinked(int $companyId): void

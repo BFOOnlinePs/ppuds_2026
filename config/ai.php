@@ -32,6 +32,12 @@ return [
         'timeout' => (int) env('AI_COMPANY_PROFILE_TIMEOUT', 60),
     ],
 
+    'student_training_chat' => [
+        'provider' => env('AI_STUDENT_TRAINING_CHAT_PROVIDER'),
+        'model' => env('AI_STUDENT_TRAINING_CHAT_MODEL'),
+        'timeout' => (int) env('AI_STUDENT_TRAINING_CHAT_TIMEOUT', 60),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Caching
