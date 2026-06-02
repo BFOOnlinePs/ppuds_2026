@@ -189,6 +189,11 @@ class StudentCompany extends Model implements HasMedia
         return $this->hasMany(Payment::class, 'student_company_id');
     }
 
+    public function surveyAnswers(): HasMany
+    {
+        return $this->hasMany(SurveyAnswer::class, 'student_company_id');
+    }
+
     public function scopeWithTotalPaymentAmount($query)
     {
         return $query->withSum('payments as total_payment_amount', 'payment_value');

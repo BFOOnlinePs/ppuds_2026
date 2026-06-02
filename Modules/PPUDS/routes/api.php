@@ -142,6 +142,7 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
                 ->group(function () {
                     Route::get('/', 'index')->name('index');
                     Route::post('/', 'store')->name('store');
+                    Route::get('/{survey}/evaluation-students', 'evaluationStudents')->name('evaluation-students');
                     Route::get('/{survey}', 'show')->name('show');
                 });
 

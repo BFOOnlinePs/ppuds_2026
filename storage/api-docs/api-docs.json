@@ -10675,6 +10675,56 @@
                 ]
             }
         },
+        "/api/v1/ppuds/surveys/{survey}/evaluation-students": {
+            "get": {
+                "tags": [
+                    "Surveys"
+                ],
+                "summary": "Get company supervisor students for survey evaluation",
+                "description": "Return students assigned to the authenticated company supervisor for this survey.",
+                "operationId": "b531c1f68bd4993c25a31b67f4b26f4f",
+                "parameters": [
+                    {
+                        "name": "survey",
+                        "in": "path",
+                        "description": "Survey ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "description": "Filter students by evaluation status: pending, evaluated, all",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "pending",
+                            "enum": [
+                                "pending",
+                                "evaluated",
+                                "all"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Evaluation students retrieved successfully"
+                    },
+                    "403": {
+                        "description": "Survey is not available for company supervisor evaluation"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/ppuds/work-experiences": {
             "get": {
                 "tags": [
