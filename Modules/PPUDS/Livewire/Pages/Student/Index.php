@@ -32,7 +32,13 @@ class Index extends Component implements HasForms, HasTable
     public function table(Table $table)
     {
         return $table
-            ->query(fn () => StudentProfile::query()->with('user'))
+            ->query(fn () => StudentProfile::query()
+                ->with('user')
+                ->when(request()->boolean('not_matched'), fn ($query) => $query
+                    ->whereDoesntHave(
+                        'user.studentCompanies',
+                        fn ($studentCompanyQuery) => $studentCompanyQuery->whereNotNull('company_id')
+                    )))
             ->columns([
                 TextColumn::make('user.name')
                     ->label(__('Arabic Name'))

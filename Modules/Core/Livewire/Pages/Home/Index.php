@@ -11,23 +11,26 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Infolists\Concerns\InteractsWithInfolists;
 use Filament\Infolists\Contracts\HasInfolists;
-use Livewire\Component;
-use Modules\PPUDS\Entities\Announcement;
 use Livewire\Attributes\Computed;
+use Livewire\Component;
 use Modules\Core\Livewire\Pages\Home\Widget\Charts\AttendanceLastSevenDaysChart;
+use Modules\Core\Livewire\Pages\Home\Widget\Charts\CompanyLocationsChart;
+use Modules\Core\Livewire\Pages\Home\Widget\Charts\CompanySectorsChart;
 use Modules\Core\Livewire\Pages\Home\Widget\Charts\CurrentStudentsGenderChart;
+use Modules\Core\Livewire\Pages\Home\Widget\Charts\CurrentStudentsProgramChart;
 use Modules\Core\Livewire\Pages\Home\Widget\Charts\FieldVisitsLastSixMonthsChart;
 use Modules\Core\Livewire\Pages\Home\Widget\Charts\LeaveRequestsStatusChart;
 use Modules\Core\Livewire\Pages\Home\Widget\Charts\TrainingStatusChart;
 use Modules\Core\Livewire\Pages\Home\Widget\Charts\UsersByRoleChart;
 use Modules\Core\Settings\GeneralSettings;
+use Modules\PPUDS\Entities\Announcement;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Settings\GeneralSettings as SettingsGeneralSettings;
 
 class Index extends Component implements HasForms, HasInfolists
 {
-    use InteractsWithInfolists;
     use InteractsWithForms;
+    use InteractsWithInfolists;
 
     public function mount() {}
 
@@ -36,7 +39,10 @@ class Index extends Component implements HasForms, HasInfolists
         return collect([
             UsersByRoleChart::class,
             CurrentStudentsGenderChart::class,
+            CurrentStudentsProgramChart::class,
             TrainingStatusChart::class,
+            CompanyLocationsChart::class,
+            CompanySectorsChart::class,
             AttendanceLastSevenDaysChart::class,
             LeaveRequestsStatusChart::class,
             FieldVisitsLastSixMonthsChart::class,
@@ -69,7 +75,7 @@ class Index extends Component implements HasForms, HasInfolists
     {
         $semester = $this->ppudsSettings()->semester_type?->value;
 
-        return StudentCompany::whereHas('registration', fn($q) => $q->where('student_id', auth()->id())->where('semester', $semester)->where('year', $this->ppudsSettings()->year))->orWhereHas('registration', fn($q) => $q->where('supervisor_id', auth()->id())->where('semester', $semester)->where('year', $this->ppudsSettings()->year))->with(['company', 'branch', 'department'])->get();
+        return StudentCompany::whereHas('registration', fn ($q) => $q->where('student_id', auth()->id())->where('semester', $semester)->where('year', $this->ppudsSettings()->year))->orWhereHas('registration', fn ($q) => $q->where('supervisor_id', auth()->id())->where('semester', $semester)->where('year', $this->ppudsSettings()->year))->with(['company', 'branch', 'department'])->get();
     }
 
     public function form(Form $form): Form
@@ -82,7 +88,7 @@ class Index extends Component implements HasForms, HasInfolists
                         ->view('ppuds::components.fields.student-companies-cards'),
 
                 ])
-                ->visible(fn() => auth()->user()->hasRole('Student')),
+                ->visible(fn () => auth()->user()->hasRole('Student')),
 
             Section::make(__('Announcements'))
                 ->schema([

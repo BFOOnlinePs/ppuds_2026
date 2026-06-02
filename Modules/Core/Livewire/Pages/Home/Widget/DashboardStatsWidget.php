@@ -13,6 +13,7 @@ use Modules\PPUDS\Entities\LeaveRequest;
 use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Entities\StudentAttendance;
 use Modules\PPUDS\Entities\StudentCompany;
+use Modules\PPUDS\Entities\StudentProfile;
 use Modules\PPUDS\Enums\StudentGender;
 use Modules\PPUDS\Settings\GeneralSettings;
 
@@ -35,16 +36,18 @@ class DashboardStatsWidget extends StatsOverviewWidget
         }
 
         $currentRegistrations = $this->currentRegistrationsQuery();
-        $studentsInCompanies = $this->currentStudentCompaniesQuery();
+        $studentsInCompanies = $this->currentStudentCompaniesQuery()
+            ->whereNotNull('company_id');
         $studentsNeedingCompany = $this->studentsNeedingCompanyQuery();
+        $admittedStudentsNotMatched = $this->admittedStudentsNotMatchedQuery();
         $todayAttendance = $this->todayAttendanceStudentsQuery();
 
         return [
             $this->linkStat(
                 Stat::make(__('Current Semester Students'), $this->countDistinct($currentRegistrations, 'student_id'))
-                ->description($this->genderDescription($currentRegistrations, 'student.studentProfile', 'student_id'))
-                ->icon('heroicon-o-academic-cap')
-                ->color('primary'),
+                    ->description($this->genderDescription($currentRegistrations, 'student.studentProfile', 'student_id'))
+                    ->icon('heroicon-o-academic-cap')
+                    ->color('primary'),
                 [
                     ['route' => 'registrations.index', 'permission' => 'Registration View List'],
                     ['route' => 'students.index', 'permission' => 'Student View List'],
@@ -53,9 +56,9 @@ class DashboardStatsWidget extends StatsOverviewWidget
 
             $this->linkStat(
                 Stat::make(__('Students In Companies'), $this->countDistinct($studentsInCompanies, 'student_id'))
-                ->description($this->genderDescription($studentsInCompanies, 'student.studentProfile', 'student_id'))
-                ->icon('heroicon-o-building-office-2')
-                ->color('success'),
+                    ->description($this->genderDescription($studentsInCompanies, 'student.studentProfile', 'student_id'))
+                    ->icon('heroicon-o-building-office-2')
+                    ->color('success'),
                 [
                     ['route' => 'student-companies.index', 'permission' => 'StudentCompany View List'],
                 ],
@@ -63,20 +66,30 @@ class DashboardStatsWidget extends StatsOverviewWidget
 
             $this->linkStat(
                 Stat::make(__('Students Needing Company Registration'), $this->countDistinct($studentsNeedingCompany, 'student_id'))
-                ->description($this->genderDescription($studentsNeedingCompany, 'student.studentProfile', 'student_id'))
-                ->icon('heroicon-o-user-plus')
-                ->color('warning'),
+                    ->description($this->genderDescription($studentsNeedingCompany, 'student.studentProfile', 'student_id'))
+                    ->icon('heroicon-o-user-plus')
+                    ->color('warning'),
                 [
                     ['route' => 'student-companies.add', 'permission' => 'StudentCompany Create'],
-                    ['route' => 'registrations.index', 'permission' => 'Registration View List'],
+                    ['route' => 'registrations.index', 'permission' => 'Registration View List', 'parameters' => ['without_company' => 1]],
+                ],
+            ),
+
+            $this->linkStat(
+                Stat::make(__('Admitted Students Not Matched'), (clone $admittedStudentsNotMatched)->count())
+                    ->description(__('Students not assigned to any company'))
+                    ->icon('heroicon-o-user-plus')
+                    ->color('danger'),
+                [
+                    ['route' => 'students.index', 'permission' => 'Student View List', 'parameters' => ['not_matched' => 1]],
                 ],
             ),
 
             $this->linkStat(
                 Stat::make(__('Today Attendance'), $this->countDistinct($todayAttendance, 'student_id'))
-                ->description($this->genderDescription($todayAttendance, 'student.studentProfile', 'student_id'))
-                ->icon('heroicon-o-calendar-days')
-                ->color('info'),
+                    ->description($this->genderDescription($todayAttendance, 'student.studentProfile', 'student_id'))
+                    ->icon('heroicon-o-calendar-days')
+                    ->color('info'),
                 [
                     ['route' => 'student-attendances.index', 'permission' => 'StudentAttendance View List'],
                 ],
@@ -95,12 +108,12 @@ class DashboardStatsWidget extends StatsOverviewWidget
         return [
             $this->linkStat(
                 Stat::make(__('Attendance Hours'), $this->formatHours($hours['actual']))
-                ->description(__('Worked Hours Of Total Hours', [
-                    'worked' => $this->formatHours($hours['actual']),
-                    'total' => $this->formatHours($hours['total']),
-                ]))
-                ->icon('heroicon-o-clock')
-                ->color('primary'),
+                    ->description(__('Worked Hours Of Total Hours', [
+                        'worked' => $this->formatHours($hours['actual']),
+                        'total' => $this->formatHours($hours['total']),
+                    ]))
+                    ->icon('heroicon-o-clock')
+                    ->color('primary'),
                 [
                     ['route' => 'student-attendances.index', 'permission' => 'StudentAttendance View List'],
                 ],
@@ -108,9 +121,9 @@ class DashboardStatsWidget extends StatsOverviewWidget
 
             $this->linkStat(
                 Stat::make(__('Attendance Days'), $this->studentAttendanceDays())
-                ->description(__('Total Attendance Days'))
-                ->icon('heroicon-o-calendar-days')
-                ->color('success'),
+                    ->description(__('Total Attendance Days'))
+                    ->icon('heroicon-o-calendar-days')
+                    ->color('success'),
                 [
                     ['route' => 'student-attendances.index', 'permission' => 'StudentAttendance View List'],
                 ],
@@ -118,9 +131,9 @@ class DashboardStatsWidget extends StatsOverviewWidget
 
             $this->linkStat(
                 Stat::make(__('Attendance And Departure Permissions'), $this->studentLeaveRequestsCount())
-                ->description(__('Total Attendance And Departure Permissions'))
-                ->icon('heroicon-o-document-text')
-                ->color('warning'),
+                    ->description(__('Total Attendance And Departure Permissions'))
+                    ->icon('heroicon-o-document-text')
+                    ->color('warning'),
                 [
                     ['route' => 'leave-requests.index', 'permission' => 'LeaveRequest View List'],
                 ],
@@ -163,7 +176,7 @@ class DashboardStatsWidget extends StatsOverviewWidget
                 continue;
             }
 
-            return route($route);
+            return route($route, $target['parameters'] ?? []);
         }
 
         return null;
@@ -184,7 +197,29 @@ class DashboardStatsWidget extends StatsOverviewWidget
     private function studentsNeedingCompanyQuery(): Builder
     {
         return $this->currentRegistrationsQuery()
-            ->whereNotIn('id', StudentCompany::query()->select('registration_id'));
+            ->whereNotIn(
+                'id',
+                StudentCompany::query()
+                    ->whereNotNull('company_id')
+                    ->select('registration_id')
+            );
+    }
+
+    private function admittedStudentsNotMatchedQuery(): Builder
+    {
+        return StudentProfile::query()
+            ->whereHas('user')
+            ->whereDoesntHave(
+                'user.studentCompanies',
+                fn (Builder $query) => $query->whereNotNull('company_id')
+            )
+            ->when(
+                $this->shouldScopeToSupervisor(),
+                fn (Builder $query) => $query->whereIn(
+                    'user_id',
+                    $this->currentRegistrationsQuery()->select('student_id')
+                )
+            );
     }
 
     private function todayAttendanceStudentsQuery(): Builder
@@ -248,7 +283,6 @@ class DashboardStatsWidget extends StatsOverviewWidget
             ->distinct($distinctColumn)
             ->count($distinctColumn);
     }
-
 
     private function countDistinct(Builder $query, string $column): int
     {
