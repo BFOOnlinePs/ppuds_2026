@@ -1739,13 +1739,13 @@
                     }
                 ]
             },
-            "put": {
+            "delete": {
                 "tags": [
                     "Users"
                 ],
-                "summary": "Update user",
-                "description": "Update the details of a specific user by ID",
-                "operationId": "998702984881330ba0bfb2704a815b42",
+                "summary": "Delete user",
+                "description": "Delete a specific user by ID",
+                "operationId": "fc3f8d09a354ba6e7cd64ba91e215a99",
                 "parameters": [
                     {
                         "name": "user",
@@ -1758,15 +1758,74 @@
                         }
                     }
                 ],
+                "responses": {
+                    "200": {
+                        "description": "User deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "User deleted successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    },
+                    "404": {
+                        "description": "User not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Update user",
+                "description": "Update the details of a specific user by ID, including student profile data",
+                "operationId": "35b2a5ed00c5b610cd2655eb77a94f05",
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "description": "User ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "include",
+                        "in": "query",
+                        "description": "Comma separated relations to return, for example: studentProfile,studentProfile.major,roles,media",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "studentProfile"
+                        }
+                    }
+                ],
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
-                                "required": [
-                                    "name",
-                                    "email"
-                                ],
                                 "properties": {
                                     "name": {
                                         "type": "string",
@@ -1780,6 +1839,57 @@
                                     "phone": {
                                         "type": "string",
                                         "example": "+970599123456"
+                                    },
+                                    "studentProfile": {
+                                        "properties": {
+                                            "dob": {
+                                                "type": "string",
+                                                "format": "date",
+                                                "example": "2001-01-01",
+                                                "nullable": true
+                                            },
+                                            "gender": {
+                                                "type": "integer",
+                                                "example": 1,
+                                                "nullable": true
+                                            },
+                                            "tawjihi_gpa": {
+                                                "type": "number",
+                                                "example": 95.5,
+                                                "nullable": true
+                                            },
+                                            "enrollment_year": {
+                                                "type": "integer",
+                                                "example": 2022,
+                                                "nullable": true
+                                            },
+                                            "semester_level": {
+                                                "type": "integer",
+                                                "example": 6,
+                                                "nullable": true
+                                            },
+                                            "major_id": {
+                                                "type": "integer",
+                                                "example": 1,
+                                                "nullable": true
+                                            },
+                                            "linkedin_url": {
+                                                "type": "string",
+                                                "example": "https://www.linkedin.com/in/student",
+                                                "nullable": true
+                                            },
+                                            "behance_url": {
+                                                "type": "string",
+                                                "example": "https://www.behance.net/student",
+                                                "nullable": true
+                                            },
+                                            "github_url": {
+                                                "type": "string",
+                                                "example": "https://github.com/student",
+                                                "nullable": true
+                                            }
+                                        },
+                                        "type": "object"
                                     }
                                 },
                                 "type": "object"
@@ -1831,59 +1941,6 @@
                     },
                     "400": {
                         "description": "Validation error"
-                    },
-                    "401": {
-                        "description": "Unauthenticated"
-                    },
-                    "404": {
-                        "description": "User not found"
-                    }
-                },
-                "security": [
-                    {
-                        "sanctum": []
-                    }
-                ]
-            },
-            "delete": {
-                "tags": [
-                    "Users"
-                ],
-                "summary": "Delete user",
-                "description": "Delete a specific user by ID",
-                "operationId": "fc3f8d09a354ba6e7cd64ba91e215a99",
-                "parameters": [
-                    {
-                        "name": "user",
-                        "in": "path",
-                        "description": "User ID",
-                        "required": true,
-                        "schema": {
-                            "type": "integer",
-                            "example": 1
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "User deleted successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "status": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "User deleted successfully"
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
                     },
                     "401": {
                         "description": "Unauthenticated"
