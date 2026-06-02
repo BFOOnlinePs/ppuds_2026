@@ -5,6 +5,8 @@ namespace Modules\PPUDS\Livewire\Pages\Company;
 use App\View\Components\AppLayout;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
+use Filament\Forms\Components\Actions;
+use Filament\Forms\Components\Actions\Action as FormAction;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Group;
 use Filament\Forms\Components\Placeholder;
@@ -31,6 +33,7 @@ use Masmerise\Toaster\Toaster;
 use Modules\Branch\Entities\Branch;
 use Modules\Core\Entities\User;
 use Modules\Core\Filament\Forms\Components\MapPicker;
+use Modules\Core\Services\CompanyProfileGeneratorService;
 use Modules\GeoLocation\Entities\City;
 use Modules\GeoLocation\Entities\Country;
 use Modules\PPUDS\Entities\Company;
@@ -63,6 +66,47 @@ class Add extends Component implements HasActions, HasForms
                         ->icon('solar-buildings-3-bold-duotone')
                         ->description(__('Basic identity and categorization'))
                         ->schema([
+                            Actions::make([
+                                FormAction::make('generateCompanyWithAi')
+                                    ->label(__('Generate Company With AI'))
+                                    ->icon('heroicon-o-sparkles')
+                                    ->color('primary')
+                                    ->modalHeading(__('Generate Company With AI'))
+                                    ->modalSubmitActionLabel(__('Generate'))
+                                    ->form([
+                                        Textarea::make('brief')
+                                            ->label(__('Company Brief'))
+                                            ->required()
+                                            ->rows(7)
+                                            ->placeholder(__('Company name, sector, location, website, contact details, and training area')),
+
+                                        \Filament\Forms\Components\Toggle::make('include_departments')
+                                            ->label(__('Suggest Departments'))
+                                            ->default(false),
+
+                                        \Filament\Forms\Components\Toggle::make('replace_existing')
+                                            ->label(__('Replace Current Form Data'))
+                                            ->default(false),
+                                    ])
+                                    ->action(function (array $data): void {
+                                        $result = app(CompanyProfileGeneratorService::class)->generate(
+                                            $data['brief'],
+                                            (bool) ($data['include_departments'] ?? false),
+                                        );
+
+                                        if (! $this->applyGeneratedCompanyProfile(
+                                            $result['profile'] ?? [],
+                                            (bool) ($data['replace_existing'] ?? false),
+                                        )) {
+                                            return;
+                                        }
+
+                                        Toaster::success($result['message'] ?? __('Company profile generated successfully.'));
+                                    }),
+                            ])
+                                ->key('company_ai_actions')
+                                ->fullWidth(),
+
                             Grid::make(['default' => 1, 'lg' => 3])
                                 ->schema([
                                     Group::make()
@@ -476,6 +520,114 @@ class Add extends Component implements HasActions, HasForms
             'data.branches.*.departments.*.user_id.create_option_form.password.required' => __('The password is required'),
             'data.branches.*.departments.*.user_id.create_option_form.password.confirmed' => __('The password confirmation does not match'),
         ];
+    }
+
+    private function applyGeneratedCompanyProfile(array $profile, bool $replaceExisting): bool
+    {
+        if ($profile === []) {
+            Toaster::error(__('Unable to generate company profile.'));
+
+            return false;
+        }
+
+        $mergedData = $this->mergeGeneratedCompanyData($this->data ?? [], $profile, $replaceExisting);
+
+        $this->data = $mergedData;
+        $this->form->fill($mergedData);
+
+        return true;
+    }
+
+    private function mergeGeneratedCompanyData(array $currentData, array $profile, bool $replaceExisting): array
+    {
+        $mergedData = $currentData;
+
+        foreach (['name', 'website', 'description', 'company_category_id', 'status'] as $field) {
+            $mergedData[$field] = $this->mergedValue(
+                $currentData[$field] ?? null,
+                $profile[$field] ?? null,
+                $replaceExisting,
+            );
+        }
+
+        $mergedData['branches'] = $this->mergeGeneratedBranches(
+            $currentData['branches'] ?? [],
+            $profile['branches'] ?? [],
+            $replaceExisting,
+        );
+
+        return $mergedData;
+    }
+
+    private function mergeGeneratedBranches(array $currentBranches, array $generatedBranches, bool $replaceExisting): array
+    {
+        $generatedBranches = array_values(array_filter($generatedBranches));
+
+        if ($generatedBranches === []) {
+            return $currentBranches;
+        }
+
+        if ($replaceExisting || $currentBranches === []) {
+            return $generatedBranches;
+        }
+
+        $currentBranches = array_values($currentBranches);
+        $currentBranches[0] = $this->mergeGeneratedBranch(
+            $currentBranches[0] ?? [],
+            $generatedBranches[0],
+            $replaceExisting,
+        );
+
+        return $currentBranches;
+    }
+
+    private function mergeGeneratedBranch(array $currentBranch, array $generatedBranch, bool $replaceExisting): array
+    {
+        foreach (['name', 'email', 'phone'] as $field) {
+            $currentBranch[$field] = $this->mergedValue(
+                $currentBranch[$field] ?? null,
+                $generatedBranch[$field] ?? null,
+                $replaceExisting || $this->isDefaultBranchName($field, $currentBranch[$field] ?? null),
+            );
+        }
+
+        foreach (['country_id', 'city_id', 'latitude', 'longitude', 'location'] as $field) {
+            $currentBranch[$field] = filled($generatedBranch[$field] ?? null)
+                ? $generatedBranch[$field]
+                : ($currentBranch[$field] ?? null);
+        }
+
+        if ($replaceExisting || empty($currentBranch['working_hours'] ?? [])) {
+            $currentBranch['working_hours'] = $generatedBranch['working_hours'] ?? [];
+        }
+
+        if ($replaceExisting || empty($currentBranch['departments'] ?? [])) {
+            $currentBranch['departments'] = $generatedBranch['departments'] ?? [];
+        }
+
+        return $currentBranch;
+    }
+
+    private function mergedValue(mixed $currentValue, mixed $generatedValue, bool $replaceExisting): mixed
+    {
+        if (blank($generatedValue)) {
+            return $currentValue;
+        }
+
+        if ($replaceExisting || blank($currentValue)) {
+            return $generatedValue;
+        }
+
+        return $currentValue;
+    }
+
+    private function isDefaultBranchName(string $field, mixed $value): bool
+    {
+        if ($field !== 'name') {
+            return false;
+        }
+
+        return in_array((string) $value, ['Main Branch', __('Main Branch')], true);
     }
 
     public function save()

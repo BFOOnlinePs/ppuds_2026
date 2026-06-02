@@ -26,6 +26,12 @@ return [
         'timeout' => (int) env('AI_STUDENT_COMPANY_TIMEOUT', 60),
     ],
 
+    'company_profile_generator' => [
+        'provider' => env('AI_COMPANY_PROFILE_PROVIDER'),
+        'model' => env('AI_COMPANY_PROFILE_MODEL'),
+        'timeout' => (int) env('AI_COMPANY_PROFILE_TIMEOUT', 60),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Caching
