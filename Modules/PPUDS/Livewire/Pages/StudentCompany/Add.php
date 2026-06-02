@@ -27,16 +27,18 @@ use Modules\PPUDS\Settings\GeneralSettings;
 // نحتاجه لحقل الطالب
 // لجلب قيم الحقول الأخرى (للفلترة)
 
-class Add extends Component implements HasForms, HasActions
+class Add extends Component implements HasActions, HasForms
 {
-    use InteractsWithForms;
     use InteractsWithActions;
+    use InteractsWithForms;
 
     public ?array $data = [];
 
     public function mount()
     {
-        $this->form->fill();
+        $this->form->fill([
+            'registration_id' => $this->selectedRegistrationFromRequest(),
+        ]);
     }
 
     public function form(Form $form): Form
@@ -97,11 +99,10 @@ class Add extends Component implements HasForms, HasActions
                                                 ->live()
                                                 ->afterStateUpdated(fn (Set $set) => $set('department_id', null))
                                                 ->prefixIcon('solar-map-point-linear')
-                                                ->placeholder(fn(Get $get) => $get('company_id') ? __('Select Branch') : __('Select Company First'))
-                                                ->disabled(fn(Get $get) => ! $get('company_id'))
+                                                ->placeholder(fn (Get $get) => $get('company_id') ? __('Select Branch') : __('Select Company First'))
+                                                ->disabled(fn (Get $get) => ! $get('company_id'))
                                                 ->options(
-                                                    fn(Get $get) =>
-                                                    Branch::whereHas('companies', function ($query) use ($get) {
+                                                    fn (Get $get) => Branch::whereHas('companies', function ($query) use ($get) {
                                                         $query->where('company_id', $get('company_id'));
                                                     })->get()->pluck('name', 'id')
                                                 ),
@@ -112,8 +113,8 @@ class Add extends Component implements HasForms, HasActions
                                                 ->searchable()
                                                 ->preload()
                                                 ->prefixIcon('solar-users-group-two-rounded-linear')
-                                                ->placeholder(fn(Get $get) => $get('branch_id') ? __('Select Department') : __('Select Branch First'))
-                                                ->disabled(fn(Get $get) => ! $get('branch_id'))
+                                                ->placeholder(fn (Get $get) => $get('branch_id') ? __('Select Department') : __('Select Branch First'))
+                                                ->disabled(fn (Get $get) => ! $get('branch_id'))
                                                 ->options(function (Get $get) {
                                                     $branchId = $get('branch_id');
 
@@ -159,9 +160,24 @@ class Add extends Component implements HasForms, HasActions
         ];
     }
 
+    private function selectedRegistrationFromRequest(): ?int
+    {
+        $registrationId = request()->integer('registration_id');
+
+        if (! $registrationId) {
+            return null;
+        }
+
+        return Registration::query()
+            ->whereKey($registrationId)
+            ->where('semester', app(GeneralSettings::class)->semester_type->value)
+            ->where('year', app(GeneralSettings::class)->year)
+            ->value('id');
+    }
+
     public function save()
     {
-        $this->authorize("StudentCompany Create");
+        $this->authorize('StudentCompany Create');
 
         $this->validate();
 
@@ -187,7 +203,7 @@ class Add extends Component implements HasForms, HasActions
                 ['title' => __('Home'), 'url' => route('home')],
                 ['title' => __('Student Companies'), 'url' => route('student-companies.index')],
                 ['title' => __('New Student Company'), 'url' => '#'],
-            ]
+            ],
         ]);
     }
 }

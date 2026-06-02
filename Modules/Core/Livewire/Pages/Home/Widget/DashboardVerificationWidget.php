@@ -65,7 +65,8 @@ class DashboardVerificationWidget extends Widget
             'count' => (clone $query)->count(),
             'icon' => 'heroicon-o-clipboard-document-list',
             'color' => 'warning',
-            'url' => $this->routeUrl('registrations.index', ['without_company' => 1], 'Registration View List'),
+            'url' => $this->routeUrl('student-companies.add', [], 'StudentCompany Create')
+                ?? $this->routeUrl('registrations.index', ['without_company' => 1], 'Registration View List'),
             'rows' => (clone $query)
                 ->latest('id')
                 ->limit(self::PREVIEW_LIMIT)
@@ -188,7 +189,8 @@ class DashboardVerificationWidget extends Widget
 
     private function registrationUrl(Registration $registration): ?string
     {
-        return $this->routeUrl('registrations.edit', ['registration' => $registration], 'Registration Update')
+        return $this->routeUrl('student-companies.add', ['registration_id' => $registration->id], 'StudentCompany Create')
+            ?? $this->routeUrl('registrations.edit', ['registration' => $registration], 'Registration Update')
             ?? $this->studentUrl($registration->student_id)
             ?? $this->routeUrl('registrations.index', ['without_company' => 1], 'Registration View List');
     }
