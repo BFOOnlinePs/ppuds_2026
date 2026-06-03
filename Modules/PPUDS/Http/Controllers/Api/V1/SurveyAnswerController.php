@@ -24,13 +24,16 @@ class SurveyAnswerController extends Controller
      * description="Retrieve answers filtered by survey or user",
      * tags={"Survey Answers"},
      * security={{"sanctum": {}}},
+     *
      * @OA\Parameter(
      * name="filter[survey_id]",
      * in="query",
      * required=false,
      * description="Filter by Survey ID",
+     *
      * @OA\Schema(type="integer")
      * ),
+     *
      * @OA\Response(
      * response=200,
      * description="Answers retrieved successfully"
@@ -60,24 +63,30 @@ class SurveyAnswerController extends Controller
      * summary="Submit survey answers",
      * tags={"Survey Answers"},
      * security={{"sanctum": {}}},
+     *
      * @OA\RequestBody(
      * required=true,
+     *
      * @OA\JsonContent(
      * required={"survey_id", "answers"},
+     *
      * @OA\Property(property="survey_id", type="integer", example=1),
      * @OA\Property(property="student_company_id", type="integer", nullable=true, example=10, description="Required when a company supervisor evaluates a student"),
      * @OA\Property(
      * property="answers",
      * type="array",
+     *
      * @OA\Items(
      * type="object",
      * required={"question_id", "value"},
+     *
      * @OA\Property(property="question_id", type="integer", example=10),
      * @OA\Property(property="value", type="string", example="Excellent")
      * )
      * )
      * )
      * ),
+     *
      * @OA\Response(response=201, description="Submitted")
      * )
      */
@@ -113,6 +122,32 @@ class SurveyAnswerController extends Controller
                 return response()->json([
                     'status' => false,
                     'message' => __('This student has already been evaluated for this survey'),
+                ], 403);
+            }
+        } elseif ($this->shouldStudentEvaluateCompaniesForSurvey($survey, auth()->user())) {
+            $studentCompanyId = (int) $request->input('student_company_id');
+
+            if (! $studentCompanyId) {
+                return response()->json([
+                    'status' => false,
+                    'message' => __('Please select a company.'),
+                ], 422);
+            }
+
+            $studentCompany = $this->currentSurveyStudentCompaniesForStudentQuery($survey, $userId)
+                ->find($studentCompanyId);
+
+            if (! $studentCompany) {
+                return response()->json([
+                    'status' => false,
+                    'message' => __('Selected company is not available for evaluation'),
+                ], 403);
+            }
+
+            if ($survey->hasBeenSubmittedBy($userId, $studentCompany->id)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => __('This company has already been evaluated for this survey'),
                 ], 403);
             }
         } elseif ($survey->hasBeenSubmittedBy($userId)) {

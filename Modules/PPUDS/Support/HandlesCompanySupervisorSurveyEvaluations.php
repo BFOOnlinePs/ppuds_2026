@@ -26,6 +26,15 @@ trait HandlesCompanySupervisorSurveyEvaluations
             && $user?->hasRole(UserRole::COMPANY_SUPERVISOR->value);
     }
 
+    protected function shouldStudentEvaluateCompaniesForSurvey(Survey $survey, ?User $user = null): bool
+    {
+        $user ??= auth()->user();
+
+        return $survey->serve_group === UserRole::STUDENT->value
+            && $user?->hasRole(UserRole::STUDENT->value)
+            && $this->currentSurveyStudentCompaniesForStudentQuery($survey, (int) $user->id)->exists();
+    }
+
     protected function currentSurveyStudentCompaniesQuery(?Survey $survey = null, ?int $supervisorUserId = null): Builder
     {
         $settings = app(GeneralSettings::class);
@@ -77,6 +86,48 @@ trait HandlesCompanySupervisorSurveyEvaluations
                 ->select('student_company_id')
                 ->where('survey_id', $survey->id)
                 ->where('submitted_by', $supervisorUserId)
+                ->whereNotNull('student_company_id')
+                ->distinct()
+            );
+    }
+
+    protected function currentSurveyStudentCompaniesForStudentQuery(Survey $survey, int $studentId): Builder
+    {
+        $settings = app(GeneralSettings::class);
+
+        return StudentCompany::query()
+            ->with([
+                'student.studentProfile.major',
+                'company.translations',
+                'branch.translations',
+                'department.translations',
+                'registration',
+            ])
+            ->where('student_id', $studentId)
+            ->whereNotNull('company_id')
+            ->whereHas('registration', function (Builder $query) use ($settings) {
+                $query
+                    ->where('semester', $settings->semester_type->value)
+                    ->where('year', $settings->year);
+            })
+            ->when(
+                $survey->major_id,
+                fn (Builder $query, int $majorId) => $query->whereHas(
+                    'student.studentProfile',
+                    fn (Builder $profileQuery) => $profileQuery->where('major_id', $majorId)
+                )
+            );
+    }
+
+    protected function pendingStudentCompaniesForStudentSurveyQuery(Survey $survey, int $studentId): Builder
+    {
+        $studentCompaniesTable = (new StudentCompany)->getTable();
+
+        return $this->currentSurveyStudentCompaniesForStudentQuery($survey, $studentId)
+            ->whereNotIn("{$studentCompaniesTable}.id", SurveyAnswer::query()
+                ->select('student_company_id')
+                ->where('survey_id', $survey->id)
+                ->where('submitted_by', $studentId)
                 ->whereNotNull('student_company_id')
                 ->distinct()
             );

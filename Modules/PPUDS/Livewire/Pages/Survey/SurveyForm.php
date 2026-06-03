@@ -25,9 +25,9 @@ use Modules\PPUDS\Support\HandlesCompanySupervisorSurveyEvaluations;
 
 class SurveyForm extends Component implements HasActions, HasForms
 {
+    use HandlesCompanySupervisorSurveyEvaluations;
     use InteractsWithActions;
     use InteractsWithForms;
-    use HandlesCompanySupervisorSurveyEvaluations;
 
     public Survey $survey;
 
@@ -62,6 +62,20 @@ class SurveyForm extends Component implements HasActions, HasForms
                 ->extraAttributes([
                     'class' => 'bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 rounded-xl mb-6',
                 ]);
+        } elseif ($this->isStudentCompanyEvaluation()) {
+            $schema[] = Section::make(__('Company Evaluation'))
+                ->schema([
+                    Select::make('student_company_id')
+                        ->label(__('Company To Evaluate'))
+                        ->options(fn (): array => $this->studentCompanyOptions())
+                        ->searchable()
+                        ->preload()
+                        ->live()
+                        ->required(),
+                ])
+                ->extraAttributes([
+                    'class' => 'bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 rounded-xl mb-6',
+                ]);
         }
 
         foreach ($this->survey->questions->sortBy('sort_order') as $question) {
@@ -71,15 +85,15 @@ class SurveyForm extends Component implements HasActions, HasForms
             })->toArray();
 
             $field = match ((int) $question->type) {
-                SurveyQuestionType::TEXT->value         => TextInput::make($fieldName),
-                SurveyQuestionType::TEXTAREA->value     => Textarea::make($fieldName),
-                SurveyQuestionType::RADIO->value        => Radio::make($fieldName)->options($options)->inline(),
-                SurveyQuestionType::CHECKBOX->value     => CheckboxList::make($fieldName)->options($options)->columns(['default' => 1, 'sm' => 2, 'md' => 3]),
-                SurveyQuestionType::SELECT->value       => Select::make($fieldName)->options($options),
+                SurveyQuestionType::TEXT->value => TextInput::make($fieldName),
+                SurveyQuestionType::TEXTAREA->value => Textarea::make($fieldName),
+                SurveyQuestionType::RADIO->value => Radio::make($fieldName)->options($options)->inline(),
+                SurveyQuestionType::CHECKBOX->value => CheckboxList::make($fieldName)->options($options)->columns(['default' => 1, 'sm' => 2, 'md' => 3]),
+                SurveyQuestionType::SELECT->value => Select::make($fieldName)->options($options),
                 SurveyQuestionType::MULTI_SELECT->value => Select::make($fieldName)->options($options)->multiple(),
-                SurveyQuestionType::DATE->value         => DatePicker::make($fieldName)->native(false),
-                SurveyQuestionType::FILE->value         => FileUpload::make($fieldName)->directory('surveys'),
-                SurveyQuestionType::RATING->value       => Radio::make($fieldName)->options([1 => '1', 2 => '2', 3 => '3', 4 => '4', 5 => '5'])->inline(),
+                SurveyQuestionType::DATE->value => DatePicker::make($fieldName)->native(false),
+                SurveyQuestionType::FILE->value => FileUpload::make($fieldName)->directory('surveys'),
+                SurveyQuestionType::RATING->value => Radio::make($fieldName)->options([1 => '1', 2 => '2', 3 => '3', 4 => '4', 5 => '5'])->inline(),
                 default => TextInput::make($fieldName),
             };
 
@@ -88,10 +102,10 @@ class SurveyForm extends Component implements HasActions, HasForms
 
             $schema[] = Section::make()
                 ->schema([
-                    $field
+                    $field,
                 ])
                 ->extraAttributes([
-                    'class' => 'bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 rounded-xl mb-6'
+                    'class' => 'bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 rounded-xl mb-6',
                 ]);
         }
 
@@ -121,6 +135,22 @@ class SurveyForm extends Component implements HasActions, HasForms
 
             if ($this->survey->hasBeenSubmittedBy($user->id, $studentCompany->id)) {
                 Toaster::error(__('This student has already been evaluated for this survey'));
+
+                return;
+            }
+        } elseif ($this->isStudentCompanyEvaluation()) {
+            $studentCompanyId = (int) ($formData['student_company_id'] ?? 0);
+            $studentCompany = $this->currentSurveyStudentCompaniesForStudentQuery($this->survey, $user->id)
+                ->find($studentCompanyId);
+
+            if (! $studentCompany) {
+                Toaster::error(__('Selected company is not available for evaluation'));
+
+                return;
+            }
+
+            if ($this->survey->hasBeenSubmittedBy($user->id, $studentCompany->id)) {
+                Toaster::error(__('This company has already been evaluated for this survey'));
 
                 return;
             }
@@ -195,12 +225,22 @@ class SurveyForm extends Component implements HasActions, HasForms
                 && $this->pendingCompanyStudentsCount() === 0;
         }
 
+        if ($this->isStudentCompanyEvaluation()) {
+            return $this->totalStudentCompaniesCount() > 0
+                && $this->pendingStudentCompaniesCount() === 0;
+        }
+
         return $this->survey->hasBeenSubmittedBy($user->id);
     }
 
     public function isCompanySupervisorEvaluation(): bool
     {
         return $this->shouldEvaluateStudentsForSurvey($this->survey, auth()->user());
+    }
+
+    public function isStudentCompanyEvaluation(): bool
+    {
+        return $this->shouldStudentEvaluateCompaniesForSurvey($this->survey, auth()->user());
     }
 
     public function totalCompanyStudentsCount(): int
@@ -230,6 +270,28 @@ class SurveyForm extends Component implements HasActions, HasForms
         return max($this->totalCompanyStudentsCount() - $this->pendingCompanyStudentsCount(), 0);
     }
 
+    public function totalStudentCompaniesCount(): int
+    {
+        $user = auth()->user();
+
+        if (! $user || ! $this->isStudentCompanyEvaluation()) {
+            return 0;
+        }
+
+        return $this->currentSurveyStudentCompaniesForStudentQuery($this->survey, $user->id)->count();
+    }
+
+    public function pendingStudentCompaniesCount(): int
+    {
+        $user = auth()->user();
+
+        if (! $user || ! $this->isStudentCompanyEvaluation()) {
+            return 0;
+        }
+
+        return $this->pendingStudentCompaniesForStudentSurveyQuery($this->survey, $user->id)->count();
+    }
+
     protected function companyStudentOptions(): array
     {
         $user = auth()->user();
@@ -239,6 +301,23 @@ class SurveyForm extends Component implements HasActions, HasForms
         }
 
         return $this->pendingStudentCompaniesForSupervisorQuery($this->survey, $user->id)
+            ->orderBy('id')
+            ->get()
+            ->mapWithKeys(fn (StudentCompany $studentCompany): array => [
+                $studentCompany->id => $this->studentCompanyOptionLabel($studentCompany),
+            ])
+            ->toArray();
+    }
+
+    protected function studentCompanyOptions(): array
+    {
+        $user = auth()->user();
+
+        if (! $user) {
+            return [];
+        }
+
+        return $this->pendingStudentCompaniesForStudentSurveyQuery($this->survey, $user->id)
             ->orderBy('id')
             ->get()
             ->mapWithKeys(fn (StudentCompany $studentCompany): array => [

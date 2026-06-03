@@ -32,9 +32,9 @@ use Modules\PPUDS\Support\HandlesCompanySupervisorSurveyEvaluations;
 
 class Index extends Component implements HasForms, HasTable
 {
+    use HandlesCompanySupervisorSurveyEvaluations;
     use InteractsWithForms;
     use InteractsWithTable;
-    use HandlesCompanySupervisorSurveyEvaluations;
 
     public function table(Table $table): Table
     {
@@ -265,6 +265,10 @@ class Index extends Component implements HasForms, HasTable
 
                     if ($this->shouldEvaluateStudentsForSurvey($record, $user)) {
                         return $this->pendingStudentCompaniesForSupervisorQuery($record, $user->id)->exists();
+                    }
+
+                    if ($this->shouldStudentEvaluateCompaniesForSurvey($record, $user)) {
+                        return $this->pendingStudentCompaniesForStudentSurveyQuery($record, $user->id)->exists();
                     }
 
                     $hasSubmitted = SurveyAnswer::where('survey_id', $record->id)
