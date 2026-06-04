@@ -76,6 +76,7 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
                     Route::get('/', 'index')->name('index');
                     Route::post('/', 'store')->name('store');
                     Route::get('/{studentCompany}', 'show')->name('show');
+                    Route::delete('/{studentCompany}', 'destroy')->name('destroy');
                 });
 
             Route::controller(StudentCompanyAssistantController::class)

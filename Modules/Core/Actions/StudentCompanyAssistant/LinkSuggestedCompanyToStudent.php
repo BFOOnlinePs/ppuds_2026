@@ -23,6 +23,25 @@ class LinkSuggestedCompanyToStudent
                 ->first();
 
             if ($studentCompany) {
+                if ($studentCompany->trashed()) {
+                    [$branchId, $departmentId] = $this->resolveCompanyPlacement->handle(
+                        $companyId,
+                        $suggestion['branch_id'] ?? null,
+                        $suggestion['department_id'] ?? null,
+                    );
+
+                    $studentCompany->restore();
+                    $studentCompany->update([
+                        'student_id' => $studentId,
+                        'branch_id' => $branchId,
+                        'department_id' => $departmentId,
+                        'status' => TrainingStatus::AVAILABLE,
+                        'created_by' => $createdBy,
+                    ]);
+
+                    return 'updated';
+                }
+
                 return 'already_exists';
             }
 

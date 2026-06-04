@@ -3,6 +3,7 @@
 namespace Modules\Core\Livewire\Pages\Home;
 
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Core\Actions\StudentCompanyAssistant\FindCompaniesForCompanyAssistant;
@@ -13,6 +14,8 @@ use Modules\Core\Entities\User;
 use Modules\Core\Services\StudentCompanySuggestionService;
 use Modules\Core\Services\StudentTrainingChatService;
 use Modules\PPUDS\Entities\Registration;
+use Modules\PPUDS\Entities\StudentCompany;
+use Modules\PPUDS\Enums\TrainingStatus;
 use Modules\PPUDS\Settings\GeneralSettings as PPUDSSettings;
 
 class StudentCompanyAssistant extends Component
@@ -68,6 +71,12 @@ class StudentCompanyAssistant extends Component
         $this->studentName = '';
 
         $this->addMessage('user', $term);
+
+        if ($this->wantsCompanyUnlink($term)) {
+            $this->handleCompanyUnlinkRequest($term);
+
+            return;
+        }
 
         $wantsCompanySuggestions = $this->wantsCompanySuggestions($term);
         $wantsStudentInformation = $this->wantsStudentInformation($term) || (! $this->studentId && ! $wantsCompanySuggestions);
@@ -350,6 +359,55 @@ class StudentCompanyAssistant extends Component
         return true;
     }
 
+    private function handleCompanyUnlinkRequest(string $term): void
+    {
+        $this->authorize('StudentCompany Delete');
+
+        $this->companyMatches = [];
+        $this->suggestions = [];
+
+        if (! $this->studentId || ! $this->registrationId) {
+            $this->addMessage('assistant', 'اختر الطالب أولًا، ثم اطلب إلغاء ربطه بالشركة.');
+
+            return;
+        }
+
+        if (! $this->ensureCurrentRegistrationSelected()) {
+            return;
+        }
+
+        $studentCompany = $this->studentCompanyForUnlink($term);
+        $companyName = $this->companyNameFromUnlinkTerm($term);
+
+        if (! $studentCompany) {
+            $message = filled($companyName)
+                ? "لم أجد ربطًا حاليًا بين الطالب {$this->selectedStudentName} وشركة {$companyName}."
+                : "لا توجد شركة تدريب مربوطة حاليًا بالطالب {$this->selectedStudentName}.";
+
+            $this->addMessage('assistant', $message);
+            Toaster::error($message);
+
+            return;
+        }
+
+        $unlinkedCompanyName = $studentCompany->company?->name ?: 'الشركة الحالية';
+
+        DB::transaction(function () use ($studentCompany) {
+            $studentCompany->forceFill([
+                'status' => TrainingStatus::DELETED,
+            ])->save();
+
+            $studentCompany->delete();
+        });
+
+        $this->refreshTrainingContextFromCurrentStudent();
+
+        $message = "تم إلغاء ربط {$unlinkedCompanyName} بالطالب {$this->selectedStudentName}.";
+
+        $this->addMessage('assistant', $message);
+        Toaster::success($message);
+    }
+
     private function answerStudentQuestion(string $question, ?User $student = null): void
     {
         $this->companyMatches = [];
@@ -435,6 +493,26 @@ class StudentCompanyAssistant extends Component
             || str_contains($term, 'حالة');
     }
 
+    private function wantsCompanyUnlink(string $term): bool
+    {
+        $term = mb_strtolower($term);
+
+        $hasUnlinkVerb = str_contains($term, 'إلغاء')
+            || str_contains($term, 'الغاء')
+            || str_contains($term, 'إلغي')
+            || str_contains($term, 'الغي')
+            || str_contains($term, 'فك')
+            || str_contains($term, 'إزالة')
+            || str_contains($term, 'ازالة');
+
+        return $hasUnlinkVerb
+            && (
+                str_contains($term, 'ربط')
+                || str_contains($term, 'شركة')
+                || str_contains($term, 'الشركة')
+            );
+    }
+
     private function wantsCompanySuggestions(string $term): bool
     {
         $term = mb_strtolower($term);
@@ -494,6 +572,97 @@ class StudentCompanyAssistant extends Component
             ->where('semester', $settings->semester_type?->value)
             ->where('year', $settings->year)
             ->exists();
+    }
+
+    private function studentCompanyForUnlink(string $term): ?StudentCompany
+    {
+        $query = StudentCompany::query()
+            ->with(['company', 'branch', 'department'])
+            ->where('student_id', $this->studentId)
+            ->where('registration_id', $this->registrationId)
+            ->whereNotNull('company_id')
+            ->latest('id');
+
+        $companyName = $this->companyNameFromUnlinkTerm($term);
+
+        if (filled($companyName)) {
+            return (clone $query)
+                ->whereHas('company', fn ($companyQuery) => $companyQuery->whereTranslationLike('name', '%'.$companyName.'%'))
+                ->first();
+        }
+
+        return $query->first();
+    }
+
+    private function companyNameFromUnlinkTerm(string $term): string
+    {
+        $cleaned = preg_replace('/[^\p{Arabic}\p{L}\p{N}\s]+/u', ' ', mb_strtolower($term)) ?? $term;
+        $cleaned = trim(preg_replace('/\s+/u', ' ', $cleaned) ?? $cleaned);
+
+        $stopWords = [
+            'إلغاء', 'الغاء', 'إلغي', 'الغي', 'فك', 'إزالة', 'ازالة',
+            'ربط', 'الطالب', 'طالب', 'الطالبة', 'طالبة', 'هذه', 'هذة',
+            'هذا', 'هذي', 'هاي', 'بهذه', 'بهاي', 'الشركة', 'شركة',
+            'عن', 'من', 'مع',
+        ];
+
+        $words = collect(preg_split('/\s+/u', $cleaned) ?: [])
+            ->map(fn (string $word): string => $this->normalizeCompanyNameWord($word))
+            ->filter(fn (string $word): bool => mb_strlen($word) >= 2 && ! in_array($word, $stopWords, true))
+            ->values();
+
+        return mb_substr($words->implode(' '), 0, 120);
+    }
+
+    private function normalizeCompanyNameWord(string $word): string
+    {
+        if (str_starts_with($word, 'بب')) {
+            return mb_substr($word, 1);
+        }
+
+        if (str_starts_with($word, 'بال')) {
+            return 'ال'.mb_substr($word, 3);
+        }
+
+        return $word;
+    }
+
+    private function refreshTrainingContextFromCurrentStudent(): void
+    {
+        if (! $this->studentId || ! $this->registrationId) {
+            return;
+        }
+
+        $studentCompany = StudentCompany::query()
+            ->with(['company', 'branch', 'department'])
+            ->withAttendanceDays()
+            ->withCount('leaveRequests')
+            ->where('student_id', $this->studentId)
+            ->where('registration_id', $this->registrationId)
+            ->latest('id')
+            ->first();
+
+        if (! $studentCompany) {
+            $this->studentContext = array_merge($this->studentContext, [
+                'company' => null,
+                'branch' => null,
+                'department' => null,
+                'status' => null,
+                'attendance_days' => 0,
+                'leave_requests' => 0,
+            ]);
+
+            return;
+        }
+
+        $this->studentContext = array_merge($this->studentContext, [
+            'company' => $studentCompany->company?->name,
+            'branch' => $studentCompany->branch?->name,
+            'department' => $studentCompany->department?->name,
+            'status' => $studentCompany->status?->getLabel(),
+            'attendance_days' => (int) ($studentCompany->attendance_days ?? 0),
+            'leave_requests' => (int) ($studentCompany->leave_requests_count ?? 0),
+        ]);
     }
 
     private function resetSelection(): void

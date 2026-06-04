@@ -3,9 +3,11 @@
 namespace Modules\PPUDS\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\DB;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Entities\StudentCompany; // تأكدنا من استخدام هذا الكلاس
+use Modules\PPUDS\Enums\TrainingStatus;
 use Modules\PPUDS\Http\Controllers\Api\V1\Concerns\EnsuresCurrentRegistration;
 use Modules\PPUDS\Http\Requests\StudentCompanyRequest;
 use Modules\PPUDS\Transformers\V1\StudentCompanyResource;
@@ -162,7 +164,17 @@ class StudentCompanyController extends Controller
         $data['student_id'] = $registration->student_id;
         $data['created_by'] = auth()->id();
 
-        $studentCompany = StudentCompany::create($data);
+        $studentCompany = StudentCompany::onlyTrashed()
+            ->where('registration_id', $data['registration_id'])
+            ->where('company_id', $data['company_id'])
+            ->first();
+
+        if ($studentCompany) {
+            $studentCompany->restore();
+            $studentCompany->update($data);
+        } else {
+            $studentCompany = StudentCompany::create($data);
+        }
 
         $studentCompany->load(['company', 'branch', 'department']);
 
@@ -227,6 +239,59 @@ class StudentCompanyController extends Controller
         return $this->successResponse(
             new StudentCompanyResource($studentCompany),
             __('Student Company retrieved successfully')
+        );
+    }
+
+    /**
+     * @OA\Delete(
+     * path="/api/v1/ppuds/student-companies/{studentCompany}",
+     * summary="Unlink a student from a company",
+     * description="Soft deletes the student-company assignment and marks it as deleted.",
+     * tags={"Student Companies"},
+     * security={{"sanctum": {}}},
+     *
+     * @OA\Parameter(
+     * name="studentCompany",
+     * in="path",
+     * required=true,
+     * description="Student Company ID",
+     *
+     * @OA\Schema(type="integer", example=1)
+     * ),
+     *
+     * @OA\Response(
+     * response=200,
+     * description="Student unlinked from company successfully",
+     *
+     * @OA\JsonContent(
+     * type="object",
+     *
+     * @OA\Property(property="status", type="boolean", example=true),
+     * @OA\Property(property="message", type="string", example="Student unlinked from company successfully"),
+     * @OA\Property(property="data", type="null", nullable=true, example=null)
+     * )
+     * ),
+     *
+     * @OA\Response(response=404, description="Student Company not found")
+     * )
+     */
+    public function destroy(StudentCompany $studentCompany)
+    {
+        if ($response = $this->ensureStudentCompanyInCurrentSemester($studentCompany)) {
+            return $response;
+        }
+
+        DB::transaction(function () use ($studentCompany) {
+            $studentCompany->forceFill([
+                'status' => TrainingStatus::DELETED,
+            ])->save();
+
+            $studentCompany->delete();
+        });
+
+        return $this->successResponse(
+            null,
+            __('Student unlinked from company successfully')
         );
     }
 }
