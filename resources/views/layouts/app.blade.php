@@ -937,30 +937,17 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        if (window.Echo) {
-            console.log('Echo initialized successfully');
-
-            // استمع للـ Notifications
-            window.Echo.private('App.Models.User.{{ Auth::id() }}')
-                .notification((notification) => {
-                    console.log('Notification received from Echo:', notification);
-
-                    // أرسل للـ Livewire Component
-                    Livewire.dispatch('notification-received', {
-                        title: notification.title,
-                        message: notification.message
-                    });
-                });
-
-            Echo.private(`App.Models.User.1`)
-                .notification((notification) => {
-                    console.log(notification.type);
-                    console.log(notification.message);
-                    // Update your UI here
-                });
-        } else {
-            console.error('Echo is not initialized!');
+        if (! window.Echo) {
+            return;
         }
+
+        window.Echo.private('App.Models.User.{{ Auth::id() }}')
+            .notification((notification) => {
+                Livewire.dispatch('notification-received', {
+                    title: notification.title,
+                    message: notification.message
+                });
+            });
     });
 
     const token = "{{ session('keycloak_access_token') }}";
