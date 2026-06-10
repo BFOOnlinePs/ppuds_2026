@@ -8,6 +8,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Columns\TextColumn;
@@ -99,6 +100,12 @@ class Index extends Component implements HasForms, HasTable
             ->filtersFormColumns(5)
             ->actions($this->getTableActions())
             ->headerActions([
+                Action::make('importPlacements')
+                    ->label(__('Import Placements'))
+                    ->icon('heroicon-o-arrow-up-tray')
+                    ->url(route('student-companies.import'))
+                    ->visible(fn() => auth()->user()->can('StudentCompany Create')),
+
                 \Modules\Core\Filament\Forms\Components\CreateAction::make('create')
                     ->label(__('Add Student Company'))
                     ->url(route('student-companies.add'))

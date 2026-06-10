@@ -118,6 +118,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ], function () {
                     Route::get('/', Index::class)->name('index')->can('StudentCompany View List');
                     Route::get('/add', Add::class)->name('add')->can('StudentCompany Create');
+                    Route::get('/import', ImportPlacements::class)->name('import')->can('StudentCompany Create');
                     Route::get('/{studentCompany}/edit', Edit::class)->name('edit')->can('StudentCompany Update');
                     Route::get('/{studentCompany}/details', Details::class)->name('details')->can('StudentCompany Details');
                 });

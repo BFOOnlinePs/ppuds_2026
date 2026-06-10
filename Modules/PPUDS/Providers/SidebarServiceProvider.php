@@ -61,6 +61,7 @@ class SidebarServiceProvider extends ServiceProvider
             (new SidebarGroup('Student Companies', 'solar-hand-shake-bold-duotone', [], 70))
                 ->add(new SidebarItem('Student Companies List', 'solar-clipboard-list-bold-duotone', ['StudentCompany View List'], 'student-companies.index'))
                 ->add(new SidebarItem('Add Student Company', 'solar-clipboard-add-bold-duotone', ['StudentCompany Create'], 'student-companies.add'))
+                ->add(new SidebarItem('Import Placements', 'solar-document-add-bold-duotone', ['StudentCompany Create'], 'student-companies.import'))
         );
 
         $sidebar->add(
