@@ -16,11 +16,14 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
 use Livewire\Component;
+use Maatwebsite\Excel\Excel as WriterType;
 use Masmerise\Toaster\Toaster;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
+use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\PPUDS\Entities\StudentProfile;
 use Modules\PPUDS\Enums\StudentGender;
+use Modules\PPUDS\Exports\StudentsExport;
 use Modules\PPUDS\Services\PpuApiService;
 use Modules\PPUDS\Settings\GeneralSettings;
 
@@ -64,6 +67,18 @@ class Index extends Component implements HasForms, HasTable
 
             ])
             ->filters($this->getTableFilters())
+            ->headerActions([
+                Action::make('export_students')
+                    ->label(__('Export Students'))
+                    ->icon('heroicon-m-arrow-down-tray')
+                    ->color('success')
+                    ->action(fn () => app(ExcelServiceInterface::class)->download(
+                        new StudentsExport($this->getTableQueryForExport()),
+                        $this->exportFilename(),
+                        WriterType::XLSX
+                    ))
+                    ->visible(fn () => auth()->user()->can('Student View List')),
+            ])
             ->actions(
                 $this->getTableActions()
             )
@@ -247,6 +262,11 @@ class Index extends Component implements HasForms, HasTable
             DeleteAction::make('delete')
                 ->visible(fn () => auth()->user()->can('Student Delete')),
         ];
+    }
+
+    protected function exportFilename(): string
+    {
+        return 'students-'.now()->format('Y-m-d-His').'.xlsx';
     }
 
     public function render()
