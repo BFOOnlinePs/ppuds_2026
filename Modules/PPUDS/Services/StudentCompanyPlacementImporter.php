@@ -39,6 +39,12 @@ class StudentCompanyPlacementImporter
 
     private const PORTAL_SHEET_NAME = 'potral';
 
+    private const LAYOUT_PORTAL = 'portal';
+
+    private const LAYOUT_STUDENT = 'student';
+
+    private const LAYOUT_PLACEMENT_TEMPLATE = 'placement_template';
+
     private array $options = [];
 
     private array $stats = [];
@@ -60,6 +66,8 @@ class StudentCompanyPlacementImporter
     private array $companyCache = [];
 
     private array $supervisorCache = [];
+
+    private array $universitySupervisorCache = [];
 
     private array $cityCache = [];
 
@@ -88,6 +96,7 @@ class StudentCompanyPlacementImporter
             foreach ($spreadsheet->getWorksheetIterator() as $sheet) {
                 if (! $this->shouldImportSheet($sheet, $sheetNames)) {
                     $this->stats['sheets_skipped']++;
+
                     continue;
                 }
 
@@ -148,8 +157,11 @@ class StudentCompanyPlacementImporter
             'student_company_created' => 0,
             'student_company_updated' => 0,
             'student_company_skipped_existing' => 0,
+            'registration_supervisors_updated' => 0,
+            'registration_supervisors_skipped_existing' => 0,
             'missing_students' => 0,
             'missing_registrations' => 0,
+            'missing_university_supervisors' => 0,
             'errors' => 0,
         ];
 
@@ -162,6 +174,7 @@ class StudentCompanyPlacementImporter
         $this->registrationCache = [];
         $this->companyCache = [];
         $this->supervisorCache = [];
+        $this->universitySupervisorCache = [];
         $this->cityCache = [];
     }
 
@@ -204,6 +217,7 @@ class StudentCompanyPlacementImporter
             if (! $placement['student_number'] || ! $placement['company_name']) {
                 $this->stats['rows_incomplete']++;
                 $this->addIssue($sheet->getTitle(), $rowNumber, __('Missing student number or company name.'));
+
                 continue;
             }
 
@@ -225,15 +239,22 @@ class StudentCompanyPlacementImporter
         $secondHeader = $this->cleanText($headers[1] ?? null);
 
         if ($firstHeader === 'الرقم الجامعي' && $secondHeader === 'جهة التدريب') {
-            return 'portal';
+            return self::LAYOUT_PORTAL;
         }
 
-        return 'student';
+        if (
+            in_array($this->normaliseForCompare($firstHeader), ['رقم الطالب', 'رقم الطالب الجامعي', 'الرقم الجامعي'], true)
+            && in_array($this->normaliseForCompare($headers[2] ?? null), ['اسم الشركة', 'الشركة', 'جهة التدريب'], true)
+        ) {
+            return self::LAYOUT_PLACEMENT_TEMPLATE;
+        }
+
+        return self::LAYOUT_STUDENT;
     }
 
     private function placementFromRow(array $row, string $layout, string $sheetName, int $rowNumber): array
     {
-        if ($layout === 'portal') {
+        if ($layout === self::LAYOUT_PORTAL) {
             $studentNumber = $this->cleanIdentifier($row[0] ?? null);
             $companyName = $this->cleanText($row[1] ?? null);
             $location = $this->cleanText($row[9] ?? null);
@@ -251,6 +272,23 @@ class StudentCompanyPlacementImporter
                 'supervisor_name' => $this->cleanText($row[6] ?? null),
                 'supervisor_phone' => $this->cleanPhone($row[7] ?? null),
                 'supervisor_email' => $this->cleanEmail($row[8] ?? null),
+                'university_supervisor_name' => null,
+            ];
+        }
+
+        if ($layout === self::LAYOUT_PLACEMENT_TEMPLATE) {
+            return [
+                'sheet' => $sheetName,
+                'row' => $rowNumber,
+                'student_number' => $this->cleanIdentifier($row[0] ?? null),
+                'company_name' => $this->cleanText($row[2] ?? null),
+                'company_location' => '',
+                'main_address' => '',
+                'details' => '',
+                'supervisor_name' => $this->cleanText($row[3] ?? null),
+                'supervisor_phone' => $this->cleanPhone($row[4] ?? null),
+                'supervisor_email' => $this->cleanEmail($row[5] ?? null),
+                'university_supervisor_name' => $this->cleanText($row[6] ?? null),
             ];
         }
 
@@ -269,6 +307,7 @@ class StudentCompanyPlacementImporter
             'supervisor_name' => $this->cleanText($row[13] ?? null),
             'supervisor_phone' => $this->cleanPhone($row[14] ?? null),
             'supervisor_email' => $this->cleanEmail($row[15] ?? null),
+            'university_supervisor_name' => null,
         ];
     }
 
@@ -306,7 +345,13 @@ class StudentCompanyPlacementImporter
             return;
         }
 
+        $universitySupervisor = $this->universitySupervisorForPlacement($placement);
+
         foreach ($registrations as $registration) {
+            if ($universitySupervisor) {
+                $this->assignUniversitySupervisor($registration, $universitySupervisor);
+            }
+
             $result = $this->upsertStudentCompany($registration, $company, $branch, $department);
             $this->stats["student_company_{$result}"]++;
         }
@@ -350,6 +395,73 @@ class StudentCompanyPlacementImporter
         $this->ensureCompanySupervisorRole($supervisor);
 
         return $this->supervisorCache[$email] = $supervisor;
+    }
+
+    private function universitySupervisorForPlacement(array $placement): ?User
+    {
+        $name = $this->cleanText($placement['university_supervisor_name'] ?? null);
+
+        if ($name === '') {
+            return null;
+        }
+
+        $cacheKey = $this->normaliseForCompare($name);
+
+        if (array_key_exists($cacheKey, $this->universitySupervisorCache)) {
+            $supervisor = $this->universitySupervisorCache[$cacheKey];
+
+            if (! $supervisor) {
+                $this->trackMissingUniversitySupervisor($placement, $name);
+            }
+
+            return $supervisor;
+        }
+
+        $email = $this->cleanEmail($name);
+        $roleName = UserRole::PRACTICAL_TRAINING_SUPERVISOR->value;
+
+        $supervisor = User::query()
+            ->whereHas('roles', fn ($query) => $query->where('name', $roleName))
+            ->where(function ($query) use ($name, $email): void {
+                $query
+                    ->where('name', $name)
+                    ->orWhere('name_en', $name);
+
+                if ($email) {
+                    $query->orWhere('email', $email);
+                }
+            })
+            ->first();
+
+        if (! $supervisor) {
+            $matches = User::query()
+                ->whereHas('roles', fn ($query) => $query->where('name', $roleName))
+                ->where(function ($query) use ($name): void {
+                    $query
+                        ->where('name', 'like', "%{$name}%")
+                        ->orWhere('name_en', 'like', "%{$name}%");
+                })
+                ->limit(2)
+                ->get();
+
+            if ($matches->count() === 1) {
+                $supervisor = $matches->first();
+            }
+        }
+
+        if (! $supervisor) {
+            $this->trackMissingUniversitySupervisor($placement, $name);
+        }
+
+        return $this->universitySupervisorCache[$cacheKey] = $supervisor;
+    }
+
+    private function trackMissingUniversitySupervisor(array $placement, string $name): void
+    {
+        $this->stats['missing_university_supervisors']++;
+        $this->addIssue($placement['sheet'], $placement['row'], __('University supervisor [:supervisor] was not found.', [
+            'supervisor' => $name,
+        ]));
     }
 
     private function companyForPlacement(array $placement, User $supervisor): Company
@@ -509,6 +621,25 @@ class StudentCompanyPlacementImporter
         StudentCompany::create($attributes);
 
         return 'created';
+    }
+
+    private function assignUniversitySupervisor(Registration $registration, User $supervisor): void
+    {
+        if ((int) $registration->supervisor_id === (int) $supervisor->id) {
+            return;
+        }
+
+        if ($registration->supervisor_id && ! $this->options['update_existing']) {
+            $this->stats['registration_supervisors_skipped_existing']++;
+
+            return;
+        }
+
+        $registration->update([
+            'supervisor_id' => $supervisor->id,
+        ]);
+
+        $this->stats['registration_supervisors_updated']++;
     }
 
     private function studentProfile(string $studentNumber): ?StudentProfile

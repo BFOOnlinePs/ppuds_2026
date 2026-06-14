@@ -86,9 +86,9 @@
                 </span>
             </div>
 
-            @if (($stats['missing_students'] ?? 0) > 0 || ($stats['missing_registrations'] ?? 0) > 0)
+            @if (($stats['missing_students'] ?? 0) > 0 || ($stats['missing_registrations'] ?? 0) > 0 || ($stats['missing_university_supervisors'] ?? 0) > 0)
                 <div class="border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
-                    {{ __('The file was read successfully, but student links require matching student profiles and registrations for the selected year and semester.') }}
+                    {{ __('The file was read successfully, but student links and supervisors require matching records for the selected year and semester.') }}
                 </div>
             @endif
 
@@ -101,8 +101,11 @@
                     'student_company_created' => __('New Links'),
                     'student_company_updated' => __('Updated Links'),
                     'student_company_skipped_existing' => __('Skipped Links'),
+                    'registration_supervisors_updated' => __('University Supervisors'),
+                    'registration_supervisors_skipped_existing' => __('Skipped Supervisors'),
                     'missing_students' => __('Missing Students'),
                     'missing_registrations' => __('Missing Registrations'),
+                    'missing_university_supervisors' => __('Missing Supervisors'),
                     'errors' => __('Errors'),
                 ] as $metric => $label)
                     <div class="rounded-md border border-gray-200 px-3 py-2 dark:border-gray-700">
