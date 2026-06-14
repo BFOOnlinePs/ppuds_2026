@@ -28,7 +28,7 @@ class KeycloakUserRepository
         $user = User::where('email', $email)->first();
 
         // 3. استخراج الأدوار بأمان من التوكن (تأكد من مطابقة اسم الـ Client)
-        $clientRoles = $token->resource_access->{'dualstudies-laravel-api'}->roles ?? [];
+        $clientRoles = $token->resource_access->{'Dual-Studies-Laravel'}->roles ?? [];
 
         // 4. في حالة المستخدم "الجديد فقط": نفتح Transaction لضمان سلامة البيانات
         if (! $user) {
