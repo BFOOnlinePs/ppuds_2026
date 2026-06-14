@@ -18,6 +18,7 @@ use Filament\Tables\Table;
 use Livewire\Component;
 use Maatwebsite\Excel\Excel as WriterType;
 use Masmerise\Toaster\Toaster;
+use Modules\Core\Filament\Forms\Components\CreateAction;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\Core\Interfaces\ExcelServiceInterface;
