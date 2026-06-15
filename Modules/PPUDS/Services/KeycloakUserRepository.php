@@ -24,13 +24,10 @@ class KeycloakUserRepository
             return null; // رفض الطلب فوراً إذا كان التوكن تالفاً أو ينقصه الإيميل
         }
 
-        // 2. استعلام قراءة واحد سريع جداً (Read-only)
         $user = User::where('email', $email)->first();
 
-        // 3. استخراج الأدوار بأمان من التوكن (تأكد من مطابقة اسم الـ Client)
         $clientRoles = $token->resource_access->{'Dual-Studies-Laravel'}->roles ?? [];
 
-        // 4. في حالة المستخدم "الجديد فقط": نفتح Transaction لضمان سلامة البيانات
         if (! $user) {
             return DB::transaction(function () use ($email, $token, $clientRoles) {
                 $newUser = User::create([
@@ -51,8 +48,6 @@ class KeycloakUserRepository
             });
         }
 
-        // 5. [احترافي]: مزامنة الأدوار للمستخدم القديم "فقط إذا تغيرت"
-        // نستخدم البصمة (Hash) لمنع Spatie من عمل استعلامات تحديث في كل Request
         $cacheKey = "user_{$user->id}_keycloak_roles";
         $rolesHash = md5(json_encode($clientRoles));
 

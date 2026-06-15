@@ -20,7 +20,7 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
         Route::get('/', 'index')->name('index');
     });
 
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware('auth:api,sanctum')->group(function () {
 
         Route::prefix('auth')->as('auth.')->group(function () {
             Route::post('logout', [LoginController::class, 'logout'])->name('logout');
