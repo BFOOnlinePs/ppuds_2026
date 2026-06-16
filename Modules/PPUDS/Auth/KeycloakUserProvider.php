@@ -26,6 +26,14 @@ class KeycloakUserProvider extends EloquentUserProvider
             if ($user) {
                 return $user;
             }
+
+            $user = $this->newModelQuery()
+                ->whereIn('phone', $this->candidatePhones($username))
+                ->first();
+
+            if ($user) {
+                return $user;
+            }
         }
 
         $candidateEmails = $this->candidateEmails($username, $email);
@@ -46,6 +54,28 @@ class KeycloakUserProvider extends EloquentUserProvider
             $username,
             $username ? "{$username}@ppu.edu.ps" : null,
             $username ? "{$username}@ppu.edu" : null,
+        ])));
+    }
+
+    private function candidatePhones(string $username): array
+    {
+        $digits = preg_replace('/\D+/', '', $username);
+
+        if (! $digits) {
+            return [$username];
+        }
+
+        $withoutCountryCode = str_starts_with($digits, '970')
+            ? '0'.substr($digits, 3)
+            : null;
+
+        return array_values(array_unique(array_filter([
+            $username,
+            $digits,
+            $withoutCountryCode,
+            str_starts_with($digits, '0') ? substr($digits, 1) : null,
+            str_starts_with($digits, '0') ? '970'.substr($digits, 1) : null,
+            str_starts_with($digits, '0') ? '+970'.substr($digits, 1) : null,
         ])));
     }
 
