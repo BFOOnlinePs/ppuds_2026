@@ -51,6 +51,8 @@ class Add extends Component implements HasForms
                                 TextInput::make('phone')
                                     ->label(__('Phone'))
                                     ->tel()
+                                    ->nullable()
+                                    ->unique('users', 'phone')
                                     ->maxLength(255),
 
                                 TextInput::make('password')

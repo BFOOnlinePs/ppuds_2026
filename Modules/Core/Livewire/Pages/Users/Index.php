@@ -12,16 +12,19 @@ use Livewire\Component;
 use Filament\Forms;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Enums\FiltersLayout; // ✅ تم استيراد الـ Layout
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use Modules\Core\Entities\User;
 use Modules\Core\Filament\Forms\Components\CreateAction;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
+use Throwable;
 
 class Index extends Component implements HasTable, HasForms
 {
@@ -159,8 +162,44 @@ class Index extends Component implements HasTable, HasForms
                 ->visible(fn() => auth()->user()->can('User Update')),
 
             DeleteAction::make('delete')
+                ->action(fn (User $record) => $this->deleteUser($record))
                 ->visible(fn() => auth()->user()->can('User Delete'))
         ];
+    }
+
+    protected function deleteUser(User $user): void
+    {
+        abort_unless(auth()->user()->can('User Delete'), 403);
+
+        if ((int) $user->id === (int) auth()->id()) {
+            Notification::make()
+                ->title(__('You cannot delete your own account.'))
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        try {
+            DB::transaction(function () use ($user): void {
+                $user->syncRoles([]);
+                $user->tokens()->delete();
+                $user->delete();
+            });
+
+            Notification::make()
+                ->title(__('User deleted successfully.'))
+                ->success()
+                ->send();
+        } catch (Throwable $exception) {
+            report($exception);
+
+            Notification::make()
+                ->title(__('User could not be deleted.'))
+                ->body(__('This user may be linked to records that must be removed first.'))
+                ->danger()
+                ->send();
+        }
     }
 
     public function render()

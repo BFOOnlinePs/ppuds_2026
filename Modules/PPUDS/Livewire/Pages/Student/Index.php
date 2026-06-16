@@ -36,6 +36,7 @@ use Modules\PPUDS\Enums\StudentGender;
 use Modules\PPUDS\Exports\StudentsExport;
 use Modules\PPUDS\Services\PpuApiService;
 use Modules\PPUDS\Settings\GeneralSettings;
+use Throwable;
 
 class Index extends Component implements HasForms, HasTable
 {
@@ -148,6 +149,7 @@ class Index extends Component implements HasForms, HasTable
                                     TextInput::make('phone')
                                         ->label(__('Phone'))
                                         ->numeric()
+                                        ->unique('users', 'phone')
                                         ->required(),
 
                                     TextInput::make('password')
@@ -193,7 +195,7 @@ class Index extends Component implements HasForms, HasTable
                                         ->createOptionUsing(function (array $data) {
                                             $data['created_by'] = auth()->id();
 
-                                            return Major::create($data);
+                                            return Major::create($data)->getKey();
                                         })
                                         ->searchable()
                                         ->preload()
@@ -442,8 +444,42 @@ class Index extends Component implements HasForms, HasTable
             //                ->url(fn(StudentProfile $record) => route('students.edit', $record->user_id))
             //                ->visible(fn() => auth()->user()->can('Student Update')),
             DeleteAction::make('delete')
+                ->action(fn (StudentProfile $record) => $this->deleteStudent($record))
                 ->visible(fn () => auth()->user()->can('Student Delete')),
         ];
+    }
+
+    protected function deleteStudent(StudentProfile $studentProfile): void
+    {
+        abort_unless(auth()->user()->can('Student Delete'), 403);
+
+        if ((int) $studentProfile->user_id === (int) auth()->id()) {
+            Toaster::error(__('You cannot delete your own account.'));
+
+            return;
+        }
+
+        try {
+            DB::transaction(function () use ($studentProfile): void {
+                $user = $studentProfile->user;
+
+                if (! $user) {
+                    $studentProfile->delete();
+
+                    return;
+                }
+
+                $user->syncRoles([]);
+                $user->tokens()->delete();
+                $user->delete();
+            });
+
+            Toaster::success(__('Student deleted successfully'));
+        } catch (Throwable $exception) {
+            report($exception);
+
+            Toaster::error(__('Student could not be deleted because it is linked to other records.'));
+        }
     }
 
     protected function exportFilename(): string

@@ -3,6 +3,7 @@
 namespace Modules\Core\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Modules\PPUDS\Enums\StudentGender;
 
 class UserRequestUpdate extends FormRequest
@@ -15,7 +16,13 @@ class UserRequestUpdate extends FormRequest
         return [
             'name' => 'sometimes|required|string|max:255',
             'email' => 'sometimes|required|email|max:255',
-            'phone' => 'sometimes|required|numeric|regex:/^\+?[0-9]{10,15}$/',
+            'phone' => [
+                'sometimes',
+                'required',
+                'numeric',
+                'regex:/^\+?[0-9]{10,15}$/',
+                Rule::unique('users', 'phone')->ignore($this->route('user')),
+            ],
             'password' => 'sometimes|required|string|min:8|max:255',
 
             'cv' => 'sometimes|file|mimes:jpeg,png,jpg,pdf,doc,docx|max:5120',

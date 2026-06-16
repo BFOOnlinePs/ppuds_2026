@@ -73,6 +73,7 @@ class Edit extends Component implements HasForms
                                         TextInput::make('phone')
                                             ->label(__('Phone'))
                                             ->numeric()
+                                            ->unique('users', 'phone', ignorable: $this->user)
                                             ->required(),
 
                                         TextInput::make('password')
@@ -123,7 +124,7 @@ class Edit extends Component implements HasForms
                                             ->createOptionUsing(function (array $data) {
                                                 $data['created_by'] = auth()->id();
 
-                                                return Major::create($data);
+                                                return Major::create($data)->getKey();
                                             })
                                             ->searchable()
                                             ->preload()
