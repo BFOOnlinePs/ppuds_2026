@@ -47,7 +47,7 @@ class DashboardVerificationWidget extends Widget
                 ->latest('id')
                 ->limit(self::PREVIEW_LIMIT)
                 ->get()
-                ->map(fn (StudentProfile $studentProfile): array => [
+                ->map(fn(StudentProfile $studentProfile): array => [
                     'title' => $studentProfile->user?->name ?: __('Unknown Student'),
                     'subtitle' => $studentProfile->student_number ?: $studentProfile->user?->email,
                     'meta' => $this->studentProfileMeta($studentProfile),
@@ -73,7 +73,7 @@ class DashboardVerificationWidget extends Widget
                 ->latest('id')
                 ->limit(self::PREVIEW_LIMIT)
                 ->get()
-                ->map(fn (Registration $registration): array => [
+                ->map(fn(Registration $registration): array => [
                     'title' => $registration->student?->name ?: __('Unknown Student'),
                     'subtitle' => $registration->student?->studentProfile?->student_number ?: $registration->student?->email,
                     'meta' => $this->registrationMeta($registration),
@@ -91,11 +91,11 @@ class DashboardVerificationWidget extends Widget
             ->whereHas('user')
             ->whereDoesntHave(
                 'user.studentCompanies',
-                fn (Builder $query) => $query->whereNotNull('company_id')
+                fn(Builder $query) => $query->whereNotNull('company_id')
             )
             ->when(
                 $this->shouldScopeToSupervisor(),
-                fn (Builder $query) => $query->whereIn(
+                fn(Builder $query) => $query->whereIn(
                     'user_id',
                     $this->currentRegistrationsQuery()->select('student_id')
                 )
@@ -117,7 +117,7 @@ class DashboardVerificationWidget extends Widget
     private function currentRegistrationsQuery(): Builder
     {
         return Registration::query()
-            ->where(fn (Builder $query) => $this->applyCurrentSemester($query));
+            ->where(fn(Builder $query) => $this->applyCurrentSemester($query));
     }
 
     private function applyCurrentSemester(Builder $query): void
@@ -162,7 +162,7 @@ class DashboardVerificationWidget extends Widget
     {
         return collect([
             $studentProfile->major?->name,
-            $studentProfile->enrollment_year ? __('Enrollment Year').': '.$studentProfile->enrollment_year : null,
+            $studentProfile->enrollment_year ? __('Enrollment Year') . ': ' . $studentProfile->enrollment_year : null,
         ])->filter()->implode(' - ');
     }
 

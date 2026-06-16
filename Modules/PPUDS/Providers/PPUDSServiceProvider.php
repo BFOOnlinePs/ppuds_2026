@@ -2,14 +2,16 @@
 
 namespace Modules\PPUDS\Providers;
 
-use Illuminate\Auth\EloquentUserProvider;
+use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
+use Modules\Core\Entities\User;
+use Modules\PPUDS\Auth\KeycloakUserProvider;
 use Modules\PPUDS\Enums\LoginMethod;
-use Modules\PPUDS\Services\KeycloakUserRepository;
 use Modules\PPUDS\Settings\GeneralSettings;
 use Nwidart\Modules\Traits\PathNamespace;
 use RecursiveDirectoryIterator;
@@ -50,8 +52,15 @@ class PPUDSServiceProvider extends ServiceProvider
                 $settings = app(GeneralSettings::class);
 
                 if ($settings->login_method === LoginMethod::PPU) {
+                    Config::set('auth.providers.keycloak_users', [
+                        'driver' => 'keycloak_users',
+                        'model' => config('auth.providers.users.model', User::class),
+                    ]);
                     Config::set('auth.guards.api.driver', 'keycloak');
-                    Config::set('auth.guards.api.provider', 'users');
+                    Config::set('auth.guards.api.provider', 'keycloak_users');
+                    Config::set('keycloak.user_provider_custom_retrieve_method', 'retrieveByKeycloakToken');
+                    Config::set('keycloak.user_provider_credential', 'username');
+                    Config::set('keycloak.token_principal_attribute', 'preferred_username');
                 }
             } catch (\Exception $e) {
                 Log::error('Failed to load PPUDS general settings: '.$e->getMessage());
@@ -64,6 +73,8 @@ class PPUDSServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->registerKeycloakUserProvider();
+
         $this->app->register(EventServiceProvider::class);
         $this->app->register(RouteServiceProvider::class);
         $this->app->register(SidebarServiceProvider::class);
@@ -169,6 +180,13 @@ class PPUDSServiceProvider extends ServiceProvider
     public function provides(): array
     {
         return [];
+    }
+
+    private function registerKeycloakUserProvider(): void
+    {
+        Auth::provider('keycloak_users', function (Application $app, array $config) {
+            return new KeycloakUserProvider($app['hash'], $config['model']);
+        });
     }
 
     private function getPublishableViewPaths(): array

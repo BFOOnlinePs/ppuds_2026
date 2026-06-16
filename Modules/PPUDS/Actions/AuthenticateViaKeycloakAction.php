@@ -15,22 +15,21 @@ class AuthenticateViaKeycloakAction
     public function execute(KeycloakUser $keycloakUser): User
     {
         return DB::transaction(function () use ($keycloakUser) {
-            $payload = json_decode(base64_decode(explode('.', $keycloakUser->token)[1]), true);
-            $roles = $payload['realm_access']['roles'] ?? [];
-
+            $payload = $this->decodeTokenPayload($keycloakUser->token);
+            $username = $this->cleanIdentifier($payload['preferred_username'] ?? $keycloakUser->getNickname());
             $email = $keycloakUser->getEmail();
 
-            if (! $email) {
+            if (! $username && ! $email) {
                 throw ValidationException::withMessages([
-                    'auth' => 'لم يتم إرسال البريد الإلكتروني من نظام الجامعة.',
+                    'auth' => 'لم يتم إرسال اسم المستخدم من نظام الجامعة.',
                 ]);
             }
 
-            $user = User::where('email', $email)->first();
+            $user = $this->findUser($username, $email);
 
             if (! $user) {
                 throw ValidationException::withMessages([
-                    'auth' => 'لا يوجد حساب مرتبط بهذا البريد في النظام.',
+                    'auth' => 'لا يوجد حساب مرتبط باسم المستخدم هذا في النظام.',
                 ]);
             }
 
@@ -38,29 +37,12 @@ class AuthenticateViaKeycloakAction
                 'name' => $keycloakUser->getName() ?: $user->name,
             ]);
 
-            // 3. مزامنة الأدوار (Spatie Roles) - نفترض وجود دور Student و Supervisor
-            // $user->syncRoles(array_intersect($roles, [UserRole::STUDENT->value, UserRole::COMPANY_SUPERVISOR->value, UserRole::SUPER_ADMIN->value]));
-
-            // $user->assignRole();
-
-            // dd(array_intersect($roles, [UserRole::STUDENT->value, UserRole::COMPANY_SUPERVISOR->value, UserRole::SUPER_ADMIN->value]));
-
-            // $keycloakRoles = array_intersect($roles, [
-            //     UserRole::STUDENT->value,
-            //     UserRole::COMPANY_SUPERVISOR->value,
-            // ]);
-
-            // // 2. إضافة Super Admin بشكل إجباري ودائم للمصفوفة
-            // $keycloakRoles[] = UserRole::SUPER_ADMIN->value;
-
-            // 3. إسناد جميع الأدوار للمستخدم
             $user->assignRole(UserRole::SUPER_ADMIN->value);
 
-            // 4. تحديث ملف الطالب الشخصي (PPUDS Profile)
             if ($user->hasRole(UserRole::STUDENT->value)) {
                 StudentProfile::updateOrCreate(
                     ['user_id' => $user->id],
-                    ['student_number' => explode('@', $user->email)[0]]
+                    ['student_number' => $username ?: explode('@', $user->email)[0]]
                 );
             }
 
@@ -69,11 +51,67 @@ class AuthenticateViaKeycloakAction
             Auth::login($user);
 
             session([
-                'keycloak_access_token'  => $keycloakUser->token,
+                'keycloak_access_token' => $keycloakUser->token,
                 'keycloak_refresh_token' => $keycloakUser->refreshToken,
             ]);
 
             return $user;
         });
+    }
+
+    private function findUser(?string $username, ?string $email): ?User
+    {
+        if ($username) {
+            $user = User::query()
+                ->whereHas('studentProfile', fn ($query) => $query->where('student_number', $username))
+                ->first();
+
+            if ($user) {
+                return $user;
+            }
+        }
+
+        $candidateEmails = $this->candidateEmails($username, $email);
+
+        if ($candidateEmails === []) {
+            return null;
+        }
+
+        return User::whereIn('email', $candidateEmails)->first();
+    }
+
+    private function candidateEmails(?string $username, ?string $email): array
+    {
+        $email = $this->cleanEmail($email);
+
+        return array_values(array_unique(array_filter([
+            $email,
+            $username,
+            $username ? "{$username}@ppu.edu.ps" : null,
+            $username ? "{$username}@ppu.edu" : null,
+        ])));
+    }
+
+    private function cleanIdentifier(mixed $value): ?string
+    {
+        $value = trim((string) $value);
+
+        return $value !== '' ? $value : null;
+    }
+
+    private function cleanEmail(mixed $value): ?string
+    {
+        $value = strtolower(trim((string) $value));
+
+        return filter_var($value, FILTER_VALIDATE_EMAIL) ? $value : null;
+    }
+
+    private function decodeTokenPayload(string $token): array
+    {
+        $payload = explode('.', $token)[1] ?? '';
+        $payload = strtr($payload, '-_', '+/');
+        $payload .= str_repeat('=', (4 - strlen($payload) % 4) % 4);
+
+        return json_decode(base64_decode($payload), true) ?: [];
     }
 }
