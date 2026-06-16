@@ -17,6 +17,8 @@ class DashboardVerificationWidget extends Widget
 
     protected static string $view = 'core::livewire.pages.home.widget.dashboard-verification-widget';
 
+    private const VIEW_PERMISSION = 'Dashboard Statistics Verification View';
+
     private const PREVIEW_LIMIT = 8;
 
     public function sections(): array
@@ -153,11 +155,7 @@ class DashboardVerificationWidget extends Widget
     {
         $user = auth()->user();
 
-        return $user && collect([
-            'Student View List',
-            'Registration View List',
-            'StudentCompany View List',
-        ])->contains(fn (string $permission): bool => $user->can($permission));
+        return $user && $user->can(self::VIEW_PERMISSION);
     }
 
     private function studentProfileMeta(StudentProfile $studentProfile): string

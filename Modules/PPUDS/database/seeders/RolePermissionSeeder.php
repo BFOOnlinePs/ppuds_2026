@@ -75,6 +75,7 @@ class RolePermissionSeeder extends Seeder
             ],
 
             UserRole::HEAD_OF_DEPARTMENT->value => [
+                'Dashboard Statistics Verification View',
                 ...$this->read('Student'),
                 'Student Details List',
                 ...$this->read('Supervisor'),
@@ -104,6 +105,7 @@ class RolePermissionSeeder extends Seeder
             ],
 
             UserRole::ADMINISTRATIVE_ASSISTANT->value => [
+                'Dashboard Statistics Verification View',
                 ...$this->read('Student'),
                 'Student Details List',
                 ...$this->manage('Company Category'),
@@ -131,6 +133,7 @@ class RolePermissionSeeder extends Seeder
             ],
 
             UserRole::M_AND_E_OFFICER->value => [
+                'Dashboard Statistics Verification View',
                 ...$this->read('Student'),
                 'Student Details List',
                 ...$this->read('Company'),
@@ -153,6 +156,7 @@ class RolePermissionSeeder extends Seeder
             ],
 
             UserRole::CORPORATE_RELATIONS_OFFICER->value => [
+                'Dashboard Statistics Verification View',
                 ...$this->read('Student'),
                 'Student Details List',
                 ...$this->manage('Company'),
@@ -177,6 +181,7 @@ class RolePermissionSeeder extends Seeder
             ],
 
             UserRole::PRACTICAL_TRAINING_SUPERVISOR->value => [
+                'Dashboard Statistics Verification View',
                 ...$this->read('Student'),
                 'Student Details List',
                 ...$this->read('Supervisor'),

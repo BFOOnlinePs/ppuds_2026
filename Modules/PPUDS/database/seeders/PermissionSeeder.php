@@ -19,6 +19,13 @@ class PermissionSeeder extends Seeder
         // Permission::query()->delete();
 
         $permissions = [
+            // TODO Dashboard
+            [
+                'name' => 'Dashboard Statistics Verification View',
+                'guard_name' => 'web',
+                'module_name' => 'Dashboard Statistics Verification',
+            ],
+
             // TODO Students
             [
                 'name' => 'Student View List',

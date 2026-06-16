@@ -351,6 +351,7 @@ class Index extends Component implements HasTable, HasForms
             'Currency' => 'العملات',
             'Customer' => 'العملاء',
             'Customer Program' => 'برامج العملاء',
+            'Dashboard Statistics Verification' => 'التحقق من إحصائيات الداشبورد',
             'Delivery Pricing' => 'تسعير التوصيل',
             'Delivery Zone' => 'مناطق التوصيل',
             'Disease' => 'الأمراض',
