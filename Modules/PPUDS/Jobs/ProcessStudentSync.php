@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Modules\Core\Entities\User;
+use Modules\Core\Enums\UserRole;
 use Modules\PPUDS\Entities\Major;
 use Modules\PPUDS\Enums\StudentGender;
 use Modules\PPUDS\Services\PpuApiService;
@@ -51,7 +52,11 @@ class ProcessStudentSync implements ShouldQueue
                 ])->save();
 
                 if (method_exists($user, 'assignRole')) {
-                    $user->assignRole('Student');
+                    $user->assignRole(UserRole::STUDENT->value);
+                }
+
+                if (method_exists($user, 'removeRole') && $user->hasRole(UserRole::SUPER_ADMIN->value)) {
+                    $user->removeRole(UserRole::SUPER_ADMIN->value);
                 }
 
                 if ($user->wasRecentlyCreated && method_exists($user, 'generateAvatar')) {

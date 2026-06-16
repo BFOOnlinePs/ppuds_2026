@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Component;
 use Modules\Core\Entities\User;
+use Modules\Core\Enums\UserRole;
 use Modules\Core\Filament\Forms\Components\Textarea;
 use Modules\PPUDS\Entities\Major;
 use Modules\PPUDS\Entities\StudentProfile;
@@ -196,7 +197,7 @@ class Add extends Component implements HasForms
             $user = User::create($userData);
             $user->generateAvatar();
 
-            $user->assignRole('student');
+            $user->assignRole(UserRole::STUDENT->value);
 
             $profileData = collect($this->data)
                 ->except(['name', 'email', 'password', 'password_confirmation', 'roles'])

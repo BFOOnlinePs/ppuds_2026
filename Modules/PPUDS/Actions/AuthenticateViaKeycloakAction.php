@@ -33,18 +33,11 @@ class AuthenticateViaKeycloakAction
                 ]);
             }
 
-            $user->update([
-                'name' => $keycloakUser->getName() ?: $user->name,
-            ]);
-
-            $user->assignRole(UserRole::SUPER_ADMIN->value);
-
-            if ($user->hasRole(UserRole::STUDENT->value)) {
-                StudentProfile::updateOrCreate(
-                    ['user_id' => $user->id],
-                    ['student_number' => $username ?: explode('@', $user->email)[0]]
-                );
+            if (! $user->name && $keycloakUser->getName()) {
+                $user->update(['name' => $keycloakUser->getName()]);
             }
+
+            $this->syncStudentIdentity($user, $username);
 
             $user->generateAvatar();
 
@@ -84,6 +77,28 @@ class AuthenticateViaKeycloakAction
         }
 
         return User::whereIn('email', $candidateEmails)->first();
+    }
+
+    private function syncStudentIdentity(User $user, ?string $username): void
+    {
+        if (! $username) {
+            return;
+        }
+
+        if (! $user->hasRole(UserRole::STUDENT->value) && ! $user->studentProfile()->exists()) {
+            return;
+        }
+
+        $user->assignRole(UserRole::STUDENT->value);
+
+        if ($user->hasRole(UserRole::SUPER_ADMIN->value)) {
+            $user->removeRole(UserRole::SUPER_ADMIN->value);
+        }
+
+        StudentProfile::updateOrCreate(
+            ['user_id' => $user->id],
+            ['student_number' => $username]
+        );
     }
 
     private function candidateEmails(?string $username, ?string $email): array
