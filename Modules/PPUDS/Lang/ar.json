@@ -423,6 +423,8 @@
     "Location Required": "الموقع الجغرافي مطلوب",
     "Checked In Successfully": "تم تسجيل الدخول بنجاح",
     "Checked Out Successfully": "تم تسجيل المغادرة بنجاح",
+    "Checked Out": "تمت المغادرة",
+    "Pending Check Out": "بانتظار المغادرة",
     "Notes": "ملاحظات",
     "GPS coordinates for check-in and check-out": "إحداثيات الموقع للدخول والمغادرة",
     "In Latitude": "خط العرض (دخول)",
@@ -644,10 +646,13 @@
     "Companies": "الشركات",
     "Supervisors": "المشرفون",
     "Branches": "الفروع",
+    "New Registrations": "تسجيلات جديدة",
     "New Links": "روابط جديدة",
     "Updated Links": "روابط محدثة",
     "Missing Students": "طلاب غير موجودين",
     "Missing Registrations": "تسجيلات غير موجودة",
+    "Skipped Supervisors": "مشرفون متجاوزون",
+    "Missing Supervisors": "مشرفون غير موجودين",
     "Warnings": "تنبيهات",
     "No warnings": "لا توجد تنبيهات",
     "Placement file imported successfully": "تم استيراد ملف توزيع التدريب بنجاح",
@@ -664,5 +669,6 @@
     "Missing student number or company name.": "رقم الطالب أو اسم الشركة غير موجود في هذا الصف.",
     "Student [:student] was not found.": "الطالب رقم [:student] غير موجود في النظام.",
     "No registration found for student [:student] in :year/:semester.": "لا يوجد تسجيل للطالب رقم [:student] في السنة :year / الفصل :semester.",
-    "The file was read successfully, but student links require matching student profiles and registrations for the selected year and semester.": "تمت قراءة الملف بنجاح، لكن ربط الطلاب يحتاج وجود ملفات الطلاب وتسجيلاتهم للسنة والفصل المحددين."
+    "The file was read successfully, but student links require matching student profiles and registrations for the selected year and semester.": "تمت قراءة الملف بنجاح، لكن ربط الطلاب يحتاج وجود ملفات الطلاب وتسجيلاتهم للسنة والفصل المحددين.",
+    "The file was read successfully, but student links and supervisors require matching records for the selected year and semester.": "تمت قراءة الملف بنجاح، لكن ربط الطلاب والمشرفين يحتاج وجود السجلات المطابقة للسنة والفصل المحددين."
 }

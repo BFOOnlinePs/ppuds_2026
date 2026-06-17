@@ -4,6 +4,7 @@ namespace Modules\PPUDS\Livewire\Pages\StudentAttendance;
 
 use App\View\Components\AppLayout;
 use Filament\Forms;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -15,8 +16,12 @@ use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\Indicator;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
@@ -27,6 +32,7 @@ use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\MapPicker;
 use Modules\Core\Filament\Forms\Components\Textarea;
 use Modules\Core\Filament\Forms\Components\ViewAction;
+use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\Major;
 use Modules\PPUDS\Entities\StudentAttendance;
 use Modules\PPUDS\Entities\StudentCompany;
@@ -38,13 +44,15 @@ class Index extends Component implements HasForms, HasTable
     use InteractsWithForms;
     use InteractsWithTable;
 
-    public array $filters = [];
-
     public function table(Table $table)
     {
         return $table
-            ->query(fn () => StudentAttendance::query()->with(['studentCompany', 'studentReport'])
-                ->where($this->filters)
+            ->query(fn () => StudentAttendance::query()->with([
+                'studentCompany.branch',
+                'studentCompany.company',
+                'studentCompany.student.studentProfile',
+                'studentReport',
+            ])
                 ->when(auth()->user()->hasRole(UserRole::STUDENT->value), fn ($query) => $query->whereHas('studentCompany', fn ($studentCompanyQuery) => $studentCompanyQuery->where('student_id', auth()->id()))))
             ->columns([
                 TextColumn::make('studentCompany.student.name')
@@ -90,7 +98,8 @@ class Index extends Component implements HasForms, HasTable
                     ->limit(20)
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->filters($this->getTableFilters())
+            ->filters($this->getTableFilters(), layout: FiltersLayout::AboveContent)
+            ->filtersFormColumns(5)
             ->actions(
                 $this->getTableActions()
             )
@@ -235,10 +244,120 @@ class Index extends Component implements HasForms, HasTable
     protected function getTableFilters(): array
     {
         return [
-            Filter::make('reference_code')
-                ->label(__('Reference Code')),
-            Filter::make('name')
-                ->label(__('Name')),
+            Filter::make('attendance_date')
+                ->label(__('Attendance Date'))
+                ->form([
+                    DatePicker::make('from')
+                        ->label(__('From Date'))
+                        ->default(now()->toDateString())
+                        ->native(false),
+                    DatePicker::make('until')
+                        ->label(__('Until Date'))
+                        ->default(now()->toDateString())
+                        ->native(false),
+                ])
+                ->columns(2)
+                ->query(function (Builder $query, array $data): Builder {
+                    return $query
+                        ->when(
+                            $data['from'] ?? null,
+                            fn (Builder $query, $date): Builder => $query->whereDate('attendance_date', '>=', $date)
+                        )
+                        ->when(
+                            $data['until'] ?? null,
+                            fn (Builder $query, $date): Builder => $query->whereDate('attendance_date', '<=', $date)
+                        );
+                })
+                ->indicateUsing(function (array $data): array {
+                    $indicators = [];
+
+                    if (! empty($data['from'])) {
+                        $indicators[] = Indicator::make(__('From Date').': '.$data['from'])
+                            ->removeField('from');
+                    }
+
+                    if (! empty($data['until'])) {
+                        $indicators[] = Indicator::make(__('Until Date').': '.$data['until'])
+                            ->removeField('until');
+                    }
+
+                    return $indicators;
+                }),
+
+            Filter::make('student')
+                ->label(__('Student'))
+                ->form([
+                    TextInput::make('search')
+                        ->label(__('Number / Name'))
+                        ->live(debounce: 500),
+                ])
+                ->query(function (Builder $query, array $data): Builder {
+                    if (empty($data['search'])) {
+                        return $query;
+                    }
+
+                    return $query->whereHas('studentCompany', function (Builder $query) use ($data) {
+                        $query
+                            ->whereHas(
+                                'student.studentProfile',
+                                fn (Builder $studentProfileQuery): Builder => $studentProfileQuery->where('student_number', 'like', "%{$data['search']}%")
+                            )
+                            ->orWhereHas(
+                                'student',
+                                fn (Builder $studentQuery): Builder => $studentQuery->where('name', 'like', "%{$data['search']}%")
+                            );
+                    });
+                }),
+
+            SelectFilter::make('company_id')
+                ->label(__('Company'))
+                ->options(fn (): array => Company::query()
+                    ->when(
+                        auth()->user()->hasRole(UserRole::STUDENT->value),
+                        fn (Builder $query): Builder => $query->whereHas(
+                            'studentCompanies',
+                            fn (Builder $studentCompanyQuery): Builder => $studentCompanyQuery->where('student_id', auth()->id())
+                        )
+                    )
+                    ->get()
+                    ->pluck('name', 'id')
+                    ->toArray())
+                ->searchable()
+                ->preload()
+                ->query(function (Builder $query, array $data): Builder {
+                    if (empty($data['value'])) {
+                        return $query;
+                    }
+
+                    return $query->whereHas(
+                        'studentCompany',
+                        fn (Builder $studentCompanyQuery): Builder => $studentCompanyQuery->where('company_id', $data['value'])
+                    );
+                }),
+
+            SelectFilter::make('status')
+                ->label(__('Status'))
+                ->options(AttendanceStatus::options())
+                ->native(false),
+
+            Filter::make('check_out_status')
+                ->label(__('Check Out'))
+                ->form([
+                    Select::make('status')
+                        ->label(__('Check Out'))
+                        ->options([
+                            'checked_out' => __('Checked Out'),
+                            'pending' => __('Pending Check Out'),
+                        ])
+                        ->native(false),
+                ])
+                ->query(function (Builder $query, array $data): Builder {
+                    return match ($data['status'] ?? null) {
+                        'checked_out' => $query->whereNotNull('check_out'),
+                        'pending' => $query->whereNull('check_out'),
+                        default => $query,
+                    };
+                }),
         ];
     }
 

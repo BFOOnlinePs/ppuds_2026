@@ -5,12 +5,26 @@
             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ __('Upload an Excel file with the same placement columns to import companies, company supervisors, branches, and student links.') }}</p>
         </div>
 
-        <div class="grid gap-4 px-4 py-4 lg:grid-cols-4">
+        <div class="grid gap-4 px-4 py-4 lg:grid-cols-5">
             <div class="lg:col-span-2">
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('Placements Excel') }}</label>
                 <input type="file" wire:model="placementImportFile" accept=".xlsx,.xls"
                        class="mt-1 block w-full text-sm text-gray-700 file:me-4 file:rounded-md file:border-0 file:bg-primary-600 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-primary-500 dark:text-gray-200">
                 @error('placementImportFile')
+                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('Course') }}</label>
+                <select wire:model="courseId"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 sm:text-sm">
+                    <option value="">{{ __('Please select a course.') }}</option>
+                    @foreach ($courseOptions as $value => $label)
+                        <option value="{{ $value }}">{{ $label }}</option>
+                    @endforeach
+                </select>
+                @error('courseId')
                 <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                 @enderror
             </div>
@@ -98,6 +112,7 @@
                     'companies_created' => __('Companies'),
                     'supervisors_created' => __('Supervisors'),
                     'branches_created' => __('Branches'),
+                    'registrations_created' => __('New Registrations'),
                     'student_company_created' => __('New Links'),
                     'student_company_updated' => __('Updated Links'),
                     'student_company_skipped_existing' => __('Skipped Links'),

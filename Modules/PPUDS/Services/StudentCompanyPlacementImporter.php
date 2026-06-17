@@ -128,6 +128,7 @@ class StudentCompanyPlacementImporter
             'include_portal' => false,
             'sheets' => [],
             'use_latest_registration' => false,
+            'course_id' => null,
         ];
 
         foreach ($options as $key => $value) {
@@ -154,6 +155,7 @@ class StudentCompanyPlacementImporter
             'supervisors_updated' => 0,
             'branches_created' => 0,
             'branches_updated' => 0,
+            'registrations_created' => 0,
             'student_company_created' => 0,
             'student_company_updated' => 0,
             'student_company_skipped_existing' => 0,
@@ -332,20 +334,8 @@ class StudentCompanyPlacementImporter
             return;
         }
 
-        $registrations = $this->registrationsForStudent($studentProfile->user_id);
-
-        if ($registrations->isEmpty()) {
-            $this->stats['missing_registrations']++;
-            $this->addIssue($placement['sheet'], $placement['row'], __('No registration found for student [:student] in :year/:semester.', [
-                'student' => $placement['student_number'],
-                'year' => $this->options['year'],
-                'semester' => $this->options['semester'],
-            ]));
-
-            return;
-        }
-
         $universitySupervisor = $this->universitySupervisorForPlacement($placement);
+        $registrations = $this->registrationsForStudent($studentProfile->user_id, $universitySupervisor);
 
         foreach ($registrations as $registration) {
             if ($universitySupervisor) {
@@ -657,14 +647,9 @@ class StudentCompanyPlacementImporter
         return $this->studentProfileCache[$studentNumber] = $profile;
     }
 
-    private function registrationsForStudent(int $studentId)
+    private function registrationsForStudent(int $studentId, ?User $supervisor = null)
     {
-        $cacheKey = implode(':', [
-            $studentId,
-            $this->options['year'],
-            $this->options['semester'],
-            (int) $this->options['use_latest_registration'],
-        ]);
+        $cacheKey = $this->registrationCacheKey($studentId);
 
         if (array_key_exists($cacheKey, $this->registrationCache)) {
             return $this->registrationCache[$cacheKey];
@@ -686,7 +671,66 @@ class StudentCompanyPlacementImporter
             $registrations = $registration ? collect([$registration]) : collect();
         }
 
+        if ($registrations->isEmpty()) {
+            $registrations = collect([
+                $this->createRegistrationForStudent($studentId, $supervisor),
+            ]);
+        }
+
         return $this->registrationCache[$cacheKey] = $registrations;
+    }
+
+    private function registrationCacheKey(int $studentId): string
+    {
+        return implode(':', [
+            $studentId,
+            $this->options['year'],
+            $this->options['semester'],
+            (int) $this->options['use_latest_registration'],
+            (int) ($this->options['course_id'] ?? 0),
+        ]);
+    }
+
+    private function createRegistrationForStudent(int $studentId, ?User $supervisor): Registration
+    {
+        $courseId = (int) ($this->options['course_id'] ?? 0);
+
+        if (! $courseId) {
+            throw new \RuntimeException(__('Please select a course.'));
+        }
+
+        $registration = Registration::withTrashed()
+            ->where('student_id', $studentId)
+            ->where('course_id', $courseId)
+            ->where('year', $this->options['year'])
+            ->where('semester', $this->options['semester'])
+            ->first();
+
+        if ($registration) {
+            if ($registration->trashed()) {
+                $registration->restore();
+                $this->stats['registrations_created']++;
+            }
+
+            if (($supervisor && ! $registration->supervisor_id) || $this->options['update_existing']) {
+                $registration->update([
+                    'supervisor_id' => $supervisor?->id,
+                ]);
+            }
+
+            return $registration;
+        }
+
+        $this->stats['registrations_created']++;
+
+        return Registration::create([
+            'student_id' => $studentId,
+            'course_id' => $courseId,
+            'semester' => $this->options['semester'],
+            'year' => $this->options['year'],
+            'supervisor_id' => $supervisor?->id,
+            'created_by' => $this->createdBy,
+        ]);
     }
 
     private function defaultCategory(): CompanyCategory
