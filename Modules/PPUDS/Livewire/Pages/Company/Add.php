@@ -28,6 +28,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\HtmlString;
+use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Branch\Entities\Branch;
@@ -450,13 +451,26 @@ class Add extends Component implements HasActions, HasForms
                                                                                 Grid::make(2)->schema([
                                                                                     TextInput::make('name')->required(),
                                                                                     TextInput::make('name_en')->required(),
-                                                                                    TextInput::make('email')->required()->email(),
+                                                                                    TextInput::make('email')
+                                                                                        ->required()
+                                                                                        ->email()
+                                                                                        ->unique('users', 'email')
+                                                                                        ->dehydrateStateUsing(fn (?string $state): ?string => filled($state) ? strtolower(trim($state)) : null)
+                                                                                        ->validationMessages([
+                                                                                            'unique' => __('This email is already taken'),
+                                                                                        ]),
                                                                                     TextInput::make('phone')->required()->numeric(),
                                                                                     TextInput::make('password')->required()->password()->confirmed(),
                                                                                     TextInput::make('password_confirmation')->required()->password(),
                                                                                 ]),
                                                                             ])
                                                                             ->createOptionUsing(function (array $data) {
+                                                                                if (User::where('email', $data['email'])->exists()) {
+                                                                                    throw ValidationException::withMessages([
+                                                                                        'email' => __('This email is already taken'),
+                                                                                    ]);
+                                                                                }
+
                                                                                 $plainPassword = $data['password'];
                                                                                 $data['password'] = bcrypt($data['password']);
                                                                                 $user = User::create($data);

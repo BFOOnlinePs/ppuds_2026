@@ -943,3 +943,24 @@ header, .navbar-floating header {
     position: static !important;
     z-index: auto !important;
 }
+
+body:has(.fi-modal-open) .company-departments-repeater .choices,
+body:has(.fi-modal-open) .company-departments-repeater .choices.is-open,
+body:has(.fi-modal-open) .company-departments-repeater .choices.is-focused,
+body:has(.fi-modal-open) .company-departments-repeater .choices__list--dropdown,
+body:has(.fi-modal-open) .company-departments-repeater .choices__list[aria-expanded],
+body:has(.fi-modal-open) .company-departments-repeater .fi-select-dropdown {
+    z-index: 1 !important;
+}
+
+body:has(.fi-modal-open) .company-departments-repeater .fi-fo-repeater-item:has(.company-supervisor-select .choices.is-open),
+body:has(.fi-modal-open) .company-departments-repeater .fi-fo-repeater-item:has(.company-supervisor-select .choices.is-focused),
+body:has(.fi-modal-open) .company-departments-repeater .fi-fo-repeater-item:has(.company-supervisor-choices .choices.is-open),
+body:has(.fi-modal-open) .company-departments-repeater .fi-fo-repeater-item:has(.company-supervisor-choices .choices.is-focused),
+body:has(.fi-modal-open) .company-structure-repeater .fi-fo-repeater-item:has(.company-supervisor-select .choices.is-open),
+body:has(.fi-modal-open) .company-structure-repeater .fi-fo-repeater-item:has(.company-supervisor-select .choices.is-focused),
+body:has(.fi-modal-open) .company-structure-repeater .fi-fo-repeater-item:has(.company-supervisor-choices .choices.is-open),
+body:has(.fi-modal-open) .company-structure-repeater .fi-fo-repeater-item:has(.company-supervisor-choices .choices.is-focused) {
+    min-height: auto;
+    z-index: auto !important;
+}
