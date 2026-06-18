@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use Livewire\Component;
+use Maatwebsite\Excel\Excel as WriterType;
 use Masmerise\Toaster\Toaster;
 use Modules\Core\Enums\UserRole;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
@@ -33,12 +34,15 @@ use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\MapPicker;
 use Modules\Core\Filament\Forms\Components\Textarea;
 use Modules\Core\Filament\Forms\Components\ViewAction;
+use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\Major;
 use Modules\PPUDS\Entities\StudentAttendance;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\AttendanceStatus;
+use Modules\PPUDS\Exports\TodayAbsentStudentsExport;
 use Modules\PPUDS\Services\PpudsNotificationService;
+use Modules\PPUDS\Settings\GeneralSettings;
 
 class Index extends Component implements HasForms, HasTable
 {
@@ -105,6 +109,17 @@ class Index extends Component implements HasForms, HasTable
                 $this->getTableActions()
             )
             ->headerActions([
+                Action::make('export_today_absent_students')
+                    ->label(__('Export Today Absentees'))
+                    ->icon('heroicon-m-arrow-down-tray')
+                    ->color('success')
+                    ->action(fn () => app(ExcelServiceInterface::class)->download(
+                        new TodayAbsentStudentsExport($this->todayAbsentStudentsQuery(), now()->toDateString()),
+                        $this->todayAbsentStudentsExportFilename(),
+                        WriterType::XLSX
+                    ))
+                    ->visible(fn () => auth()->user()->can('StudentAttendance View List')),
+
                 Action::make('check_in')
                     ->label(__('Check In'))
                     ->modalWidth(MaxWidth::SixExtraLarge)
@@ -494,5 +509,56 @@ class Index extends Component implements HasForms, HasTable
                 ['title' => __('Companies List'), 'url' => route('majors.index')],
             ],
         ]);
+    }
+
+    protected function todayAbsentStudentsQuery(): Builder
+    {
+        $settings = app(GeneralSettings::class);
+        $today = now()->toDateString();
+        $companyId = data_get($this->getTableFilterState('company_id'), 'value');
+        $studentSearch = data_get($this->getTableFilterState('student'), 'search');
+
+        return StudentCompany::query()
+            ->with([
+                'branch.translations',
+                'company.translations',
+                'department.translations',
+                'registration.course.translations',
+                'registration.supervisor',
+                'student.studentProfile.major.translations',
+            ])
+            ->whereNotNull('company_id')
+            ->whereHas('registration', fn (Builder $query): Builder => $query
+                ->where('year', $settings->year)
+                ->where('semester', $settings->semester_type->value))
+            ->whereDoesntHave('attendances', fn (Builder $query): Builder => $query
+                ->whereDate('attendance_date', $today)
+                ->whereNotNull('check_in'))
+            ->when(
+                auth()->user()->hasRole(UserRole::STUDENT->value),
+                fn (Builder $query): Builder => $query->where('student_id', auth()->id())
+            )
+            ->when(
+                filled($companyId),
+                fn (Builder $query): Builder => $query->where('company_id', $companyId)
+            )
+            ->when(
+                filled($studentSearch),
+                fn (Builder $query): Builder => $query->where(function (Builder $query) use ($studentSearch): void {
+                    $query->whereHas(
+                        'student.studentProfile',
+                        fn (Builder $profileQuery): Builder => $profileQuery->where('student_number', 'like', "%{$studentSearch}%")
+                    )->orWhereHas(
+                        'student',
+                        fn (Builder $studentQuery): Builder => $studentQuery->where('name', 'like', "%{$studentSearch}%")
+                    );
+                })
+            )
+            ->orderBy('student_id');
+    }
+
+    protected function todayAbsentStudentsExportFilename(): string
+    {
+        return 'today-absent-students-'.now()->format('Y-m-d-His').'.xlsx';
     }
 }

@@ -9,6 +9,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Columns\SelectColumn;
@@ -22,6 +23,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Component;
+use Maatwebsite\Excel\Excel as WriterType;
 use Masmerise\Toaster\Toaster;
 use Modules\Core\Entities\User;
 use Modules\Core\Enums\UserRole;
@@ -30,12 +32,14 @@ use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
+use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\PPUDS\Entities\Course;
 use Modules\PPUDS\Entities\Major;
 use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\CourseStatus;
 use Modules\PPUDS\Enums\SemesterType;
+use Modules\PPUDS\Exports\RegistrationsExport;
 use Modules\PPUDS\Settings\GeneralSettings;
 
 class Index extends Component implements HasForms, HasTable
@@ -115,6 +119,17 @@ class Index extends Component implements HasForms, HasTable
             ->filtersFormColumns(5)
             ->actions($this->getTableActions())
             ->headerActions([
+                Action::make('export_registrations')
+                    ->label(__('Export Registrations'))
+                    ->icon('heroicon-m-arrow-down-tray')
+                    ->color('success')
+                    ->action(fn () => app(ExcelServiceInterface::class)->download(
+                        new RegistrationsExport($this->getTableQueryForExport()),
+                        $this->exportFilename(),
+                        WriterType::XLSX
+                    ))
+                    ->visible(fn () => auth()->user()->can('Registration View List')),
+
                 CreateAction::make('create')
                     ->label(__('Add Registration'))
                     ->url(route('registrations.add'))
@@ -131,6 +146,23 @@ class Index extends Component implements HasForms, HasTable
                 ->options(Course::where('status', CourseStatus::ACTIVE->value)->get()->pluck('name', 'id'))
                 ->searchable()
                 ->preload(),
+
+            Filter::make('student_number')
+                ->label(__('Student Number'))
+                ->form([
+                    TextInput::make('student_number')
+                        ->label(__('Student Number'))
+                        ->live(debounce: 500),
+                ])
+                ->query(function (Builder $query, array $data): Builder {
+                    return $query->when(
+                        filled($data['student_number'] ?? null),
+                        fn (Builder $query): Builder => $query->whereHas(
+                            'student.studentProfile',
+                            fn (Builder $profileQuery): Builder => $profileQuery->where('student_number', 'like', '%'.$data['student_number'].'%')
+                        )
+                    );
+                }),
 
             SelectFilter::make('major_id')
                 ->label(__('Major'))
@@ -357,6 +389,11 @@ class Index extends Component implements HasForms, HasTable
                 ['title' => __('Registrations List'), 'url' => route('registrations.index')],
             ],
         ]);
+    }
+
+    protected function exportFilename(): string
+    {
+        return 'registrations-'.now()->format('Y-m-d-His').'.xlsx';
     }
 
     private function semesterValue(SemesterType|int|string|null $semester): ?int
