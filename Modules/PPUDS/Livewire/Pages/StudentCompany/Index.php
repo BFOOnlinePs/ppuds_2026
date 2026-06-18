@@ -21,16 +21,21 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Component;
+use Maatwebsite\Excel\Excel as WriterType;
 use Masmerise\Toaster\Toaster;
+use Modules\Core\Enums\UserRole;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
+use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\Course;
+use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\SemesterType;
 use Modules\PPUDS\Enums\TrainingStatus;
+use Modules\PPUDS\Exports\RegisteredStudentsWithoutCompanyExport;
 use Modules\PPUDS\Settings\GeneralSettings;
 
 class Index extends Component implements HasForms, HasTable
@@ -100,6 +105,17 @@ class Index extends Component implements HasForms, HasTable
             ->filtersFormColumns(6)
             ->actions($this->getTableActions())
             ->headerActions([
+                Action::make('export_registered_students_without_company')
+                    ->label(__('Export Registered Students Without Company'))
+                    ->icon('heroicon-m-arrow-down-tray')
+                    ->color('success')
+                    ->action(fn () => app(ExcelServiceInterface::class)->download(
+                        new RegisteredStudentsWithoutCompanyExport($this->registeredStudentsWithoutCompanyQuery()),
+                        $this->registeredStudentsWithoutCompanyExportFilename(),
+                        WriterType::XLSX
+                    ))
+                    ->visible(fn () => auth()->user()->can('StudentCompany View List')),
+
                 Action::make('importPlacements')
                     ->label(__('Import Placements'))
                     ->icon('heroicon-o-arrow-up-tray')
@@ -259,6 +275,48 @@ class Index extends Component implements HasForms, HasTable
                     ->visible(fn () => auth()->user()->can('StudentCompany Delete')),
             ]),
         ];
+    }
+
+    protected function registeredStudentsWithoutCompanyQuery(): Builder
+    {
+        return Registration::query()
+            ->where(fn (Builder $query) => $this->applyCurrentSemester($query))
+            ->whereNotIn(
+                'id',
+                StudentCompany::query()
+                    ->whereNotNull('company_id')
+                    ->select('registration_id')
+            );
+    }
+
+    protected function applyCurrentSemester(Builder $query): void
+    {
+        $settings = app(GeneralSettings::class);
+
+        $query
+            ->where('semester', $settings->semester_type->value)
+            ->where('year', $settings->year);
+
+        if ($this->shouldScopeToSupervisor()) {
+            $query->where('supervisor_id', auth()->id());
+        }
+    }
+
+    protected function shouldScopeToSupervisor(): bool
+    {
+        return auth()->user()?->hasAnyRole([
+            UserRole::PRACTICAL_TRAINING_SUPERVISOR->value,
+            'Academic Supervisor',
+            'University Supervisor',
+        ]) && ! auth()->user()?->hasAnyRole([
+            UserRole::SUPER_ADMIN->value,
+            UserRole::ADMIN->value,
+        ]);
+    }
+
+    protected function registeredStudentsWithoutCompanyExportFilename(): string
+    {
+        return 'registered-students-without-company-'.now()->format('Y-m-d-His').'.xlsx';
     }
 
     public function render()
