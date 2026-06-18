@@ -23,6 +23,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Core\Enums\UserRole;
@@ -250,10 +251,14 @@ class Index extends Component implements HasForms, HasTable
                     DatePicker::make('from')
                         ->label(__('From Date'))
                         ->default(now()->toDateString())
+                        ->format('Y-m-d')
+                        ->displayFormat('Y-m-d')
                         ->native(false),
                     DatePicker::make('until')
                         ->label(__('Until Date'))
                         ->default(now()->toDateString())
+                        ->format('Y-m-d')
+                        ->displayFormat('Y-m-d')
                         ->native(false),
                 ])
                 ->columns(2)
@@ -261,23 +266,23 @@ class Index extends Component implements HasForms, HasTable
                     return $query
                         ->when(
                             $data['from'] ?? null,
-                            fn (Builder $query, $date): Builder => $query->whereDate('attendance_date', '>=', $date)
+                            fn (Builder $query, $date): Builder => $query->whereDate('attendance_date', '>=', Carbon::parse($date)->toDateString())
                         )
                         ->when(
                             $data['until'] ?? null,
-                            fn (Builder $query, $date): Builder => $query->whereDate('attendance_date', '<=', $date)
+                            fn (Builder $query, $date): Builder => $query->whereDate('attendance_date', '<=', Carbon::parse($date)->toDateString())
                         );
                 })
                 ->indicateUsing(function (array $data): array {
                     $indicators = [];
 
                     if (! empty($data['from'])) {
-                        $indicators[] = Indicator::make(__('From Date').': '.$data['from'])
+                        $indicators[] = Indicator::make(__('From Date').': '.Carbon::parse($data['from'])->toDateString())
                             ->removeField('from');
                     }
 
                     if (! empty($data['until'])) {
-                        $indicators[] = Indicator::make(__('Until Date').': '.$data['until'])
+                        $indicators[] = Indicator::make(__('Until Date').': '.Carbon::parse($data['until'])->toDateString())
                             ->removeField('until');
                     }
 
