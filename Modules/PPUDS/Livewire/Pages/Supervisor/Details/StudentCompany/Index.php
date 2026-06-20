@@ -68,7 +68,7 @@ class Index extends Component implements HasForms, HasTable
                     ))
                     ->placeholder('—')
                     ->color('primary')
-                    ->url(fn (StudentCompany $record) => auth()->user()->can('Company Details List') ? route('companies.details', $record->company_id) : null),
+                    ->url(fn (StudentCompany $record): ?string => $record->company_id && auth()->user()->can('Company Details List') ? route('companies.details', $record->company_id) : null),
 
                 TextColumn::make('branch.name')
                     ->label(__('Branch'))

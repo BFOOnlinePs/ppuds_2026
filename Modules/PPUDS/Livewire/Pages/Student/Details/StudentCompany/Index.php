@@ -47,12 +47,12 @@ class Index extends Component implements HasForms, HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn() => StudentCompany::query()->where('student_id', $this->studentId)->with(['registration.student', 'registration.course', 'company', 'branch']))
+            ->query(fn () => StudentCompany::query()->where('student_id', $this->studentId)->with(['registration.student', 'registration.course', 'company', 'branch']))
             ->columns([
 
                 TextColumn::make('company.name')
                     ->label(__('Company'))
-                    ->url(fn(StudentCompany $record) => route('companies.edit', $record->company_id))
+                    ->url(fn (StudentCompany $record): ?string => $record->company_id ? route('companies.edit', $record->company_id) : null)
                     ->searchable(query: fn (Builder $query, string $search): Builder => $query->whereHas(
                         'company.translations',
                         fn (Builder $query) => $query->where('name', 'like', "%{$search}%")
@@ -124,7 +124,7 @@ class Index extends Component implements HasForms, HasTable
                 ->options(Course::get()->pluck('name', 'id'))
                 ->query(function (Builder $query, array $data) {
                     return $query->when($data['value'], function ($q, $courseId) {
-                        $q->whereHas('registration', fn($regQ) => $regQ->where('course_id', $courseId));
+                        $q->whereHas('registration', fn ($regQ) => $regQ->where('course_id', $courseId));
                     });
                 })
                 ->searchable(),
@@ -141,7 +141,7 @@ class Index extends Component implements HasForms, HasTable
                 ->query(function (Builder $query, array $data): Builder {
                     return $query->when(
                         $data['year'],
-                        fn(Builder $q, $year) => $q->whereHas('registration', fn($regQ) => $regQ->where('year', $year))
+                        fn (Builder $q, $year) => $q->whereHas('registration', fn ($regQ) => $regQ->where('year', $year))
                     );
                 }),
 
@@ -155,7 +155,7 @@ class Index extends Component implements HasForms, HasTable
                 ->query(function (Builder $query, array $data): Builder {
                     return $query->when(
                         $data['semester_type'],
-                        fn(Builder $q, $semester_type) => $q->whereHas('registration', fn($regQ) => $regQ->where('semester', $semester_type))
+                        fn (Builder $q, $semester_type) => $q->whereHas('registration', fn ($regQ) => $regQ->where('semester', $semester_type))
                     );
                 }),
         ];
@@ -166,11 +166,11 @@ class Index extends Component implements HasForms, HasTable
         return [
             InfoAction::make('info')
                 ->label('')
-                ->visible(fn() => auth()->user()->can('StudentCompany Info')),
+                ->visible(fn () => auth()->user()->can('StudentCompany Info')),
             ViewAction::make('view')
                 ->label('')
                 ->tooltip(__('View Details'))
-                ->form(fn(StudentCompany $record) => [
+                ->form(fn (StudentCompany $record) => [
                     Grid::make(2)->schema([
                         TextInput::make('student_name')
                             ->label(__('Student'))
@@ -198,13 +198,13 @@ class Index extends Component implements HasForms, HasTable
                     ]),
                 ])
                 ->modalSubmitAction(false)
-                ->visible(fn() => auth()->user()->can('StudentCompany View')), // تأكد من اسم الصلاحية
+                ->visible(fn () => auth()->user()->can('StudentCompany View')), // تأكد من اسم الصلاحية
 
             EditAction::make('edit')
                 ->label('')
                 ->tooltip(__('Edit'))
-                ->url(fn(StudentCompany $record) => route('student-companies.edit', $record->id)) // تأكد من اسم الراوت
-                ->visible(fn() => auth()->user()->can('StudentCompany Update')),
+                ->url(fn (StudentCompany $record) => route('student-companies.edit', $record->id)) // تأكد من اسم الراوت
+                ->visible(fn () => auth()->user()->can('StudentCompany Update')),
 
             DeleteAction::make('delete')
                 ->label('')
@@ -213,7 +213,7 @@ class Index extends Component implements HasForms, HasTable
                     $record->delete();
                     Toaster::success(__('Student company record deleted successfully'));
                 })
-                ->visible(fn() => auth()->user()->can('StudentCompany Delete')),
+                ->visible(fn () => auth()->user()->can('StudentCompany Delete')),
         ];
     }
 
@@ -226,9 +226,9 @@ class Index extends Component implements HasForms, HasTable
                     ->icon('solar-trash-bin-trash-bold-duotone')
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->action(fn(Collection $records) => $records->each->delete())
-                    ->after(fn() => Toaster::success(__('Selected records deleted successfully')))
-                    ->visible(fn() => auth()->user()->can('StudentCompany Delete')),
+                    ->action(fn (Collection $records) => $records->each->delete())
+                    ->after(fn () => Toaster::success(__('Selected records deleted successfully')))
+                    ->visible(fn () => auth()->user()->can('StudentCompany Delete')),
             ]),
         ];
     }
