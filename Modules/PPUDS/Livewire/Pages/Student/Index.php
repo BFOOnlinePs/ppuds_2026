@@ -34,6 +34,7 @@ use Modules\PPUDS\Entities\StudentProfile;
 use Modules\PPUDS\Enums\CvStatus;
 use Modules\PPUDS\Enums\StudentGender;
 use Modules\PPUDS\Exports\StudentsExport;
+use Modules\PPUDS\Exports\StudentsWithCompaniesExport;
 use Modules\PPUDS\Services\PpuApiService;
 use Modules\PPUDS\Settings\GeneralSettings;
 use Throwable;
@@ -89,6 +90,17 @@ class Index extends Component implements HasForms, HasTable
                     ->action(fn () => app(ExcelServiceInterface::class)->download(
                         new StudentsExport($this->getTableQueryForExport()),
                         $this->exportFilename(),
+                        WriterType::XLSX
+                    ))
+                    ->visible(fn () => auth()->user()->can('Student View List')),
+
+                Action::make('export_students_with_companies')
+                    ->label(__('Export Students With Companies'))
+                    ->icon('heroicon-m-arrow-down-tray')
+                    ->color('success')
+                    ->action(fn () => app(ExcelServiceInterface::class)->download(
+                        new StudentsWithCompaniesExport($this->getTableQueryForExport()),
+                        $this->studentsWithCompaniesExportFilename(),
                         WriterType::XLSX
                     ))
                     ->visible(fn () => auth()->user()->can('Student View List')),
@@ -485,6 +497,11 @@ class Index extends Component implements HasForms, HasTable
     protected function exportFilename(): string
     {
         return 'students-'.now()->format('Y-m-d-His').'.xlsx';
+    }
+
+    protected function studentsWithCompaniesExportFilename(): string
+    {
+        return 'students-with-companies-'.now()->format('Y-m-d-His').'.xlsx';
     }
 
     public function render()
