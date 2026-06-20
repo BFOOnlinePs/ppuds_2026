@@ -36,6 +36,7 @@ use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\SemesterType;
 use Modules\PPUDS\Enums\TrainingStatus;
 use Modules\PPUDS\Exports\RegisteredStudentsWithoutCompanyExport;
+use Modules\PPUDS\Exports\StudentCompaniesExport;
 use Modules\PPUDS\Settings\GeneralSettings;
 
 class Index extends Component implements HasForms, HasTable
@@ -105,6 +106,17 @@ class Index extends Component implements HasForms, HasTable
             ->filtersFormColumns(6)
             ->actions($this->getTableActions())
             ->headerActions([
+                Action::make('export_student_companies')
+                    ->label(__('Export Student Companies'))
+                    ->icon('heroicon-m-arrow-down-tray')
+                    ->color('success')
+                    ->action(fn () => app(ExcelServiceInterface::class)->download(
+                        new StudentCompaniesExport($this->getTableQueryForExport()),
+                        $this->exportFilename(),
+                        WriterType::XLSX
+                    ))
+                    ->visible(fn () => auth()->user()->can('StudentCompany View List')),
+
                 Action::make('export_registered_students_without_company')
                     ->label(__('Export Registered Students Without Company'))
                     ->icon('heroicon-m-arrow-down-tray')
@@ -317,6 +329,11 @@ class Index extends Component implements HasForms, HasTable
     protected function registeredStudentsWithoutCompanyExportFilename(): string
     {
         return 'registered-students-without-company-'.now()->format('Y-m-d-His').'.xlsx';
+    }
+
+    protected function exportFilename(): string
+    {
+        return 'student-companies-'.now()->format('Y-m-d-His').'.xlsx';
     }
 
     public function render()
