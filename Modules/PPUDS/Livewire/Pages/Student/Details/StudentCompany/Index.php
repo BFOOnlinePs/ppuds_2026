@@ -52,7 +52,7 @@ class Index extends Component implements HasForms, HasTable
 
                 TextColumn::make('company.name')
                     ->label(__('Company'))
-                    ->url(fn (StudentCompany $record): ?string => $record->company_id ? route('companies.edit', $record->company_id) : null)
+                    ->url(fn (StudentCompany $record): ?string => $record->company_id && auth()->user()->can('Company Details List') ? route('companies.details', $record->company_id) : null)
                     ->searchable(query: fn (Builder $query, string $search): Builder => $query->whereHas(
                         'company.translations',
                         fn (Builder $query) => $query->where('name', 'like', "%{$search}%")
