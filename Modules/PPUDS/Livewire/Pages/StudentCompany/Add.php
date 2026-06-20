@@ -14,6 +14,7 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
+use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Branch\Entities\Branch;
@@ -81,6 +82,7 @@ class Add extends Component implements HasActions, HasForms
 
                                             Select::make('company_id')
                                                 ->label(__('Company'))
+                                                ->required()
                                                 ->options(Company::get()->pluck('name', 'id'))
                                                 ->searchable()
                                                 ->preload()
@@ -94,6 +96,7 @@ class Add extends Component implements HasActions, HasForms
                                             Select::make('branch_id')
                                                 ->label(__('Branch'))
                                                 ->key('branchSelect')
+                                                ->required()
                                                 ->searchable()
                                                 ->preload()
                                                 ->live()
@@ -110,6 +113,7 @@ class Add extends Component implements HasActions, HasForms
                                             Select::make('department_id')
                                                 ->label(__('Department'))
                                                 ->key('deptSelect')
+                                                ->required()
                                                 ->searchable()
                                                 ->preload()
                                                 ->prefixIcon('solar-users-group-two-rounded-linear')
@@ -156,6 +160,8 @@ class Add extends Component implements HasActions, HasForms
         return [
             'data.registration_id.required' => __('Please select a student registration record.'),
             'data.company_id.required' => __('Please select a company.'),
+            'data.branch_id.required' => __('Please select a branch.'),
+            'data.department_id.required' => __('Please select a department.'),
             'data.status.required' => __('The status field is required.'),
         ];
     }
@@ -179,9 +185,7 @@ class Add extends Component implements HasActions, HasForms
     {
         $this->authorize('StudentCompany Create');
 
-        $this->validate();
-
-        $data = $this->data;
+        $data = $this->validatedData();
 
         $data['created_by'] = auth()->id();
 
@@ -193,6 +197,40 @@ class Add extends Component implements HasActions, HasForms
         Toaster::success(__('Student company record created successfully'));
 
         $this->redirect(route('student-companies.index'));
+    }
+
+    protected function validatedData(): array
+    {
+        $data = $this->form->getState();
+
+        $this->validatePlacement($data);
+
+        return $data;
+    }
+
+    protected function validatePlacement(array $data): void
+    {
+        $branchBelongsToCompany = Branch::query()
+            ->whereKey($data['branch_id'] ?? null)
+            ->whereHas('companies', fn ($query) => $query->whereKey($data['company_id'] ?? null))
+            ->exists();
+
+        if (! $branchBelongsToCompany) {
+            throw ValidationException::withMessages([
+                'data.branch_id' => __('The selected branch does not belong to the selected company.'),
+            ]);
+        }
+
+        $departmentBelongsToBranch = CompanyDepartment::query()
+            ->whereKey($data['department_id'] ?? null)
+            ->whereHas('branches', fn ($query) => $query->whereKey($data['branch_id'] ?? null))
+            ->exists();
+
+        if (! $departmentBelongsToBranch) {
+            throw ValidationException::withMessages([
+                'data.department_id' => __('The selected department does not belong to the selected branch.'),
+            ]);
+        }
     }
 
     public function render()

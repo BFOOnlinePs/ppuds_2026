@@ -123,7 +123,7 @@ class Index extends Component implements HasForms, HasTable
                     ->url(route('companies.add'))
                     ->visible(fn () => auth()->user()->can('Company Create')),
             ])
-            ->bulkActions($this->getTableBulkAction());
+            ->bulkActions([]);
     }
 
     protected function getTableFilters(): array
