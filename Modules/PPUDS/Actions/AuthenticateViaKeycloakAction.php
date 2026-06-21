@@ -12,10 +12,17 @@ use Modules\PPUDS\Entities\StudentProfile;
 
 class AuthenticateViaKeycloakAction
 {
+    private const TEMPORARILY_BLOCKED_ROLE = 'role-19';
+
+    private const TEMPORARILY_BLOCKED_MESSAGE = 'لا يمكنك الدخول لحسابك مؤقتا يرجى مراجعة مركز الحاسوب رمز الخطا role-19';
+
     public function execute(KeycloakUser $keycloakUser): User
     {
-        return DB::transaction(function () use ($keycloakUser) {
-            $payload = $this->decodeTokenPayload($keycloakUser->token);
+        $payload = $this->decodeTokenPayload($keycloakUser->token);
+
+        $this->ensureUserIsAllowedByKeycloakRoles($payload);
+
+        return DB::transaction(function () use ($keycloakUser, $payload) {
             $username = $this->cleanIdentifier($payload['preferred_username'] ?? $keycloakUser->getNickname());
             $email = $keycloakUser->getEmail();
 
@@ -147,6 +154,21 @@ class AuthenticateViaKeycloakAction
         $value = strtolower(trim((string) $value));
 
         return filter_var($value, FILTER_VALIDATE_EMAIL) ? $value : null;
+    }
+
+    private function ensureUserIsAllowedByKeycloakRoles(array $payload): void
+    {
+        $roles = data_get($payload, 'realm_access.roles', []);
+
+        if (! is_array($roles)) {
+            return;
+        }
+
+        if (in_array(self::TEMPORARILY_BLOCKED_ROLE, $roles, true)) {
+            throw ValidationException::withMessages([
+                'auth' => self::TEMPORARILY_BLOCKED_MESSAGE,
+            ]);
+        }
     }
 
     private function decodeTokenPayload(string $token): array
