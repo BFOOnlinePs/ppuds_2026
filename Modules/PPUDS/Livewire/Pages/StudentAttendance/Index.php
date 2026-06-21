@@ -41,6 +41,7 @@ use Modules\PPUDS\Entities\StudentAttendance;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\AttendanceStatus;
 use Modules\PPUDS\Exports\TodayAbsentStudentsExport;
+use Modules\PPUDS\Livewire\Concerns\SearchesStudentAttendanceRelationships;
 use Modules\PPUDS\Services\PpudsNotificationService;
 use Modules\PPUDS\Settings\GeneralSettings;
 
@@ -48,6 +49,7 @@ class Index extends Component implements HasForms, HasTable
 {
     use InteractsWithForms;
     use InteractsWithTable;
+    use SearchesStudentAttendanceRelationships;
 
     public function table(Table $table)
     {
@@ -62,13 +64,11 @@ class Index extends Component implements HasForms, HasTable
             ->columns([
                 TextColumn::make('studentCompany.student.name')
                     ->label(__('Student Name'))
-                    ->searchable()
-                    ->sortable(),
+                    ->searchable(query: fn (Builder $query, string $search): Builder => $this->applyStudentSearchToAttendanceQuery($query, $search)),
 
                 TextColumn::make('studentCompany.company.name')
                     ->label(__('Company Name'))
-                    ->searchable()
-                    ->sortable(),
+                    ->searchable(query: fn (Builder $query, string $search): Builder => $this->applyCompanySearchToAttendanceQuery($query, $search)),
 
                 TextColumn::make('attendance_date')
                     ->label(__('Date'))
@@ -146,13 +146,13 @@ class Index extends Component implements HasForms, HasTable
                                 ->when(auth()->user()->hasRole('Student'), fn ($query) => $query->where('student_id', auth()->id()))
                                 ->get()
                                 ->mapWithKeys(function ($item) {
-                                $number = $item->student->studentProfile?->student_number ?? __('No Number');
-                                $name = $item->student->name ?? __('No Name');
-                                $company = $item->company->name ?? __('No Company');
-                                $branch = $item->branch->name ?? __('No Branch');
+                                    $number = $item->student->studentProfile?->student_number ?? __('No Number');
+                                    $name = $item->student->name ?? __('No Name');
+                                    $company = $item->company->name ?? __('No Company');
+                                    $branch = $item->branch->name ?? __('No Branch');
 
-                                return [$item->id => "{$number} - {$name} - {$company} - {$branch}"];
-                            }))
+                                    return [$item->id => "{$number} - {$name} - {$company} - {$branch}"];
+                                }))
                             ->searchable()
                             ->preload()
                             ->required(),
@@ -317,15 +317,7 @@ class Index extends Component implements HasForms, HasTable
                     }
 
                     return $query->whereHas('studentCompany', function (Builder $query) use ($data) {
-                        $query
-                            ->whereHas(
-                                'student.studentProfile',
-                                fn (Builder $studentProfileQuery): Builder => $studentProfileQuery->where('student_number', 'like', "%{$data['search']}%")
-                            )
-                            ->orWhereHas(
-                                'student',
-                                fn (Builder $studentQuery): Builder => $studentQuery->where('name', 'like', "%{$data['search']}%")
-                            );
+                        return $this->applyStudentSearchToStudentCompanyQuery($query, $data['search']);
                     });
                 }),
 
@@ -435,9 +427,8 @@ class Index extends Component implements HasForms, HasTable
                     // Removed ->model() as it was causing confusion
                 ->button()
                 ->label(__('Report'))
-                ->url(fn($record) => route('student-attendances.report', $record))
-                ->visible(fn (StudentAttendance $record) =>
-                    ($record->check_out !== null && $record->studentReport === null) && (auth()->user()->can('StudentAttendance Report List'))
+                ->url(fn ($record) => route('student-attendances.report', $record))
+                ->visible(fn (StudentAttendance $record) => ($record->check_out !== null && $record->studentReport === null) && (auth()->user()->can('StudentAttendance Report List'))
                 ),
             InfoAction::make('info')
                 ->label('')
@@ -544,15 +535,7 @@ class Index extends Component implements HasForms, HasTable
             )
             ->when(
                 filled($studentSearch),
-                fn (Builder $query): Builder => $query->where(function (Builder $query) use ($studentSearch): void {
-                    $query->whereHas(
-                        'student.studentProfile',
-                        fn (Builder $profileQuery): Builder => $profileQuery->where('student_number', 'like', "%{$studentSearch}%")
-                    )->orWhereHas(
-                        'student',
-                        fn (Builder $studentQuery): Builder => $studentQuery->where('name', 'like', "%{$studentSearch}%")
-                    );
-                })
+                fn (Builder $query): Builder => $this->applyStudentSearchToStudentCompanyQuery($query, $studentSearch)
             )
             ->orderBy('student_id');
     }

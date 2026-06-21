@@ -35,6 +35,7 @@ use Modules\PPUDS\Entities\StudentAttendance;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\AttendanceStatus;
 use Modules\PPUDS\Enums\SemesterType;
+use Modules\PPUDS\Livewire\Concerns\SearchesStudentAttendanceRelationships;
 use Modules\PPUDS\Services\PpudsNotificationService;
 use Modules\PPUDS\Settings\GeneralSettings;
 
@@ -42,6 +43,7 @@ class Index extends Component implements HasForms, HasTable
 {
     use InteractsWithForms;
     use InteractsWithTable;
+    use SearchesStudentAttendanceRelationships;
 
     public ?int $studentId = null;
 
@@ -57,13 +59,11 @@ class Index extends Component implements HasForms, HasTable
             ->columns([
                 TextColumn::make('studentCompany.student.name')
                     ->label(__('Student Name'))
-                    ->searchable()
-                    ->sortable(),
+                    ->searchable(query: fn (Builder $query, string $search): Builder => $this->applyStudentSearchToAttendanceQuery($query, $search)),
 
                 TextColumn::make('studentCompany.company.name')
                     ->label(__('Company Name'))
-                    ->searchable()
-                    ->sortable(),
+                    ->searchable(query: fn (Builder $query, string $search): Builder => $this->applyCompanySearchToAttendanceQuery($query, $search)),
 
                 TextColumn::make('attendance_date')
                     ->label(__('Date'))
@@ -194,9 +194,9 @@ class Index extends Component implements HasForms, HasTable
             Filter::make('year')
                 ->form([
                     TextInput::make('year')->label(__('Year'))
-                    ->live(debounce: 500)
-                    ->default(app((GeneralSettings::class))->year)
-                    ->numeric(),
+                        ->live(debounce: 500)
+                        ->default(app((GeneralSettings::class))->year)
+                        ->numeric(),
                 ])
                 ->query(function (Builder $query, array $data): Builder {
                     if (empty($data['year'])) {
@@ -212,7 +212,7 @@ class Index extends Component implements HasForms, HasTable
                         return null;
                     }
 
-                    return __('Year') . ': ' . $data['year'];
+                    return __('Year').': '.$data['year'];
                 }),
 
             SelectFilter::make('company_id')
