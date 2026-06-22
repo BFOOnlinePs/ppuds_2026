@@ -23,6 +23,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Livewire\Component;
 use Maatwebsite\Excel\Excel as WriterType;
@@ -54,26 +55,35 @@ class Index extends Component implements HasForms, HasTable
     public function table(Table $table)
     {
         return $table
-            ->query(fn () => StudentAttendance::query()->with([
-                'studentCompany.branch',
-                'studentCompany.company',
-                'studentCompany.student.studentProfile',
-                'studentReport',
-            ])
-                ->when(auth()->user()->hasRole(UserRole::STUDENT->value), fn ($query) => $query->whereHas('studentCompany', fn ($studentCompanyQuery) => $studentCompanyQuery->where('student_id', auth()->id()))))
+            ->query(fn () => $this->studentAttendanceTableQuery())
             ->columns([
-                TextColumn::make('studentCompany.student.name')
+                TextColumn::make('student_name')
                     ->label(__('Student Name'))
-                    ->searchable(query: fn (Builder $query, string $search): Builder => $this->applyStudentSearchToAttendanceQuery($query, $search)),
+                    ->getStateUsing(fn (Model $record): ?string => $record instanceof StudentCompany
+                        ? $record->student?->name
+                        : $record->studentCompany?->student?->name)
+                    ->searchable(query: fn (Builder $query, string $search): Builder => $this->todayAbsentStudentsFilterIsActive()
+                        ? $this->applyStudentSearchToStudentCompanyQuery($query, $search)
+                        : $this->applyStudentSearchToAttendanceQuery($query, $search)),
 
-                TextColumn::make('studentCompany.company.name')
+                TextColumn::make('company_name')
                     ->label(__('Company Name'))
-                    ->searchable(query: fn (Builder $query, string $search): Builder => $this->applyCompanySearchToAttendanceQuery($query, $search)),
+                    ->getStateUsing(fn (Model $record): ?string => $record instanceof StudentCompany
+                        ? $record->company?->name
+                        : $record->studentCompany?->company?->name)
+                    ->searchable(query: fn (Builder $query, string $search): Builder => $this->todayAbsentStudentsFilterIsActive()
+                        ? $this->applyCompanySearchToStudentCompanyQuery($query, $search)
+                        : $this->applyCompanySearchToAttendanceQuery($query, $search)),
 
                 TextColumn::make('attendance_date')
                     ->label(__('Date'))
+                    ->getStateUsing(fn (Model $record) => $record instanceof StudentCompany
+                        ? now()->toDateString()
+                        : $record->attendance_date)
                     ->date()
-                    ->sortable(),
+                    ->sortable(query: fn (Builder $query, string $direction): Builder => $this->todayAbsentStudentsFilterIsActive()
+                        ? $query->orderBy('student_id', $direction)
+                        : $query->orderBy('attendance_date', $direction)),
 
                 TextColumn::make('check_in')
                     ->label(__('Check In'))
@@ -85,15 +95,12 @@ class Index extends Component implements HasForms, HasTable
                     ->time('H:i A')
                     ->placeholder('---'),
 
-                TextColumn::make('status')
+                TextColumn::make('attendance_status')
                     ->label(__('Status'))
+                    ->getStateUsing(fn (Model $record): mixed => $record instanceof StudentCompany ? __('Absent') : $record->status)
                     ->badge()
-                    ->formatStateUsing(fn (?AttendanceStatus $state, StudentAttendance $record): string => $this->isTodayAbsentStudentRecord($record)
-                        ? __('Absent')
-                        : ($state?->getLabel() ?? '---'))
-                    ->color(fn (?AttendanceStatus $state, StudentAttendance $record): string => $this->isTodayAbsentStudentRecord($record)
-                        ? 'danger'
-                        : ($state?->getColor() ?? 'gray')),
+                    ->formatStateUsing(fn (mixed $state): string => $state instanceof AttendanceStatus ? $state->getLabel() : (string) ($state ?: '---'))
+                    ->color(fn (mixed $state): string => $state instanceof AttendanceStatus ? $state->getColor() : 'danger'),
 
                 TextColumn::make('check_in_latitude')
                     ->label(__('Location'))
@@ -285,6 +292,10 @@ class Index extends Component implements HasForms, HasTable
                 ])
                 ->columns(2)
                 ->query(function (Builder $query, array $data): Builder {
+                    if ($this->todayAbsentStudentsFilterIsActive()) {
+                        return $query;
+                    }
+
                     return $query
                         ->when(
                             $data['from'] ?? null,
@@ -296,6 +307,10 @@ class Index extends Component implements HasForms, HasTable
                         );
                 })
                 ->indicateUsing(function (array $data): array {
+                    if ($this->todayAbsentStudentsFilterIsActive()) {
+                        return [];
+                    }
+
                     $indicators = [];
 
                     if (! empty($data['from'])) {
@@ -312,8 +327,7 @@ class Index extends Component implements HasForms, HasTable
                 }),
 
             Filter::make('today_absent_students')
-                ->label(__('Today Absentees'))
-                ->baseQuery(fn (Builder $query): Builder => $this->applyTodayAbsentStudentsTableQuery($query)),
+                ->label(__('Today Absentees')),
 
             Filter::make('student')
                 ->label(__('Student'))
@@ -325,6 +339,10 @@ class Index extends Component implements HasForms, HasTable
                 ->query(function (Builder $query, array $data): Builder {
                     if (empty($data['search'])) {
                         return $query;
+                    }
+
+                    if ($this->todayAbsentStudentsFilterIsActive()) {
+                        return $this->applyStudentSearchToStudentCompanyQuery($query, $data['search']);
                     }
 
                     return $query->whereHas('studentCompany', function (Builder $query) use ($data) {
@@ -352,6 +370,10 @@ class Index extends Component implements HasForms, HasTable
                         return $query;
                     }
 
+                    if ($this->todayAbsentStudentsFilterIsActive()) {
+                        return $query->where('company_id', $data['value']);
+                    }
+
                     return $query->whereHas(
                         'studentCompany',
                         fn (Builder $studentCompanyQuery): Builder => $studentCompanyQuery->where('company_id', $data['value'])
@@ -361,7 +383,14 @@ class Index extends Component implements HasForms, HasTable
             SelectFilter::make('status')
                 ->label(__('Status'))
                 ->options(AttendanceStatus::options())
-                ->native(false),
+                ->native(false)
+                ->query(function (Builder $query, array $data): Builder {
+                    if (empty($data['value']) || $this->todayAbsentStudentsFilterIsActive()) {
+                        return $query;
+                    }
+
+                    return $query->where('status', $data['value']);
+                }),
 
             Filter::make('check_out_status')
                 ->label(__('Check Out'))
@@ -375,6 +404,10 @@ class Index extends Component implements HasForms, HasTable
                         ->native(false),
                 ])
                 ->query(function (Builder $query, array $data): Builder {
+                    if ($this->todayAbsentStudentsFilterIsActive()) {
+                        return $query;
+                    }
+
                     return match ($data['status'] ?? null) {
                         'checked_out' => $query->whereNotNull('check_out'),
                         'pending' => $query->whereNull('check_out'),
@@ -430,7 +463,7 @@ class Index extends Component implements HasForms, HasTable
 
                     Toaster::success('Checked Out Successfully');
                 })
-                ->visible(fn (StudentAttendance $record) => ! $this->isTodayAbsentStudentRecord($record) && $record->check_out === null && (
+                ->visible(fn (Model $record) => ! $this->isTodayAbsentStudentRecord($record) && $record instanceof StudentAttendance && $record->check_out === null && (
                     auth()->user()->can('StudentAttendance Create')
                     || auth()->user()->can('StudentAttendance Update')
                 )),
@@ -438,12 +471,15 @@ class Index extends Component implements HasForms, HasTable
                     // Removed ->model() as it was causing confusion
                 ->button()
                 ->label(__('Report'))
-                ->url(fn ($record) => route('student-attendances.report', $record))
-                ->visible(fn (StudentAttendance $record) => ($record->check_out !== null && $record->studentReport === null) && (auth()->user()->can('StudentAttendance Report List'))
+                ->url(fn (Model $record): ?string => $record instanceof StudentAttendance ? route('student-attendances.report', $record) : null)
+                ->visible(fn (Model $record) => ! $this->isTodayAbsentStudentRecord($record)
+                    && $record instanceof StudentAttendance
+                    && ($record->check_out !== null && $record->studentReport === null)
+                    && (auth()->user()->can('StudentAttendance Report List'))
                 ),
             InfoAction::make('info')
                 ->label('')
-                ->visible(fn (StudentAttendance $record) => ! $this->isTodayAbsentStudentRecord($record) && auth()->user()->can('StudentAttendance Info')),
+                ->visible(fn (Model $record) => ! $this->isTodayAbsentStudentRecord($record) && auth()->user()->can('StudentAttendance Info')),
             ViewAction::make('view')
                 ->form(function (Forms\Form $form, $record) {
                     return $form->schema([
@@ -465,7 +501,7 @@ class Index extends Component implements HasForms, HasTable
                     ]);
                 })
                 ->modalSubmitAction(false)
-                ->visible(fn (StudentAttendance $record) => ! $this->isTodayAbsentStudentRecord($record) && auth()->user()->can('StudentAttendance View')),
+                ->visible(fn (Model $record) => ! $this->isTodayAbsentStudentRecord($record) && auth()->user()->can('StudentAttendance View')),
             EditAction::make('edit')
                 ->form(function (Major $record) {
                     return [
@@ -491,7 +527,7 @@ class Index extends Component implements HasForms, HasTable
                     $record->update($data);
                     Toaster::success(__('Major updated successfully'));
                 })
-                ->visible(fn (StudentAttendance $record) => ! $this->isTodayAbsentStudentRecord($record) && auth()->user()->can('StudentAttendance Update')),
+                ->visible(fn (Model $record) => ! $this->isTodayAbsentStudentRecord($record) && auth()->user()->can('StudentAttendance Update')),
 
             DeleteAction::make('delete')
                 ->action(function ($record) {
@@ -499,7 +535,7 @@ class Index extends Component implements HasForms, HasTable
                     $record->delete();
                     Toaster::success(__('Attendance deleted successfully'));
                 })
-                ->visible(fn (StudentAttendance $record) => ! $this->isTodayAbsentStudentRecord($record) && auth()->user()->can('StudentAttendance Delete')),
+                ->visible(fn (Model $record) => ! $this->isTodayAbsentStudentRecord($record) && auth()->user()->can('StudentAttendance Delete')),
         ];
     }
 
@@ -511,6 +547,21 @@ class Index extends Component implements HasForms, HasTable
                 ['title' => __('Companies List'), 'url' => route('majors.index')],
             ],
         ]);
+    }
+
+    protected function studentAttendanceTableQuery(): Builder
+    {
+        if ($this->todayAbsentStudentsFilterIsActive()) {
+            return $this->todayAbsentStudentsQuery();
+        }
+
+        return StudentAttendance::query()->with([
+            'studentCompany.branch',
+            'studentCompany.company',
+            'studentCompany.student.studentProfile',
+            'studentReport',
+        ])
+            ->when(auth()->user()->hasRole(UserRole::STUDENT->value), fn ($query) => $query->whereHas('studentCompany', fn ($studentCompanyQuery) => $studentCompanyQuery->where('student_id', auth()->id())));
     }
 
     protected function todayAbsentStudentsQuery(): Builder
@@ -551,44 +602,14 @@ class Index extends Component implements HasForms, HasTable
             ->orderBy('student_id');
     }
 
-    protected function applyTodayAbsentStudentsTableQuery(Builder $query): Builder
-    {
-        $attendanceTable = (new StudentAttendance)->getTable();
-        $studentCompanyTable = (new StudentCompany)->getTable();
-        $today = now()->toDateString();
-
-        $absentStudentsQuery = $this->todayAbsentStudentsQuery()
-            ->reorder()
-            ->selectRaw("(-{$studentCompanyTable}.id) as id")
-            ->selectRaw("{$studentCompanyTable}.id as student_company_id")
-            ->selectRaw('? as attendance_date', [$today])
-            ->selectRaw('null as check_in')
-            ->selectRaw('null as check_in_latitude')
-            ->selectRaw('null as check_in_longitude')
-            ->selectRaw('null as check_out')
-            ->selectRaw('null as check_out_latitude')
-            ->selectRaw('null as check_out_longitude')
-            ->selectRaw('null as status')
-            ->selectRaw('null as description')
-            ->selectRaw('null as created_by')
-            ->selectRaw('null as created_at')
-            ->selectRaw('null as updated_at')
-            ->selectRaw('null as deleted_at')
-            ->selectRaw('1 as is_today_absent_student');
-
-        return $query
-            ->fromSub($absentStudentsQuery, $attendanceTable)
-            ->select("{$attendanceTable}.*");
-    }
-
     protected function todayAbsentStudentsFilterIsActive(): bool
     {
         return (bool) data_get($this->getTableFilterState('today_absent_students'), 'isActive', false);
     }
 
-    protected function isTodayAbsentStudentRecord(StudentAttendance $record): bool
+    protected function isTodayAbsentStudentRecord(Model $record): bool
     {
-        return (bool) $record->getAttribute('is_today_absent_student');
+        return $record instanceof StudentCompany;
     }
 
     protected function todayAbsentStudentsExportFilename(): string
