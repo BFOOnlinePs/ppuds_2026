@@ -96,6 +96,10 @@ class ConfigServiceProvider extends ServiceProvider
             ]);
         });
 
+        Table::configureUsing(function (Table $table) {
+            $table->paginationPageOptions([5, 10, 25, 50]);
+        });
+
         BulkAction::configureUsing(function (BulkAction $action): void {
             if ($action->getName() === 'delete') {
                 $action
