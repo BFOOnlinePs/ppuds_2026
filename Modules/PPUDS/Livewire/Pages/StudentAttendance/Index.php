@@ -77,7 +77,8 @@ class Index extends Component implements HasForms, HasTable
 
                 TextColumn::make('check_in')
                     ->label(__('Check In'))
-                    ->time('H:i A'),
+                    ->time('H:i A')
+                    ->placeholder('---'),
 
                 TextColumn::make('check_out')
                     ->label(__('Check Out'))
@@ -87,15 +88,21 @@ class Index extends Component implements HasForms, HasTable
                 TextColumn::make('status')
                     ->label(__('Status'))
                     ->badge()
-                    ->formatStateUsing(fn (AttendanceStatus $state): string => $state->getLabel())
-                    ->color(AttendanceStatus::class),
+                    ->formatStateUsing(fn (?AttendanceStatus $state, StudentAttendance $record): string => $this->isTodayAbsentStudentRecord($record)
+                        ? __('Absent')
+                        : ($state?->getLabel() ?? '---'))
+                    ->color(fn (?AttendanceStatus $state, StudentAttendance $record): string => $this->isTodayAbsentStudentRecord($record)
+                        ? 'danger'
+                        : ($state?->getColor() ?? 'gray')),
 
                 TextColumn::make('check_in_latitude')
                     ->label(__('Location'))
                     ->icon('heroicon-m-map-pin')
                     ->color('primary')
-                    ->formatStateUsing(fn () => __('View Map'))
-                    ->url(fn ($record) => "https://www.google.com/maps?q={$record->check_in_latitude},{$record->check_in_longitude}")
+                    ->formatStateUsing(fn ($state) => filled($state) ? __('View Map') : '---')
+                    ->url(fn ($record) => filled($record->check_in_latitude) && filled($record->check_in_longitude)
+                        ? "https://www.google.com/maps?q={$record->check_in_latitude},{$record->check_in_longitude}"
+                        : null)
                     ->openUrlInNewTab(),
 
                 TextColumn::make('description')
@@ -104,7 +111,7 @@ class Index extends Component implements HasForms, HasTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters($this->getTableFilters(), layout: FiltersLayout::AboveContent)
-            ->filtersFormColumns(5)
+            ->filtersFormColumns(6)
             ->actions(
                 $this->getTableActions()
             )
@@ -304,6 +311,10 @@ class Index extends Component implements HasForms, HasTable
                     return $indicators;
                 }),
 
+            Filter::make('today_absent_students')
+                ->label(__('Today Absentees'))
+                ->baseQuery(fn (Builder $query): Builder => $this->applyTodayAbsentStudentsTableQuery($query)),
+
             Filter::make('student')
                 ->label(__('Student'))
                 ->form([
@@ -380,7 +391,7 @@ class Index extends Component implements HasForms, HasTable
                 BulkAction::make('delete')
                     ->label(__('Delete'))
                     ->requiresConfirmation()
-                    ->visible(fn () => auth()->user()->can('StudentAttendance Delete'))
+                    ->visible(fn () => auth()->user()->can('StudentAttendance Delete') && ! $this->todayAbsentStudentsFilterIsActive())
                     ->action(fn (Collection $records) => $records->each->delete()),
             ]),
         ];
@@ -419,7 +430,7 @@ class Index extends Component implements HasForms, HasTable
 
                     Toaster::success('Checked Out Successfully');
                 })
-                ->visible(fn ($record) => $record->check_out === null && (
+                ->visible(fn (StudentAttendance $record) => ! $this->isTodayAbsentStudentRecord($record) && $record->check_out === null && (
                     auth()->user()->can('StudentAttendance Create')
                     || auth()->user()->can('StudentAttendance Update')
                 )),
@@ -432,7 +443,7 @@ class Index extends Component implements HasForms, HasTable
                 ),
             InfoAction::make('info')
                 ->label('')
-                ->visible(fn () => auth()->user()->can('StudentAttendance Info')),
+                ->visible(fn (StudentAttendance $record) => ! $this->isTodayAbsentStudentRecord($record) && auth()->user()->can('StudentAttendance Info')),
             ViewAction::make('view')
                 ->form(function (Forms\Form $form, $record) {
                     return $form->schema([
@@ -454,7 +465,7 @@ class Index extends Component implements HasForms, HasTable
                     ]);
                 })
                 ->modalSubmitAction(false)
-                ->visible(fn () => auth()->user()->can('StudentAttendance View')),
+                ->visible(fn (StudentAttendance $record) => ! $this->isTodayAbsentStudentRecord($record) && auth()->user()->can('StudentAttendance View')),
             EditAction::make('edit')
                 ->form(function (Major $record) {
                     return [
@@ -480,7 +491,7 @@ class Index extends Component implements HasForms, HasTable
                     $record->update($data);
                     Toaster::success(__('Major updated successfully'));
                 })
-                ->visible(fn () => auth()->user()->can('StudentAttendance Update')),
+                ->visible(fn (StudentAttendance $record) => ! $this->isTodayAbsentStudentRecord($record) && auth()->user()->can('StudentAttendance Update')),
 
             DeleteAction::make('delete')
                 ->action(function ($record) {
@@ -488,7 +499,7 @@ class Index extends Component implements HasForms, HasTable
                     $record->delete();
                     Toaster::success(__('Attendance deleted successfully'));
                 })
-                ->visible(fn () => auth()->user()->can('StudentAttendance Delete')),
+                ->visible(fn (StudentAttendance $record) => ! $this->isTodayAbsentStudentRecord($record) && auth()->user()->can('StudentAttendance Delete')),
         ];
     }
 
@@ -538,6 +549,46 @@ class Index extends Component implements HasForms, HasTable
                 fn (Builder $query): Builder => $this->applyStudentSearchToStudentCompanyQuery($query, $studentSearch)
             )
             ->orderBy('student_id');
+    }
+
+    protected function applyTodayAbsentStudentsTableQuery(Builder $query): Builder
+    {
+        $attendanceTable = (new StudentAttendance)->getTable();
+        $studentCompanyTable = (new StudentCompany)->getTable();
+        $today = now()->toDateString();
+
+        $absentStudentsQuery = $this->todayAbsentStudentsQuery()
+            ->reorder()
+            ->selectRaw("(-{$studentCompanyTable}.id) as id")
+            ->selectRaw("{$studentCompanyTable}.id as student_company_id")
+            ->selectRaw('? as attendance_date', [$today])
+            ->selectRaw('null as check_in')
+            ->selectRaw('null as check_in_latitude')
+            ->selectRaw('null as check_in_longitude')
+            ->selectRaw('null as check_out')
+            ->selectRaw('null as check_out_latitude')
+            ->selectRaw('null as check_out_longitude')
+            ->selectRaw('null as status')
+            ->selectRaw('null as description')
+            ->selectRaw('null as created_by')
+            ->selectRaw('null as created_at')
+            ->selectRaw('null as updated_at')
+            ->selectRaw('null as deleted_at')
+            ->selectRaw('1 as is_today_absent_student');
+
+        return $query
+            ->fromSub($absentStudentsQuery, $attendanceTable)
+            ->select("{$attendanceTable}.*");
+    }
+
+    protected function todayAbsentStudentsFilterIsActive(): bool
+    {
+        return (bool) data_get($this->getTableFilterState('today_absent_students'), 'isActive', false);
+    }
+
+    protected function isTodayAbsentStudentRecord(StudentAttendance $record): bool
+    {
+        return (bool) $record->getAttribute('is_today_absent_student');
     }
 
     protected function todayAbsentStudentsExportFilename(): string
