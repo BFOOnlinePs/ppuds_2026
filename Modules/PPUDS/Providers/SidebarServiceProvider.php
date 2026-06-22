@@ -91,6 +91,7 @@ class SidebarServiceProvider extends ServiceProvider
         $sidebar->add(
             (new SidebarGroup('Reports', 'solar-chart-square-bold-duotone', [], 120))
                 ->add(new SidebarItem('Report List', 'solar-presentation-graph-bold-duotone', ['Report View List'], 'reports.index'))
+                ->add(new SidebarItem('Today Reports', 'solar-document-text-bold-duotone', ['Report View List'], 'reports.today'))
                 ->add(new SidebarItem('Absence Report', 'solar-calendar-search-bold-duotone', ['Report View List'], 'absence-reports.index'))
         );
 

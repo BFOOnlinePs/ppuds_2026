@@ -542,6 +542,7 @@
 
     "Reports": "التقارير",
     "Report List": "قائمة التقارير",
+    "Today Reports": "تقارير اليوم",
     "Absence Report": "تقرير الغياب",
     "Sync System Data": "مزامنة بيانات النظام",
 
@@ -570,6 +571,11 @@
     "Attendance": "الحضور",
     "Attendance Reports": "تقارير الحضور",
     "Daily Reports": "التقارير اليومية",
+    "Report Text": "نص التقرير",
+    "Report Details": "تفاصيل التقرير",
+    "Company Feedback": "ملاحظات الشركة",
+    "Academic Feedback": "ملاحظات المشرف الأكاديمي",
+    "Report deleted successfully": "تم حذف التقرير بنجاح",
     "Training Summary": "ملخص التدريب",
     "Payments": "المدفوعات",
 

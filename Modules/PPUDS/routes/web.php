@@ -211,6 +211,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     'namespace' => 'Modules\PPUDS\Livewire\Pages\Report',
                 ], function () {
                     Route::get('/', Index::class)->name('index')->can('Report View List');
+                    Route::get('/today', Today::class)->name('today')->can('Report View List');
                 });
 
                 Route::group([
