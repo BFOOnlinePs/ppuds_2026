@@ -27,6 +27,7 @@ use Filament\Forms\Set;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HtmlString;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
@@ -242,7 +243,6 @@ class Add extends Component implements HasActions, HasForms
                         ->schema([
                             Repeater::make('branches')
                                 ->label(__('Branches'))
-                                ->relationship('branches')
                                 ->minItems(1)
                                 ->defaultItems(1)
                                 ->collapsible()
@@ -288,7 +288,6 @@ class Add extends Component implements HasActions, HasForms
                                                                         Repeater::make('working_hours')
                                                                             ->label(__('Weekly Schedule'))
                                                                             ->hiddenLabel() // إخفاء العنوان لتوفير المساحة
-                                                                            ->relationship('workingHours') // اسم العلاقة في مودل Branch
                                                                             ->schema([
                                                                                 Grid::make(4)->schema([
                                                                                     // 1. اسم اليوم (للعرض فقط)
@@ -414,6 +413,7 @@ class Add extends Component implements HasActions, HasForms
                                                                             ->searchable()
                                                                             ->preload()
                                                                             ->prefixIcon('solar-case-minimalistic-linear') // Solar Icon
+                                                                            ->disableOptionsWhenSelectedInSiblingRepeaterItems()
                                                                             ->options(function () {
                                                                                 return CompanyDepartment::get()
                                                                                     ->pluck('name', 'name')
@@ -484,7 +484,7 @@ class Add extends Component implements HasActions, HasForms
                                                                 ])
                                                                 ->defaultItems(0)
                                                                 ->collapsible()
-                                                                ->itemLabel(fn (array $state): ?string => $state['name'] ?? null)
+                                                                ->itemLabel(__('Department Assignment'))
                                                                 ->addActionLabel(__('Add Department'))
                                                                 ->reorderableWithButtons()
                                                                 ->extraAttributes(['class' => 'company-departments-repeater border-l-4 border-primary-500 pl-4']), // تمييز بصري لقائمة الأقسام
@@ -700,27 +700,7 @@ class Add extends Component implements HasActions, HasForms
                 }
 
                 // --- ب. حفظ الأقسام ---
-                foreach ($departmentsData as $deptData) {
-                    $deptName = $deptData['name'];
-                    $supervisorId = $deptData['user_id'] ?? null;
-
-                    // البحث عن القسم أو إنشاؤه
-                    $department = CompanyDepartment::whereTranslation('name', $deptName)->first();
-
-                    if (! $department) {
-                        $department = CompanyDepartment::create([
-                            'name' => $deptName,
-                            'created_by' => auth()->id(),
-                        ]);
-                    }
-
-                    // ربط القسم بالفرع مع المشرف
-                    $branch->departments()->syncWithoutDetaching([
-                        $department->id => [
-                            'user_id' => $supervisorId,
-                        ],
-                    ]);
-                }
+                $this->syncDepartmentsForBranch($branch, $departmentsData);
             }
         }
 
@@ -760,6 +740,70 @@ class Add extends Component implements HasActions, HasForms
 
             Toaster::success(__('Company sent to university successfully'));
         }
+    }
+
+    private function syncDepartmentsForBranch(Branch $branch, array $departmentsData): void
+    {
+        $pivotTable = config('ppuds.table_prefix').'branch_department';
+        $rows = $this->departmentPivotRows($branch, $departmentsData);
+
+        DB::transaction(function () use ($pivotTable, $branch, $rows): void {
+            DB::table($pivotTable)
+                ->where('branch_id', $branch->id)
+                ->delete();
+
+            if ($rows !== []) {
+                DB::table($pivotTable)->insert($rows);
+            }
+        });
+    }
+
+    private function departmentPivotRows(Branch $branch, array $departmentsData): array
+    {
+        $now = now();
+
+        return collect($this->normalizeDepartmentsData($departmentsData))
+            ->map(function (array $deptData) use ($branch, $now): array {
+                $department = $this->resolveCompanyDepartment($deptData['name']);
+
+                return [
+                    'branch_id' => $branch->id,
+                    'company_department_id' => $department->id,
+                    'user_id' => $deptData['user_id'],
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            })
+            ->all();
+    }
+
+    private function normalizeDepartmentsData(array $departmentsData): array
+    {
+        return collect($departmentsData)
+            ->filter(fn (mixed $deptData): bool => is_array($deptData)
+                && filled($deptData['name'] ?? null)
+                && filled($deptData['user_id'] ?? null))
+            ->map(fn (array $deptData): array => [
+                'name' => trim((string) $deptData['name']),
+                'user_id' => (int) $deptData['user_id'],
+            ])
+            ->unique(fn (array $deptData): string => mb_strtolower($deptData['name']))
+            ->values()
+            ->all();
+    }
+
+    private function resolveCompanyDepartment(string $name): CompanyDepartment
+    {
+        $department = CompanyDepartment::whereTranslation('name', $name)->first();
+
+        if ($department) {
+            return $department;
+        }
+
+        return CompanyDepartment::create([
+            'name' => $name,
+            'created_by' => auth()->id(),
+        ]);
     }
 
     private function firstCompanySupervisorId(): ?int

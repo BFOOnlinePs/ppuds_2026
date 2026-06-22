@@ -46,6 +46,12 @@ class Index extends Component implements HasTable, HasForms
     {
         return $table
             ->query(fn() => LeaveRequest::query()
+                ->with([
+                    'studentCompany.student',
+                    'studentCompany.company',
+                    'companySupervisor',
+                    'universitySupervisor',
+                ])
                 ->where($this->filters)
                 ->when(auth()->user()->hasRole(UserRole::STUDENT->value), fn ($query) => $query->whereHas('studentCompany', fn ($studentCompanyQuery) => $studentCompanyQuery->where('student_id', auth()->id())))
                 ->latest())
@@ -53,6 +59,9 @@ class Index extends Component implements HasTable, HasForms
                 TextColumn::make('studentCompany.student.name')
                     ->label(__('Student'))
                     ->searchable()
+                    ->action(fn (LeaveRequest $record) => $this->mountTableAction('view', (string) $record->getKey()))
+                    ->disabledClick(fn (): bool => ! auth()->user()?->can('LeaveRequest View'))
+                    ->color(fn (): ?string => auth()->user()?->can('LeaveRequest View') ? 'primary' : null)
                     ->sortable(),
 
                 TextColumn::make('type')
@@ -206,6 +215,7 @@ class Index extends Component implements HasTable, HasForms
                 ->form(function (Forms\Form $form, $record) {
                     return $form->schema($this->getFormSchema(isView: true));
                 })
+                ->mountUsing(fn (Forms\ComponentContainer $form, LeaveRequest $record) => $this->fillViewForm($form, $record))
                 ->modalSubmitAction(false)
                 ->visible(fn() => auth()->user()->can('LeaveRequest View')),
 
@@ -245,7 +255,7 @@ class Index extends Component implements HasTable, HasForms
                                     $q->where('id', auth()->id());
                                 });
                             })->get()->mapWithKeys(function ($item) {
-                                return [$item->id => $item->student->name . ' - ' . $item->company->name];
+                                return [$item->id => ($item->student?->name ?? __('Unknown Student')) . ' - ' . ($item->company?->name ?? __('No Company'))];
                             }))
                             ->searchable()
                             ->required()
@@ -334,6 +344,11 @@ class Index extends Component implements HasTable, HasForms
                     ]),
                 ]),
         ];
+    }
+
+    protected function fillViewForm(Forms\ComponentContainer $form, LeaveRequest $record): void
+    {
+        $form->fill($record->attributesToArray());
     }
 
     public function render()

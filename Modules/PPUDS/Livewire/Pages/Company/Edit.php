@@ -24,6 +24,7 @@ use Filament\Forms\Set;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HtmlString;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
@@ -108,12 +109,14 @@ class Edit extends Component implements HasActions, HasForms
                 'working_hours' => $workingHoursData,
 
                 // جلب الأقسام
-                'departments' => $branch->departments->map(function ($dept) {
-                    return [
-                        'name' => $dept->name,
-                        'user_id' => $dept->pivot->user_id,
-                    ];
-                })->toArray(),
+                'departments' => $branch->departments
+                    ->unique(fn (CompanyDepartment $dept): int => $dept->id)
+                    ->map(function (CompanyDepartment $dept) {
+                        return [
+                            'name' => $dept->name,
+                            'user_id' => $dept->pivot->user_id,
+                        ];
+                    })->toArray(),
             ];
         })->toArray();
 
@@ -372,6 +375,7 @@ class Edit extends Component implements HasActions, HasForms
                                                                             ->searchable()
                                                                             ->preload()
                                                                             ->prefixIcon('solar-case-minimalistic-linear')
+                                                                            ->disableOptionsWhenSelectedInSiblingRepeaterItems()
                                                                             ->options(function () {
                                                                                 return CompanyDepartment::get()
                                                                                     ->pluck('name', 'name')
@@ -424,7 +428,7 @@ class Edit extends Component implements HasActions, HasForms
                                                                 ])
                                                                 ->defaultItems(0)
                                                                 ->collapsible()
-                                                                ->itemLabel(fn (array $state): ?string => $state['name'] ?? null)
+                                                                ->itemLabel(__('Department Assignment'))
                                                                 ->addActionLabel(__('Add Department'))
                                                                 ->reorderableWithButtons()
                                                                 ->extraAttributes(['class' => 'company-departments-repeater border-l-4 border-primary-500 pl-4']),
@@ -443,7 +447,7 @@ class Edit extends Component implements HasActions, HasForms
                         icon="solar-diskette-bold"
                         color="success"
                     >
-                        {{ __('Save') }}
+                        {{ __('Update') }}
                     </x-filament::button>
                 BLADE))),
             ])
@@ -570,27 +574,68 @@ class Edit extends Component implements HasActions, HasForms
         }
     }
 
-    protected function syncDepartmentsForBranch(Branch $branch, array $departmentsData)
+    protected function syncDepartmentsForBranch(Branch $branch, array $departmentsData): void
     {
-        $syncData = [];
+        $pivotTable = config('ppuds.table_prefix').'branch_department';
+        $rows = $this->departmentPivotRows($branch, $departmentsData);
 
-        foreach ($departmentsData as $deptData) {
-            $deptName = $deptData['name'];
-            $userId = $deptData['user_id'] ?? null;
+        DB::transaction(function () use ($pivotTable, $branch, $rows): void {
+            DB::table($pivotTable)
+                ->where('branch_id', $branch->id)
+                ->delete();
 
-            $department = CompanyDepartment::whereTranslation('name', $deptName)->first();
-
-            if (! $department) {
-                $department = CompanyDepartment::create([
-                    'name' => $deptName,
-                    'created_by' => auth()->id(),
-                ]);
+            if ($rows !== []) {
+                DB::table($pivotTable)->insert($rows);
             }
+        });
+    }
 
-            $syncData[$department->id] = ['user_id' => $userId];
+    private function departmentPivotRows(Branch $branch, array $departmentsData): array
+    {
+        $now = now();
+
+        return collect($this->normalizeDepartmentsData($departmentsData))
+            ->map(function (array $deptData) use ($branch, $now): array {
+                $department = $this->resolveCompanyDepartment($deptData['name']);
+
+                return [
+                    'branch_id' => $branch->id,
+                    'company_department_id' => $department->id,
+                    'user_id' => $deptData['user_id'],
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            })
+            ->all();
+    }
+
+    private function normalizeDepartmentsData(array $departmentsData): array
+    {
+        return collect($departmentsData)
+            ->filter(fn (mixed $deptData): bool => is_array($deptData)
+                && filled($deptData['name'] ?? null)
+                && filled($deptData['user_id'] ?? null))
+            ->map(fn (array $deptData): array => [
+                'name' => trim((string) $deptData['name']),
+                'user_id' => (int) $deptData['user_id'],
+            ])
+            ->unique(fn (array $deptData): string => mb_strtolower($deptData['name']))
+            ->values()
+            ->all();
+    }
+
+    private function resolveCompanyDepartment(string $name): CompanyDepartment
+    {
+        $department = CompanyDepartment::whereTranslation('name', $name)->first();
+
+        if ($department) {
+            return $department;
         }
 
-        $branch->departments()->sync($syncData);
+        return CompanyDepartment::create([
+            'name' => $name,
+            'created_by' => auth()->id(),
+        ]);
     }
 
     public function render()

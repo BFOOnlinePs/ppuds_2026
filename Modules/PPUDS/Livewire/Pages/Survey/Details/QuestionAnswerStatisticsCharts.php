@@ -3,6 +3,7 @@
 namespace Modules\PPUDS\Livewire\Pages\Survey\Details;
 
 use Livewire\Component;
+use Modules\Core\Enums\UserRole;
 use Modules\PPUDS\Entities\SurveyQuestion;
 use Modules\PPUDS\Enums\SurveyQuestionType;
 
@@ -10,8 +11,17 @@ class QuestionAnswerStatisticsCharts extends Component
 {
     public ?int $surveyId = null;
 
+    public function canViewCharts(): bool
+    {
+        return ! (auth()->user()?->hasRole(UserRole::STUDENT->value) ?? false);
+    }
+
     public function chartWidgets(): array
     {
+        if (! $this->canViewCharts()) {
+            return [];
+        }
+
         if (! $this->surveyId) {
             return [];
         }

@@ -12,6 +12,7 @@ use Filament\Infolists\Concerns\InteractsWithInfolists;
 use Filament\Infolists\Contracts\HasInfolists;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
+use Modules\Core\Enums\UserRole;
 use Modules\Core\Livewire\Pages\Home\Widget\Charts\AttendanceLastSevenDaysChart;
 use Modules\Core\Livewire\Pages\Home\Widget\Charts\CompanyLocationsChart;
 use Modules\Core\Livewire\Pages\Home\Widget\Charts\CompanySectorsChart;
@@ -33,6 +34,10 @@ class Index extends Component implements HasForms, HasInfolists
 
     public function chartWidgets(): array
     {
+        if ($this->shouldHideChartsForStudent()) {
+            return [];
+        }
+
         return collect([
             UsersByRoleChart::class,
             CurrentStudentsGenderChart::class,
@@ -47,6 +52,11 @@ class Index extends Component implements HasForms, HasInfolists
             ->filter(fn (string $widget) => $widget::canView())
             ->values()
             ->all();
+    }
+
+    private function shouldHideChartsForStudent(): bool
+    {
+        return auth()->user()?->hasRole(UserRole::STUDENT->value) ?? false;
     }
 
     #[Computed]
