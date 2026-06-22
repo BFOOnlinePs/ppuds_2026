@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Route;
 use Modules\Core\Enums\UserRole;
 use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Entities\StudentCompany;
-use Modules\PPUDS\Entities\StudentProfile;
 use Modules\PPUDS\Settings\GeneralSettings;
 
 class DashboardVerificationWidget extends Widget
@@ -28,33 +27,7 @@ class DashboardVerificationWidget extends Widget
         }
 
         return [
-            $this->admittedStudentsNotMatchedSection(),
             $this->enrolledStudentsWithoutCompanySection(),
-        ];
-    }
-
-    private function admittedStudentsNotMatchedSection(): array
-    {
-        $query = $this->admittedStudentsNotMatchedQuery();
-
-        return [
-            'title' => __('Admitted Students Not Matched'),
-            'count' => (clone $query)->count(),
-            'icon' => 'heroicon-o-user-plus',
-            'color' => 'danger',
-            'url' => $this->routeUrl('students.index', ['not_matched' => 1], 'Student View List'),
-            'rows' => (clone $query)
-                ->latest('id')
-                ->limit(self::PREVIEW_LIMIT)
-                ->get()
-                ->map(fn(StudentProfile $studentProfile): array => [
-                    'title' => $studentProfile->user?->name ?: __('Unknown Student'),
-                    'subtitle' => $studentProfile->student_number ?: $studentProfile->user?->email,
-                    'meta' => $this->studentProfileMeta($studentProfile),
-                    'url' => $this->studentUrl($studentProfile->user_id),
-                ])
-                ->all(),
-            'empty' => __('No admitted students need matching'),
         ];
     }
 
@@ -82,24 +55,6 @@ class DashboardVerificationWidget extends Widget
                 ->all(),
             'empty' => __('No enrolled students are missing companies'),
         ];
-    }
-
-    private function admittedStudentsNotMatchedQuery(): Builder
-    {
-        return StudentProfile::query()
-            ->with(['user', 'major'])
-            ->whereHas('user')
-            ->whereDoesntHave(
-                'user.studentCompanies',
-                fn(Builder $query) => $query->whereNotNull('company_id')
-            )
-            ->when(
-                $this->shouldScopeToSupervisor(),
-                fn(Builder $query) => $query->whereIn(
-                    'user_id',
-                    $this->currentRegistrationsQuery()->select('student_id')
-                )
-            );
     }
 
     private function enrolledStudentsWithoutCompanyQuery(): Builder
@@ -156,14 +111,6 @@ class DashboardVerificationWidget extends Widget
         $user = auth()->user();
 
         return $user && $user->can(self::VIEW_PERMISSION);
-    }
-
-    private function studentProfileMeta(StudentProfile $studentProfile): string
-    {
-        return collect([
-            $studentProfile->major?->name,
-            $studentProfile->enrollment_year ? __('Enrollment Year') . ': ' . $studentProfile->enrollment_year : null,
-        ])->filter()->implode(' - ');
     }
 
     private function registrationMeta(Registration $registration): string

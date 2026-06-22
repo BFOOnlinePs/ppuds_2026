@@ -3,8 +3,6 @@
 namespace Modules\Branch\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use Modules\Core\Services\SidebarGroup;
-use Modules\Core\Services\SidebarItem;
 use Modules\Core\Services\SidebarService;
 
 class SidebarServiceProvider extends ServiceProvider
@@ -20,11 +18,6 @@ class SidebarServiceProvider extends ServiceProvider
 
     public function boot(): void {
         $sidebar = $this->app->make(SidebarService::class);
-
-//        $sidebar->add(
-//            (new SidebarGroup('Branches', 'solar-buildings-bold-duotone', ['Branch View'] , 6))
-//                ->add(new SidebarItem('Branches List' , 'solar-virus-bold-duotone', ['Branch View'] , 'branches.index'))
-//        );
     }
 
     /**

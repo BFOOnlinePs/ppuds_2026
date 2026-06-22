@@ -79,12 +79,6 @@ class HomeActionsWidget extends Widget
                 'event' => 'open-attendance-map',
             ],
             [
-                'label' => 'Training Places',
-                'route' => 'branches.index',
-                'permission' => 'Branch View List',
-                'icon' => 'heroicon-o-map',
-            ],
-            [
                 'label' => 'Attendance And Departure Records',
                 'route' => 'student-attendances.index',
                 'permission' => 'StudentAttendance View List',

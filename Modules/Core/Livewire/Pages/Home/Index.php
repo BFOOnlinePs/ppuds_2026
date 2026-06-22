@@ -3,7 +3,6 @@
 namespace Modules\Core\Livewire\Pages\Home;
 
 use App\View\Components\AppLayout;
-use Filament\Forms\Components\Livewire;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\ViewField;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -24,8 +23,6 @@ use Modules\Core\Livewire\Pages\Home\Widget\Charts\TrainingStatusChart;
 use Modules\Core\Livewire\Pages\Home\Widget\Charts\UsersByRoleChart;
 use Modules\Core\Settings\GeneralSettings;
 use Modules\PPUDS\Entities\Announcement;
-use Modules\PPUDS\Entities\StudentCompany;
-use Modules\PPUDS\Settings\GeneralSettings as SettingsGeneralSettings;
 
 class Index extends Component implements HasForms, HasInfolists
 {
@@ -59,37 +56,14 @@ class Index extends Component implements HasForms, HasInfolists
     }
 
     #[Computed]
-    public function ppudsSettings()
-    {
-        return app(SettingsGeneralSettings::class);
-    }
-
-    #[Computed]
     public function getAnnouncements()
     {
         return Announcement::active()->get();
     }
 
-    #[Computed]
-    public function getStudentCompanies()
-    {
-        $semester = $this->ppudsSettings()->semester_type?->value;
-
-        return StudentCompany::whereHas('registration', fn ($q) => $q->where('student_id', auth()->id())->where('semester', $semester)->where('year', $this->ppudsSettings()->year))->orWhereHas('registration', fn ($q) => $q->where('supervisor_id', auth()->id())->where('semester', $semester)->where('year', $this->ppudsSettings()->year))->with(['company', 'branch', 'department'])->get();
-    }
-
     public function form(Form $form): Form
     {
         return $form->schema([
-            Section::make(__('Student Companies'))
-                ->schema([
-                    // Livewire::make(\Modules\PPUDS\Livewire\Pages\StudentCompany\Index::class)
-                    ViewField::make('student_companies_cards')
-                        ->view('ppuds::components.fields.student-companies-cards'),
-
-                ])
-                ->visible(fn () => auth()->user()->hasRole('Student')),
-
             Section::make(__('Announcements'))
                 ->schema([
                     ViewField::make('announcements_list')

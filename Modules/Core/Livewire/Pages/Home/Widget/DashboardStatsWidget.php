@@ -13,7 +13,6 @@ use Modules\PPUDS\Entities\LeaveRequest;
 use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Entities\StudentAttendance;
 use Modules\PPUDS\Entities\StudentCompany;
-use Modules\PPUDS\Entities\StudentProfile;
 use Modules\PPUDS\Enums\StudentGender;
 use Modules\PPUDS\Settings\GeneralSettings;
 
@@ -39,7 +38,6 @@ class DashboardStatsWidget extends StatsOverviewWidget
         $studentsInCompanies = $this->currentStudentCompaniesQuery()
             ->whereNotNull('company_id');
         $studentsNeedingCompany = $this->studentsNeedingCompanyQuery();
-        $admittedStudentsNotMatched = $this->admittedStudentsNotMatchedQuery();
         $todayAttendance = $this->todayAttendanceStudentsQuery();
 
         return [
@@ -72,16 +70,6 @@ class DashboardStatsWidget extends StatsOverviewWidget
                 [
                     ['route' => 'student-companies.add', 'permission' => 'StudentCompany Create'],
                     ['route' => 'registrations.index', 'permission' => 'Registration View List', 'parameters' => ['without_company' => 1]],
-                ],
-            ),
-
-            $this->linkStat(
-                Stat::make(__('Admitted Students Not Matched'), (clone $admittedStudentsNotMatched)->count())
-                    ->description(__('Students not assigned to any company'))
-                    ->icon('heroicon-o-user-plus')
-                    ->color('danger'),
-                [
-                    ['route' => 'students.index', 'permission' => 'Student View List', 'parameters' => ['not_matched' => 1]],
                 ],
             ),
 
@@ -202,23 +190,6 @@ class DashboardStatsWidget extends StatsOverviewWidget
                 StudentCompany::query()
                     ->whereNotNull('company_id')
                     ->select('registration_id')
-            );
-    }
-
-    private function admittedStudentsNotMatchedQuery(): Builder
-    {
-        return StudentProfile::query()
-            ->whereHas('user')
-            ->whereDoesntHave(
-                'user.studentCompanies',
-                fn (Builder $query) => $query->whereNotNull('company_id')
-            )
-            ->when(
-                $this->shouldScopeToSupervisor(),
-                fn (Builder $query) => $query->whereIn(
-                    'user_id',
-                    $this->currentRegistrationsQuery()->select('student_id')
-                )
             );
     }
 

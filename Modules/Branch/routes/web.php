@@ -18,20 +18,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 'prefix' => 'admin',
                 'as' => '',
             ], function () {
-                Route::group([
-                    'prefix' => 'branch',
-                ], function () {
-                    Route::group(
-                        [
-                            'prefix' => 'appointment',
-                            'as' => '',
-                            'namespace' => 'Modules\Branch\Livewire\Pages\Branch',
-                        ],
-                        function () {
-                            Route::get('/', 'Index')->name('branches.index');
-                        }
-                    );
-                });
             });
         }
     );
