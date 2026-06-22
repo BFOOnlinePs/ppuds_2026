@@ -12,6 +12,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Tables\Actions\Action;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
@@ -55,10 +56,18 @@ class Index extends Component implements HasForms, HasTable
                         fn ($studentCompanyQuery) => $studentCompanyQuery->whereNotNull('company_id')
                     )))
             ->columns([
+                ImageColumn::make('student_avatar')
+                    ->label(__('Avatar'))
+                    ->getStateUsing(fn (StudentProfile $record): ?string => $record->user?->profile_image_url)
+                    ->circular()
+                    ->size(40)
+                    ->extraImgAttributes(fn (StudentProfile $record): array => [
+                        'alt' => $record->user?->name ?? __('Student'),
+                    ]),
+
                 TextColumn::make('user.name')
                     ->label(__('Arabic Name'))
                     ->searchable()
-                    ->formatStateUsing(fn (StudentProfile $record) => $record->user?->user_display_html ?? '-')
                     ->url(fn (StudentProfile $record) => route('students.details', $record->user_id))
                     ->color('primary')
                     ->sortable(),
