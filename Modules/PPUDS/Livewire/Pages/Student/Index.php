@@ -48,7 +48,7 @@ class Index extends Component implements HasForms, HasTable
     {
         return $table
             ->query(fn () => StudentProfile::query()
-                ->with('user')
+                ->with(['user.media'])
                 ->when(request()->boolean('not_matched'), fn ($query) => $query
                     ->whereDoesntHave(
                         'user.studentCompanies',
@@ -58,6 +58,7 @@ class Index extends Component implements HasForms, HasTable
                 TextColumn::make('user.name')
                     ->label(__('Arabic Name'))
                     ->searchable()
+                    ->formatStateUsing(fn (StudentProfile $record) => $record->user?->user_display_html ?? '-')
                     ->url(fn (StudentProfile $record) => route('students.details', $record->user_id))
                     ->color('primary')
                     ->sortable(),

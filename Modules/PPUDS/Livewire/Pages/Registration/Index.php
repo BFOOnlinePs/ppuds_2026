@@ -52,7 +52,7 @@ class Index extends Component implements HasForms, HasTable
         return $table
             ->query(
                 fn () => Registration::query()
-                    ->with(['student', 'course', 'supervisor'])
+                    ->with(['student.media', 'course', 'supervisor'])
                     ->when(auth()->user()->hasRole(UserRole::STUDENT->value), function ($query) {
                         $query->where('student_id', auth()->user()->id);
                     })
@@ -70,9 +70,9 @@ class Index extends Component implements HasForms, HasTable
                     ->label(__('Student'))
                     ->searchable()
                     ->sortable()
+                    ->formatStateUsing(fn (Registration $record) => $record->student?->user_display_html ?? '-')
                     ->url(fn (Registration $record) => route('students.details', $record->student_id))
                     ->color('primary')
-                    ->icon('solar-user-id-bold-duotone')
                     ->weight('bold'),
 
                 // 2. عمود المساق
