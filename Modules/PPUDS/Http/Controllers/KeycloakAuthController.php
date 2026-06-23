@@ -16,20 +16,36 @@ class KeycloakAuthController extends Controller
 {
     public function redirect()
     {
+        if (! $this->usesKeycloakLogin()) {
+            return redirect()->route('login');
+        }
+
         return Socialite::driver('keycloak')->redirect();
     }
 
     public function callback(AuthenticateViaKeycloakAction $authAction)
     {
+        if (! $this->usesKeycloakLogin()) {
+            return redirect()->route('login');
+        }
+
         try {
             $keycloakUser = Socialite::driver('keycloak')->user();
             $authAction->execute($keycloakUser);
 
-            return redirect()->route('home');
+            return redirect()->intended(route('home'));
         } catch (ValidationException $e) {
+            if ($this->usesKeycloakLogin()) {
+                return redirect($this->keycloakLogoutUrl());
+            }
+
             return redirect()->route('login')->withErrors($e->errors());
         } catch (\Exception $e) {
             Log::error('Keycloak Auth Failed: '.$e->getMessage());
+
+            if ($this->usesKeycloakLogin()) {
+                return redirect($this->keycloakLogoutUrl());
+            }
 
             return redirect()->route('login')->withErrors([
                 'auth' => 'فشل في تسجيل الدخول عبر نظام الجامعة.',
@@ -67,5 +83,10 @@ class KeycloakAuthController extends Controller
         $redirectUri = urlencode(url('/login'));
 
         return "{$baseUrl}/realms/{$realm}/protocol/openid-connect/logout?client_id={$clientId}&post_logout_redirect_uri={$redirectUri}";
+    }
+
+    protected function usesKeycloakLogin(): bool
+    {
+        return app(GeneralSettings::class)->login_method === LoginMethod::PPU;
     }
 }

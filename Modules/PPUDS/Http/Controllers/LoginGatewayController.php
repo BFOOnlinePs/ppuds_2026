@@ -13,7 +13,7 @@ class LoginGatewayController extends Controller
     {
         $generalSettings = app(GeneralSettings::class);
 
-        if ($generalSettings->login_method === LoginMethod::PPU && ! $request->session()->has('errors')) {
+        if ($generalSettings->login_method === LoginMethod::PPU) {
             return redirect()->route('keycloak.redirect');
         }
 

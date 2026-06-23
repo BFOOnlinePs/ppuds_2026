@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnforceConfiguredLoginMethod;
 use Illuminate\Support\Facades\Route;
 use Modules\PPUDS\Http\Controllers\KeycloakAuthController;
 use Modules\PPUDS\Http\Controllers\LoginGatewayController;
@@ -14,7 +15,7 @@ use Modules\PPUDS\Http\Controllers\LoginGatewayController;
 Route::middleware('guest')->get('/login', LoginGatewayController::class)->name('login');
 
 // مسارات Keycloak
-Route::middleware('guest')->group(function () {
+Route::middleware(['guest', EnforceConfiguredLoginMethod::class])->group(function () {
     Route::get('/auth/keycloak/redirect', [KeycloakAuthController::class, 'redirect'])->name('keycloak.redirect');
     Route::get('/auth/keycloak/callback', [KeycloakAuthController::class, 'callback'])->name('keycloak.callback');
 });

@@ -17,6 +17,12 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->trustProxies(at: '*');
 
+        $middleware->redirectGuestsTo(
+            fn (\Illuminate\Http\Request $request): string => app(\Modules\PPUDS\Settings\GeneralSettings::class)->login_method === \Modules\PPUDS\Enums\LoginMethod::PPU
+                ? route('keycloak.redirect')
+                : route('login')
+        );
+
         $middleware->alias([
             /**** OTHER MIDDLEWARE ALIASES ****/
             'localize'                => \Mcamara\LaravelLocalization\Middleware\LaravelLocalizationRoutes::class,
