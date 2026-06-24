@@ -25,9 +25,11 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\HtmlString;
 use Livewire\Component;
 use Maatwebsite\Excel\Excel as WriterType;
 use Masmerise\Toaster\Toaster;
+use Modules\Core\Entities\User;
 use Modules\Core\Enums\UserRole;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
@@ -59,9 +61,9 @@ class Index extends Component implements HasForms, HasTable
             ->columns([
                 TextColumn::make('student_name')
                     ->label(__('Student Name'))
-                    ->getStateUsing(fn (Model $record): ?string => $record instanceof StudentCompany
-                        ? $record->student?->name
-                        : $record->studentCompany?->student?->name)
+                    ->getStateUsing(fn (Model $record): HtmlString|string => $this->studentDisplayColumnState($record))
+                    ->html()
+                    ->url(fn (Model $record): ?string => $this->studentDetailsUrl($record))
                     ->searchable(query: fn (Builder $query, string $search): Builder => $this->todayAbsentStudentsFilterIsActive()
                         ? $this->applyStudentSearchToStudentCompanyQuery($query, $search)
                         : $this->applyStudentSearchToAttendanceQuery($query, $search)),
@@ -558,6 +560,7 @@ class Index extends Component implements HasForms, HasTable
         return StudentAttendance::query()->with([
             'studentCompany.branch',
             'studentCompany.company',
+            'studentCompany.student.media',
             'studentCompany.student.studentProfile',
             'studentReport',
         ])
@@ -578,6 +581,7 @@ class Index extends Component implements HasForms, HasTable
                 'department.translations',
                 'registration.course.translations',
                 'registration.supervisor',
+                'student.media',
                 'student.studentProfile.major.translations',
             ])
             ->whereNotNull('company_id')
@@ -610,6 +614,35 @@ class Index extends Component implements HasForms, HasTable
     protected function isTodayAbsentStudentRecord(Model $record): bool
     {
         return $record instanceof StudentCompany;
+    }
+
+    protected function studentDisplayColumnState(Model $record): HtmlString|string
+    {
+        return $this->studentFromRecord($record)?->user_display_html ?? '---';
+    }
+
+    protected function studentDetailsUrl(Model $record): ?string
+    {
+        $student = $this->studentFromRecord($record);
+
+        if (! $student || ! auth()->user()->can('Student Details List')) {
+            return null;
+        }
+
+        return route('students.details', $student->id);
+    }
+
+    protected function studentFromRecord(Model $record): ?User
+    {
+        if ($record instanceof StudentCompany) {
+            return $record->student;
+        }
+
+        if ($record instanceof StudentAttendance) {
+            return $record->studentCompany?->student;
+        }
+
+        return null;
     }
 
     protected function todayAbsentStudentsExportFilename(): string

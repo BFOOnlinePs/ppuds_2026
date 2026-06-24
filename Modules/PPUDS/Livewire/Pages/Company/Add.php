@@ -52,6 +52,8 @@ class Add extends Component implements HasActions, HasForms
 
     public ?array $data = [];
 
+    public array $createdCompanySupervisorIds = [];
+
     public function mount()
     {
         $this->form->fill();
@@ -475,12 +477,12 @@ class Add extends Component implements HasActions, HasForms
                                                                                 $data['password'] = bcrypt($data['password']);
                                                                                 $user = User::create($data);
                                                                                 $user->assignRole('Company Supervisor');
-                                                                                session()->put($this->supervisorPasswordSessionKey($user->id), $plainPassword);
 
-                                                                                $supervisorId = (string) $user->getKey();
-                                                                                $set('user_id', $supervisorId);
+                                                                                $supervisorId = (int) $user->getKey();
+                                                                                $this->rememberCreatedCompanySupervisor($supervisorId, $plainPassword);
+                                                                                $set('user_id', (string) $supervisorId);
 
-                                                                                return $supervisorId;
+                                                                                return (string) $supervisorId;
                                                                             })
                                                                             ->required(),
                                                                     ]),
@@ -740,6 +742,7 @@ class Add extends Component implements HasActions, HasForms
 
         $created = 0;
         $alreadyExists = 0;
+        $failed = 0;
 
         foreach ($supervisors as $index => $supervisor) {
             $password = session()->pull($this->supervisorPasswordSessionKey($supervisor['id']));
@@ -747,13 +750,15 @@ class Add extends Component implements HasActions, HasForms
                 $company->refresh(),
                 $password,
                 $supervisor['id'],
-                sendEvenIfCompanyExists: $index > 0,
+                sendEvenIfCompanyExists: $index > 0 || ($supervisor['was_created'] ?? false),
             );
 
             if (($result['operation'] ?? null) === 'already_exists') {
                 $alreadyExists++;
-            } elseif ($result !== null) {
+            } elseif (($result['success'] ?? false) === true) {
                 $created++;
+            } else {
+                $failed++;
             }
         }
 
@@ -767,6 +772,10 @@ class Add extends Component implements HasActions, HasForms
 
         if ($alreadyExists > 0) {
             Toaster::success(__('Company supervisor already exists in university system'));
+        }
+
+        if ($failed > 0) {
+            Toaster::error(__('Unable to send company supervisor to university system'));
         }
     }
 
@@ -787,12 +796,39 @@ class Add extends Component implements HasActions, HasForms
 
     private function companySupervisorSyncCandidates(): array
     {
+        $createdSupervisorIds = collect($this->createdCompanySupervisorIds)
+            ->map(fn (mixed $supervisorId): int => (int) $supervisorId)
+            ->filter()
+            ->unique()
+            ->values();
+
         return collect($this->selectedCompanySupervisorIds())
-            ->map(fn (int $supervisorId): array => [
-                'id' => $supervisorId,
-                'has_password' => session()->has($this->supervisorPasswordSessionKey($supervisorId)),
-            ])
-            ->sortByDesc('has_password')
+            ->map(function (int $supervisorId) use ($createdSupervisorIds): array {
+                $hasPassword = session()->has($this->supervisorPasswordSessionKey($supervisorId));
+
+                return [
+                    'id' => $supervisorId,
+                    'was_created' => $createdSupervisorIds->contains($supervisorId) || $hasPassword,
+                    'has_password' => $hasPassword,
+                ];
+            })
+            ->sortByDesc(
+                fn (array $supervisor): int => ($supervisor['was_created'] ? 2 : 0)
+                    + ($supervisor['has_password'] ? 1 : 0)
+            )
+            ->values()
+            ->all();
+    }
+
+    private function rememberCreatedCompanySupervisor(int $supervisorId, string $plainPassword): void
+    {
+        session()->put($this->supervisorPasswordSessionKey($supervisorId), $plainPassword);
+
+        $this->createdCompanySupervisorIds = collect($this->createdCompanySupervisorIds)
+            ->push($supervisorId)
+            ->map(fn (mixed $id): int => (int) $id)
+            ->filter()
+            ->unique()
             ->values()
             ->all();
     }

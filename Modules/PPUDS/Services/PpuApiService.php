@@ -348,7 +348,7 @@ class PpuApiService
                 ->timeout(30)
                 ->post($url, $payload);
         } catch (\Exception $e) {
-            self::logToTerminal("✗ تعذر إرسال الشركة {$company->name} إلى API الجامعة: ".$e->getMessage(), $userId);
+            self::logToTerminal("✗ تعذر إرسال الشركة {$company->name} إلى API الجامعة: " . $e->getMessage(), $userId);
             Log::error('Failed to connect to PPU add company API', [
                 'company_id' => $company->id,
                 'url' => $url,
@@ -468,7 +468,6 @@ class PpuApiService
             self::logToTerminal('✗ فشل جلب الطلاب من API (كود: ' . $response->status() . ')', $userId);
             Log::error("Failed to fetch students from API", ['status' => $response->status(), 'body' => $response->body()]);
             return false;
-
         } catch (\Exception $e) {
             self::logToTerminal('✗ خطأ في مزامنة الطلاب: ' . $e->getMessage(), $userId);
             Log::error("PPU Student Sync Error: " . $e->getMessage());
@@ -510,7 +509,6 @@ class PpuApiService
             self::logToTerminal($failed === 0 ? '✓ انتهت عملية اسناد المقررات بنجاح.' : "⚠ انتهت عملية اسناد المقررات مع {$failed} أخطاء.", $userId);
 
             return $failed === 0;
-
         } catch (\Exception $e) {
             self::logToTerminal('✗ خطأ في اسناد المقررات: ' . $e->getMessage(), $userId);
             Log::error("PPU Course Sync Error: " . $e->getMessage());
@@ -566,7 +564,6 @@ class PpuApiService
 
             self::logToTerminal('✗ فشل جلب التخصصات من API (كود: ' . $response->status() . ')', $userId);
             return false;
-
         } catch (\Exception $e) {
             self::logToTerminal('✗ خطأ في مزامنة التخصصات: ' . $e->getMessage(), $userId);
             Log::error("PPU Major Sync Error: " . $e->getMessage());
@@ -791,7 +788,7 @@ class PpuApiService
             data_get($responseData, 'errors'),
         ])
             ->filter()
-            ->map(fn ($value) => is_array($value) ? json_encode($value, JSON_UNESCAPED_UNICODE) : (string) $value)
+            ->map(fn($value) => is_array($value) ? json_encode($value, JSON_UNESCAPED_UNICODE) : (string) $value)
             ->implode(' ');
 
         return $this->containsAlreadyExistsText($text);
@@ -812,6 +809,6 @@ class PpuApiService
 
     private function ppuApiUrl(string $path): string
     {
-        return rtrim(config('services.ppu_api.base_url', 'https://api-core.ppu.edu'), '/').'/'.ltrim($path, '/');
+        return rtrim(config('services.ppu_api.base_url', 'https://api-core.ppu.edu'), '/') . '/' . ltrim($path, '/');
     }
 }
