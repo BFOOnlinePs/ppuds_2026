@@ -702,7 +702,7 @@ class PpuApiService
             'email2' => $email,
             'mobile' => $mobile,
             'pw' => $resolvedPassword,
-            'userName' => $supervisor?->email ?: $this->companyUsername($company),
+            'userName' => $mobile,
         ];
     }
 
