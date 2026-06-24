@@ -675,6 +675,8 @@ class PpuApiService
             return null;
         }
 
+        $resolvedPassword = $password ?: ($supervisor?->phone ?: '');
+
         return [
             'caName' => $this->companyName($company, 'ar'),
             'ceName' => $this->companyName($company, 'en'),
@@ -682,7 +684,7 @@ class PpuApiService
             'cpeName' => $supervisor?->name_en ?: ($supervisor?->name ?: $this->companyName($company, 'en')),
             'email2' => $email,
             'mobile' => $mobile,
-            'pw' => $password ?: '',
+            'pw' => $resolvedPassword,
             'userName' => $supervisor?->email ?: $this->companyUsername($company),
         ];
     }

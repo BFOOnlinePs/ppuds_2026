@@ -466,7 +466,7 @@ class Details extends Component implements HasForms, HasInfolists
                                                                                             $user = User::create($data);
                                                                                             $user->assignRole('Company Supervisor');
 
-                                                                                            return $user->id;
+                                                                                            return (string) $user->getKey();
                                                                                         })
                                                                                         ->required(),
                                                                                 ]),
@@ -614,6 +614,7 @@ class Details extends Component implements HasForms, HasInfolists
 
         // 1. التحقق من البيانات
         $this->validate();
+        $this->data = $this->form->getState();
 
         // 2. تحديث بيانات الشركة الأساسية (استبعاد الفروع والشعار مؤقتاً)
         $attachmentUploads = $this->data['attachment_uploads'] ?? [];

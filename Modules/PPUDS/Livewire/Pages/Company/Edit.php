@@ -438,7 +438,7 @@ class Edit extends Component implements HasActions, HasForms
                                                                                 $user->assignRole('Company Supervisor');
                                                                                 session()->put($this->supervisorPasswordSessionKey($user->id), $plainPassword);
 
-                                                                                return $user->id;
+                                                                                return (string) $user->getKey();
                                                                             })
                                                                             ->required(),
                                                                     ]),
@@ -503,6 +503,7 @@ class Edit extends Component implements HasActions, HasForms
         // 1. التحقق من الصلاحيات والبيانات
         $this->authorize('Company Update');
         $this->validate();
+        $this->data = $this->form->getState();
 
         // 2. تحديث بيانات الشركة الأساسية (مع استبعاد الفروع والشعار)
         $companyData = Arr::except($this->data, ['branches', 'logo']);

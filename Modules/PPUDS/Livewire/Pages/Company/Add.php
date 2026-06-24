@@ -477,7 +477,7 @@ class Add extends Component implements HasActions, HasForms
                                                                                 $user->assignRole('Company Supervisor');
                                                                                 session()->put($this->supervisorPasswordSessionKey($user->id), $plainPassword);
 
-                                                                                return $user->id;
+                                                                                return (string) $user->getKey();
                                                                             })
                                                                             ->required(),
                                                                     ]),
@@ -649,6 +649,7 @@ class Add extends Component implements HasActions, HasForms
         $this->authorize('Company Create');
 
         $this->validate();
+        $this->data = $this->form->getState();
 
         // 1. فصل بيانات الشركة الأساسية عن الفروع والشعار
         $companyData = Arr::except($this->data, ['branches', 'logo']);
