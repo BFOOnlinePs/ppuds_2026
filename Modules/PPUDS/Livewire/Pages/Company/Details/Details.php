@@ -27,7 +27,9 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HtmlString;
+use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Branch\Entities\Branch;
@@ -39,6 +41,7 @@ use Modules\GeoLocation\Entities\Country;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\CompanyCategory;
 use Modules\PPUDS\Entities\CompanyDepartment;
+use Modules\PPUDS\Services\PpuApiService;
 use Spatie\MediaLibrary\MediaCollections\Models\Media as SpatieMedia;
 
 class Details extends Component implements HasForms, HasInfolists
@@ -47,6 +50,8 @@ class Details extends Component implements HasForms, HasInfolists
     use InteractsWithInfolists;
 
     public ?array $data = [];
+
+    public array $pendingCreatedSupervisorAssignments = [];
 
     public Company $company;
 
@@ -455,18 +460,36 @@ class Details extends Component implements HasForms, HasInfolists
                                                                                             Grid::make(2)->schema([
                                                                                                 TextInput::make('name')->required(),
                                                                                                 TextInput::make('name_en')->required(),
-                                                                                                TextInput::make('email')->required()->email(),
+                                                                                                TextInput::make('email')
+                                                                                                    ->required()
+                                                                                                    ->email()
+                                                                                                    ->unique('users', 'email')
+                                                                                                    ->dehydrateStateUsing(fn (?string $state): ?string => filled($state) ? strtolower(trim($state)) : null)
+                                                                                                    ->validationMessages([
+                                                                                                        'unique' => __('This email is already taken'),
+                                                                                                    ]),
                                                                                                 TextInput::make('phone')->required()->numeric(),
                                                                                                 TextInput::make('password')->required()->password()->confirmed(),
                                                                                                 TextInput::make('password_confirmation')->required()->password(),
                                                                                             ]),
                                                                                         ])
-                                                                                        ->createOptionUsing(function (array $data) {
+                                                                                        ->createOptionUsing(function (array $data, Get $get, Set $set) {
+                                                                                            if (User::where('email', $data['email'])->exists()) {
+                                                                                                throw ValidationException::withMessages([
+                                                                                                    'email' => __('This email is already taken'),
+                                                                                                ]);
+                                                                                            }
+
+                                                                                            $plainPassword = $data['password'];
                                                                                             $data['password'] = bcrypt($data['password']);
                                                                                             $user = User::create($data);
                                                                                             $user->assignRole('Company Supervisor');
 
-                                                                                            return (string) $user->getKey();
+                                                                                            $supervisorId = (int) $user->getKey();
+                                                                                            $set('user_id', (string) $supervisorId);
+                                                                                            $this->attachCreatedSupervisorToCompanyDepartment($get, $supervisorId, $plainPassword);
+
+                                                                                            return (string) $supervisorId;
                                                                                         })
                                                                                         ->required(),
                                                                                 ]),
@@ -615,6 +638,7 @@ class Details extends Component implements HasForms, HasInfolists
         // 1. التحقق من البيانات
         $this->validate();
         $this->data = $this->form->getState();
+        $this->mergePendingCreatedSupervisorAssignmentsIntoFormData();
 
         // 2. تحديث بيانات الشركة الأساسية (استبعاد الفروع والشعار مؤقتاً)
         $attachmentUploads = $this->data['attachment_uploads'] ?? [];
@@ -736,6 +760,127 @@ class Details extends Component implements HasForms, HasInfolists
         }
 
         $branch->departments()->sync($syncData);
+    }
+
+    private function attachCreatedSupervisorToCompanyDepartment(Get $get, int $supervisorId, string $plainPassword): void
+    {
+        $branchId = $get('../../id');
+        $departmentName = $get('name');
+
+        if (blank($branchId) || blank($departmentName)) {
+            return;
+        }
+
+        $branch = $this->company
+            ->branches()
+            ->whereKey((int) $branchId)
+            ->first();
+
+        if (! $branch) {
+            return;
+        }
+
+        $department = $this->resolveCompanyDepartment(trim((string) $departmentName));
+        $now = now();
+
+        DB::table(config('ppuds.table_prefix').'branch_department')->updateOrInsert(
+            [
+                'branch_id' => $branch->id,
+                'company_department_id' => $department->id,
+            ],
+            [
+                'user_id' => $supervisorId,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+        );
+
+        $this->pendingCreatedSupervisorAssignments[] = [
+            'branch_id' => $branch->id,
+            'department_name' => trim((string) $departmentName),
+            'user_id' => $supervisorId,
+        ];
+
+        $this->syncSingleSupervisorToUniversity($supervisorId, $plainPassword);
+    }
+
+    private function mergePendingCreatedSupervisorAssignmentsIntoFormData(): void
+    {
+        if ($this->pendingCreatedSupervisorAssignments === []) {
+            return;
+        }
+
+        foreach ($this->pendingCreatedSupervisorAssignments as $assignment) {
+            foreach ($this->data['branches'] ?? [] as &$branch) {
+                if ((int) ($branch['id'] ?? 0) !== (int) $assignment['branch_id']) {
+                    continue;
+                }
+
+                foreach ($branch['departments'] ?? [] as &$department) {
+                    if (trim((string) ($department['name'] ?? '')) !== $assignment['department_name']) {
+                        continue;
+                    }
+
+                    $department['user_id'] = (int) $assignment['user_id'];
+                    continue 3;
+                }
+
+                $branch['departments'][] = [
+                    'name' => $assignment['department_name'],
+                    'user_id' => (int) $assignment['user_id'],
+                ];
+
+                continue 2;
+            }
+
+            unset($department, $branch);
+        }
+    }
+
+    private function resolveCompanyDepartment(string $name): CompanyDepartment
+    {
+        $department = CompanyDepartment::whereTranslation('name', $name)->first();
+
+        if ($department) {
+            return $department;
+        }
+
+        return CompanyDepartment::create([
+            'name' => $name,
+            'created_by' => auth()->id(),
+        ]);
+    }
+
+    private function syncSingleSupervisorToUniversity(int $supervisorId, ?string $plainPassword = null): void
+    {
+        $company = $this->company->fresh(['branches.supervisors', 'translations']);
+
+        if (! $company) {
+            return;
+        }
+
+        $result = app(PpuApiService::class)->addCompanyToUniversity(
+            $company,
+            $plainPassword,
+            $supervisorId,
+            sendEvenIfCompanyExists: true,
+        );
+
+        if (($result['operation'] ?? null) === 'already_exists') {
+            Toaster::success(__('Company supervisor already exists in university system'));
+
+            return;
+        }
+
+        if (($result['success'] ?? null) === false) {
+            Toaster::error(__('Unable to send company supervisor to university system'));
+
+            return;
+        }
+
+        if ($result !== null) {
+            Toaster::success(__('Company supervisor sent to university successfully'));
+        }
     }
 
     public function render()

@@ -52,6 +52,8 @@ class Edit extends Component implements HasActions, HasForms
 
     public ?array $data = [];
 
+    public array $pendingCreatedSupervisorAssignments = [];
+
     public Company $company;
 
     public function mount(Company $company)
@@ -425,7 +427,7 @@ class Edit extends Component implements HasActions, HasForms
                                                                                     TextInput::make('password_confirmation')->required()->password(),
                                                                                 ]),
                                                                             ])
-                                                                            ->createOptionUsing(function (array $data) {
+                                                                            ->createOptionUsing(function (array $data, Get $get, Set $set) {
                                                                                 if (User::where('email', $data['email'])->exists()) {
                                                                                     throw ValidationException::withMessages([
                                                                                         'email' => __('This email is already taken'),
@@ -438,7 +440,11 @@ class Edit extends Component implements HasActions, HasForms
                                                                                 $user->assignRole('Company Supervisor');
                                                                                 session()->put($this->supervisorPasswordSessionKey($user->id), $plainPassword);
 
-                                                                                return (string) $user->getKey();
+                                                                                $supervisorId = (int) $user->getKey();
+                                                                                $set('user_id', (string) $supervisorId);
+                                                                                $this->attachCreatedSupervisorToCompanyDepartment($get, $supervisorId, $plainPassword);
+
+                                                                                return (string) $supervisorId;
                                                                             })
                                                                             ->required(),
                                                                     ]),
@@ -504,6 +510,7 @@ class Edit extends Component implements HasActions, HasForms
         $this->authorize('Company Update');
         $this->validate();
         $this->data = $this->form->getState();
+        $this->mergePendingCreatedSupervisorAssignmentsIntoFormData();
 
         // 2. تحديث بيانات الشركة الأساسية (مع استبعاد الفروع والشعار)
         $companyData = Arr::except($this->data, ['branches', 'logo']);
@@ -661,6 +668,113 @@ class Edit extends Component implements HasActions, HasForms
                 DB::table($pivotTable)->insert($rows);
             }
         });
+    }
+
+    private function attachCreatedSupervisorToCompanyDepartment(Get $get, int $supervisorId, string $plainPassword): void
+    {
+        $branchId = $get('../../id');
+        $departmentName = $get('name');
+
+        if (blank($branchId) || blank($departmentName)) {
+            return;
+        }
+
+        $branch = $this->company
+            ->branches()
+            ->whereKey((int) $branchId)
+            ->first();
+
+        if (! $branch) {
+            return;
+        }
+
+        $department = $this->resolveCompanyDepartment(trim((string) $departmentName));
+        $now = now();
+
+        DB::table(config('ppuds.table_prefix').'branch_department')->updateOrInsert(
+            [
+                'branch_id' => $branch->id,
+                'company_department_id' => $department->id,
+            ],
+            [
+                'user_id' => $supervisorId,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+        );
+
+        $this->pendingCreatedSupervisorAssignments[] = [
+            'branch_id' => $branch->id,
+            'department_name' => trim((string) $departmentName),
+            'user_id' => $supervisorId,
+        ];
+
+        $this->syncSingleSupervisorToUniversity($supervisorId, $plainPassword);
+    }
+
+    private function mergePendingCreatedSupervisorAssignmentsIntoFormData(): void
+    {
+        if ($this->pendingCreatedSupervisorAssignments === []) {
+            return;
+        }
+
+        foreach ($this->pendingCreatedSupervisorAssignments as $assignment) {
+            foreach ($this->data['branches'] ?? [] as &$branch) {
+                if ((int) ($branch['id'] ?? 0) !== (int) $assignment['branch_id']) {
+                    continue;
+                }
+
+                foreach ($branch['departments'] ?? [] as &$department) {
+                    if (trim((string) ($department['name'] ?? '')) !== $assignment['department_name']) {
+                        continue;
+                    }
+
+                    $department['user_id'] = (int) $assignment['user_id'];
+                    continue 3;
+                }
+
+                $branch['departments'][] = [
+                    'name' => $assignment['department_name'],
+                    'user_id' => (int) $assignment['user_id'],
+                ];
+
+                continue 2;
+            }
+
+            unset($department, $branch);
+        }
+    }
+
+    private function syncSingleSupervisorToUniversity(int $supervisorId, ?string $plainPassword = null): void
+    {
+        $company = $this->company->fresh(['branches.supervisors', 'translations']);
+
+        if (! $company) {
+            return;
+        }
+
+        $result = app(PpuApiService::class)->addCompanyToUniversity(
+            $company,
+            $plainPassword,
+            $supervisorId,
+            sendEvenIfCompanyExists: true,
+        );
+
+        if (($result['operation'] ?? null) === 'already_exists') {
+            Toaster::success(__('Company supervisor already exists in university system'));
+
+            return;
+        }
+
+        if (($result['success'] ?? null) === false) {
+            Toaster::error(__('Unable to send company supervisor to university system'));
+
+            return;
+        }
+
+        if ($result !== null) {
+            Toaster::success(__('Company supervisor sent to university successfully'));
+        }
     }
 
     private function departmentPivotRows(Branch $branch, array $departmentsData): array

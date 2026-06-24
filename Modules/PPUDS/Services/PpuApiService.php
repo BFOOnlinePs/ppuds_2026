@@ -309,6 +309,7 @@ class PpuApiService
             self::logToTerminal("الشركة {$company->name} مضافة مسبقًا في نظام الجامعة، لذلك تم تخطي الإرسال.", $userId);
 
             return [
+                'success' => true,
                 'operation' => 'already_exists',
                 'old_company_id' => $company->old_company_id,
             ];
@@ -320,6 +321,7 @@ class PpuApiService
             self::logToTerminal("الشركة {$company->name} موجودة مسبقًا في النظام ومضافة للجامعة، لذلك تم تخطي الإرسال.", $userId);
 
             return [
+                'success' => true,
                 'operation' => 'already_exists',
                 'company_id' => $syncedCompany->id,
                 'old_company_id' => $syncedCompany->old_company_id,
@@ -368,6 +370,7 @@ class PpuApiService
                 self::logToTerminal("الشركة {$company->name} مضافة مسبقًا في API الجامعة، لذلك لم يتم إنشاؤها مرة أخرى.", $userId);
 
                 return [
+                    'success' => true,
                     'operation' => 'already_exists',
                     'old_company_id' => $universityCompanyId,
                     'response' => $responseData,
@@ -384,6 +387,21 @@ class PpuApiService
             return null;
         }
 
+        if (data_get($responseData, 'success') === false) {
+            self::logToTerminal("✗ رفض API الجامعة إضافة الشركة {$company->name}.", $userId);
+            Log::error('PPU add company API returned success=false', [
+                'company_id' => $company->id,
+                'response' => $responseData,
+            ]);
+
+            return [
+                'success' => false,
+                'operation' => 'failed',
+                'old_company_id' => $universityCompanyId,
+                'response' => $responseData,
+            ];
+        }
+
         if ($universityCompanyId && blank($company->old_company_id)) {
             $company->forceFill(['old_company_id' => $universityCompanyId])->save();
         }
@@ -392,6 +410,7 @@ class PpuApiService
             self::logToTerminal("الشركة {$company->name} مضافة مسبقًا في API الجامعة، لذلك لم يتم إنشاؤها مرة أخرى.", $userId);
 
             return [
+                'success' => true,
                 'operation' => 'already_exists',
                 'old_company_id' => $universityCompanyId,
                 'response' => $responseData,
@@ -401,6 +420,7 @@ class PpuApiService
         self::logToTerminal("✓ تم إرسال الشركة {$company->name} إلى API الجامعة.", $userId);
 
         return [
+            'success' => true,
             'operation' => 'created',
             'old_company_id' => $universityCompanyId,
             'response' => $responseData,

@@ -464,7 +464,7 @@ class Add extends Component implements HasActions, HasForms
                                                                                     TextInput::make('password_confirmation')->required()->password(),
                                                                                 ]),
                                                                             ])
-                                                                            ->createOptionUsing(function (array $data) {
+                                                                            ->createOptionUsing(function (array $data, Set $set) {
                                                                                 if (User::where('email', $data['email'])->exists()) {
                                                                                     throw ValidationException::withMessages([
                                                                                         'email' => __('This email is already taken'),
@@ -477,7 +477,10 @@ class Add extends Component implements HasActions, HasForms
                                                                                 $user->assignRole('Company Supervisor');
                                                                                 session()->put($this->supervisorPasswordSessionKey($user->id), $plainPassword);
 
-                                                                                return (string) $user->getKey();
+                                                                                $supervisorId = (string) $user->getKey();
+                                                                                $set('user_id', $supervisorId);
+
+                                                                                return $supervisorId;
                                                                             })
                                                                             ->required(),
                                                                     ]),
