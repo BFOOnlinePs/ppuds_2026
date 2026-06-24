@@ -52,8 +52,6 @@ class Edit extends Component implements HasActions, HasForms
 
     public ?array $data = [];
 
-    public array $initialSupervisorIds = [];
-
     public Company $company;
 
     public function mount(Company $company)
@@ -123,8 +121,6 @@ class Edit extends Component implements HasActions, HasForms
                     })->toArray(),
             ];
         })->toArray();
-
-        $this->initialSupervisorIds = $this->supervisorIdsFromBranches($formData['branches']);
 
         $this->form->fill($formData);
     }
@@ -516,22 +512,24 @@ class Edit extends Component implements HasActions, HasForms
         // 3. حفظ الصور (الشعار) عبر Filament Spatie Plugin
         $this->form->model($this->company)->saveRelationships();
 
+        $previousSupervisorIds = $this->persistedCompanySupervisorIds();
+
         // 4. دالة مخصصة لحفظ الفروع، الأقسام، وساعات العمل
         $this->saveBranchesAndDepartments();
 
         // 5. إرسال المشرفين الجدد إلى نظام الجامعة عبر Company/Add
-        $this->syncAddedSupervisorsToUniversity();
+        $this->syncAddedSupervisorsToUniversity($previousSupervisorIds);
 
         // 6. رسالة نجاح وتوجيه
         Toaster::success(__('Company updated successfully'));
         $this->redirect(route('companies.index'));
     }
 
-    private function syncAddedSupervisorsToUniversity(): void
+    private function syncAddedSupervisorsToUniversity(array $previousSupervisorIds): void
     {
         $addedSupervisorIds = array_values(array_diff(
             $this->selectedCompanySupervisorIds(),
-            $this->initialSupervisorIds,
+            $previousSupervisorIds,
         ));
 
         if ($addedSupervisorIds === []) {
@@ -715,6 +713,21 @@ class Edit extends Component implements HasActions, HasForms
     private function selectedCompanySupervisorIds(): array
     {
         return $this->supervisorIdsFromBranches($this->data['branches'] ?? []);
+    }
+
+    private function persistedCompanySupervisorIds(): array
+    {
+        $company = $this->company->fresh(['branches.supervisors']);
+
+        if (! $company) {
+            return [];
+        }
+
+        return $company->companySupervisors()
+            ->pluck('id')
+            ->map(fn (mixed $supervisorId): int => (int) $supervisorId)
+            ->values()
+            ->all();
     }
 
     private function supervisorIdsFromBranches(array $branches): array

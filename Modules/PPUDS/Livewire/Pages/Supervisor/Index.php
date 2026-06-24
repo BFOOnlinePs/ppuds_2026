@@ -152,19 +152,6 @@ class Index extends Component implements HasTable, HasForms
                             ->numeric()
                             ->required()
                             ->maxLength(255),
-
-                        TextInput::make('password')
-                            ->label(__('Password'))
-                            ->password()
-                            ->revealable()
-                            ->required()
-                            ->confirmed(),
-
-                        TextInput::make('password_confirmation')
-                            ->label(__('Confirm Password'))
-                            ->password()
-                            ->revealable()
-                            ->required(),
                     ]),
                 ])
                 ->visible(fn (): bool => $this->canCreateSupervisor())
@@ -172,8 +159,7 @@ class Index extends Component implements HasTable, HasForms
                     abort_unless($this->canCreateSupervisor(), 403);
 
                     DB::transaction(function () use ($data): void {
-                        unset($data['password_confirmation']);
-                        $data['password'] = Hash::make($data['password']);
+                        $data['password'] = Hash::make((string) $data['phone']);
 
                         $user = User::create($data);
                         $user->assignRole(Role::findOrCreate(UserRole::PRACTICAL_TRAINING_SUPERVISOR->value, 'web'));
