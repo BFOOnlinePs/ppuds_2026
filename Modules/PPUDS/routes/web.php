@@ -103,6 +103,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 });
 
                 Route::group([
+                    'prefix' => 'practical-supervisor-students',
+                    'as' => 'practical-supervisor-students.',
+                    'namespace' => 'Modules\PPUDS\Livewire\Pages\PracticalSupervisorStudent',
+                ], function () {
+                    Route::get('/', Index::class)->name('index')->can('PracticalSupervisorStudent View List');
+                });
+
+                Route::group([
                     'prefix' => 'registrations',
                     'as' => 'registrations.',
                     'namespace' => 'Modules\PPUDS\Livewire\Pages\Registration',

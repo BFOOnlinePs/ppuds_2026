@@ -5,6 +5,7 @@ namespace Modules\PPUDS\Entities;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -132,5 +133,10 @@ class Registration extends Model implements HasMedia
     public function supervisor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'supervisor_id');
+    }
+
+    public function studentCompany(): HasOne
+    {
+        return $this->hasOne(StudentCompany::class, 'registration_id');
     }
 }

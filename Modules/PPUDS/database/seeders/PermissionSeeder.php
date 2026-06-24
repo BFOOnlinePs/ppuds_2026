@@ -85,6 +85,22 @@ class PermissionSeeder extends Seeder
             ],
 
             [
+                'name' => 'PracticalSupervisorStudent View List',
+                'guard_name' => 'web',
+                'module_name' => 'Practical Supervisor Student',
+            ],
+            [
+                'name' => 'PracticalSupervisorStudent View',
+                'guard_name' => 'web',
+                'module_name' => 'Practical Supervisor Student',
+            ],
+            [
+                'name' => 'PracticalSupervisorStudent Info',
+                'guard_name' => 'web',
+                'module_name' => 'Practical Supervisor Student',
+            ],
+
+            [
                 'name' => 'WorkExperience View List',
                 'guard_name' => 'web',
                 'module_name' => 'WorkExperience',

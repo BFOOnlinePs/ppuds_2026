@@ -184,6 +184,7 @@ class RolePermissionSeeder extends Seeder
                 'Dashboard Statistics Verification View',
                 ...$this->read('Student'),
                 'Student Details List',
+                ...$this->read('PracticalSupervisorStudent'),
                 ...$this->read('Supervisor'),
                 'Supervisor Details List',
                 ...$this->read('Company'),

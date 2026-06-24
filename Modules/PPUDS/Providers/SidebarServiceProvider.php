@@ -44,6 +44,7 @@ class SidebarServiceProvider extends ServiceProvider
         $sidebar->add(
             (new SidebarGroup('Students', 'solar-square-academic-cap-bold-duotone', [], 50))
                 ->add(new SidebarItem('Students List', 'solar-users-group-rounded-bold-duotone', ['Student View List'], 'students.index'))
+                ->add(new SidebarItem('Practical Supervisor Students', 'solar-user-id-bold-duotone', ['PracticalSupervisorStudent View List'], 'practical-supervisor-students.index'))
         );
 
         $sidebar->add(
