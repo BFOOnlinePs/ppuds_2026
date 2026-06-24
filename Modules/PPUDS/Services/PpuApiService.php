@@ -300,11 +300,12 @@ class PpuApiService
         ?int $supervisorId = null,
         ?string $token = null,
         ?int $userId = null,
+        bool $sendEvenIfCompanyExists = false,
     ): ?array {
         $userId = $userId ?? auth()->id();
         $company->loadMissing(['branches.supervisors', 'translations']);
 
-        if (filled($company->old_company_id)) {
+        if (! $sendEvenIfCompanyExists && filled($company->old_company_id)) {
             self::logToTerminal("الشركة {$company->name} مضافة مسبقًا في نظام الجامعة، لذلك تم تخطي الإرسال.", $userId);
 
             return [
@@ -313,7 +314,7 @@ class PpuApiService
             ];
         }
 
-        $syncedCompany = $this->syncedCompanyWithSameName($company);
+        $syncedCompany = $sendEvenIfCompanyExists ? null : $this->syncedCompanyWithSameName($company);
 
         if ($syncedCompany) {
             self::logToTerminal("الشركة {$company->name} موجودة مسبقًا في النظام ومضافة للجامعة، لذلك تم تخطي الإرسال.", $userId);
@@ -679,7 +680,7 @@ class PpuApiService
             'ceName' => $this->companyName($company, 'en'),
             'cpaName' => $supervisor?->name ?: $this->companyName($company, 'ar'),
             'cpeName' => $supervisor?->name_en ?: ($supervisor?->name ?: $this->companyName($company, 'en')),
-            'email12' => $email,
+            'email2' => $email,
             'mobile' => $mobile,
             'pw' => $password ?: '',
             'userName' => $supervisor?->email ?: $this->companyUsername($company),

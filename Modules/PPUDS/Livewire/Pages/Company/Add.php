@@ -723,23 +723,74 @@ class Add extends Component implements HasActions, HasForms
 
     private function syncCompanyToUniversity(Company $company): void
     {
-        $supervisorId = $this->firstCompanySupervisorId();
-        $password = $supervisorId ? session()->pull($this->supervisorPasswordSessionKey($supervisorId)) : null;
-        $result = app(PpuApiService::class)->addCompanyToUniversity(
-            $company,
-            $password,
-            $supervisorId,
-        );
+        $apiService = app(PpuApiService::class);
+        $supervisors = $this->companySupervisorSyncCandidates();
 
-        if ($result !== null) {
-            if (($result['operation'] ?? null) === 'already_exists') {
-                Toaster::success(__('Company already exists in university system'));
+        if ($supervisors === []) {
+            $result = $apiService->addCompanyToUniversity($company);
 
-                return;
-            }
+            $this->toastUniversitySyncResult($result);
 
-            Toaster::success(__('Company sent to university successfully'));
+            return;
         }
+
+        $created = 0;
+        $alreadyExists = 0;
+
+        foreach ($supervisors as $index => $supervisor) {
+            $password = session()->pull($this->supervisorPasswordSessionKey($supervisor['id']));
+            $result = $apiService->addCompanyToUniversity(
+                $company->refresh(),
+                $password,
+                $supervisor['id'],
+                sendEvenIfCompanyExists: $index > 0,
+            );
+
+            if (($result['operation'] ?? null) === 'already_exists') {
+                $alreadyExists++;
+            } elseif ($result !== null) {
+                $created++;
+            }
+        }
+
+        if ($created > 0) {
+            Toaster::success(count($supervisors) > 1
+                ? __('Company supervisors sent to university successfully')
+                : __('Company supervisor sent to university successfully'));
+
+            return;
+        }
+
+        if ($alreadyExists > 0) {
+            Toaster::success(__('Company supervisor already exists in university system'));
+        }
+    }
+
+    private function toastUniversitySyncResult(?array $result): void
+    {
+        if ($result === null) {
+            return;
+        }
+
+        if (($result['operation'] ?? null) === 'already_exists') {
+            Toaster::success(__('Company already exists in university system'));
+
+            return;
+        }
+
+        Toaster::success(__('Company sent to university successfully'));
+    }
+
+    private function companySupervisorSyncCandidates(): array
+    {
+        return collect($this->selectedCompanySupervisorIds())
+            ->map(fn (int $supervisorId): array => [
+                'id' => $supervisorId,
+                'has_password' => session()->has($this->supervisorPasswordSessionKey($supervisorId)),
+            ])
+            ->sortByDesc('has_password')
+            ->values()
+            ->all();
     }
 
     private function syncDepartmentsForBranch(Branch $branch, array $departmentsData): void
@@ -806,17 +857,16 @@ class Add extends Component implements HasActions, HasForms
         ]);
     }
 
-    private function firstCompanySupervisorId(): ?int
+    private function selectedCompanySupervisorIds(): array
     {
-        foreach ($this->data['branches'] ?? [] as $branch) {
-            foreach ($branch['departments'] ?? [] as $department) {
-                if (filled($department['user_id'] ?? null)) {
-                    return (int) $department['user_id'];
-                }
-            }
-        }
-
-        return null;
+        return collect($this->data['branches'] ?? [])
+            ->flatMap(fn (array $branch): array => $branch['departments'] ?? [])
+            ->pluck('user_id')
+            ->filter(fn (mixed $supervisorId): bool => filled($supervisorId))
+            ->map(fn (mixed $supervisorId): int => (int) $supervisorId)
+            ->unique()
+            ->values()
+            ->all();
     }
 
     private function supervisorPasswordSessionKey(int $supervisorId): string

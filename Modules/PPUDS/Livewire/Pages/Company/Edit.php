@@ -26,6 +26,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HtmlString;
+use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Branch\Entities\Branch;
@@ -37,6 +38,7 @@ use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\CompanyCategory;
 use Modules\PPUDS\Entities\CompanyDepartment;
 use Modules\PPUDS\Enums\CompanyStatus;
+use Modules\PPUDS\Services\PpuApiService;
 
 // تمت الاضافة
 // تمت الاضافة
@@ -49,6 +51,8 @@ class Edit extends Component implements HasActions, HasForms
     use InteractsWithForms;
 
     public ?array $data = [];
+
+    public array $initialSupervisorIds = [];
 
     public Company $company;
 
@@ -119,6 +123,8 @@ class Edit extends Component implements HasActions, HasForms
                     })->toArray(),
             ];
         })->toArray();
+
+        $this->initialSupervisorIds = $this->supervisorIdsFromBranches($formData['branches']);
 
         $this->form->fill($formData);
     }
@@ -410,16 +416,31 @@ class Edit extends Component implements HasActions, HasForms
                                                                                 Grid::make(2)->schema([
                                                                                     TextInput::make('name')->required(),
                                                                                     TextInput::make('name_en')->required(),
-                                                                                    TextInput::make('email')->required()->email(),
+                                                                                    TextInput::make('email')
+                                                                                        ->required()
+                                                                                        ->email()
+                                                                                        ->unique('users', 'email')
+                                                                                        ->dehydrateStateUsing(fn (?string $state): ?string => filled($state) ? strtolower(trim($state)) : null)
+                                                                                        ->validationMessages([
+                                                                                            'unique' => __('This email is already taken'),
+                                                                                        ]),
                                                                                     TextInput::make('phone')->required()->numeric(),
                                                                                     TextInput::make('password')->required()->password()->confirmed(),
                                                                                     TextInput::make('password_confirmation')->required()->password(),
                                                                                 ]),
                                                                             ])
                                                                             ->createOptionUsing(function (array $data) {
+                                                                                if (User::where('email', $data['email'])->exists()) {
+                                                                                    throw ValidationException::withMessages([
+                                                                                        'email' => __('This email is already taken'),
+                                                                                    ]);
+                                                                                }
+
+                                                                                $plainPassword = $data['password'];
                                                                                 $data['password'] = bcrypt($data['password']);
                                                                                 $user = User::create($data);
                                                                                 $user->assignRole('Company Supervisor');
+                                                                                session()->put($this->supervisorPasswordSessionKey($user->id), $plainPassword);
 
                                                                                 return $user->id;
                                                                             })
@@ -498,9 +519,62 @@ class Edit extends Component implements HasActions, HasForms
         // 4. دالة مخصصة لحفظ الفروع، الأقسام، وساعات العمل
         $this->saveBranchesAndDepartments();
 
-        // 5. رسالة نجاح وتوجيه
+        // 5. إرسال المشرفين الجدد إلى نظام الجامعة عبر Company/Add
+        $this->syncAddedSupervisorsToUniversity();
+
+        // 6. رسالة نجاح وتوجيه
         Toaster::success(__('Company updated successfully'));
         $this->redirect(route('companies.index'));
+    }
+
+    private function syncAddedSupervisorsToUniversity(): void
+    {
+        $addedSupervisorIds = array_values(array_diff(
+            $this->selectedCompanySupervisorIds(),
+            $this->initialSupervisorIds,
+        ));
+
+        if ($addedSupervisorIds === []) {
+            return;
+        }
+
+        $company = $this->company->fresh(['branches.supervisors', 'translations']);
+
+        if (! $company) {
+            return;
+        }
+
+        $apiService = app(PpuApiService::class);
+        $created = 0;
+        $alreadyExists = 0;
+
+        foreach ($this->prioritizeSupervisorIdsForSync($addedSupervisorIds) as $supervisorId) {
+            $password = session()->pull($this->supervisorPasswordSessionKey($supervisorId));
+            $result = $apiService->addCompanyToUniversity(
+                $company,
+                $password,
+                $supervisorId,
+                sendEvenIfCompanyExists: true,
+            );
+
+            if (($result['operation'] ?? null) === 'already_exists') {
+                $alreadyExists++;
+            } elseif ($result !== null) {
+                $created++;
+            }
+        }
+
+        if ($created > 0) {
+            Toaster::success(count($addedSupervisorIds) > 1
+                ? __('Company supervisors sent to university successfully')
+                : __('Company supervisor sent to university successfully'));
+
+            return;
+        }
+
+        if ($alreadyExists > 0) {
+            Toaster::success(__('Company supervisor already exists in university system'));
+        }
     }
 
     protected function saveBranchesAndDepartments()
@@ -636,6 +710,41 @@ class Edit extends Component implements HasActions, HasForms
             'name' => $name,
             'created_by' => auth()->id(),
         ]);
+    }
+
+    private function selectedCompanySupervisorIds(): array
+    {
+        return $this->supervisorIdsFromBranches($this->data['branches'] ?? []);
+    }
+
+    private function supervisorIdsFromBranches(array $branches): array
+    {
+        return collect($branches)
+            ->flatMap(fn (array $branch): array => $branch['departments'] ?? [])
+            ->pluck('user_id')
+            ->filter(fn (mixed $supervisorId): bool => filled($supervisorId))
+            ->map(fn (mixed $supervisorId): int => (int) $supervisorId)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function prioritizeSupervisorIdsForSync(array $supervisorIds): array
+    {
+        return collect($supervisorIds)
+            ->map(fn (int $supervisorId): array => [
+                'id' => $supervisorId,
+                'has_password' => session()->has($this->supervisorPasswordSessionKey($supervisorId)),
+            ])
+            ->sortByDesc('has_password')
+            ->pluck('id')
+            ->values()
+            ->all();
+    }
+
+    private function supervisorPasswordSessionKey(int $supervisorId): string
+    {
+        return "company_supervisor_plain_password_{$supervisorId}";
     }
 
     public function render()
