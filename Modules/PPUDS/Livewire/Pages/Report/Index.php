@@ -31,11 +31,13 @@ use Modules\PPUDS\Enums\AttendanceStatus;
 use Modules\PPUDS\Enums\SemesterType;
 use Modules\PPUDS\Enums\StudentGender;
 use Modules\PPUDS\Settings\GeneralSettings;
+use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
 class Index extends Component implements HasForms, HasTable
 {
     use InteractsWithForms;
     use InteractsWithTable;
+    use ScopesStudentCompanyVisibility;
 
     public function table(Table $table)
     {
@@ -44,7 +46,8 @@ class Index extends Component implements HasForms, HasTable
         return $table
             ->query(fn () => StudentCompany::query()->with(['registration', 'student', 'student.studentProfile', 'company', 'branch', 'branch.workingHours', 'department', 'attendances'])
                 ->withAttendanceDays()
-                ->withActualWorkingHours())
+                ->withActualWorkingHours()
+                ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query)))
 
             ->columns([
                 TextColumn::make('student.studentProfile.student_number')
@@ -143,7 +146,10 @@ class Index extends Component implements HasForms, HasTable
                 ->form([
                     Select::make('company')
                         ->label(__('Company'))
-                        ->options(Company::get()->pluck('name', 'id'))
+                        ->options(fn (): array => $this->applyCompanyVisibilityScope(Company::query())
+                            ->get()
+                            ->pluck('name', 'id')
+                            ->toArray())
                         ->searchable(),
                 ])
                 ->query(function (Builder $query, array $data) {

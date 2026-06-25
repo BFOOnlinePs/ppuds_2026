@@ -74,7 +74,10 @@ class HomeActionsWidget extends Widget
             ],
             [
                 'label' => 'Attendance Map',
-                'permission' => 'Attendance Map View',
+                'roles' => [
+                    UserRole::SUPER_ADMIN->value,
+                    UserRole::ADMIN->value,
+                ],
                 'icon' => 'heroicon-o-map',
                 'event' => 'open-attendance-map',
             ],

@@ -7,12 +7,14 @@ use Illuminate\Database\Eloquent\Builder;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\Payment;
 use Modules\PPUDS\Entities\StudentCompany;
+use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 use Modules\PPUDS\Transformers\V1\ReportResource;
 use Spatie\QueryBuilder\QueryBuilder;
 
 class ReportController extends Controller
 {
     use ApiResponse;
+    use ScopesStudentCompanyVisibility;
 
     /**
      * @OA\Get(
@@ -162,7 +164,8 @@ class ReportController extends Controller
             ->withActualWorkingHours()
             ->withTotalPaymentAmount()
             ->withTotalPaymentSummary()
-            ->withAttendaceLeavesDays();
+            ->withAttendaceLeavesDays()
+            ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query));
     }
 
     private function totalPaymentSummary(QueryBuilder $reportsQuery): array

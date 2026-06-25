@@ -24,11 +24,13 @@ use Illuminate\Support\Facades\Hash;
 use Livewire\Attributes\Computed;
 use Livewire\Component; // استيراد ضروري
 use Modules\Core\Entities\User;
+use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
 class Details extends Component implements HasForms, HasInfolists
 {
     use InteractsWithForms;
     use InteractsWithInfolists;
+    use ScopesStudentCompanyVisibility;
 
     public ?array $data = [];
 
@@ -37,6 +39,8 @@ class Details extends Component implements HasForms, HasInfolists
     public function mount($user)
     {
         $this->userId = is_object($user) ? $user->id : (int) $user;
+
+        abort_unless($this->canAccessStudentUser($this->userId), 403);
 
         $this->form->fill($this->userRecord->toArray());
     }

@@ -21,11 +21,13 @@ use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\SemesterType;
 use Modules\PPUDS\Services\AbsenceReportService;
 use Modules\PPUDS\Settings\GeneralSettings;
+use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
 class Index extends Component implements HasForms, HasTable
 {
     use InteractsWithForms;
     use InteractsWithTable;
+    use ScopesStudentCompanyVisibility;
 
     private ?array $absentStudentCompanyIds = null;
 
@@ -149,7 +151,10 @@ class Index extends Component implements HasForms, HasTable
 
             SelectFilter::make('company_id')
                 ->label(__('Company'))
-                ->options(Company::get()->pluck('name', 'id'))
+                ->options(fn (): array => $this->applyCompanyVisibilityScope(Company::query())
+                    ->get()
+                    ->pluck('name', 'id')
+                    ->toArray())
                 ->searchable()
                 ->preload(),
 
@@ -202,6 +207,7 @@ class Index extends Component implements HasForms, HasTable
             ->whereHas('registration', fn (Builder $query) => $query
                 ->where('year', $settings->year)
                 ->where('semester', $settings->semester_type->value))
+            ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query))
             ->get()
             ->filter(fn (StudentCompany $studentCompany) => $this->summaryValue($studentCompany, 'total_absence_days') > 0)
             ->pluck('id')

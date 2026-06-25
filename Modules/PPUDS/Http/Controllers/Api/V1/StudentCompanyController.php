@@ -10,6 +10,7 @@ use Modules\PPUDS\Entities\StudentCompany; // تأكدنا من استخدام �
 use Modules\PPUDS\Enums\TrainingStatus;
 use Modules\PPUDS\Http\Controllers\Api\V1\Concerns\EnsuresCurrentRegistration;
 use Modules\PPUDS\Http\Requests\StudentCompanyRequest;
+use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 use Modules\PPUDS\Transformers\V1\StudentCompanyResource;
 use Spatie\QueryBuilder\QueryBuilder;
 
@@ -17,6 +18,7 @@ class StudentCompanyController extends Controller
 {
     use ApiResponse;
     use EnsuresCurrentRegistration;
+    use ScopesStudentCompanyVisibility;
 
     /**
      * @OA\Get(
@@ -76,7 +78,7 @@ class StudentCompanyController extends Controller
         $maxPerPage = config('core.pagination.max_per_page', 100);
         $perPage = min(request('per_page', $defaultPerPage), $maxPerPage);
 
-        $companies = QueryBuilder::for(StudentCompany::class)
+        $companies = QueryBuilder::for($this->applyStudentCompanyVisibilityScope(StudentCompany::query()))
             ->allowedFields(StudentCompanyResource::allowedFields())
             ->allowedFilters(StudentCompanyResource::allowedFilters())
             ->allowedSorts(StudentCompanyResource::allowedSorts())
@@ -229,7 +231,7 @@ class StudentCompanyController extends Controller
      */
     public function show(StudentCompany $studentCompany)
     {
-        $studentCompany = QueryBuilder::for(StudentCompany::class)
+        $studentCompany = QueryBuilder::for($this->applyStudentCompanyVisibilityScope(StudentCompany::query()))
             ->where('id', $studentCompany->id)
             ->allowedFilters(StudentCompanyResource::allowedFilters())
             ->allowedFields(StudentCompanyResource::allowedFields())
@@ -277,6 +279,8 @@ class StudentCompanyController extends Controller
      */
     public function destroy(StudentCompany $studentCompany)
     {
+        abort_unless($this->canAccessStudentCompanyRecord($studentCompany), 403);
+
         if ($response = $this->ensureStudentCompanyInCurrentSemester($studentCompany)) {
             return $response;
         }

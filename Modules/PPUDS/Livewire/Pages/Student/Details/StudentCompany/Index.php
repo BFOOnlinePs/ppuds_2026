@@ -31,11 +31,13 @@ use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\SemesterType;
 use Modules\PPUDS\Enums\TrainingStatus;
 use Modules\PPUDS\Settings\GeneralSettings;
+use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
 class Index extends Component implements HasForms, HasTable
 {
     use InteractsWithForms;
     use InteractsWithTable;
+    use ScopesStudentCompanyVisibility;
 
     public ?int $studentId = null;
 
@@ -47,7 +49,10 @@ class Index extends Component implements HasForms, HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn () => StudentCompany::query()->where('student_id', $this->studentId)->with(['registration.student', 'registration.course', 'company', 'branch']))
+            ->query(fn () => StudentCompany::query()
+                ->where('student_id', $this->studentId)
+                ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query))
+                ->with(['registration.student', 'registration.course', 'company', 'branch']))
             ->columns([
 
                 TextColumn::make('company.name')
@@ -115,7 +120,10 @@ class Index extends Component implements HasForms, HasTable
 
             SelectFilter::make('company_id')
                 ->label(__('Company'))
-                ->options(Company::with('translations')->get()->pluck('name', 'id'))
+                ->options(fn (): array => $this->applyCompanyVisibilityScope(Company::with('translations'))
+                    ->get()
+                    ->pluck('name', 'id')
+                    ->toArray())
                 ->searchable()
                 ->preload(),
 

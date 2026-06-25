@@ -21,9 +21,9 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Builder;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
-use Modules\Core\Enums\UserRole;
 use Modules\Core\Filament\Forms\Components\CreateAction;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
@@ -34,11 +34,13 @@ use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\LeaveRequestStatus;
 use Modules\PPUDS\Enums\LeaveRequestType;
 use Modules\PPUDS\Services\PpudsNotificationService;
+use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
 class Index extends Component implements HasTable, HasForms
 {
     use InteractsWithTable;
     use InteractsWithForms;
+    use ScopesStudentCompanyVisibility;
 
     public ?array $filters = [];
 
@@ -53,7 +55,10 @@ class Index extends Component implements HasTable, HasForms
                     'universitySupervisor',
                 ])
                 ->where($this->filters)
-                ->when(auth()->user()->hasRole(UserRole::STUDENT->value), fn ($query) => $query->whereHas('studentCompany', fn ($studentCompanyQuery) => $studentCompanyQuery->where('student_id', auth()->id())))
+                ->whereHas(
+                    'studentCompany',
+                    fn (Builder $studentCompanyQuery): Builder => $this->applyStudentCompanyVisibilityScope($studentCompanyQuery)
+                )
                 ->latest())
             ->columns([
                 TextColumn::make('studentCompany.student.name')
@@ -100,7 +105,7 @@ class Index extends Component implements HasTable, HasForms
                     ->icon('heroicon-o-plus')
                     ->form($this->getFormSchema(isCreate: true))
                     ->action(function (array $data) {
-                        if (auth()->user()->hasRole('Student') && ! StudentCompany::whereKey($data['student_company_id'])->where('student_id', auth()->id())->exists()) {
+                        if (! $this->canAccessStudentCompanyRecord((int) $data['student_company_id'])) {
                             abort(403);
                         }
 
@@ -161,6 +166,8 @@ class Index extends Component implements HasTable, HasForms
                         ->rows(3),
                 ])
                 ->action(function (LeaveRequest $record, array $data) {
+                    abort_unless($this->canAccessStudentCompanyRecord($record->studentCompany), 403);
+
                     $record->update([
                         'company_approval' => $data['company_approval'],
                         'company_supervisor_comment' => $data['company_supervisor_comment'],
@@ -192,6 +199,8 @@ class Index extends Component implements HasTable, HasForms
                         ->rows(3),
                 ])
                 ->action(function (LeaveRequest $record, array $data) {
+                    abort_unless($this->canAccessStudentCompanyRecord($record->studentCompany), 403);
+
                     $record->update([
                         'university_approval' => $data['university_approval'],
                         'university_supervisor_comment' => $data['university_supervisor_comment'],
@@ -227,6 +236,8 @@ class Index extends Component implements HasTable, HasForms
                     $form->fill($record->toArray());
                 })
                 ->action(function (LeaveRequest $record, array $data) {
+                    abort_unless($this->canAccessStudentCompanyRecord($record->studentCompany), 403);
+
                     $record->update($data);
                     Toaster::success(__('Leave Request updated successfully'));
                 })
@@ -235,6 +246,7 @@ class Index extends Component implements HasTable, HasForms
             DeleteAction::make('delete')
                 ->action(function ($record) {
                     $this->authorize('LeaveRequest Delete');
+                    abort_unless($this->canAccessStudentCompanyRecord($record->studentCompany), 403);
                     $record->delete();
                     Toaster::success(__('Leave Request deleted successfully'));
                 })
@@ -250,13 +262,12 @@ class Index extends Component implements HasTable, HasForms
                     Grid::make(2)->schema([
                         Select::make('student_company_id')
                             ->label(__('Student Training'))
-                            ->options(StudentCompany::with('student', 'company')->when(auth()->user()->hasRole('Student'), function ($query) {
-                                $query->whereHas('student', function ($q) {
-                                    $q->where('id', auth()->id());
-                                });
-                            })->get()->mapWithKeys(function ($item) {
-                                return [$item->id => ($item->student?->name ?? __('Unknown Student')) . ' - ' . ($item->company?->name ?? __('No Company'))];
-                            }))
+                            ->options(StudentCompany::with('student', 'company')
+                                ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query))
+                                ->get()
+                                ->mapWithKeys(function ($item) {
+                                    return [$item->id => ($item->student?->name ?? __('Unknown Student')) . ' - ' . ($item->company?->name ?? __('No Company'))];
+                                }))
                             ->searchable()
                             ->required()
                             ->disabled($isView)

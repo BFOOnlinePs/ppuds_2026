@@ -212,6 +212,8 @@ class RolePermissionSeeder extends Seeder
             UserRole::COMPANY_SUPERVISOR->value => [
                 'Company View',
                 'Company Info',
+                ...$this->read('Student'),
+                'Student Details List',
                 ...$this->read('StudentCompany'),
                 'StudentCompany Details',
                 ...$this->read('LeaveRequest'),
@@ -221,6 +223,7 @@ class RolePermissionSeeder extends Seeder
                 'Attendance Map View',
                 'StudentReport View',
                 'StudentReport Info',
+                'Report View List',
                 ...$this->read('Survey'),
                 'Survey Submit',
                 ...$this->read('Announcement'),

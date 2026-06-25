@@ -38,12 +38,14 @@ use Modules\PPUDS\Enums\SemesterType;
 use Modules\PPUDS\Livewire\Concerns\SearchesStudentAttendanceRelationships;
 use Modules\PPUDS\Services\PpudsNotificationService;
 use Modules\PPUDS\Settings\GeneralSettings;
+use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
 class Index extends Component implements HasForms, HasTable
 {
     use InteractsWithForms;
     use InteractsWithTable;
     use SearchesStudentAttendanceRelationships;
+    use ScopesStudentCompanyVisibility;
 
     public ?int $studentId = null;
 
@@ -55,7 +57,11 @@ class Index extends Component implements HasForms, HasTable
     public function table(Table $table)
     {
         return $table
-            ->query(fn () => StudentAttendance::query()->whereHas('studentCompany', fn ($query) => $query->where('student_id', $this->studentId))->with(['studentCompany.registration', 'studentReport']))
+            ->query(fn () => StudentAttendance::query()
+                ->whereHas('studentCompany', fn (Builder $query) => $this->applyStudentCompanyVisibilityScope(
+                    $query->where('student_id', $this->studentId)
+                ))
+                ->with(['studentCompany.registration', 'studentReport']))
             ->columns([
                 TextColumn::make('studentCompany.student.name')
                     ->label(__('Student Name'))
@@ -127,14 +133,18 @@ class Index extends Component implements HasForms, HasTable
 
                         Select::make('student_company_id')
                             ->label(__('Student Company'))
-                            ->options(StudentCompany::with(['company', 'branch', 'registration', 'student', 'student.studentProfile'])->get()->mapWithKeys(function ($item) {
-                                $number = $item->student->studentProfile?->student_number ?? __('No Number');
-                                $name = $item->student->name ?? __('No Name');
-                                $company = $item->company->name ?? __('No Company');
-                                $branch = $item->branch->name ?? __('No Branch');
+                            ->options(StudentCompany::with(['company', 'branch', 'registration', 'student', 'student.studentProfile'])
+                                ->where('student_id', $this->studentId)
+                                ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query))
+                                ->get()
+                                ->mapWithKeys(function ($item) {
+                                    $number = $item->student->studentProfile?->student_number ?? __('No Number');
+                                    $name = $item->student->name ?? __('No Name');
+                                    $company = $item->company->name ?? __('No Company');
+                                    $branch = $item->branch->name ?? __('No Branch');
 
-                                return [$item->id => "{$number} - {$name} - {$company} - {$branch}"];
-                            }))
+                                    return [$item->id => "{$number} - {$name} - {$company} - {$branch}"];
+                                }))
                             ->searchable()
                             ->preload()
                             ->required(),
@@ -143,6 +153,10 @@ class Index extends Component implements HasForms, HasTable
                             ->label(__('Description')),
                     ])
                     ->action(function (array $data) {
+                        if (! $this->canAccessStudentCompanyRecord((int) $data['student_company_id'])) {
+                            abort(403);
+                        }
+
                         if (empty($data['location']['lat']) || empty($data['location']['lng'])) {
                             Toaster::success('The location could not be determined. Please check permissions.');
 
@@ -218,7 +232,9 @@ class Index extends Component implements HasForms, HasTable
             SelectFilter::make('company_id')
                 ->label(__('Company'))
                 ->options(function () {
-                    return StudentCompany::where('student_id', $this->studentId)->with('company')->get()->pluck('company.name', 'company.id');
+                    return $this->applyStudentCompanyVisibilityScope(
+                        StudentCompany::where('student_id', $this->studentId)->with('company')
+                    )->get()->pluck('company.name', 'company.id');
                 })
                 ->searchable()
                 ->query(function (Builder $query, array $data) {

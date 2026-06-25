@@ -3,10 +3,13 @@
 namespace Modules\PPUDS\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Database\Eloquent\Builder;
 use Modules\Core\Traits\ApiResponse;
+use Modules\PPUDS\Entities\StudentAttendance;
 use Modules\PPUDS\Entities\StudentReport;
 use Modules\PPUDS\Http\Controllers\Api\V1\Concerns\EnsuresCurrentRegistration;
 use Modules\PPUDS\Http\Requests\StudentAttendanceReportRequest;
+use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 use Modules\PPUDS\Transformers\V1\StudentAttendanceReportResource;
 use Spatie\QueryBuilder\QueryBuilder;
 
@@ -20,10 +23,15 @@ class StudentAttendanceReportController extends Controller
 {
     use ApiResponse;
     use EnsuresCurrentRegistration;
+    use ScopesStudentCompanyVisibility;
 
     public function index()
     {
-        $report = QueryBuilder::for(StudentReport::class)
+        $report = QueryBuilder::for(StudentReport::query()
+            ->whereHas(
+                'studentAttendance.studentCompany',
+                fn (Builder $studentCompanyQuery): Builder => $this->applyStudentCompanyVisibilityScope($studentCompanyQuery)
+            ))
             ->allowedFields(StudentAttendanceReportResource::allowedFields())
             ->allowedFilters(StudentAttendanceReportResource::allowedFilters())
             ->allowedSorts(StudentAttendanceReportResource::allowedSorts())
@@ -108,6 +116,12 @@ class StudentAttendanceReportController extends Controller
             return $response;
         }
 
+        $studentAttendance = StudentAttendance::query()
+            ->with('studentCompany')
+            ->find($data['student_attendance_id']);
+
+        abort_unless($studentAttendance && $this->canAccessStudentCompanyRecord($studentAttendance->studentCompany), 403);
+
         $data['created_by'] = auth()->id();
 
         $report = StudentReport::create($data);
@@ -172,7 +186,11 @@ class StudentAttendanceReportController extends Controller
      */
     public function show(StudentReport $report)
     {
-        $report = QueryBuilder::for(StudentReport::class)
+        $report = QueryBuilder::for(StudentReport::query()
+            ->whereHas(
+                'studentAttendance.studentCompany',
+                fn (Builder $studentCompanyQuery): Builder => $this->applyStudentCompanyVisibilityScope($studentCompanyQuery)
+            ))
             ->allowedFields(StudentAttendanceReportResource::allowedFields())
             ->allowedFilters(StudentAttendanceReportResource::allowedFilters())
             ->allowedSorts(StudentAttendanceReportResource::allowedSorts())

@@ -23,11 +23,13 @@ use Modules\PPUDS\Entities\CompanyDepartment;
 use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\TrainingStatus;
+use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
 class Edit extends Component implements HasActions, HasForms
 {
     use InteractsWithActions;
     use InteractsWithForms;
+    use ScopesStudentCompanyVisibility;
 
     public ?array $data = [];
 
@@ -37,7 +39,8 @@ class Edit extends Component implements HasActions, HasForms
     public function mount($studentCompany)
     {
         // 1. جلب السجل
-        $this->record = StudentCompany::findOrFail($studentCompany);
+        $this->record = $this->applyStudentCompanyVisibilityScope(StudentCompany::query())
+            ->findOrFail($studentCompany);
 
         // 2. تعبئة النموذج بالبيانات الحالية
         $this->form->fill($this->record->toArray());

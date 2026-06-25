@@ -3,6 +3,7 @@
 namespace Modules\PPUDS\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Database\Eloquent\Builder;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\LeaveRequest;
 use Modules\PPUDS\Enums\LeaveRequestStatus;
@@ -10,6 +11,7 @@ use Modules\PPUDS\Http\Controllers\Api\V1\Concerns\EnsuresCurrentRegistration;
 use Modules\PPUDS\Http\Requests\LeaveRequestRequest;
 use Modules\PPUDS\Http\Requests\LeaveRequestUpdate;
 use Modules\PPUDS\Services\PpudsNotificationService;
+use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 use Modules\PPUDS\Transformers\V1\LeaveRequestResource;
 use Spatie\QueryBuilder\QueryBuilder;
 
@@ -23,6 +25,7 @@ class LeaveRequestController extends Controller
 {
     use ApiResponse;
     use EnsuresCurrentRegistration;
+    use ScopesStudentCompanyVisibility;
 
     /**
      * @OA\Get(
@@ -67,7 +70,11 @@ class LeaveRequestController extends Controller
         $maxPerPage = config('core.pagination.max_per_page', 100);
         $perPage = min(request('per_page', $defaultPerPage), $maxPerPage);
 
-        $leaveRequests = QueryBuilder::for(LeaveRequest::class)
+        $leaveRequests = QueryBuilder::for(LeaveRequest::query()
+            ->whereHas(
+                'studentCompany',
+                fn (Builder $studentCompanyQuery): Builder => $this->applyStudentCompanyVisibilityScope($studentCompanyQuery)
+            ))
             ->allowedFields(LeaveRequestResource::allowedFields())
             ->allowedFilters(LeaveRequestResource::allowedFilters())
             ->allowedSorts(LeaveRequestResource::allowedSorts())
@@ -126,6 +133,8 @@ class LeaveRequestController extends Controller
             return $response;
         }
 
+        abort_unless($this->canAccessStudentCompanyRecord((int) $data['student_company_id']), 403);
+
         $data['created_by'] = auth()->id();
         $data['status'] = 'pending';
 
@@ -161,7 +170,11 @@ class LeaveRequestController extends Controller
      */
     public function show(LeaveRequest $leaveRequest)
     {
-        $leaveRequest = QueryBuilder::for(LeaveRequest::class)
+        $leaveRequest = QueryBuilder::for(LeaveRequest::query()
+            ->whereHas(
+                'studentCompany',
+                fn (Builder $studentCompanyQuery): Builder => $this->applyStudentCompanyVisibilityScope($studentCompanyQuery)
+            ))
             ->where('id', $leaveRequest->id)
             ->allowedFields(LeaveRequestResource::allowedFields())
             ->allowedIncludes(LeaveRequestResource::allowedIncludes())
@@ -202,6 +215,8 @@ class LeaveRequestController extends Controller
      */
     public function update(LeaveRequestUpdate $request, LeaveRequest $leaveRequest)
     {
+        abort_unless($this->canAccessStudentCompanyRecord($leaveRequest->studentCompany), 403);
+
         if ($response = $this->ensureRelatedStudentCompanyInCurrentSemester($leaveRequest)) {
             return $response;
         }
@@ -210,6 +225,8 @@ class LeaveRequestController extends Controller
             if ($response = $this->ensureStudentCompanyInCurrentSemester((int) $request->student_company_id)) {
                 return $response;
             }
+
+            abort_unless($this->canAccessStudentCompanyRecord((int) $request->student_company_id), 403);
         }
 
         $leaveRequest->update($request->validated());

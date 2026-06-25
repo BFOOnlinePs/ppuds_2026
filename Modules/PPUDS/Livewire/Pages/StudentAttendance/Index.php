@@ -47,12 +47,14 @@ use Modules\PPUDS\Exports\TodayAbsentStudentsExport;
 use Modules\PPUDS\Livewire\Concerns\SearchesStudentAttendanceRelationships;
 use Modules\PPUDS\Services\PpudsNotificationService;
 use Modules\PPUDS\Settings\GeneralSettings;
+use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
 class Index extends Component implements HasForms, HasTable
 {
     use InteractsWithForms;
     use InteractsWithTable;
     use SearchesStudentAttendanceRelationships;
+    use ScopesStudentCompanyVisibility;
 
     public function table(Table $table)
     {
@@ -159,7 +161,7 @@ class Index extends Component implements HasForms, HasTable
                         Select::make('student_company_id')
                             ->label(__('Student Company'))
                             ->options(StudentCompany::with(['company', 'branch', 'registration', 'student', 'student.studentProfile'])
-                                ->when(auth()->user()->hasRole('Student'), fn ($query) => $query->where('student_id', auth()->id()))
+                                ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query))
                                 ->get()
                                 ->mapWithKeys(function ($item) {
                                     $number = $item->student->studentProfile?->student_number ?? __('No Number');
@@ -177,7 +179,7 @@ class Index extends Component implements HasForms, HasTable
                             ->label(__('Description')),
                     ])
                     ->action(function (array $data) {
-                        if (auth()->user()->hasRole('Student') && ! StudentCompany::whereKey($data['student_company_id'])->where('student_id', auth()->id())->exists()) {
+                        if (! $this->canAccessStudentCompanyRecord((int) $data['student_company_id'])) {
                             abort(403);
                         }
 
@@ -355,13 +357,7 @@ class Index extends Component implements HasForms, HasTable
             SelectFilter::make('company_id')
                 ->label(__('Company'))
                 ->options(fn (): array => Company::query()
-                    ->when(
-                        auth()->user()->hasRole(UserRole::STUDENT->value),
-                        fn (Builder $query): Builder => $query->whereHas(
-                            'studentCompanies',
-                            fn (Builder $studentCompanyQuery): Builder => $studentCompanyQuery->where('student_id', auth()->id())
-                        )
-                    )
+                    ->tap(fn (Builder $query) => $this->applyCompanyVisibilityScope($query))
                     ->get()
                     ->pluck('name', 'id')
                     ->toArray())
@@ -564,7 +560,10 @@ class Index extends Component implements HasForms, HasTable
             'studentCompany.student.studentProfile',
             'studentReport',
         ])
-            ->when(auth()->user()->hasRole(UserRole::STUDENT->value), fn ($query) => $query->whereHas('studentCompany', fn ($studentCompanyQuery) => $studentCompanyQuery->where('student_id', auth()->id())));
+            ->whereHas(
+                'studentCompany',
+                fn (Builder $studentCompanyQuery): Builder => $this->applyStudentCompanyVisibilityScope($studentCompanyQuery)
+            );
     }
 
     protected function todayAbsentStudentsQuery(): Builder
@@ -591,10 +590,7 @@ class Index extends Component implements HasForms, HasTable
             ->whereDoesntHave('attendances', fn (Builder $query): Builder => $query
                 ->whereDate('attendance_date', $today)
                 ->whereNotNull('check_in'))
-            ->when(
-                auth()->user()->hasRole(UserRole::STUDENT->value),
-                fn (Builder $query): Builder => $query->where('student_id', auth()->id())
-            )
+            ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query))
             ->when(
                 filled($companyId),
                 fn (Builder $query): Builder => $query->where('company_id', $companyId)

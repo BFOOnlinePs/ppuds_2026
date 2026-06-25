@@ -38,20 +38,20 @@ use Modules\PPUDS\Enums\TrainingStatus;
 use Modules\PPUDS\Exports\RegisteredStudentsWithoutCompanyExport;
 use Modules\PPUDS\Exports\StudentCompaniesExport;
 use Modules\PPUDS\Settings\GeneralSettings;
+use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
 class Index extends Component implements HasForms, HasTable
 {
     use InteractsWithForms;
     use InteractsWithTable;
+    use ScopesStudentCompanyVisibility;
 
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn () => StudentCompany::query()->with(['registration.student', 'registration', 'registration.course', 'company', 'branch'])->when(auth()->user()->hasRole('Student'), function (Builder $query) {
-                $query->whereHas('registration.student', function (Builder $q) {
-                    $q->where('id', auth()->id());
-                });
-            }))
+            ->query(fn () => StudentCompany::query()
+                ->with(['registration.student', 'registration', 'registration.course', 'company', 'branch'])
+                ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query)))
             ->columns([
                 TextColumn::make('registration.student.name')
                     ->label(__('Student'))
@@ -126,7 +126,7 @@ class Index extends Component implements HasForms, HasTable
                         $this->registeredStudentsWithoutCompanyExportFilename(),
                         WriterType::XLSX
                     ))
-                    ->visible(fn () => auth()->user()->can('StudentCompany View List')),
+                    ->visible(fn () => auth()->user()->can('StudentCompany View List') && ! $this->shouldScopeCompanySupervisorStudentCompanies()),
 
                 Action::make('importPlacements')
                     ->label(__('Import Placements'))
@@ -171,7 +171,10 @@ class Index extends Component implements HasForms, HasTable
 
             SelectFilter::make('company_id')
                 ->label(__('Company'))
-                ->options(Company::get()->pluck('name', 'id'))
+                ->options(fn (): array => $this->applyCompanyVisibilityScope(Company::query())
+                    ->get()
+                    ->pluck('name', 'id')
+                    ->toArray())
                 ->searchable()
                 ->preload(),
 

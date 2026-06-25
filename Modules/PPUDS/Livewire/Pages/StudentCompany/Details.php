@@ -16,11 +16,13 @@ use Filament\Infolists\Contracts\HasInfolists;
 use Filament\Infolists\Infolist;
 use Livewire\Component;
 use Modules\PPUDS\Entities\StudentCompany;
+use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
 class Details extends Component implements HasForms, HasInfolists
 {
     use InteractsWithForms;
     use InteractsWithInfolists;
+    use ScopesStudentCompanyVisibility;
 
     public ?array $data = [];
 
@@ -41,7 +43,7 @@ class Details extends Component implements HasForms, HasInfolists
             ])
             ->withAttendanceDays()
             ->withActualWorkingHours()
-            ->when(auth()->user()->hasRole('Student'), fn ($query) => $query->where('student_id', auth()->id()))
+            ->tap(fn ($query) => $this->applyStudentCompanyVisibilityScope($query))
             ->findOrFail($studentCompany);
 
         $this->studentCompanyModel = $studentCompany;

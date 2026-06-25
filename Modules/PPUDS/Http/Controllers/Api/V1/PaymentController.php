@@ -3,6 +3,7 @@
 namespace Modules\PPUDS\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Database\Eloquent\Builder;
 use Modules\Core\Enums\UserRole;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\Payment;
@@ -11,6 +12,7 @@ use Modules\PPUDS\Http\Controllers\Api\V1\Concerns\EnsuresCurrentRegistration;
 use Modules\PPUDS\Http\Requests\PaymentRequest;
 use Modules\PPUDS\Http\Requests\PaymentRequestUpdate;
 use Modules\PPUDS\Services\PpudsNotificationService;
+use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 use Modules\PPUDS\Transformers\V1\PaymentResource;
 use Spatie\QueryBuilder\QueryBuilder;
 
@@ -18,6 +20,7 @@ class PaymentController extends Controller
 {
     use ApiResponse;
     use EnsuresCurrentRegistration;
+    use ScopesStudentCompanyVisibility;
 
     /**
      * @OA\Get(
@@ -70,7 +73,11 @@ class PaymentController extends Controller
         $maxPerPage = config('core.pagination.max_per_page', 100);
         $perPage = min(request('per_page', $defaultPerPage), $maxPerPage);
 
-        $payments = QueryBuilder::for(Payment::class)
+        $payments = QueryBuilder::for(Payment::query()
+            ->whereHas(
+                'studentCompany',
+                fn (Builder $studentCompanyQuery): Builder => $this->applyStudentCompanyVisibilityScope($studentCompanyQuery)
+            ))
             ->allowedFields(PaymentResource::allowedFields())
             ->allowedFilters(PaymentResource::allowedFilters())
             ->allowedSorts(PaymentResource::allowedSorts())
@@ -123,6 +130,8 @@ class PaymentController extends Controller
         if ($response = $this->ensureStudentCompanyInCurrentSemester((int) $data['student_company_id'])) {
             return $response;
         }
+
+        abort_unless($this->canAccessStudentCompanyRecord((int) $data['student_company_id']), 403);
 
         $data['created_by'] = auth()->id();
 
@@ -274,8 +283,14 @@ class PaymentController extends Controller
      */
     public function update(PaymentRequestUpdate $request, Payment $payment)
     {
+        abort_unless($this->canAccessStudentCompanyRecord($payment->studentCompany), 403);
+
         if ($response = $this->ensureRelatedStudentCompanyInCurrentSemester($payment)) {
             return $response;
+        }
+
+        if ($request->filled('student_company_id')) {
+            abort_unless($this->canAccessStudentCompanyRecord((int) $request->student_company_id), 403);
         }
 
         $oldStatus = $payment->status;
@@ -341,7 +356,11 @@ class PaymentController extends Controller
      */
     public function show(Payment $payment)
     {
-        $payment = QueryBuilder::for(Payment::class)
+        $payment = QueryBuilder::for(Payment::query()
+            ->whereHas(
+                'studentCompany',
+                fn (Builder $studentCompanyQuery): Builder => $this->applyStudentCompanyVisibilityScope($studentCompanyQuery)
+            ))
             ->where('id', $payment->id)
             ->allowedFields(PaymentResource::allowedFields())
             ->allowedIncludes(PaymentResource::allowedIncludes())

@@ -61,7 +61,9 @@ class AttendanceMapWidget extends Component
     {
         $user = auth()->user();
 
-        return $user && $user->can('Attendance Map View');
+        return $user
+            && $this->isAdmin()
+            && $user->can('Attendance Map View');
     }
 
     public function attendancePoints(): array

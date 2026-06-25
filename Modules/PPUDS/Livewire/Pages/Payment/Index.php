@@ -14,21 +14,23 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
-use Modules\Core\Enums\UserRole;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\Payment;
 use Modules\PPUDS\Entities\StudentCompany;
+use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
 class Index extends Component implements HasForms, HasTable
 {
     use InteractsWithForms;
     use InteractsWithTable;
+    use ScopesStudentCompanyVisibility;
 
     public array $filters = [];
 
@@ -37,7 +39,10 @@ class Index extends Component implements HasForms, HasTable
         return $table
             ->query(fn() => Payment::query()->with(['studentCompany','studentCompany.registration.student' , 'supervisor', 'currency'])
                 ->where($this->filters)
-                ->when(auth()->user()->hasRole(UserRole::STUDENT->value), fn ($query) => $query->whereHas('studentCompany', fn ($studentCompanyQuery) => $studentCompanyQuery->where('student_id', auth()->id()))))
+                ->whereHas(
+                    'studentCompany',
+                    fn (Builder $studentCompanyQuery): Builder => $this->applyStudentCompanyVisibilityScope($studentCompanyQuery)
+                ))
             ->columns([
                 TextColumn::make('studentCompany.registration.student.name')
                     ->label(__('Student'))

@@ -38,18 +38,21 @@ use Modules\PPUDS\Exports\StudentsExport;
 use Modules\PPUDS\Exports\StudentsWithCompaniesExport;
 use Modules\PPUDS\Services\PpuApiService;
 use Modules\PPUDS\Settings\GeneralSettings;
+use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 use Throwable;
 
 class Index extends Component implements HasForms, HasTable
 {
     use InteractsWithForms;
     use InteractsWithTable;
+    use ScopesStudentCompanyVisibility;
 
     public function table(Table $table)
     {
         return $table
             ->query(fn () => StudentProfile::query()
                 ->with(['user.media'])
+                ->tap(fn ($query) => $this->applyStudentProfileVisibilityScope($query))
                 ->when(request()->boolean('not_matched'), fn ($query) => $query
                     ->whereDoesntHave(
                         'user.studentCompanies',

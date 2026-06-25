@@ -3,6 +3,7 @@
 namespace Modules\PPUDS\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Modules\Core\Enums\UserRole;
 use Modules\Core\Traits\ApiResponse;
@@ -12,6 +13,7 @@ use Modules\PPUDS\Http\Controllers\Api\V1\Concerns\EnsuresCurrentRegistration;
 use Modules\PPUDS\Http\Requests\StudentAttendanceRequest;
 use Modules\PPUDS\Http\Requests\StudentAttendanceRequestUpdate;
 use Modules\PPUDS\Services\PpudsNotificationService;
+use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 use Modules\PPUDS\Transformers\V1\StudentAttendanceResource;
 use Spatie\QueryBuilder\QueryBuilder;
 
@@ -25,6 +27,7 @@ class StudentAttendanceController extends Controller
 {
     use ApiResponse;
     use EnsuresCurrentRegistration;
+    use ScopesStudentCompanyVisibility;
 
     /**
      *List Student Attendances
@@ -133,7 +136,11 @@ class StudentAttendanceController extends Controller
      */
     public function index()
     {
-        $attendances = QueryBuilder::for(StudentAttendance::class)
+        $attendances = QueryBuilder::for(StudentAttendance::query()
+            ->whereHas(
+                'studentCompany',
+                fn (Builder $studentCompanyQuery): Builder => $this->applyStudentCompanyVisibilityScope($studentCompanyQuery)
+            ))
             ->allowedFilters(StudentAttendanceResource::allowedFilters())
             ->allowedSorts(StudentAttendanceResource::allowedSorts())
             ->allowedIncludes(StudentAttendanceResource::allowedIncludes())
@@ -222,6 +229,8 @@ class StudentAttendanceController extends Controller
      */
     public function update(StudentAttendanceRequestUpdate $request, StudentAttendance $studentAttendance)
     {
+        abort_unless($this->canAccessStudentCompanyRecord($studentAttendance->studentCompany), 403);
+
         if ($response = $this->ensureStudentAttendanceInCurrentSemester($studentAttendance)) {
             return $response;
         }
@@ -230,6 +239,8 @@ class StudentAttendanceController extends Controller
             if ($response = $this->ensureStudentCompanyInCurrentSemester((int) $request->student_company_id)) {
                 return $response;
             }
+
+            abort_unless($this->canAccessStudentCompanyRecord((int) $request->student_company_id), 403);
         }
 
         $studentAttendance->update($request->validated());
@@ -303,6 +314,8 @@ class StudentAttendanceController extends Controller
         if ($response = $this->ensureStudentCompanyInCurrentSemester((int) $request->student_company_id)) {
             return $response;
         }
+
+        abort_unless($this->canAccessStudentCompanyRecord((int) $request->student_company_id), 403);
 
         $checkInAt = $this->resolveAttendanceTimestamp($request, 'check_in');
         $attendanceDate = $this->resolveAttendanceDate($request, $checkInAt);
@@ -390,6 +403,8 @@ class StudentAttendanceController extends Controller
         if ($response = $this->ensureStudentCompanyInCurrentSemester((int) $request->student_company_id)) {
             return $response;
         }
+
+        abort_unless($this->canAccessStudentCompanyRecord((int) $request->student_company_id), 403);
 
         $checkOutAt = $this->resolveAttendanceTimestamp($request, 'check_out');
         $attendanceDate = $this->resolveAttendanceDate($request, $checkOutAt);

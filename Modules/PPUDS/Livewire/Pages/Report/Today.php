@@ -25,18 +25,19 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
-use Modules\Core\Enums\UserRole;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\StudentReport;
 use Modules\PPUDS\Livewire\Concerns\SearchesStudentAttendanceRelationships;
+use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
 class Today extends Component implements HasForms, HasTable
 {
     use InteractsWithForms;
     use InteractsWithTable;
     use SearchesStudentAttendanceRelationships;
+    use ScopesStudentCompanyVisibility;
 
     public function table(Table $table): Table
     {
@@ -133,12 +134,9 @@ class Today extends Component implements HasForms, HasTable
             ])
             ->when($fromDate, fn (Builder $query): Builder => $query->whereDate('created_at', '>=', $fromDate))
             ->when($untilDate, fn (Builder $query): Builder => $query->whereDate('created_at', '<=', $untilDate))
-            ->when(
-                auth()->user()?->hasRole(UserRole::STUDENT->value),
-                fn (Builder $query): Builder => $query->whereHas(
-                    'studentAttendance.studentCompany',
-                    fn (Builder $studentCompanyQuery): Builder => $studentCompanyQuery->where('student_id', auth()->id())
-                )
+            ->whereHas(
+                'studentAttendance.studentCompany',
+                fn (Builder $studentCompanyQuery): Builder => $this->applyStudentCompanyVisibilityScope($studentCompanyQuery)
             );
     }
 
@@ -195,6 +193,7 @@ class Today extends Component implements HasForms, HasTable
                 ->label(__('Company'))
                 ->options(fn (): array => Company::query()
                     ->with('translations')
+                    ->tap(fn (Builder $query) => $this->applyCompanyVisibilityScope($query))
                     ->orderBy('id')
                     ->get()
                     ->pluck('name', 'id')

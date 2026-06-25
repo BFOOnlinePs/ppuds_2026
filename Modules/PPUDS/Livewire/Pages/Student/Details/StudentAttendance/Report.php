@@ -20,10 +20,12 @@ use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\PPUDS\Entities\StudentAttendance;
 use Modules\PPUDS\Entities\StudentReport;
+use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
 class Report extends Component implements HasForms
 {
     use InteractsWithForms;
+    use ScopesStudentCompanyVisibility;
 
     public ?array $data = [];
     public StudentAttendance $attendance;
@@ -31,6 +33,8 @@ class Report extends Component implements HasForms
 
     public function mount(StudentAttendance $studentAttendance)
     {
+        abort_unless($this->canAccessStudentCompanyRecord($studentAttendance->studentCompany), 403);
+
         $this->attendance = $studentAttendance;
 
         $this->report = $studentAttendance->studentReport;
