@@ -136,6 +136,15 @@
                     font-weight: 700;
                 }
 
+                .attendance-map-popup-title a {
+                    color: #2563eb;
+                    text-decoration: none;
+                }
+
+                .attendance-map-popup-title a:hover {
+                    text-decoration: underline;
+                }
+
                 .attendance-map-popup-row {
                     display: flex;
                     justify-content: space-between;
@@ -359,6 +368,11 @@
                     },
 
                     popupContent(point) {
+                        const student = this.escape(point.student || '-');
+                        const title = point.student_url
+                            ? `<a href="${this.escape(point.student_url)}">${student}</a>`
+                            : student;
+
                         const row = (label, value) => `
                             <div class="attendance-map-popup-row">
                                 <span>${this.escape(label)}</span>
@@ -368,7 +382,7 @@
 
                         return `
                             <div class="attendance-map-popup">
-                                <div class="attendance-map-popup-title">${this.escape(point.student || '-')}</div>
+                                <div class="attendance-map-popup-title">${title}</div>
                                 ${row(config.labels.company, point.company)}
                                 ${row(config.labels.branch, point.branch)}
                                 ${row(config.labels.date, point.date)}

@@ -212,13 +212,17 @@ class AttendanceMapWidget extends Component
     private function formatAttendancePoint(StudentAttendance $attendance): array
     {
         $studentCompany = $attendance->studentCompany;
+        $student = $studentCompany?->student;
         $coordinates = $this->attendanceCoordinates($attendance);
 
         return [
             'id' => $attendance->id,
             'lat' => $coordinates['lat'],
             'lng' => $coordinates['lng'],
-            'student' => $studentCompany?->student?->name ?? '-',
+            'student' => $student?->name ?? '-',
+            'student_url' => $student && auth()->user()?->can('Student Details List')
+                ? route('students.details', $student->id)
+                : null,
             'company' => $studentCompany?->company?->name ?? '-',
             'branch' => $studentCompany?->branch?->name ?? '-',
             'date' => $attendance->attendance_date?->format('Y-m-d') ?? '-',

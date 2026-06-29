@@ -78,6 +78,14 @@ class Index extends Component implements HasForms, HasTable
                         ? $this->applyStudentSearchToStudentCompanyQuery($query, $search)
                         : $this->applyStudentSearchToAttendanceQuery($query, $search)),
 
+                TextColumn::make('student_phone')
+                    ->label(__('Phone'))
+                    ->getStateUsing(fn (Model $record): ?string => $this->studentPhoneColumnState($record))
+                    ->searchable(query: fn (Builder $query, string $search): Builder => $this->todayAbsentStudentsFilterIsActive()
+                        ? $this->applyStudentSearchToStudentCompanyQuery($query, $search)
+                        : $this->applyStudentSearchToAttendanceQuery($query, $search))
+                    ->placeholder('---'),
+
                 TextColumn::make('company_name')
                     ->label(__('Company Name'))
                     ->getStateUsing(fn (Model $record): ?string => $record instanceof StudentCompany
@@ -628,6 +636,11 @@ class Index extends Component implements HasForms, HasTable
     protected function studentNumberColumnState(Model $record): ?string
     {
         return $this->studentFromRecord($record)?->studentProfile?->student_number;
+    }
+
+    protected function studentPhoneColumnState(Model $record): ?string
+    {
+        return $this->studentFromRecord($record)?->phone;
     }
 
     protected function studentDetailsUrl(Model $record): ?string
