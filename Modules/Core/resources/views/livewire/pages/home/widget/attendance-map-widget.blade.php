@@ -1,10 +1,5 @@
 <div>
     @if ($this->canView())
-        <?php
-            $points = $isOpen ? $this->attendancePoints() : [];
-            $center = $this->mapCenter($points);
-        ?>
-
         <x-filament::modal
             id="attendance-map-modal"
             icon="heroicon-o-map"
@@ -16,14 +11,14 @@
             </x-slot>
 
             <x-slot name="description">
-                {{ __('Shown Points') }}: {{ count($points) }}
+                {{ __('Attendance locations for selected dates') }}
             </x-slot>
 
             @if ($isOpen)
                 <div
                     x-data="attendanceMapModal({
-                        points: @js($points),
-                        center: @js($center),
+                        points: [],
+                        center: { lat: 32.2211, lng: 35.2544 },
                         modalId: 'attendance-map-modal',
                         tilesUrl: 'https://tile.openstreetmap.de/{z}/{x}/{y}.png',
                         cssUrl: @js(asset('css/dotswan/filament-map-picker/filament-map-picker-styles.css')),
@@ -38,7 +33,7 @@
                             loadError: @js(__('Map could not be loaded')),
                         },
                     })"
-                    x-init="$nextTick(() => init($refs.map))"
+                    x-init="$nextTick(async () => { await init($refs.map); $wire.loadAttendancePoints(); })"
                     x-on:attendance-map-points-updated.window="setPoints($event.detail.points, $event.detail.center)"
                     x-on:open-modal.window="if ($event.detail.id === modalId) refreshSize()"
                     class="space-y-4"
@@ -83,6 +78,21 @@
                         </x-filament::button>
                     </div>
 
+                    <div class="flex flex-wrap items-center gap-4 text-xs font-medium text-gray-600 dark:text-gray-300">
+                        <span>
+                            {{ __('Shown Points') }}:
+                            <span x-text="points.length"></span>
+                        </span>
+                        <span class="inline-flex items-center gap-2">
+                            <span class="h-3 w-3 rounded-full bg-red-600 ring-2 ring-white dark:ring-gray-900"></span>
+                            {{ __('Checked In Only') }}
+                        </span>
+                        <span class="inline-flex items-center gap-2">
+                            <span class="h-3 w-3 rounded-full bg-green-600 ring-2 ring-white dark:ring-gray-900"></span>
+                            {{ __('Checked In And Out') }}
+                        </span>
+                    </div>
+
                     <div class="attendance-map-shell relative overflow-hidden rounded-lg bg-gray-100 ring-1 ring-gray-950/10 dark:bg-gray-950 dark:ring-white/10" x-ref="mapShell">
                         <div
                             x-ref="map"
@@ -113,10 +123,6 @@
             <style>
                 .attendance-map-point {
                     filter: drop-shadow(0 8px 14px rgba(15, 23, 42, 0.24));
-                }
-
-                .attendance-map-radar-ring {
-                    pointer-events: none;
                 }
 
                 .attendance-map-popup {
@@ -166,7 +172,9 @@
                 Alpine.data('attendanceMapModal', (config) => ({
                     map: null,
                     markerLayer: null,
-                    radarAnimations: [],
+                    markerRenderer: null,
+                    renderFrame: null,
+                    renderToken: 0,
                     modalId: config.modalId,
                     points: config.points || [],
                     center: config.center || { lat: 32.2211, lng: 35.2544 },
@@ -190,6 +198,7 @@
                             zoom: 9,
                             zoomControl: true,
                             scrollWheelZoom: true,
+                            preferCanvas: true,
                         });
 
                         leaflet.tileLayer(config.tilesUrl, {
@@ -198,7 +207,8 @@
                             attribution: '&copy; OpenStreetMap',
                         }).addTo(this.map);
 
-                        this.markerLayer = leaflet.featureGroup().addTo(this.map);
+                        this.markerRenderer = leaflet.canvas({ padding: 0.5 });
+                        this.markerLayer = leaflet.layerGroup().addTo(this.map);
                         this.setPoints(this.points, this.center);
                         this.refreshSize();
                     },
@@ -257,87 +267,95 @@
                         }
 
                         const leaflet = window.L || window.leaflet;
-                        this.clearRadarAnimations();
-                        this.markerLayer.clearLayers();
+                        this.renderToken += 1;
+                        const token = this.renderToken;
 
-                        this.points.forEach((point) => {
-                            if (! point.lat || ! point.lng) {
-                                return;
-                            }
-
-                            this.addRadarPoint(leaflet, point);
-                        });
-
-                        if (this.markerLayer.getLayers().length) {
-                            this.map.fitBounds(this.markerLayer.getBounds().pad(0.35), { maxZoom: 12 });
-                        } else {
-                            this.map.setView([this.center.lat, this.center.lng], 9);
+                        if (this.renderFrame) {
+                            cancelAnimationFrame(this.renderFrame);
+                            this.renderFrame = null;
                         }
 
-                        this.refreshSize();
-                    },
+                        this.markerLayer.clearLayers();
 
-                    addRadarPoint(leaflet, point) {
-                        const latLng = [point.lat, point.lng];
+                        const bounds = leaflet.latLngBounds([]);
+                        const batchSize = 500;
+                        let index = 0;
+                        let added = 0;
 
-                        [0, 950].forEach((delay) => {
-                            const ring = leaflet.circleMarker(latLng, {
-                                className: 'attendance-map-radar-ring',
-                                radius: 8,
-                                color: '#dc2626',
-                                weight: 2,
-                                opacity: 0.45,
-                                fill: false,
-                                interactive: false,
-                            }).addTo(this.markerLayer);
-
-                            this.animateRadarRing(ring, delay);
-                        });
-
-                        leaflet.circleMarker(latLng, {
-                            className: 'attendance-map-point',
-                            radius: 8,
-                            color: '#ffffff',
-                            weight: 3,
-                            opacity: 1,
-                            fillColor: '#dc2626',
-                            fillOpacity: 1,
-                        })
-                            .bindPopup(this.popupContent(point))
-                            .addTo(this.markerLayer);
-                    },
-
-                    animateRadarRing(ring, delay) {
-                        const duration = 1900;
-                        const start = performance.now() - delay;
-                        const animation = { frame: null };
-
-                        const animate = (time) => {
-                            if (! this.map || ! this.markerLayer?.hasLayer(ring)) {
+                        const finish = () => {
+                            if (token !== this.renderToken) {
                                 return;
                             }
 
-                            const progress = ((time - start) % duration) / duration;
-                            ring.setRadius(8 + (progress * 24));
-                            ring.setStyle({
-                                opacity: 0.5 * (1 - progress),
-                            });
+                            if (added && bounds.isValid()) {
+                                this.map.fitBounds(bounds.pad(0.35), { maxZoom: 12, animate: false });
+                            } else {
+                                this.map.setView([this.center.lat, this.center.lng], 9, { animate: false });
+                            }
 
-                            animation.frame = requestAnimationFrame(animate);
+                            this.refreshSize();
                         };
 
-                        animation.frame = requestAnimationFrame(animate);
-                        this.radarAnimations.push(animation);
+                        const renderBatch = () => {
+                            if (token !== this.renderToken) {
+                                return;
+                            }
+
+                            const end = Math.min(index + batchSize, this.points.length);
+
+                            for (; index < end; index++) {
+                                const latLng = this.addAttendancePoint(leaflet, this.points[index]);
+
+                                if (latLng) {
+                                    bounds.extend(latLng);
+                                    added++;
+                                }
+                            }
+
+                            if (index < this.points.length) {
+                                this.renderFrame = requestAnimationFrame(renderBatch);
+                                return;
+                            }
+
+                            this.renderFrame = null;
+                            finish();
+                        };
+
+                        renderBatch();
                     },
 
-                    clearRadarAnimations() {
-                        this.radarAnimations.forEach((animation) => {
-                            if (animation.frame) {
-                                cancelAnimationFrame(animation.frame);
+                    addAttendancePoint(leaflet, point) {
+                        const lat = Number(point.lat);
+                        const lng = Number(point.lng);
+
+                        if (! Number.isFinite(lat) || ! Number.isFinite(lng)) {
+                            return null;
+                        }
+
+                        const latLng = leaflet.latLng(lat, lng);
+                        const color = point.color || '#dc2626';
+
+                        const marker = leaflet.circleMarker(latLng, {
+                            className: 'attendance-map-point',
+                            renderer: this.markerRenderer,
+                            radius: 7,
+                            color: '#ffffff',
+                            weight: 2,
+                            opacity: 1,
+                            fillColor: color,
+                            fillOpacity: 0.95,
+                        })
+                            .addTo(this.markerLayer);
+
+                        marker.on('click', () => {
+                            if (! marker.getPopup()) {
+                                marker.bindPopup(this.popupContent(point));
                             }
+
+                            marker.openPopup();
                         });
 
-                        this.radarAnimations = [];
+                        return latLng;
                     },
 
                     popupContent(point) {

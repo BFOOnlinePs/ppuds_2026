@@ -9,7 +9,6 @@ use Livewire\Component;
 use Modules\Core\Enums\UserRole;
 use Modules\PPUDS\Entities\StudentAttendance;
 use Modules\PPUDS\Entities\StudentCompany;
-use Modules\PPUDS\Enums\AttendanceStatus;
 
 class AttendanceMapWidget extends Component
 {
@@ -48,6 +47,20 @@ class AttendanceMapWidget extends Component
     {
         [$this->fromDate, $this->toDate] = $this->normalizedDates();
 
+        $this->dispatchAttendanceMapPoints();
+    }
+
+    public function loadAttendancePoints(): void
+    {
+        if (! $this->isOpen || ! $this->canView()) {
+            return;
+        }
+
+        $this->dispatchAttendanceMapPoints();
+    }
+
+    private function dispatchAttendanceMapPoints(): void
+    {
         $points = $this->attendancePoints();
 
         $this->dispatch(
@@ -102,11 +115,26 @@ class AttendanceMapWidget extends Component
     private function attendanceQuery(string $fromDate, string $toDate): Builder
     {
         return StudentAttendance::query()
+            ->select([
+                'id',
+                'student_company_id',
+                'attendance_date',
+                'check_in',
+                'check_in_latitude',
+                'check_in_longitude',
+                'check_out',
+                'check_out_latitude',
+                'check_out_longitude',
+            ])
             ->with([
-                'studentCompany' => fn ($query) => $query->withTrashed(),
-                'studentCompany.student',
-                'studentCompany.company',
-                'studentCompany.branch',
+                'studentCompany' => fn ($query) => $query
+                    ->withTrashed()
+                    ->select(['id', 'student_id', 'company_id', 'branch_id', 'department_id', 'registration_id']),
+                'studentCompany.student:id,name',
+                'studentCompany.company:id',
+                'studentCompany.company.translations',
+                'studentCompany.branch:id',
+                'studentCompany.branch.translations',
             ])
             ->whereBetween('attendance_date', [$fromDate, $toDate])
             ->where(function (Builder $query) {
@@ -196,8 +224,8 @@ class AttendanceMapWidget extends Component
             'date' => $attendance->attendance_date?->format('Y-m-d') ?? '-',
             'check_in' => $attendance->check_in?->format('H:i') ?? '-',
             'check_out' => $attendance->check_out?->format('H:i') ?? '-',
-            'status' => $this->statusLabel($attendance),
-            'color' => $this->statusColor($attendance),
+            'status' => $this->attendanceStateLabel($attendance),
+            'color' => $this->attendanceStateColor($attendance),
         ];
     }
 
@@ -216,30 +244,16 @@ class AttendanceMapWidget extends Component
         ];
     }
 
-    private function statusLabel(StudentAttendance $attendance): string
+    private function attendanceStateLabel(StudentAttendance $attendance): string
     {
-        try {
-            $status = $attendance->status;
-        } catch (\Throwable) {
-            return (string) $attendance->getRawOriginal('status');
-        }
-
-        return $status instanceof AttendanceStatus
-            ? (string) $status->getLabel()
-            : __((string) $status);
+        return $attendance->check_out
+            ? __('Checked In And Out')
+            : __('Checked In Only');
     }
 
-    private function statusColor(StudentAttendance $attendance): string
+    private function attendanceStateColor(StudentAttendance $attendance): string
     {
-        try {
-            $status = $attendance->status;
-        } catch (\Throwable) {
-            return 'primary';
-        }
-
-        return $status instanceof AttendanceStatus
-            ? (string) $status->getColor()
-            : 'primary';
+        return $attendance->check_out ? '#16a34a' : '#dc2626';
     }
 
     private function setDefaultDates(): void

@@ -50,16 +50,26 @@ class Index extends Component implements HasForms, HasTable
     {
         return $table
             ->query(fn () => StudentCompany::query()
-                ->with(['registration.student', 'registration', 'registration.course', 'company', 'branch'])
+                ->with(['registration.student.studentProfile', 'registration', 'registration.course', 'company', 'branch'])
                 ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query)))
             ->columns([
+                TextColumn::make('registration.student.studentProfile.student_number')
+                    ->label(__('Student Number'))
+                    ->searchable(query: fn (Builder $query, string $search): Builder => $query->whereHas(
+                        'registration.student.studentProfile',
+                        fn (Builder $studentProfileQuery): Builder => $studentProfileQuery->where('student_number', 'like', "%{$search}%")
+                    ))
+                    ->placeholder('---'),
+
                 TextColumn::make('registration.student.name')
                     ->label(__('Student'))
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
                     ->color('primary')
-                    ->url(fn (StudentCompany $record) => route('student-companies.edit', $record))
+                    ->url(fn (StudentCompany $record): ?string => $record->registration?->student_id && auth()->user()->can('Student Details List')
+                        ? route('students.details', $record->registration->student_id)
+                        : null)
                     ->description(fn (StudentCompany $record) => $record->registration?->student?->email),
 
                 TextColumn::make('company.name')

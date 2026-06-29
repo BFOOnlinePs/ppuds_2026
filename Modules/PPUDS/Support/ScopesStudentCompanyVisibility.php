@@ -25,7 +25,23 @@ trait ScopesStudentCompanyVisibility
             return $query->where('student_id', $user->id);
         }
 
+        if ($this->shouldScopeUniversitySupervisorStudentCompanies()) {
+            return $this->applyUniversitySupervisorStudentCompanyScope($query);
+        }
+
         return $this->applyCompanySupervisorStudentCompanyScope($query);
+    }
+
+    protected function applyUniversitySupervisorStudentCompanyScope(Builder $query): Builder
+    {
+        if (! $this->shouldScopeUniversitySupervisorStudentCompanies()) {
+            return $query;
+        }
+
+        return $query->whereHas(
+            'registration',
+            fn (Builder $registrationQuery): Builder => $registrationQuery->where('supervisor_id', auth()->id())
+        );
     }
 
     protected function applyCompanySupervisorStudentCompanyScope(Builder $query): Builder
@@ -51,6 +67,13 @@ trait ScopesStudentCompanyVisibility
 
         if ($user->hasRole(UserRole::STUDENT->value)) {
             return $query->where('user_id', $user->id);
+        }
+
+        if ($this->shouldScopeUniversitySupervisorStudentCompanies()) {
+            return $query->whereHas(
+                'user.studentCompanies',
+                fn (Builder $studentCompanyQuery): Builder => $this->applyUniversitySupervisorStudentCompanyScope($studentCompanyQuery)
+            );
         }
 
         if ($this->shouldScopeCompanySupervisorStudentCompanies()) {
@@ -79,6 +102,13 @@ trait ScopesStudentCompanyVisibility
             return $query->whereHas(
                 'studentCompanies',
                 fn (Builder $studentCompanyQuery): Builder => $studentCompanyQuery->where('student_id', $user->id)
+            );
+        }
+
+        if ($this->shouldScopeUniversitySupervisorStudentCompanies()) {
+            return $query->whereHas(
+                'studentCompanies',
+                fn (Builder $studentCompanyQuery): Builder => $this->applyUniversitySupervisorStudentCompanyScope($studentCompanyQuery)
             );
         }
 
@@ -127,6 +157,12 @@ trait ScopesStudentCompanyVisibility
             return (int) $user->id === $studentUserId;
         }
 
+        if ($this->shouldScopeUniversitySupervisorStudentCompanies()) {
+            return $this->applyUniversitySupervisorStudentCompanyScope(
+                StudentCompany::query()->where('student_id', $studentUserId)
+            )->exists();
+        }
+
         if ($this->shouldScopeCompanySupervisorStudentCompanies()) {
             return $this->applyCompanySupervisorStudentCompanyScope(
                 StudentCompany::query()->where('student_id', $studentUserId)
@@ -142,12 +178,27 @@ trait ScopesStudentCompanyVisibility
             && ! $this->currentUserIsAdmin();
     }
 
+    protected function shouldScopeUniversitySupervisorStudentCompanies(): bool
+    {
+        return auth()->user()?->hasAnyRole($this->universitySupervisorScopedRoles())
+            && ! $this->currentUserIsAdmin();
+    }
+
     protected function currentUserIsAdmin(): bool
     {
         return auth()->user()?->hasAnyRole([
             UserRole::SUPER_ADMIN->value,
             UserRole::ADMIN->value,
         ]) ?? false;
+    }
+
+    protected function universitySupervisorScopedRoles(): array
+    {
+        return [
+            UserRole::PRACTICAL_TRAINING_SUPERVISOR->value,
+            'Academic Supervisor',
+            'University Supervisor',
+        ];
     }
 
     private function applyStudentCompanySupervisorExistsScope(Builder $query, int $supervisorUserId): Builder
