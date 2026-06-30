@@ -39,7 +39,7 @@ class Report extends Component implements HasForms
 
         $this->report = $studentAttendance->studentReport;
 
-        $this->form->fill($this->report->toArray());
+        $this->form->fill($this->report?->toArray());
     }
 
     public function form(Form $form): Form
@@ -69,12 +69,20 @@ class Report extends Component implements HasForms
                                         ->label(__('Attachment (Image/File)'))
                                         ->disk('student_reports')
                                         ->collection('file_report')
-                                        ->image()
+                                        ->acceptedFileTypes([
+                                            'application/pdf',
+                                            'application/msword',
+                                            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                            'image/jpeg',
+                                            'image/png',
+                                            'image/webp',
+                                            'image/gif',
+                                        ])
+                                        ->rules(['mimes:pdf,doc,docx,jpg,jpeg,png,webp,gif'])
                                         ->multiple()
                                         ->maxFiles(5)
                                         ->reorderable()
                                         ->panelLayout('grid')
-                                        ->imageEditor()
                                         ->maxSize(5120) // 5MB
                                         ->columnSpanFull(),
                                 ]),
@@ -97,24 +105,30 @@ class Report extends Component implements HasForms
 
                                     // عرض الصورة الحالية إن وجدت
                                     Placeholder::make('current_images')
-                                        ->label(__('Current Uploaded Images'))
+                                        ->label(__('Current Uploaded Files'))
                                         // 1. الشرط: اعرض الحقل فقط إذا كان التقرير موجوداً وبه صور
                                         ->visible(fn () => $this->report && $this->report->getMedia('file_report')->count() > 0)
                                         ->content(fn () => new HtmlString(
                                             Blade::render(<<<'HTML'
-                                                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px;">
-                                                        @foreach($images as $url)
-                                                            <a href="{{ $url }}" target="_blank" style="display: block;">
-                                                                <img
-                                                                    src="{{ $url }}"
-                                                                    style="width: 100%; height: 100px; object-fit: cover; border-radius: 8px; border: 1px solid #ddd;"
-                                                                    alt="Image"
-                                                                >
+                                                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px;">
+                                                        @foreach($attachments as $attachment)
+                                                            <a href="{{ $attachment['url'] }}" target="_blank" style="display: block; text-decoration: none;">
+                                                                @if($attachment['is_image'])
+                                                                    <img
+                                                                        src="{{ $attachment['url'] }}"
+                                                                        style="width: 100%; height: 100px; object-fit: cover; border-radius: 8px; border: 1px solid #ddd;"
+                                                                        alt="{{ $attachment['name'] }}"
+                                                                    >
+                                                                @else
+                                                                    <div style="height: 100px; border-radius: 8px; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; padding: 8px; background: #f9fafb; color: #374151; text-align: center; font-size: 12px;">
+                                                                        {{ $attachment['name'] }}
+                                                                    </div>
+                                                                @endif
                                                             </a>
                                                         @endforeach
                                                     </div>
                                                 HTML,
-                                                ['images' => $this->report?->getMultipleImage() ?? []]
+                                                ['attachments' => $this->report?->getFileReportItems() ?? []]
                                             )
                                         )),
                                 ]),

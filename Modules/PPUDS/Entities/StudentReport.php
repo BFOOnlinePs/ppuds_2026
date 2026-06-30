@@ -21,6 +21,18 @@ class StudentReport extends Model implements HasMedia
     use LogsActivity;
     use softDeletes;
     use InteractsWithMedia;
+
+    protected const ALLOWED_REPORT_EXTENSIONS = [
+        'pdf',
+        'doc',
+        'docx',
+        'jpg',
+        'jpeg',
+        'png',
+        'webp',
+        'gif',
+    ];
+
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
@@ -51,6 +63,10 @@ class StudentReport extends Model implements HasMedia
 
     public function registerMediaConversions(?Media $media = null): void
     {
+        if ($media && ! str_starts_with((string) $media->mime_type, 'image/')) {
+            return;
+        }
+
         $this
             ->addMediaConversion('file_report')
             ->fit(Fit::Contain, 300, 300)
@@ -81,13 +97,17 @@ class StudentReport extends Model implements HasMedia
                 // تحديد اسم الملف
                 if (is_string($file)) {
                     // إذا كان مساراً (String Path)
-                    $extension = pathinfo($file, PATHINFO_EXTENSION);
+                    $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
                     $fileName = time() . '_' . \Illuminate\Support\Str::random(10) . '.' . $extension;
                 } else {
                     // إذا كان كائناً (UploadedFile)
                     $originalName = $file->getClientOriginalName();
-                    $extension = $file->getClientOriginalExtension();
+                    $extension = strtolower($file->getClientOriginalExtension());
                     $fileName = time() . '_' . \Illuminate\Support\Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $extension;
+                }
+
+                if (! in_array($extension, self::ALLOWED_REPORT_EXTENSIONS, true)) {
+                    continue;
                 }
 
                 // 2. الإضافة للمكتبة (بدون حذف السابق)
@@ -95,6 +115,10 @@ class StudentReport extends Model implements HasMedia
                     ->addMedia($file)
                     ->usingFileName($fileName)
                     ->toMediaCollection('file_report', 'student_reports');
+
+                if (! str_starts_with((string) $media->mime_type, 'image/')) {
+                    continue;
+                }
 
                 // 3. تطبيق التحسينات الخاصة بك (Resize & Optimize)
                 $size = ImageSize::MEDIUM; // تأكد من استدعاء الكلاس الصحيح
@@ -113,6 +137,18 @@ class StudentReport extends Model implements HasMedia
     {
         return $this->getMedia('file_report')->map(function ($media) {
             return $media->getUrl();
+        });
+    }
+
+    public function getFileReportItems()
+    {
+        return $this->getMedia('file_report')->map(function (Media $media) {
+            return [
+                'url' => $media->getUrl(),
+                'name' => $media->file_name,
+                'mime_type' => $media->mime_type,
+                'is_image' => str_starts_with((string) $media->mime_type, 'image/'),
+            ];
         });
     }
 

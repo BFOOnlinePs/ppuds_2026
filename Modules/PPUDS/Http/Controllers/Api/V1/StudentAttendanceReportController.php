@@ -74,7 +74,7 @@ class StudentAttendanceReportController extends Controller
      * property="file_report",
      * type="string",
      * format="binary",
-     * description="Optional image/file attachment for the report"
+     * description="Optional PDF, Word, or image attachment for the report. For multiple files, send file_report[]"
      * )
      * )
      * )
@@ -111,6 +111,7 @@ class StudentAttendanceReportController extends Controller
     public function store(StudentAttendanceReportRequest $request)
     {
         $data = $request->validated();
+        unset($data['file_report']);
 
         if ($response = $this->ensureStudentAttendanceInCurrentSemester((int) $data['student_attendance_id'])) {
             return $response;
@@ -126,8 +127,8 @@ class StudentAttendanceReportController extends Controller
 
         $report = StudentReport::create($data);
 
-        if ($request->hasFile('file_report') && method_exists($report, 'addImage')) {
-            $report->addImage($request->file('file_report'));
+        if (method_exists($report, 'addImage')) {
+            $report->addImage($request->reportFiles());
         }
 
         return $this->successResponse(
