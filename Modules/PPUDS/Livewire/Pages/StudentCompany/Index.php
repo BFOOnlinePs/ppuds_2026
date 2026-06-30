@@ -20,6 +20,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\HtmlString;
 use Livewire\Component;
 use Maatwebsite\Excel\Excel as WriterType;
 use Masmerise\Toaster\Toaster;
@@ -50,7 +51,7 @@ class Index extends Component implements HasForms, HasTable
     {
         return $table
             ->query(fn () => StudentCompany::query()
-                ->with(['registration.student.studentProfile', 'registration', 'registration.course', 'company', 'branch'])
+                ->with(['student.media', 'student.studentProfile', 'registration.student.studentProfile', 'registration', 'registration.course', 'company', 'branch'])
                 ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query)))
             ->columns([
                 TextColumn::make('registration.student.studentProfile.student_number')
@@ -63,14 +64,13 @@ class Index extends Component implements HasForms, HasTable
 
                 TextColumn::make('registration.student.name')
                     ->label(__('Student'))
+                    ->getStateUsing(fn (StudentCompany $record): HtmlString|string => $this->studentDisplayColumnState($record))
+                    ->html()
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
                     ->color('primary')
-                    ->url(fn (StudentCompany $record): ?string => $record->registration?->student_id && auth()->user()->can('Student Details List')
-                        ? route('students.details', $record->registration->student_id)
-                        : null)
-                    ->description(fn (StudentCompany $record) => $record->registration?->student?->email),
+                    ->url(fn (StudentCompany $record): ?string => $this->studentDetailsUrl($record)),
 
                 TextColumn::make('registration.student.phone')
                     ->label(__('Phone'))
@@ -158,6 +158,24 @@ class Index extends Component implements HasForms, HasTable
                     ->visible(fn () => auth()->user()->can('StudentCompany Create')),
             ])
             ->bulkActions($this->getTableBulkAction());
+    }
+
+    protected function studentDisplayColumnState(StudentCompany $record): HtmlString|string
+    {
+        return $record->student?->user_display_html
+            ?? $record->registration?->student?->user_display_html
+            ?? '---';
+    }
+
+    protected function studentDetailsUrl(StudentCompany $record): ?string
+    {
+        $student = $record->student ?? $record->registration?->student;
+
+        if (! $student || ! auth()->user()?->can('Student Details List')) {
+            return null;
+        }
+
+        return route('students.details', $student->id);
     }
 
     protected function getTableFilters(): array

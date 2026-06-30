@@ -23,6 +23,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\HtmlString;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Branch\Entities\Branch;
@@ -55,7 +56,7 @@ class Index extends Component implements HasForms, HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn() => StudentCompany::query()->where('company_id', $this->companyId)->with(['registration.student', 'registration.course', 'company', 'branch']))
+            ->query(fn() => StudentCompany::query()->where('company_id', $this->companyId)->with(['student.media', 'registration.student', 'registration.course', 'company', 'branch']))
             ->columns([
                 //                TextColumn::make('registration.student.name')
                 //                    ->label(__('Student'))
@@ -69,9 +70,12 @@ class Index extends Component implements HasForms, HasTable
                 TextColumn::make('student.name')
                     ->label(__('Student'))
                     //                    ->url(fn (StudentCompany $record) => route('student.edit', $record->company_id))
+                    ->getStateUsing(fn (StudentCompany $record): HtmlString|string => $this->studentDisplayColumnState($record))
+                    ->html()
                     ->searchable()
                     ->placeholder('—')
-                    ->color('primary'),
+                    ->color('primary')
+                    ->url(fn (StudentCompany $record): ?string => $this->studentDetailsUrl($record)),
 
                 TextColumn::make('branch.name')
                     ->label(__('Branch'))
@@ -233,6 +237,24 @@ class Index extends Component implements HasForms, HasTable
                     ->visible(fn() => auth()->user()->can('StudentCompany Create')),
             ])
             ->bulkActions($this->getTableBulkAction());
+    }
+
+    protected function studentDisplayColumnState(StudentCompany $record): HtmlString|string
+    {
+        return $record->student?->user_display_html
+            ?? $record->registration?->student?->user_display_html
+            ?? '---';
+    }
+
+    protected function studentDetailsUrl(StudentCompany $record): ?string
+    {
+        $student = $record->student ?? $record->registration?->student;
+
+        if (! $student || ! auth()->user()?->can('Student Details List')) {
+            return null;
+        }
+
+        return route('students.details', $student->id);
     }
 
     protected function getTableFilters(): array

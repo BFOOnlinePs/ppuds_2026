@@ -16,6 +16,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\HtmlString;
 use Livewire\Component;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
@@ -44,6 +45,7 @@ class Index extends Component implements HasForms, HasTable
             ->query(fn () => $this->supervisedStudentCompaniesQuery()
                 ->with([
                     'student.studentProfile',
+                    'student.media',
                     'registration.course',
                     'company',
                     'branch',
@@ -53,6 +55,8 @@ class Index extends Component implements HasForms, HasTable
             ->columns([
                 TextColumn::make('student.name')
                     ->label(__('Student'))
+                    ->getStateUsing(fn (StudentCompany $record): HtmlString|string => $this->studentDisplayColumnState($record))
+                    ->html()
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
@@ -102,6 +106,11 @@ class Index extends Component implements HasForms, HasTable
             ->filtersFormColumns(5)
             ->actions($this->getTableActions())
             ->bulkActions([]);
+    }
+
+    protected function studentDisplayColumnState(StudentCompany $record): HtmlString|string
+    {
+        return $record->student?->user_display_html ?? '---';
     }
 
     protected function getTableFilters(): array
