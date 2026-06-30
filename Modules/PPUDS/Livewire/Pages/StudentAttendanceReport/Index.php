@@ -56,6 +56,15 @@ class Index extends Component implements HasForms, HasTable
                     unset($filtersData['student_company_id']);
                 }
 
+                if (isset($filtersData['student_id'])) {
+                    $studentId = $filtersData['student_id'];
+                    $query->whereHas('studentAttendance.studentCompany', function ($q) use ($studentId) {
+                        $q->where('student_id', $studentId);
+                    });
+
+                    unset($filtersData['student_id']);
+                }
+
                 // 3. تطبيق أي فلاتر أخرى إن وجدت
                 if (!empty($filtersData)) {
                     $query->where($filtersData);

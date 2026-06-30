@@ -357,6 +357,25 @@ class Details extends Component implements HasForms, HasInfolists
                                             ]),
                                     ]),
 
+                                Tabs\Tab::make('attendance-reports')
+                                    ->label(__('Daily Reports'))
+                                    ->icon('heroicon-o-document-text')
+                                    ->schema([
+                                        Grid::make(2)
+                                            ->schema([
+                                                Livewire::make(
+                                                    \Modules\PPUDS\Livewire\Pages\StudentAttendanceReport\Index::class,
+                                                    [
+                                                        'filters' => [
+                                                            'student_id' => $this->userId,
+                                                        ],
+                                                    ]
+                                                )
+                                                    ->columnSpanFull()
+                                                    ->lazy(),
+                                            ]),
+                                    ]),
+
                                 Tabs\Tab::make('payment')
                                     ->label(__('Payment'))
                                     ->icon('heroicon-o-academic-cap')
