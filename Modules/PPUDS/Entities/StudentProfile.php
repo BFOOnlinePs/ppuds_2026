@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Modules\Core\Entities\User;
 use Modules\Core\Enums\ImageQuality;
@@ -115,6 +116,11 @@ class StudentProfile extends Model implements HasMedia
     public function getCvUrlAttribute()
     {
         return $this->getFirstMediaUrl('cv');
+    }
+
+    public function getUserDisplayHtmlAttribute(): HtmlString
+    {
+        return $this->user?->getUserDisplayHtmlAttribute() ?? new HtmlString('---');
     }
 
     public function user(): BelongsTo

@@ -333,7 +333,7 @@ class Today extends Component implements HasForms, HasTable
 
     protected function studentDisplayColumnState(StudentReport $record): HtmlString|string
     {
-        return $record->studentAttendance?->studentCompany?->student?->user_display_html ?? '---';
+        return $record->studentAttendance?->studentCompany?->student?->getUserDisplayHtmlAttribute() ?? '---';
     }
 
     protected function studentDetailsUrl(StudentReport $record): ?string

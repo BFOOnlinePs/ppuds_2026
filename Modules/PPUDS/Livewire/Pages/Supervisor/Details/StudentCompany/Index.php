@@ -110,7 +110,7 @@ class Index extends Component implements HasForms, HasTable
 
     protected function studentDisplayColumnState(StudentCompany $record): HtmlString|string
     {
-        return $record->student?->user_display_html ?? '---';
+        return $record->student?->getUserDisplayHtmlAttribute() ?? '---';
     }
 
     protected function getTableFilters(): array
