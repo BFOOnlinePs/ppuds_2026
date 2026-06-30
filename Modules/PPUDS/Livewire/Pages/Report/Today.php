@@ -23,6 +23,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\HtmlString;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
@@ -52,7 +53,9 @@ class Today extends Component implements HasForms, HasTable
 
                 TextColumn::make('student_name')
                     ->label(__('Student Name'))
-                    ->getStateUsing(fn (StudentReport $record): ?string => $record->studentAttendance?->studentCompany?->student?->name)
+                    ->getStateUsing(fn (StudentReport $record): HtmlString|string => $this->studentDisplayColumnState($record))
+                    ->html()
+                    ->url(fn (StudentReport $record): ?string => $this->studentDetailsUrl($record))
                     ->searchable(query: fn (Builder $query, string $search): Builder => $this->applyStudentReportStudentSearch($query, $search))
                     ->wrap(),
 
@@ -128,6 +131,7 @@ class Today extends Component implements HasForms, HasTable
             ->with([
                 'createdBy',
                 'studentAttendance.studentCompany.student.studentProfile',
+                'studentAttendance.studentCompany.student.media',
                 'studentAttendance.studentCompany.company.translations',
                 'studentAttendance.studentCompany.branch.translations',
                 'studentAttendance.studentCompany.department.translations',
@@ -325,6 +329,22 @@ class Today extends Component implements HasForms, HasTable
             'studentAttendance.studentCompany',
             fn (Builder $studentCompanyQuery): Builder => $this->applyCompanySearchToStudentCompanyQuery($studentCompanyQuery, $search)
         );
+    }
+
+    protected function studentDisplayColumnState(StudentReport $record): HtmlString|string
+    {
+        return $record->studentAttendance?->studentCompany?->student?->user_display_html ?? '---';
+    }
+
+    protected function studentDetailsUrl(StudentReport $record): ?string
+    {
+        $student = $record->studentAttendance?->studentCompany?->student;
+
+        if (! $student || ! auth()->user()?->can('Student Details List')) {
+            return null;
+        }
+
+        return route('students.details', $student->id);
     }
 
     protected function submittedDateRange(): array

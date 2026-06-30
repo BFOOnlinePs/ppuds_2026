@@ -15,6 +15,7 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\HtmlString;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
@@ -38,7 +39,9 @@ class Index extends Component implements HasForms, HasTable
                 // 1. أخذ نسخة من الفلاتر للتعامل معها بأمان دون التأثير على حالة Livewire
                 $filtersData = $this->filters;
 
-                $query = StudentReport::query()->with(['studentAttendance.studentCompany.student']);
+                $query = StudentReport::query()->with([
+                    'studentAttendance.studentCompany.student.media',
+                ]);
 
                 $query->whereHas(
                     'studentAttendance.studentCompany',
@@ -75,6 +78,9 @@ class Index extends Component implements HasForms, HasTable
             ->columns([
                 TextColumn::make('studentAttendance.studentCompany.student.name')
                     ->label(__('Student'))
+                    ->getStateUsing(fn (StudentReport $record): HtmlString|string => $this->studentDisplayColumnState($record))
+                    ->html()
+                    ->url(fn (StudentReport $record): ?string => $this->studentDetailsUrl($record))
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
@@ -116,6 +122,22 @@ class Index extends Component implements HasForms, HasTable
                 //    ->visible(fn() => auth()->user()->can('StudentReport Create')),
             ])
             ->bulkActions($this->getTableBulkAction());
+    }
+
+    protected function studentDisplayColumnState(StudentReport $record): HtmlString|string
+    {
+        return $record->studentAttendance?->studentCompany?->student?->user_display_html ?? '---';
+    }
+
+    protected function studentDetailsUrl(StudentReport $record): ?string
+    {
+        $student = $record->studentAttendance?->studentCompany?->student;
+
+        if (! $student || ! auth()->user()?->can('Student Details List')) {
+            return null;
+        }
+
+        return route('students.details', $student->id);
     }
 
     protected function getTableFilters(): array
