@@ -3,8 +3,10 @@
 namespace Modules\PPUDS\Livewire\Pages\StudentAttendanceReport;
 
 use App\View\Components\AppLayout;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Tables\Actions\BulkAction;
@@ -13,14 +15,20 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Enums\FiltersLayout;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\Indicator;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\HtmlString;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
+use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\StudentReport;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
@@ -143,8 +151,133 @@ class Index extends Component implements HasForms, HasTable
     protected function getTableFilters(): array
     {
         return [
-            // يمكنك إضافة فلاتر الجدول هنا
+            Filter::make('submitted_date')
+                ->label(__('Submitted At'))
+                ->form([
+                    DatePicker::make('from')
+                        ->label(__('From Date'))
+                        ->native(false)
+                        ->format('Y-m-d')
+                        ->displayFormat('Y-m-d'),
+
+                    DatePicker::make('until')
+                        ->label(__('Until Date'))
+                        ->native(false)
+                        ->format('Y-m-d')
+                        ->displayFormat('Y-m-d'),
+                ])
+                ->columns(2)
+                ->query(fn (Builder $query, array $data): Builder => $this->applyDateRangeFilter($query, $data, 'created_at'))
+                ->indicateUsing(fn (array $data): array => $this->dateRangeIndicators($data)),
+
+            Filter::make('attendance_date')
+                ->label(__('Attendance Date'))
+                ->form([
+                    DatePicker::make('from')
+                        ->label(__('From Date'))
+                        ->native(false)
+                        ->format('Y-m-d')
+                        ->displayFormat('Y-m-d'),
+
+                    DatePicker::make('until')
+                        ->label(__('Until Date'))
+                        ->native(false)
+                        ->format('Y-m-d')
+                        ->displayFormat('Y-m-d'),
+                ])
+                ->columns(2)
+                ->query(fn (Builder $query, array $data): Builder => $query->whereHas(
+                    'studentAttendance',
+                    fn (Builder $attendanceQuery): Builder => $this->applyDateRangeFilter($attendanceQuery, $data, 'attendance_date')
+                ))
+                ->indicateUsing(fn (array $data): array => $this->dateRangeIndicators($data)),
+
+            SelectFilter::make('company_id')
+                ->label(__('Company'))
+                ->options(fn (): array => $this->reportCompanyOptions())
+                ->searchable()
+                ->preload()
+                ->query(fn (Builder $query, array $data): Builder => filled($data['value'] ?? null)
+                    ? $query->whereHas(
+                        'studentAttendance.studentCompany',
+                        fn (Builder $studentCompanyQuery): Builder => $studentCompanyQuery->where('company_id', $data['value'])
+                    )
+                    : $query),
+
+            Filter::make('feedback_status')
+                ->label(__('Report Status'))
+                ->form([
+                    Select::make('status')
+                        ->label(__('Report Status'))
+                        ->options([
+                            'with_company_feedback' => __('Company Feedback').' - '.__('Yes'),
+                            'without_company_feedback' => __('Company Feedback').' - '.__('No'),
+                            'with_academic_feedback' => __('Academic Feedback').' - '.__('Yes'),
+                            'without_academic_feedback' => __('Academic Feedback').' - '.__('No'),
+                        ])
+                        ->native(false),
+                ])
+                ->query(function (Builder $query, array $data): Builder {
+                    return match ($data['status'] ?? null) {
+                        'with_company_feedback' => $query->whereNotNull('company_feedback')->where('company_feedback', '!=', ''),
+                        'without_company_feedback' => $query->where(fn (Builder $query): Builder => $query->whereNull('company_feedback')->orWhere('company_feedback', '')),
+                        'with_academic_feedback' => $query->whereNotNull('academic_feedback')->where('academic_feedback', '!=', ''),
+                        'without_academic_feedback' => $query->where(fn (Builder $query): Builder => $query->whereNull('academic_feedback')->orWhere('academic_feedback', '')),
+                        default => $query,
+                    };
+                }),
         ];
+    }
+
+    protected function applyDateRangeFilter(Builder $query, array $data, string $column): Builder
+    {
+        return $query
+            ->when(
+                $data['from'] ?? null,
+                fn (Builder $query, $date): Builder => $query->whereDate($column, '>=', Carbon::parse($date)->toDateString())
+            )
+            ->when(
+                $data['until'] ?? null,
+                fn (Builder $query, $date): Builder => $query->whereDate($column, '<=', Carbon::parse($date)->toDateString())
+            );
+    }
+
+    protected function dateRangeIndicators(array $data): array
+    {
+        $indicators = [];
+
+        if (! empty($data['from'])) {
+            $indicators[] = Indicator::make(__('From Date').': '.Carbon::parse($data['from'])->toDateString())
+                ->removeField('from');
+        }
+
+        if (! empty($data['until'])) {
+            $indicators[] = Indicator::make(__('Until Date').': '.Carbon::parse($data['until'])->toDateString())
+                ->removeField('until');
+        }
+
+        return $indicators;
+    }
+
+    protected function reportCompanyOptions(): array
+    {
+        return Company::query()
+            ->with('translations')
+            ->whereHas('studentCompanies', function (Builder $query): void {
+                $this->applyStudentCompanyVisibilityScope($query);
+
+                if (filled($this->filters['student_id'] ?? null)) {
+                    $query->where('student_id', $this->filters['student_id']);
+                }
+
+                if (filled($this->filters['student_company_id'] ?? null)) {
+                    $query->whereKey($this->filters['student_company_id']);
+                }
+            })
+            ->orderBy('id')
+            ->get()
+            ->pluck('name', 'id')
+            ->toArray();
     }
 
     protected function getTableActions(): array
