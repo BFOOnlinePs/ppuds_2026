@@ -18,6 +18,7 @@ use Spatie\QueryBuilder\AllowedSort;
  * @OA\Xml(name="LeaveRequestResource"),
  * @OA\Property(property="id", type="integer", example=1),
  * @OA\Property(property="student_company_id", type="integer", example=5),
+ * @OA\Property(property="supervisor_id", type="integer", example=3),
  * @OA\Property(property="type", type="string", example="leave"),
  * @OA\Property(property="start_at", type="string", format="date-time", example="2024-05-20 08:00:00"),
  * @OA\Property(property="end_at", type="string", format="date-time", example="2024-05-20 10:00:00"),
@@ -38,12 +39,15 @@ class LeaveRequestResource extends JsonResource
         return [
             'id'                            => $this->id,
             'student_company_id'            => $this->student_company_id,
+            'supervisor_id'                  => $this->studentCompany?->registration?->supervisor_id,
             'type'                          => $this->type,
             'start_at'                      => $this->start_at,
             'end_at'                        => $this->end_at,
             'reason'                        => $this->reason,
             'company_approval'              => $this->company_approval,
             'university_approval'           => $this->university_approval,
+            'company_supervisor_id'          => $this->company_supervisor_id,
+            'university_supervisor_id'       => $this->university_supervisor_id,
             'company_supervisor_comment'    => $this->company_supervisor_comment,
             'university_supervisor_comment' => $this->university_supervisor_comment,
             'rejection_reason'              => $this->rejection_reason,
@@ -64,6 +68,8 @@ class LeaveRequestResource extends JsonResource
             'reason',
             'company_approval',
             'university_approval',
+            'company_supervisor_id',
+            'university_supervisor_id',
             'rejection_reason',
             'created_by',
         ];
@@ -79,6 +85,8 @@ class LeaveRequestResource extends JsonResource
             AllowedFilter::exact('university_approval'),
             AllowedFilter::exact('created_by'),
             AllowedFilter::exact('created_at'),
+            AllowedFilter::exact('company_supervisor_id'),
+            AllowedFilter::exact('university_supervisor_id'),
 
             AllowedFilter::callback('company_supervisor', function (Builder $query, $value) {
                 $query->whereHas('studentCompany', function ($query) use ($value) {
@@ -91,12 +99,14 @@ class LeaveRequestResource extends JsonResource
             }),
 
             AllowedFilter::callback('university_supervisor', function (Builder $query, $value) {
-                $query->whereHas('studentCompany', function ($query) use ($value) {
-                    $query->whereHas('branch', function ($branchQuery) use ($value) {
-                        $branchQuery->whereHas('departments', function ($departmentQuery) use ($value) {
-                            $departmentQuery->where('user_id', $value);
-                        });
-                    });
+                $query->whereHas('studentCompany.registration', function (Builder $registrationQuery) use ($value) {
+                    $registrationQuery->where('supervisor_id', $value);
+                });
+            }),
+
+            AllowedFilter::callback('supervisor_id', function (Builder $query, $value) {
+                $query->whereHas('studentCompany.registration', function (Builder $registrationQuery) use ($value) {
+                    $registrationQuery->where('supervisor_id', $value);
                 });
             }),
 
@@ -129,8 +139,12 @@ class LeaveRequestResource extends JsonResource
         return [
             'createdBy',
             'studentCompany',
+            'studentCompany.registration',
+            'studentCompany.registration.supervisor',
             'studentCompany.student',
             'studentCompany.company',
+            'companySupervisor',
+            'universitySupervisor',
         ];
     }
 }

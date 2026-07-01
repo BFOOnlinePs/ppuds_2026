@@ -44,6 +44,14 @@ class LeaveRequestController extends Controller
      * ),
      *
      * @OA\Parameter(
+     * name="filter[supervisor_id]",
+     * in="query",
+     * description="Filter by university supervisor ID from the student's registration",
+     *
+     * @OA\Schema(type="integer", example=3)
+     * ),
+     *
+     * @OA\Parameter(
      * name="filter[type]",
      * in="query",
      * description="Filter by type (leave, absence)",
@@ -79,7 +87,7 @@ class LeaveRequestController extends Controller
             ->allowedFilters(LeaveRequestResource::allowedFilters())
             ->allowedSorts(LeaveRequestResource::allowedSorts())
             ->allowedIncludes(LeaveRequestResource::allowedIncludes())
-            ->with(['media'])
+            ->with(['media', 'studentCompany.registration'])
             ->paginate($perPage)
             ->appends(request()->query());
 
@@ -150,7 +158,7 @@ class LeaveRequestController extends Controller
         app(PpudsNotificationService::class)->leaveRequestCreated($leaveRequest);
 
         return $this->successResponse(
-            new LeaveRequestResource($leaveRequest),
+            new LeaveRequestResource($leaveRequest->loadMissing('studentCompany.registration')),
             __('Leave Request created successfully'),
             201
         );
@@ -178,6 +186,7 @@ class LeaveRequestController extends Controller
             ->where('id', $leaveRequest->id)
             ->allowedFields(LeaveRequestResource::allowedFields())
             ->allowedIncludes(LeaveRequestResource::allowedIncludes())
+            ->with(['media', 'studentCompany.registration'])
             ->firstOrFail();
 
         return $this->successResponse(
@@ -245,7 +254,7 @@ class LeaveRequestController extends Controller
         }
 
         return $this->successResponse(
-            new LeaveRequestResource($leaveRequest->refresh()),
+            new LeaveRequestResource($leaveRequest->refresh()->loadMissing('studentCompany.registration')),
             __('Leave Request updated successfully')
         );
     }
