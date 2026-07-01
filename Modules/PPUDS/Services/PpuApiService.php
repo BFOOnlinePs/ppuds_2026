@@ -338,6 +338,16 @@ class PpuApiService
 
         $url = $this->ppuApiUrl('/api/DualStudies/Company/Add');
 
+        if ($supervisorId) {
+            Log::info('Sending company supervisor to PPU add company API', [
+                'company_id' => $company->id,
+                'old_company_id' => $company->old_company_id,
+                'supervisor_id' => $supervisorId,
+                'url' => $url,
+                'payload' => $this->redactUniversityCompanyPayload($payload),
+            ]);
+        }
+
         try {
             $response = Http::withHeaders([
                 'Accept' => 'application/json',
@@ -360,6 +370,16 @@ class PpuApiService
 
         $responseData = $response->json() ?? [];
         $universityCompanyId = $this->universityCompanyIdFromResponse($responseData);
+
+        if ($supervisorId) {
+            Log::info('PPU add company API response for supervisor sync', [
+                'company_id' => $company->id,
+                'old_company_id' => $company->old_company_id,
+                'supervisor_id' => $supervisorId,
+                'status' => $response->status(),
+                'response' => $responseData ?: $response->body(),
+            ]);
+        }
 
         if (! $response->successful()) {
             if ($this->companyAlreadyExistsResponse($response, $responseData)) {
@@ -685,25 +705,59 @@ class PpuApiService
     {
         $supervisor = $this->companySupervisorForUniversityPayload($company, $supervisorId);
         $branch = $company->branches->first();
-        $email = $supervisor?->email ?: $branch?->email;
-        $mobile = $supervisor?->phone ?: $branch?->phone;
+        $email = filled($supervisor?->email) ? strtolower(trim((string) $supervisor->email)) : $branch?->email;
+        $mobile = $this->normalizeUniversityCompanyPhone($supervisor?->phone ?: $branch?->phone);
 
         if (blank($email) || blank($mobile)) {
             return null;
         }
 
-        $resolvedPassword = $password ?: ($supervisor?->phone ?: '');
+        $resolvedPassword = $password ?: $mobile;
 
-        return [
+        $payload = [
             'caName' => $this->companyName($company, 'ar'),
             'ceName' => $this->companyName($company, 'en'),
             'cpaName' => $supervisor?->name ?: $this->companyName($company, 'ar'),
             'cpeName' => $supervisor?->name_en ?: ($supervisor?->name ?: $this->companyName($company, 'en')),
+            'email' => $email,
             'email2' => $email,
             'mobile' => $mobile,
+            'phone' => $mobile,
             'pw' => $resolvedPassword,
+            'password' => $resolvedPassword,
+            'username' => $mobile,
             'userName' => $mobile,
         ];
+
+        if (filled($company->old_company_id)) {
+            $payload['oldCompanyId'] = (int) $company->old_company_id;
+            $payload['companyId'] = (int) $company->old_company_id;
+            $payload['companyID'] = (int) $company->old_company_id;
+            $payload['cId'] = (int) $company->old_company_id;
+            $payload['c_id'] = (int) $company->old_company_id;
+        }
+
+        return $payload;
+    }
+
+    private function normalizeUniversityCompanyPhone(?string $phone): ?string
+    {
+        if (blank($phone)) {
+            return null;
+        }
+
+        return preg_replace('/\s+/', '', trim((string) $phone));
+    }
+
+    private function redactUniversityCompanyPayload(array $payload): array
+    {
+        foreach (['pw', 'password'] as $key) {
+            if (array_key_exists($key, $payload)) {
+                $payload[$key] = '***';
+            }
+        }
+
+        return $payload;
     }
 
     private function syncedCompanyWithSameName(Company $company): ?Company

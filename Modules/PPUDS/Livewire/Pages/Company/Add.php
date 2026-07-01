@@ -754,7 +754,7 @@ class Add extends Component implements HasActions, HasForms
                 $company->refresh(),
                 $password,
                 $supervisor['id'],
-                sendEvenIfCompanyExists: $index > 0 || ($supervisor['was_created'] ?? false),
+                sendEvenIfCompanyExists: true,
             );
 
             if (($result['operation'] ?? null) === 'already_exists') {
