@@ -2,6 +2,7 @@
 
 namespace Modules\PPUDS\Entities;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -127,6 +128,13 @@ class LeaveRequest extends Model implements HasMedia
     public function studentCompany(): BelongsTo
     {
         return $this->belongsTo(StudentCompany::class, 'student_company_id');
+    }
+
+    public function scopeForUniversitySupervisor(Builder $query, int $supervisorId): Builder
+    {
+        return $query->whereHas('studentCompany.registration', function (Builder $registrationQuery) use ($supervisorId) {
+            $registrationQuery->where('supervisor_id', $supervisorId);
+        });
     }
 
     public function getDurationAttribute()

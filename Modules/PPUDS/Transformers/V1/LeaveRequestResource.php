@@ -2,7 +2,6 @@
 
 namespace Modules\PPUDS\Transformers\V1;
 
-use Doctrine\DBAL\Query;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -99,15 +98,11 @@ class LeaveRequestResource extends JsonResource
             }),
 
             AllowedFilter::callback('university_supervisor', function (Builder $query, $value) {
-                $query->whereHas('studentCompany.registration', function (Builder $registrationQuery) use ($value) {
-                    $registrationQuery->where('supervisor_id', $value);
-                });
+                $query->forUniversitySupervisor((int) self::filterValue($value));
             }),
 
             AllowedFilter::callback('supervisor_id', function (Builder $query, $value) {
-                $query->whereHas('studentCompany.registration', function (Builder $registrationQuery) use ($value) {
-                    $registrationQuery->where('supervisor_id', $value);
-                });
+                $query->forUniversitySupervisor((int) self::filterValue($value));
             }),
 
             AllowedFilter::callback('student_name', function (Builder $query, $value) {
@@ -146,5 +141,10 @@ class LeaveRequestResource extends JsonResource
             'companySupervisor',
             'universitySupervisor',
         ];
+    }
+
+    private static function filterValue(mixed $value): mixed
+    {
+        return is_array($value) ? reset($value) : $value;
     }
 }
