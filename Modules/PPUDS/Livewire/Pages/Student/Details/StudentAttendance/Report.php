@@ -5,16 +5,15 @@ namespace Modules\PPUDS\Livewire\Pages\Student\Details\StudentAttendance;
 use App\View\Components\AppLayout;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Section;
-use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\HtmlString;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
@@ -39,7 +38,10 @@ class Report extends Component implements HasForms
 
         $this->report = $studentAttendance->studentReport;
 
-        $this->form->fill($this->report?->toArray());
+        $this->form->fill(array_merge(
+            ['student_attendance_id' => $this->attendance->id],
+            $this->report?->toArray() ?? [],
+        ));
     }
 
     public function form(Form $form): Form
@@ -56,6 +58,9 @@ class Report extends Component implements HasForms
                                 ->description(__('Write your daily report and attach files.'))
                                 ->icon('heroicon-o-document-text')
                                 ->schema([
+                                    Hidden::make('student_attendance_id')
+                                        ->default(fn (): int => $this->attendance->id)
+                                        ->required(),
 
                                     RichEditor::make('report_text')
                                         ->label(__('Report Content'))
@@ -65,10 +70,9 @@ class Report extends Component implements HasForms
                                         ])
                                         ->columnSpanFull(),
 
-                                    SpatieMediaLibraryFileUpload::make('file_report')
+                                    FileUpload::make('file_report')
                                         ->label(__('Attachment (Image/File)'))
-                                        ->disk('student_reports')
-                                        ->collection('file_report')
+                                        ->storeFiles(false)
                                         ->acceptedFileTypes([
                                             'application/pdf',
                                             'application/msword',
@@ -140,20 +144,20 @@ class Report extends Component implements HasForms
 
     public function save()
     {
-        $this->validate();
+        $data = $this->form->getState();
 
-        DB::transaction(function () {
+        DB::transaction(function () use ($data) {
 
             $report = $this->attendance->studentReport()->updateOrCreate(
                 ['student_attendance_id' => $this->attendance->id],
                 [
-                    'report_text' => $this->data['report_text'],
+                    'report_text' => $data['report_text'],
                     'created_by'  => auth()->id(),
                 ]
             );
 
-            if (!empty($this->data['file_report'])) {
-                foreach ($this->data['file_report'] as $file)
+            if (!empty($data['file_report'])) {
+                foreach ($data['file_report'] as $file)
                 {
                     $report->addImage($file);
                 }

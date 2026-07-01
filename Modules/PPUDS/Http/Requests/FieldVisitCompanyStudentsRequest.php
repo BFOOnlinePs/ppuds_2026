@@ -12,6 +12,7 @@ class FieldVisitCompanyStudentsRequest extends FormRequest
     {
         return [
             'company_id' => ['required', 'integer', Rule::exists((new Company)->getTable(), 'id')],
+            'supervisor_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
             'search' => ['nullable', 'string', 'max:255'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ];

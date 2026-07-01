@@ -159,6 +159,7 @@ class FieldVisitController extends Controller
      * security={{"sanctum": {}}},
      *
      * @OA\Parameter(name="company_id", in="query", required=true, @OA\Schema(type="integer", example=1)),
+     * @OA\Parameter(name="supervisor_id", in="query", required=false, @OA\Schema(type="integer", example=3)),
      * @OA\Parameter(name="search", in="query", required=false, @OA\Schema(type="string", example="Ahmad")),
      * @OA\Parameter(name="per_page", in="query", required=false, @OA\Schema(type="integer", example=25)),
      *
@@ -174,6 +175,11 @@ class FieldVisitController extends Controller
 
         $students = $this->currentSemesterStudentCompanyQuery()
             ->where('company_id', $data['company_id'])
+            ->when($data['supervisor_id'] ?? null, function (Builder $query, int $supervisorId): void {
+                $query->whereHas('registration', function (Builder $registrationQuery) use ($supervisorId): void {
+                    $registrationQuery->where('supervisor_id', $supervisorId);
+                });
+            })
             ->with([
                 'student.media',
                 'student.studentProfile.major',
