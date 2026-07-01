@@ -57,8 +57,21 @@ class StudentAttendanceResource extends JsonResource
             AllowedFilter::exact('id'),
             AllowedFilter::exact('student_company_id'),
             AllowedFilter::exact('status'),
-            AllowedFilter::scope('date_between'),
-            AllowedFilter::exact('attendance_date'),
+            AllowedFilter::callback('attendance_date', fn (Builder $query, $value) => $query->whereDate('attendance_date', self::filterValue($value))),
+            AllowedFilter::callback('attendance_date_from', function (Builder $query, $value) {
+                self::whereAttendanceDateInRange(
+                    $query,
+                    $value,
+                    request()->input('filter.attendance_date_to')
+                );
+            }),
+            AllowedFilter::callback('attendance_date_to', function (Builder $query, $value) {
+                if (filled(request()->input('filter.attendance_date_from'))) {
+                    return;
+                }
+
+                self::whereAttendanceDateInRange($query, null, $value);
+            }),
 
             AllowedFilter::callback('student_id', function (Builder $query, $value) {
                 $query->whereHas('studentCompany.registration', function ($query) use ($value) {
@@ -95,5 +108,24 @@ class StudentAttendanceResource extends JsonResource
     public static function allowedIncludes(): array
     {
         return ['studentCompany', 'studentCompany.student', 'createdBy', 'studentCompany.company'];
+    }
+
+    private static function whereAttendanceDateInRange(Builder $query, mixed $from, mixed $to): void
+    {
+        $from = self::filterValue($from);
+        $to = self::filterValue($to);
+
+        if (filled($from)) {
+            $query->whereDate('attendance_date', '>=', $from);
+        }
+
+        if (filled($to)) {
+            $query->whereDate('attendance_date', '<=', $to);
+        }
+    }
+
+    private static function filterValue(mixed $value): mixed
+    {
+        return is_array($value) ? reset($value) : $value;
     }
 }

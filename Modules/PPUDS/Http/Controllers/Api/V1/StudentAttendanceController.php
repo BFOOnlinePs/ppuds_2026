@@ -10,6 +10,7 @@ use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\StudentAttendance;
 use Modules\PPUDS\Enums\AttendanceStatus;
 use Modules\PPUDS\Http\Controllers\Api\V1\Concerns\EnsuresCurrentRegistration;
+use Modules\PPUDS\Http\Requests\StudentAttendanceIndexRequest;
 use Modules\PPUDS\Http\Requests\StudentAttendanceRequest;
 use Modules\PPUDS\Http\Requests\StudentAttendanceRequestUpdate;
 use Modules\PPUDS\Services\PpudsNotificationService;
@@ -59,12 +60,30 @@ class StudentAttendanceController extends Controller
      * ),
      *
      * @OA\Parameter(
-     * name="filter[status]",
+     * name="filter[attendance_date_from]",
      * in="query",
-     * description="Filter by status (present, absent, late, excused)",
+     * description="Filter by attendance date from (YYYY-MM-DD)",
      * required=false,
      *
-     * @OA\Schema(type="string", example="present")
+     * @OA\Schema(type="string", format="date", example="2026-07-01")
+     * ),
+     *
+     * @OA\Parameter(
+     * name="filter[attendance_date_to]",
+     * in="query",
+     * description="Filter by attendance date to (YYYY-MM-DD)",
+     * required=false,
+     *
+     * @OA\Schema(type="string", format="date", example="2026-07-31")
+     * ),
+     *
+     * @OA\Parameter(
+     * name="filter[status]",
+     * in="query",
+     * description="Filter by attendance status enum value",
+     * required=false,
+     *
+     * @OA\Schema(type="integer", example=1)
      * ),
      *
      * @OA\Parameter(
@@ -134,8 +153,10 @@ class StudentAttendanceController extends Controller
      * @OA\Response(response=401, description="Unauthenticated")
      * )
      */
-    public function index()
+    public function index(StudentAttendanceIndexRequest $request)
     {
+        $perPage = min((int) $request->input('per_page', 15), config('core.pagination.max_per_page', 100));
+
         $attendances = QueryBuilder::for(StudentAttendance::query()
             ->whereHas(
                 'studentCompany',
@@ -145,7 +166,8 @@ class StudentAttendanceController extends Controller
             ->allowedSorts(StudentAttendanceResource::allowedSorts())
             ->allowedIncludes(StudentAttendanceResource::allowedIncludes())
             ->defaultSort('-attendance_date')
-            ->paginate(request('per_page', 15));
+            ->paginate($perPage)
+            ->appends($request->query());
 
         return $this->successResponse(
             StudentAttendanceResource::collection($attendances),
