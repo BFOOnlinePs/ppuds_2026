@@ -161,6 +161,10 @@ class FieldVisitController extends Controller
      * @OA\Parameter(name="filter[company_id]", in="query", required=true, @OA\Schema(type="integer", example=1)),
      * @OA\Parameter(name="filter[supervisor_id]", in="query", required=false, @OA\Schema(type="integer", example=3)),
      * @OA\Parameter(name="filter[search]", in="query", required=false, @OA\Schema(type="string", example="Ahmad")),
+     * @OA\Parameter(name="filter[visit_date]", in="query", required=false, @OA\Schema(type="string", format="date", example="2026-07-01")),
+     * @OA\Parameter(name="filter[without_visit_date]", in="query", required=false, @OA\Schema(type="string", format="date", example="2026-07-01")),
+     * @OA\Parameter(name="filter[visit_date_from]", in="query", required=false, @OA\Schema(type="string", format="date", example="2026-07-01")),
+     * @OA\Parameter(name="filter[visit_date_to]", in="query", required=false, @OA\Schema(type="string", format="date", example="2026-07-31")),
      * @OA\Parameter(name="per_page", in="query", required=false, @OA\Schema(type="integer", example=25)),
      *
      * @OA\Response(response=200, description="Company students retrieved successfully")

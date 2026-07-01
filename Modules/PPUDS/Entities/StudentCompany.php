@@ -159,6 +159,11 @@ class StudentCompany extends Model implements HasMedia
         return $this->hasMany(LeaveRequest::class, 'student_company_id');
     }
 
+    public function fieldVisits(): HasMany
+    {
+        return $this->hasMany(FieldVisit::class, 'student_company_id');
+    }
+
     public function scopeWithAttendanceDays($query)
     {
         return $query->withCount([

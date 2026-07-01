@@ -108,6 +108,34 @@ class StudentCompanyResource extends JsonResource
                 });
             }),
 
+            AllowedFilter::callback('visit_date', function (Builder $query, $value) {
+                $query->whereHas('fieldVisits', function (Builder $visitQuery) use ($value) {
+                    $visitQuery->whereDate('visit_date', self::filterValue($value));
+                });
+            }),
+
+            AllowedFilter::callback('without_visit_date', function (Builder $query, $value) {
+                $query->whereDoesntHave('fieldVisits', function (Builder $visitQuery) use ($value) {
+                    $visitQuery->whereDate('visit_date', self::filterValue($value));
+                });
+            }),
+
+            AllowedFilter::callback('visit_date_from', function (Builder $query, $value) {
+                self::whereHasFieldVisitInDateRange(
+                    $query,
+                    $value,
+                    request()->input('filter.visit_date_to')
+                );
+            }),
+
+            AllowedFilter::callback('visit_date_to', function (Builder $query, $value) {
+                if (filled(request()->input('filter.visit_date_from'))) {
+                    return;
+                }
+
+                self::whereHasFieldVisitInDateRange($query, null, $value);
+            }),
+
             AllowedFilter::callback('semester', function (Builder $query, $value) {
                 $query->whereHas('registration', function (Builder $registrationQuery) use ($value) {
                     $registrationQuery->where('semester', $value);
@@ -148,5 +176,26 @@ class StudentCompanyResource extends JsonResource
             'branch.departments.user',
             'branch.departments.supervisors',
         ];
+    }
+
+    private static function whereHasFieldVisitInDateRange(Builder $query, mixed $from, mixed $to): void
+    {
+        $from = self::filterValue($from);
+        $to = self::filterValue($to);
+
+        $query->whereHas('fieldVisits', function (Builder $visitQuery) use ($from, $to) {
+            if (filled($from)) {
+                $visitQuery->whereDate('visit_date', '>=', $from);
+            }
+
+            if (filled($to)) {
+                $visitQuery->whereDate('visit_date', '<=', $to);
+            }
+        });
+    }
+
+    private static function filterValue(mixed $value): mixed
+    {
+        return is_array($value) ? reset($value) : $value;
     }
 }
