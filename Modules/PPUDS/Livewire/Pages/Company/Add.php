@@ -54,6 +54,8 @@ class Add extends Component implements HasActions, HasForms
 
     public array $createdCompanySupervisorIds = [];
 
+    public array $pendingCreatedSupervisorAssignments = [];
+
     public function mount()
     {
         $this->form->fill();
@@ -466,7 +468,7 @@ class Add extends Component implements HasActions, HasForms
                                                                                     TextInput::make('password_confirmation')->required()->password(),
                                                                                 ]),
                                                                             ])
-                                                                            ->createOptionUsing(function (array $data, Set $set) {
+                                                                            ->createOptionUsing(function (array $data, Get $get, Set $set) {
                                                                                 if (User::where('email', $data['email'])->exists()) {
                                                                                     throw ValidationException::withMessages([
                                                                                         'email' => __('This email is already taken'),
@@ -480,6 +482,7 @@ class Add extends Component implements HasActions, HasForms
 
                                                                                 $supervisorId = (int) $user->getKey();
                                                                                 $this->rememberCreatedCompanySupervisor($supervisorId, $plainPassword);
+                                                                                $this->rememberPendingCreatedSupervisorAssignment($get, $supervisorId);
                                                                                 $set('user_id', (string) $supervisorId);
 
                                                                                 return (string) $supervisorId;
@@ -655,6 +658,7 @@ class Add extends Component implements HasActions, HasForms
 
         $this->validate();
         $this->data = $this->form->getState();
+        $this->mergePendingCreatedSupervisorAssignmentsIntoFormData();
 
         // 1. فصل بيانات الشركة الأساسية عن الفروع والشعار
         $companyData = Arr::except($this->data, ['branches', 'logo']);
@@ -831,6 +835,55 @@ class Add extends Component implements HasActions, HasForms
             ->unique()
             ->values()
             ->all();
+    }
+
+    private function rememberPendingCreatedSupervisorAssignment(Get $get, int $supervisorId): void
+    {
+        $departmentName = trim((string) $get('name'));
+
+        if (blank($departmentName)) {
+            return;
+        }
+
+        $this->pendingCreatedSupervisorAssignments[] = [
+            'branch_name' => trim((string) $get('../../name')),
+            'department_name' => $departmentName,
+            'user_id' => $supervisorId,
+        ];
+    }
+
+    private function mergePendingCreatedSupervisorAssignmentsIntoFormData(): void
+    {
+        if ($this->pendingCreatedSupervisorAssignments === []) {
+            return;
+        }
+
+        foreach ($this->pendingCreatedSupervisorAssignments as $assignment) {
+            foreach ($this->data['branches'] ?? [] as &$branch) {
+                if (filled($assignment['branch_name'] ?? null)
+                    && trim((string) ($branch['name'] ?? '')) !== $assignment['branch_name']) {
+                    continue;
+                }
+
+                foreach ($branch['departments'] ?? [] as &$department) {
+                    if (trim((string) ($department['name'] ?? '')) !== $assignment['department_name']) {
+                        continue;
+                    }
+
+                    $department['user_id'] = (int) $assignment['user_id'];
+                    continue 3;
+                }
+
+                $branch['departments'][] = [
+                    'name' => $assignment['department_name'],
+                    'user_id' => (int) $assignment['user_id'],
+                ];
+
+                continue 2;
+            }
+
+            unset($department, $branch);
+        }
     }
 
     private function syncDepartmentsForBranch(Branch $branch, array $departmentsData): void
