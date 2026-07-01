@@ -158,9 +158,9 @@ class FieldVisitController extends Controller
      * tags={"Field Visits"},
      * security={{"sanctum": {}}},
      *
-     * @OA\Parameter(name="company_id", in="query", required=true, @OA\Schema(type="integer", example=1)),
-     * @OA\Parameter(name="supervisor_id", in="query", required=false, @OA\Schema(type="integer", example=3)),
-     * @OA\Parameter(name="search", in="query", required=false, @OA\Schema(type="string", example="Ahmad")),
+     * @OA\Parameter(name="filter[company_id]", in="query", required=true, @OA\Schema(type="integer", example=1)),
+     * @OA\Parameter(name="filter[supervisor_id]", in="query", required=false, @OA\Schema(type="integer", example=3)),
+     * @OA\Parameter(name="filter[search]", in="query", required=false, @OA\Schema(type="string", example="Ahmad")),
      * @OA\Parameter(name="per_page", in="query", required=false, @OA\Schema(type="integer", example=25)),
      *
      * @OA\Response(response=200, description="Company students retrieved successfully")
@@ -168,18 +168,12 @@ class FieldVisitController extends Controller
      */
     public function companyStudents(FieldVisitCompanyStudentsRequest $request)
     {
-        $data = $request->validated();
         $defaultPerPage = config('core.pagination.per_page', 10);
         $maxPerPage = config('core.pagination.max_per_page', 100);
-        $perPage = min((int) ($data['per_page'] ?? $defaultPerPage), $maxPerPage);
+        $perPage = min((int) $request->validated('per_page', $defaultPerPage), $maxPerPage);
 
-        $students = $this->currentSemesterStudentCompanyQuery()
-            ->where('company_id', $data['company_id'])
-            ->when($data['supervisor_id'] ?? null, function (Builder $query, int $supervisorId): void {
-                $query->whereHas('registration', function (Builder $registrationQuery) use ($supervisorId): void {
-                    $registrationQuery->where('supervisor_id', $supervisorId);
-                });
-            })
+        $students = QueryBuilder::for($this->currentSemesterStudentCompanyQuery())
+            ->allowedFilters(StudentCompanyResource::allowedFilters())
             ->with([
                 'student.media',
                 'student.studentProfile.major',
@@ -189,20 +183,6 @@ class FieldVisitController extends Controller
                 'branch',
                 'department',
             ])
-            ->when($data['search'] ?? null, function (Builder $query, string $search): void {
-                $query->where(function (Builder $query) use ($search): void {
-                    $query
-                        ->whereHas('student', function (Builder $studentQuery) use ($search): void {
-                            $studentQuery
-                                ->where('name', 'like', "%{$search}%")
-                                ->orWhere('email', 'like', "%{$search}%")
-                                ->orWhere('phone', 'like', "%{$search}%");
-                        })
-                        ->orWhereHas('student.studentProfile', function (Builder $profileQuery) use ($search): void {
-                            $profileQuery->where('student_number', 'like', "%{$search}%");
-                        });
-                });
-            })
             ->orderBy('student_id')
             ->paginate($perPage)
             ->appends($request->query());
