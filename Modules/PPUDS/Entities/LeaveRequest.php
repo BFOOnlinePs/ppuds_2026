@@ -132,8 +132,15 @@ class LeaveRequest extends Model implements HasMedia
 
     public function scopeForUniversitySupervisor(Builder $query, int $supervisorId): Builder
     {
-        return $query->whereHas('studentCompany.registration', function (Builder $registrationQuery) use ($supervisorId) {
-            $registrationQuery->where('supervisor_id', $supervisorId);
+        $studentCompanyTable = (new StudentCompany())->getTable();
+        $registrationTable = (new Registration())->getTable();
+
+        return $query->whereIn('student_company_id', function ($studentCompanyQuery) use ($studentCompanyTable, $registrationTable, $supervisorId) {
+            $studentCompanyQuery
+                ->select("{$studentCompanyTable}.id")
+                ->from($studentCompanyTable)
+                ->join($registrationTable, "{$studentCompanyTable}.registration_id", '=', "{$registrationTable}.id")
+                ->where("{$registrationTable}.supervisor_id", $supervisorId);
         });
     }
 
