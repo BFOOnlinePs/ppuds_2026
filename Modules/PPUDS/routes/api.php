@@ -171,6 +171,8 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
                 ->group(function () {
                     Route::get('/', 'index')->name('index');
                     Route::post('/', 'store')->name('store');
+                    Route::get('/company-students', 'companyStudents')->name('company-students');
+                    Route::post('/bulk', 'bulkStore')->name('bulk-store');
                     Route::get('/{fieldVisit}', 'show')->name('show');
                     Route::patch('/{fieldVisit}', 'update')->name('update');
                 });

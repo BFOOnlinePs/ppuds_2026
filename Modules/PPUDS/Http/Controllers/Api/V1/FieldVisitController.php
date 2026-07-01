@@ -3,12 +3,20 @@
 namespace Modules\PPUDS\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\FieldVisit;
+use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Http\Controllers\Api\V1\Concerns\EnsuresCurrentRegistration;
+use Modules\PPUDS\Http\Requests\BulkFieldVisitRequest;
+use Modules\PPUDS\Http\Requests\FieldVisitCompanyStudentsRequest;
 use Modules\PPUDS\Http\Requests\FieldVisitRequest;
 use Modules\PPUDS\Http\Requests\FieldVisitUpdate;
+use Modules\PPUDS\Settings\GeneralSettings;
+use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 use Modules\PPUDS\Transformers\V1\FieldVisitResource;
+use Modules\PPUDS\Transformers\V1\StudentCompanyResource;
 use Spatie\QueryBuilder\QueryBuilder;
 
 /**
@@ -21,6 +29,7 @@ class FieldVisitController extends Controller
 {
     use ApiResponse;
     use EnsuresCurrentRegistration;
+    use ScopesStudentCompanyVisibility;
 
     /**
      * @OA\Get(
@@ -73,7 +82,7 @@ class FieldVisitController extends Controller
         $maxPerPage = config('core.pagination.max_per_page', 100);
         $perPage = min(request('per_page', $defaultPerPage), $maxPerPage);
 
-        $fieldVisits = QueryBuilder::for(FieldVisit::class)
+        $fieldVisits = QueryBuilder::for($this->visibleFieldVisitsQuery())
             ->allowedFields(FieldVisitResource::allowedFields())
             ->allowedFilters(FieldVisitResource::allowedFilters())
             ->allowedSorts(FieldVisitResource::allowedSorts())
@@ -122,6 +131,10 @@ class FieldVisitController extends Controller
     {
         $data = $request->validated();
 
+        if (! $this->canAccessStudentCompanyRecord((int) $data['student_company_id'])) {
+            return $this->errorResponse(__('You are not authorized to access this student company.'), 403);
+        }
+
         if ($response = $this->ensureStudentCompanyInCurrentSemester((int) $data['student_company_id'])) {
             return $response;
         }
@@ -133,6 +146,155 @@ class FieldVisitController extends Controller
         return $this->successResponse(
             new FieldVisitResource($fieldVisit),
             __('Field Visit created successfully'),
+            201
+        );
+    }
+
+    /**
+     * @OA\Get(
+     * path="/api/v1/ppuds/field-visits/company-students",
+     * summary="Get company students for bulk field visits",
+     * description="Choose a company and return current semester students available for bulk field visit creation.",
+     * tags={"Field Visits"},
+     * security={{"sanctum": {}}},
+     *
+     * @OA\Parameter(name="company_id", in="query", required=true, @OA\Schema(type="integer", example=1)),
+     * @OA\Parameter(name="search", in="query", required=false, @OA\Schema(type="string", example="Ahmad")),
+     * @OA\Parameter(name="per_page", in="query", required=false, @OA\Schema(type="integer", example=25)),
+     *
+     * @OA\Response(response=200, description="Company students retrieved successfully")
+     * )
+     */
+    public function companyStudents(FieldVisitCompanyStudentsRequest $request)
+    {
+        $data = $request->validated();
+        $defaultPerPage = config('core.pagination.per_page', 10);
+        $maxPerPage = config('core.pagination.max_per_page', 100);
+        $perPage = min((int) ($data['per_page'] ?? $defaultPerPage), $maxPerPage);
+
+        $students = $this->currentSemesterStudentCompanyQuery()
+            ->where('company_id', $data['company_id'])
+            ->with([
+                'student.media',
+                'student.studentProfile.major',
+                'registration.course',
+                'registration.supervisor',
+                'company',
+                'branch',
+                'department',
+            ])
+            ->when($data['search'] ?? null, function (Builder $query, string $search): void {
+                $query->where(function (Builder $query) use ($search): void {
+                    $query
+                        ->whereHas('student', function (Builder $studentQuery) use ($search): void {
+                            $studentQuery
+                                ->where('name', 'like', "%{$search}%")
+                                ->orWhere('email', 'like', "%{$search}%")
+                                ->orWhere('phone', 'like', "%{$search}%");
+                        })
+                        ->orWhereHas('student.studentProfile', function (Builder $profileQuery) use ($search): void {
+                            $profileQuery->where('student_number', 'like', "%{$search}%");
+                        });
+                });
+            })
+            ->orderBy('student_id')
+            ->paginate($perPage)
+            ->appends($request->query());
+
+        return $this->successResponse(
+            StudentCompanyResource::collection($students),
+            __('Company students retrieved successfully')
+        );
+    }
+
+    /**
+     * @OA\Post(
+     * path="/api/v1/ppuds/field-visits/bulk",
+     * summary="Create field visits for selected students",
+     * description="Create the same field visit for selected student company records from one company.",
+     * tags={"Field Visits"},
+     * security={{"sanctum": {}}},
+     *
+     * @OA\RequestBody(
+     * required=true,
+     *
+     * @OA\MediaType(
+     * mediaType="application/json",
+     *
+     * @OA\Schema(
+     * required={"company_id", "student_company_ids", "supervisor_id", "visiting_place", "visit_date", "visit_time", "visit_duration"},
+     *
+     * @OA\Property(property="company_id", type="integer", example=1),
+     * @OA\Property(property="student_company_ids", type="array", @OA\Items(type="integer"), example={10, 11, 12}),
+     * @OA\Property(property="supervisor_id", type="integer", example=3),
+     * @OA\Property(property="visiting_place", type="string", example="Main Office"),
+     * @OA\Property(property="visit_date", type="string", format="date", example="2026-07-01"),
+     * @OA\Property(property="visit_time", type="string", format="time", example="09:00:00"),
+     * @OA\Property(property="visit_duration", type="integer", example=60),
+     * @OA\Property(property="notes", type="string", nullable=true, example="Bulk field visit")
+     * )
+     * )
+     * ),
+     *
+     * @OA\Response(response=201, description="Field visits created successfully")
+     * )
+     */
+    public function bulkStore(BulkFieldVisitRequest $request)
+    {
+        $data = $request->validated();
+        $studentCompanyIds = $request->studentCompanyIds();
+
+        $studentCompanies = $this->currentSemesterStudentCompanyQuery()
+            ->where('company_id', $data['company_id'])
+            ->whereIn('id', $studentCompanyIds)
+            ->get();
+
+        if ($studentCompanies->count() !== count($studentCompanyIds)) {
+            return $this->errorResponse(
+                __('Some selected students are not available for this company in the current semester.'),
+                422
+            );
+        }
+
+        $visitData = [
+            'supervisor_id' => $data['supervisor_id'],
+            'visiting_place' => $data['visiting_place'],
+            'visit_date' => $data['visit_date'],
+            'visit_time' => $data['visit_time'],
+            'visit_duration' => $data['visit_duration'],
+            'notes' => $data['notes'] ?? null,
+        ];
+
+        $fieldVisitIds = DB::transaction(function () use ($studentCompanies, $visitData): array {
+            return $studentCompanies
+                ->map(function (StudentCompany $studentCompany) use ($visitData): int {
+                    $fieldVisit = FieldVisit::create([
+                        ...$visitData,
+                        'student_company_id' => $studentCompany->id,
+                        'created_by' => auth()->id(),
+                    ]);
+
+                    return $fieldVisit->id;
+                })
+                ->all();
+        });
+
+        $fieldVisits = FieldVisit::query()
+            ->whereIn('id', $fieldVisitIds)
+            ->with([
+                'studentCompany.student.media',
+                'studentCompany.student.studentProfile.major',
+                'studentCompany.company',
+                'studentCompany.branch',
+                'studentCompany.department',
+                'supervisor',
+                'createdBy',
+            ])
+            ->get();
+
+        return $this->successResponse(
+            FieldVisitResource::collection($fieldVisits),
+            __('Field Visits created successfully'),
             201
         );
     }
@@ -151,7 +313,7 @@ class FieldVisitController extends Controller
      */
     public function show(FieldVisit $fieldVisit)
     {
-        $fieldVisit = QueryBuilder::for(FieldVisit::class)
+        $fieldVisit = QueryBuilder::for($this->visibleFieldVisitsQuery())
             ->where('id', $fieldVisit->id)
             ->allowedFields(FieldVisitResource::allowedFields())
             ->allowedIncludes(FieldVisitResource::allowedIncludes())
@@ -193,11 +355,19 @@ class FieldVisitController extends Controller
      */
     public function update(FieldVisitUpdate $request, FieldVisit $fieldVisit)
     {
+        if (! $this->canAccessStudentCompanyRecord($fieldVisit->student_company_id)) {
+            return $this->errorResponse(__('You are not authorized to access this student company.'), 403);
+        }
+
         if ($response = $this->ensureRelatedStudentCompanyInCurrentSemester($fieldVisit)) {
             return $response;
         }
 
         if ($request->filled('student_company_id')) {
+            if (! $this->canAccessStudentCompanyRecord((int) $request->student_company_id)) {
+                return $this->errorResponse(__('You are not authorized to access this student company.'), 403);
+            }
+
             if ($response = $this->ensureStudentCompanyInCurrentSemester((int) $request->student_company_id)) {
                 return $response;
             }
@@ -208,6 +378,28 @@ class FieldVisitController extends Controller
         return $this->successResponse(
             new FieldVisitResource($fieldVisit->refresh()),
             __('Field Visit updated successfully')
+        );
+    }
+
+    private function visibleFieldVisitsQuery(): Builder
+    {
+        return FieldVisit::query()
+            ->whereHas('studentCompany', function (Builder $query): void {
+                $this->applyStudentCompanyVisibilityScope($query);
+            });
+    }
+
+    private function currentSemesterStudentCompanyQuery(): Builder
+    {
+        $settings = app(GeneralSettings::class);
+
+        return $this->applyStudentCompanyVisibilityScope(
+            StudentCompany::query()
+                ->whereHas('registration', function (Builder $query) use ($settings): void {
+                    $query
+                        ->where('year', $settings->year)
+                        ->where('semester', $settings->semester_type->value);
+                })
         );
     }
 }
