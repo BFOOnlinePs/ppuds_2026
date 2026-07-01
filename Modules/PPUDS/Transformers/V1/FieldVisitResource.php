@@ -40,6 +40,8 @@ class FieldVisitResource extends JsonResource
             'visit_time'         => $this->visit_time,
             'visit_duration'     => $this->visit_duration,
             'notes'              => $this->notes,
+            'created_at'         => $this->created_at,
+            'updated_at'         => $this->updated_at,
             'student_company'    => $this->whenLoaded('studentCompany'),
             'supervisor'         => $this->whenLoaded('supervisor'),
             'created_by'         => $this->whenLoaded('createdBy'),
@@ -58,6 +60,8 @@ class FieldVisitResource extends JsonResource
             'visit_duration',
             'notes',
             'created_by',
+            'created_at',
+            'updated_at',
         ];
     }
 
@@ -70,6 +74,8 @@ class FieldVisitResource extends JsonResource
             AllowedFilter::partial('visiting_place'),
             AllowedFilter::exact('visit_date'),
             AllowedFilter::exact('created_by'),
+            AllowedFilter::exact('created_at'),
+            AllowedFilter::exact('updated_at'),
 
             AllowedFilter::callback('university_supervisor', function (Builder $query, $value) {
                 $query->whereHas('studentCompany.registration', function (Builder $query) use ($value) {
@@ -93,6 +99,7 @@ class FieldVisitResource extends JsonResource
             AllowedSort::field('visit_date'),
             AllowedSort::field('visit_time'),
             AllowedSort::field('created_at'),
+            AllowedSort::field('updated_at'),
         ];
     }
 
