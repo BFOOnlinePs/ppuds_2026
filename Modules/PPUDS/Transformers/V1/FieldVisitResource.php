@@ -88,6 +88,12 @@ class FieldVisitResource extends JsonResource
                     $query->where('name', 'like', "%{$value}%");
                 });
             }),
+
+            AllowedFilter::callback('company_name', function (Builder $query, $value) {
+                $query->whereHas('studentCompany.company', function (Builder $query) use ($value) {
+                    $query->whereTranslationLike('name', "%{$value}%");
+                });
+            }),
         ];
     }
 
@@ -109,7 +115,9 @@ class FieldVisitResource extends JsonResource
             'createdBy',
             'studentCompany',
             'studentCompany.student',
-            'supervisor'
+            'studentCompany.company',
+            'supervisor',
+            'studentCompany.registration',
         ];
     }
 }
