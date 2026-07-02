@@ -63,8 +63,8 @@ class StudentAttendanceResource extends JsonResource
                 });
             }),
             AllowedFilter::callback('company_name', function (Builder $query, $value) {
-                $query->whereHas('studentCompany.company', function ($q) use ($value) {
-                    $q->where('name', 'like', "%{$value}%");
+                $query->whereHas('studentCompany.company', function (Builder $q) use ($value) {
+                    $q->whereTranslationLike('name', "%{$value}%");
                 });
             }),
             AllowedFilter::callback('attendance_date', fn(Builder $query, $value) => $query->whereDate('attendance_date', self::filterValue($value))),
