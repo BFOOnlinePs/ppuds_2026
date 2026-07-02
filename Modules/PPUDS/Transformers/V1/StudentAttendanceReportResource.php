@@ -103,6 +103,7 @@ class StudentAttendanceReportResource extends JsonResource
             'studentAttendance.studentCompany',
             'studentAttendance.studentCompany.student',
             'studentAttendance.studentCompany.company',
+            'studentAttendance.studentCompany.registration',
         ];
     }
 }
