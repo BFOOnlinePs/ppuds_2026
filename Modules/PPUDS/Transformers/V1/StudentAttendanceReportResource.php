@@ -77,6 +77,12 @@ class StudentAttendanceReportResource extends JsonResource
                     $q->where('student_company_id', $value);
                 });
             }),
+
+            AllowedFilter::callback('supervisor_id', function ($query, $value) {
+                $query->whereHas('studentAttendance.studentCompany.registration', function ($q) use ($value) {
+                    $q->where('supervisor_id', $value);
+                });
+            }),
         ];
     }
 
