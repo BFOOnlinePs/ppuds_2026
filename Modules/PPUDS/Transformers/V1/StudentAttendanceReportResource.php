@@ -74,12 +74,12 @@ class StudentAttendanceReportResource extends JsonResource
             AllowedFilter::scope('today'),
 
             AllowedFilter::callback('student_name', function (Builder $query, $value) {
-                $query->whereHas('studentCompany.student', function ($q) use ($value) {
+                $query->whereHas('studentAttendance.studentCompany.student', function ($q) use ($value) {
                     $q->where('name', 'like', "%{$value}%");
                 });
             }),
             AllowedFilter::callback('company_name', function (Builder $query, $value) {
-                $query->whereHas('studentCompany.company', function (Builder $q) use ($value) {
+                $query->whereHas('studentAttendance.studentCompany.company', function (Builder $q) use ($value) {
                     $q->whereTranslationLike('name', "%{$value}%");
                 });
             }),
