@@ -57,7 +57,7 @@ class StudentAttendanceResource extends JsonResource
             AllowedFilter::exact('id'),
             AllowedFilter::exact('student_company_id'),
             AllowedFilter::exact('status'),
-            AllowedFilter::callback('attendance_date', fn (Builder $query, $value) => $query->whereDate('attendance_date', self::filterValue($value))),
+            AllowedFilter::callback('attendance_date', fn(Builder $query, $value) => $query->whereDate('attendance_date', self::filterValue($value))),
             AllowedFilter::callback('attendance_date_from', function (Builder $query, $value) {
                 self::whereAttendanceDateInRange(
                     $query,
@@ -81,6 +81,11 @@ class StudentAttendanceResource extends JsonResource
             AllowedFilter::callback('company_id', function (Builder $query, $value) {
                 $query->whereHas('studentCompany.registration', function ($query) use ($value) {
                     $query->where('company_id', $value);
+                });
+            }),
+            AllowedFilter::callback('supervisor_id', function (Builder $query, $value) {
+                $query->whereHas('studentCompany.registration', function ($query) use ($value) {
+                    $query->where('supervisor_id', $value);
                 });
             }),
             AllowedFilter::callback('semester', function (Builder $query, $value) {
