@@ -6,9 +6,11 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Modules\Core\Entities\User;
 use Modules\Core\Enums\ImageQuality;
 use Modules\Core\Enums\ImageSize;
@@ -27,6 +29,9 @@ class LeaveRequest extends Model implements HasMedia
     use LogsActivity;
     use SoftDeletes;
     use InteractsWithMedia;
+
+    public const ATTACHMENT_COLLECTION = 'attachment_file';
+    public const ATTACHMENT_DISK = 'leave_requests';
 
     public function __construct(array $attributes = [])
     {
@@ -72,26 +77,30 @@ class LeaveRequest extends Model implements HasMedia
 
     public function registerMediaConversions(?Media $media = null): void
     {
+        if ($media !== null && ! str_starts_with((string) $media->mime_type, 'image/')) {
+            return;
+        }
+
         $this
-            ->addMediaConversion('attachment_file')
+            ->addMediaConversion(self::ATTACHMENT_COLLECTION)
             ->fit(Fit::Contain, 300, 300)
             ->nonQueued();
     }
 
-    public function addImage($file)
+    public function addAttachment($file): ?Media
     {
         if (is_array($file)) {
             $file = reset($file);
         }
 
         if (
-            !$file instanceof \Illuminate\Http\UploadedFile &&
-            !($file instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile)
+            ! $file instanceof UploadedFile &&
+            ! $file instanceof TemporaryUploadedFile
         ) {
             return null;
         }
 
-        $this->clearMediaCollection('attachment_file');
+        $this->clearMediaCollection(self::ATTACHMENT_COLLECTION);
 
         try {
             $originalName = $file->getClientOriginalName();
@@ -101,12 +110,14 @@ class LeaveRequest extends Model implements HasMedia
             $media = $this
                 ->addMedia($file)
                 ->usingFileName($fileName)
-                ->toMediaCollection('attachment_file', 'leave_requests');
+                ->toMediaCollection(self::ATTACHMENT_COLLECTION, self::ATTACHMENT_DISK);
 
-            $size = ImageSize::MEDIUM;
+            if (str_starts_with((string) $media->mime_type, 'image/')) {
+                $size = ImageSize::MEDIUM;
 
-            ImageService::optimize($media->getPath(), ImageQuality::HIGH->value);
-            ImageService::resize($media->getPath(), $size->width(), $size->height());
+                ImageService::optimize($media->getPath(), ImageQuality::HIGH->value);
+                ImageService::resize($media->getPath(), $size->width(), $size->height());
+            }
 
             return $media;
         } catch (\Exception $e) {
@@ -115,10 +126,24 @@ class LeaveRequest extends Model implements HasMedia
         }
     }
 
-
-    public function getAttachmentFileAttribute()
+    public function addImage($file): ?Media
     {
-        return $this->getFirstMediaUrl('attachment_file');
+        return $this->addAttachment($file);
+    }
+
+    public function getAttachmentFileAttribute(): ?string
+    {
+        return $this->getFirstMediaUrl(self::ATTACHMENT_COLLECTION) ?: null;
+    }
+
+    public function getAttachmentFileNameAttribute(): ?string
+    {
+        return $this->getFirstMedia(self::ATTACHMENT_COLLECTION)?->file_name;
+    }
+
+    public function getAttachmentFileMimeTypeAttribute(): ?string
+    {
+        return $this->getFirstMedia(self::ATTACHMENT_COLLECTION)?->mime_type;
     }
 
     public function createdBy(): BelongsTo
@@ -134,8 +159,8 @@ class LeaveRequest extends Model implements HasMedia
     public function scopeForUniversitySupervisor(Builder $query, int|array $supervisorId): Builder
     {
         $supervisorIds = collect(Arr::wrap($supervisorId))
-            ->filter(fn (mixed $value): bool => filled($value))
-            ->map(fn (mixed $value): int => (int) $value)
+            ->filter(fn(mixed $value): bool => filled($value))
+            ->map(fn(mixed $value): int => (int) $value)
             ->values();
 
         if ($supervisorIds->isEmpty()) {

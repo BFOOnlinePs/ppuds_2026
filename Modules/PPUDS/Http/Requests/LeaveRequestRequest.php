@@ -3,7 +3,6 @@
 namespace Modules\PPUDS\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Modules\PPUDS\Enums\LeaveRequestStatus;
 use Modules\PPUDS\Enums\LeaveRequestType;
 
 class LeaveRequestRequest extends FormRequest
@@ -19,7 +18,8 @@ class LeaveRequestRequest extends FormRequest
             'start_at'                  => ['required', 'date'],
             'end_at'                    => ['required', 'date', 'after_or_equal:start_at'],
             'reason'                    => ['required', 'string', 'max:1000'],
-            'attachment_file'           => ['nullable', 'file', 'max:2048'],
+            'attachment_file'           => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:5120'],
+            'attachment'                => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:5120'],
         ];
     }
 

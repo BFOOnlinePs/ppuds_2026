@@ -27,6 +27,8 @@ use Spatie\QueryBuilder\AllowedSort;
  * @OA\Property(property="university_approval", type="boolean", example=false),
  * @OA\Property(property="rejection_reason", type="string", example=null),
  * @OA\Property(property="attachment_file", type="string", example="/uploads/attachment_1.jpg"),
+ * @OA\Property(property="attachment_file_name", type="string", example="medical-report.pdf"),
+ * @OA\Property(property="attachment_file_mime_type", type="string", example="application/pdf"),
  * @OA\Property(property="created_by", type="integer", example=123),
  * @OA\Property(property="created_at", type="string", format="date-time")
  * )
@@ -52,6 +54,8 @@ class LeaveRequestResource extends JsonResource
             'university_supervisor_comment' => $this->university_supervisor_comment,
             'rejection_reason'              => $this->rejection_reason,
             'attachment_file'               => $this->getAttachmentFileAttribute(),
+            'attachment_file_name'          => $this->attachment_file_name,
+            'attachment_file_mime_type'     => $this->attachment_file_mime_type,
             'student_company'               => $this->whenLoaded('studentCompany'),
             'created_by'                    => $this->whenLoaded('createdBy'),
         ];

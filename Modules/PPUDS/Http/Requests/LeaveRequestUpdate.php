@@ -14,7 +14,7 @@ class LeaveRequestUpdate extends FormRequest
     public function rules(): array
     {
         return [
-            'student_company_id' => ['required', 'exists:' . config('ppuds.table_prefix') . 'students_companies,id'],
+            'student_company_id' => ['sometimes', 'exists:' . config('ppuds.table_prefix') . 'students_companies,id'],
             'type'               => ['sometimes', 'in:' . implode(',', array_column(LeaveRequestType::cases(), 'value'))],
             'status'             => ['sometimes', 'in:' . implode(',', array_column(LeaveRequestStatus::cases(), 'value'))],
             'start_at'           => ['sometimes', 'date'],
@@ -25,6 +25,8 @@ class LeaveRequestUpdate extends FormRequest
             'university_approval' => ['sometimes', 'in:' . implode(',', array_column(LeaveRequestStatus::cases(), 'value'))],
             'company_supervisor_comment' => ['sometimes', 'string', 'max:1000'],
             'university_supervisor_comment' => ['sometimes', 'string', 'max:1000'],
+            'attachment_file'    => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:5120'],
+            'attachment'         => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:5120'],
         ];
     }
 

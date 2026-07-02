@@ -112,7 +112,7 @@ class StudentAttendanceResource extends JsonResource
 
     public static function allowedIncludes(): array
     {
-        return ['studentCompany', 'studentCompany.student', 'createdBy', 'studentCompany.company'];
+        return ['studentCompany', 'studentCompany.student', 'createdBy', 'studentCompany.company', 'studentCompany.registration'];
     }
 
     private static function whereAttendanceDateInRange(Builder $query, mixed $from, mixed $to): void

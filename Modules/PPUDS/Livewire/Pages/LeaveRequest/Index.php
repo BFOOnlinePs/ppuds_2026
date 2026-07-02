@@ -6,7 +6,9 @@ use App\View\Components\AppLayout;
 use Filament\Forms;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Fieldset;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -22,6 +24,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\HtmlString;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Core\Filament\Forms\Components\CreateAction;
@@ -51,6 +54,7 @@ class Index extends Component implements HasTable, HasForms
                 ->with([
                     'studentCompany.student',
                     'studentCompany.company',
+                    'media',
                     'companySupervisor',
                     'universitySupervisor',
                 ])
@@ -85,6 +89,13 @@ class Index extends Component implements HasTable, HasForms
                     ->sortable(),
 
                 // يمكنك إضافة أعمدة لحالة الطلب هنا إذا أردت
+                TextColumn::make('attachment_file')
+                    ->label(__('Attachment'))
+                    ->formatStateUsing(fn (?string $state): string => filled($state) ? __('Download') : '-')
+                    ->url(fn (LeaveRequest $record): ?string => $record->attachment_file)
+                    ->openUrlInNewTab()
+                    ->toggleable(),
+
                 TextColumn::make('company_approval')
                     ->label(__('Company Status'))
                     ->badge()
@@ -105,6 +116,8 @@ class Index extends Component implements HasTable, HasForms
                     ->icon('heroicon-o-plus')
                     ->form($this->getFormSchema(isCreate: true))
                     ->action(function (array $data) {
+                        $attachmentFile = $this->pullAttachmentFile($data);
+
                         if (! $this->canAccessStudentCompanyRecord((int) $data['student_company_id'])) {
                             abort(403);
                         }
@@ -115,6 +128,10 @@ class Index extends Component implements HasTable, HasForms
                         $data['university_approval'] = LeaveRequestStatus::PENDING ?? LeaveRequestStatus::APPROVED;
 
                         $leaveRequest = LeaveRequest::create($data);
+
+                        if ($attachmentFile !== null) {
+                            $leaveRequest->addAttachment($attachmentFile);
+                        }
 
                         app(PpudsNotificationService::class)->leaveRequestCreated($leaveRequest);
 
@@ -238,7 +255,14 @@ class Index extends Component implements HasTable, HasForms
                 ->action(function (LeaveRequest $record, array $data) {
                     abort_unless($this->canAccessStudentCompanyRecord($record->studentCompany), 403);
 
+                    $attachmentFile = $this->pullAttachmentFile($data);
+
                     $record->update($data);
+
+                    if ($attachmentFile !== null) {
+                        $record->addAttachment($attachmentFile);
+                    }
+
                     Toaster::success(__('Leave Request updated successfully'));
                 })
                 ->visible(fn() => auth()->user()->can('LeaveRequest Update')),
@@ -300,6 +324,26 @@ class Index extends Component implements HasTable, HasForms
                             ->required()
                             ->columnSpanFull()
                             ->disabled($isView),
+
+                        Placeholder::make('current_attachment')
+                            ->label(__('Current Uploaded Files'))
+                            ->content(fn (?LeaveRequest $record): HtmlString|string => $this->attachmentLink($record))
+                            ->visible(fn (?LeaveRequest $record): bool => ! $isCreate && $record?->getFirstMedia(LeaveRequest::ATTACHMENT_COLLECTION) !== null)
+                            ->columnSpanFull(),
+
+                        FileUpload::make('attachment_file')
+                            ->label(__('Attachment (Image/File)'))
+                            ->storeFiles(false)
+                            ->acceptedFileTypes([
+                                'application/pdf',
+                                'image/jpeg',
+                                'image/png',
+                                'image/webp',
+                            ])
+                            ->rules(['mimes:pdf,jpg,jpeg,png,webp'])
+                            ->maxSize(5120)
+                            ->visible(! $isView)
+                            ->columnSpanFull(),
                     ]),
                 ]),
 
@@ -360,6 +404,33 @@ class Index extends Component implements HasTable, HasForms
     protected function fillViewForm(Forms\ComponentContainer $form, LeaveRequest $record): void
     {
         $form->fill($record->attributesToArray());
+    }
+
+    protected function pullAttachmentFile(array &$data): mixed
+    {
+        $file = $data['attachment_file'] ?? null;
+
+        unset($data['attachment_file']);
+
+        if (is_array($file) && empty($file)) {
+            return null;
+        }
+
+        return $file ?: null;
+    }
+
+    protected function attachmentLink(?LeaveRequest $record): HtmlString|string
+    {
+        $media = $record?->getFirstMedia(LeaveRequest::ATTACHMENT_COLLECTION);
+
+        if ($media === null) {
+            return '-';
+        }
+
+        $url = e($media->getUrl());
+        $fileName = e($media->file_name);
+
+        return new HtmlString("<a href=\"{$url}\" target=\"_blank\" rel=\"noopener\" class=\"text-primary-600 hover:underline\">{$fileName}</a>");
     }
 
     public function render()

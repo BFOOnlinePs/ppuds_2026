@@ -4,6 +4,7 @@ namespace Modules\PPUDS\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Foundation\Http\FormRequest;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\LeaveRequest;
 use Modules\PPUDS\Enums\LeaveRequestStatus;
@@ -143,9 +144,9 @@ class LeaveRequestController extends Controller
      * property="attachment_file",
      * type="string",
      * format="binary",
-     * description="Optional supporting document (e.g., medical certificate)"
+     * description="Optional supporting PDF or image"
      * ),
-     * @OA\Property(property="attachment", type="string", format="binary", description="Optional supporting document")
+     * @OA\Property(property="attachment", type="string", format="binary", description="Optional supporting PDF or image")
      * )
      * )
      * ),
@@ -155,7 +156,8 @@ class LeaveRequestController extends Controller
      */
     public function store(LeaveRequestRequest $request)
     {
-        $data = $request->validated();
+        $data = $this->validatedDataWithoutAttachment($request);
+        $attachmentFile = $this->attachmentFileFrom($request);
 
         if ($response = $this->ensureStudentCompanyInCurrentSemester((int) $data['student_company_id'])) {
             return $response;
@@ -171,8 +173,8 @@ class LeaveRequestController extends Controller
 
         $leaveRequest = LeaveRequest::create($data);
 
-        if ($request->hasFile('attachment_file')) {
-            $leaveRequest->addImage($request->file('attachment_file'));
+        if ($attachmentFile !== null) {
+            $leaveRequest->addAttachment($attachmentFile);
         }
 
         app(PpudsNotificationService::class)->leaveRequestCreated($leaveRequest);
@@ -234,7 +236,8 @@ class LeaveRequestController extends Controller
      *
      * @OA\Property(property="_method", type="string", example="PUT"),
      * @OA\Property(property="reason", type="string"),
-     * @OA\Property(property="attachment", type="string", format="binary")
+     * @OA\Property(property="attachment_file", type="string", format="binary", description="Optional supporting PDF or image"),
+     * @OA\Property(property="attachment", type="string", format="binary", description="Optional supporting PDF or image")
      * )
      * )
      * ),
@@ -246,19 +249,22 @@ class LeaveRequestController extends Controller
     {
         abort_unless($this->canAccessStudentCompanyRecord($leaveRequest->studentCompany), 403);
 
+        $data = $this->validatedDataWithoutAttachment($request);
+        $attachmentFile = $this->attachmentFileFrom($request);
+
         if ($response = $this->ensureRelatedStudentCompanyInCurrentSemester($leaveRequest)) {
             return $response;
         }
 
-        if ($request->filled('student_company_id')) {
-            if ($response = $this->ensureStudentCompanyInCurrentSemester((int) $request->student_company_id)) {
+        if (array_key_exists('student_company_id', $data) && filled($data['student_company_id'])) {
+            if ($response = $this->ensureStudentCompanyInCurrentSemester((int) $data['student_company_id'])) {
                 return $response;
             }
 
-            abort_unless($this->canAccessStudentCompanyRecord((int) $request->student_company_id), 403);
+            abort_unless($this->canAccessStudentCompanyRecord((int) $data['student_company_id']), 403);
         }
 
-        $leaveRequest->update($request->validated());
+        $leaveRequest->update($data);
 
         $changedApprovalFields = collect(['company_approval', 'university_approval'])
             ->filter(fn (string $approvalField): bool => $request->has($approvalField) && $leaveRequest->wasChanged($approvalField));
@@ -269,13 +275,27 @@ class LeaveRequestController extends Controller
             $changedApprovalFields->each(fn (string $approvalField) => app(PpudsNotificationService::class)->leaveRequestDecisionUpdated($leaveRequest, $approvalField));
         }
 
-        if ($request->hasFile('attachment_file')) {
-            $leaveRequest->addImage($request->file('attachment_file'));
+        if ($attachmentFile !== null) {
+            $leaveRequest->addAttachment($attachmentFile);
         }
 
         return $this->successResponse(
             new LeaveRequestResource($leaveRequest->refresh()->loadMissing('studentCompany.registration')),
             __('Leave Request updated successfully')
         );
+    }
+
+    private function validatedDataWithoutAttachment(FormRequest $request): array
+    {
+        $data = $request->validated();
+
+        unset($data['attachment_file'], $data['attachment']);
+
+        return $data;
+    }
+
+    private function attachmentFileFrom(FormRequest $request): mixed
+    {
+        return $request->file('attachment_file') ?? $request->file('attachment');
     }
 }
