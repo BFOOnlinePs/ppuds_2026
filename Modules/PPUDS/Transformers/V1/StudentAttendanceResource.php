@@ -57,6 +57,16 @@ class StudentAttendanceResource extends JsonResource
             AllowedFilter::exact('id'),
             AllowedFilter::exact('student_company_id'),
             AllowedFilter::exact('status'),
+            AllowedFilter::callback('student_name', function (Builder $query, $value) {
+                $query->whereHas('studentCompany.student', function ($q) use ($value) {
+                    $q->where('name', 'like', "%{$value}%");
+                });
+            }),
+            AllowedFilter::callback('company_name', function (Builder $query, $value) {
+                $query->whereHas('studentCompany.company', function ($q) use ($value) {
+                    $q->where('name', 'like', "%{$value}%");
+                });
+            }),
             AllowedFilter::callback('attendance_date', fn(Builder $query, $value) => $query->whereDate('attendance_date', self::filterValue($value))),
             AllowedFilter::callback('attendance_date_from', function (Builder $query, $value) {
                 self::whereAttendanceDateInRange(
