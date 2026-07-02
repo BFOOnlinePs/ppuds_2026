@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Modules\Core\Entities\User;
@@ -130,17 +131,25 @@ class LeaveRequest extends Model implements HasMedia
         return $this->belongsTo(StudentCompany::class, 'student_company_id');
     }
 
-    public function scopeForUniversitySupervisor(Builder $query, int $supervisorId): Builder
+    public function scopeForUniversitySupervisor(Builder $query, int|array $supervisorId): Builder
     {
-        $studentCompanyTable = (new StudentCompany())->getTable();
-        $registrationTable = (new Registration())->getTable();
+        $supervisorIds = collect(Arr::wrap($supervisorId))
+            ->filter(fn (mixed $value): bool => filled($value))
+            ->map(fn (mixed $value): int => (int) $value)
+            ->values();
 
-        return $query->whereIn('student_company_id', function ($studentCompanyQuery) use ($studentCompanyTable, $registrationTable, $supervisorId) {
-            $studentCompanyQuery
-                ->select("{$studentCompanyTable}.id")
-                ->from($studentCompanyTable)
-                ->join($registrationTable, "{$studentCompanyTable}.registration_id", '=', "{$registrationTable}.id")
-                ->where("{$registrationTable}.supervisor_id", $supervisorId);
+        if ($supervisorIds->isEmpty()) {
+            return $query;
+        }
+
+        return $query->whereHas('studentCompany.registration', function (Builder $registrationQuery) use ($supervisorIds): void {
+            if ($supervisorIds->count() === 1) {
+                $registrationQuery->where('supervisor_id', $supervisorIds->first());
+
+                return;
+            }
+
+            $registrationQuery->whereIn('supervisor_id', $supervisorIds->all());
         });
     }
 

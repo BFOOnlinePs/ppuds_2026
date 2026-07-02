@@ -78,11 +78,7 @@ class LeaveRequestController extends Controller
         $maxPerPage = config('core.pagination.max_per_page', 100);
         $perPage = min(request('per_page', $defaultPerPage), $maxPerPage);
 
-        $leaveRequests = QueryBuilder::for(LeaveRequest::query()
-            ->whereHas(
-                'studentCompany',
-                fn (Builder $studentCompanyQuery): Builder => $this->applyStudentCompanyVisibilityScope($studentCompanyQuery)
-            ))
+        $leaveRequests = QueryBuilder::for($this->visibleLeaveRequestsQuery())
             ->allowedFields(LeaveRequestResource::allowedFields())
             ->allowedFilters(LeaveRequestResource::allowedFilters())
             ->allowedSorts(LeaveRequestResource::allowedSorts())
@@ -95,6 +91,30 @@ class LeaveRequestController extends Controller
             LeaveRequestResource::collection($leaveRequests),
             __('Leave Requests retrieved successfully')
         );
+    }
+
+    private function visibleLeaveRequestsQuery(): Builder
+    {
+        return LeaveRequest::query()
+            ->whereHas(
+                'studentCompany',
+                fn (Builder $studentCompanyQuery): Builder => $this->applyLeaveRequestStudentCompanyVisibilityScope($studentCompanyQuery)
+            );
+    }
+
+    private function applyLeaveRequestStudentCompanyVisibilityScope(Builder $query): Builder
+    {
+        if ($this->hasUniversitySupervisorFilter() && $this->shouldScopeUniversitySupervisorStudentCompanies()) {
+            return $query;
+        }
+
+        return $this->applyStudentCompanyVisibilityScope($query);
+    }
+
+    private function hasUniversitySupervisorFilter(): bool
+    {
+        return filled(request()->input('filter.supervisor_id'))
+            || filled(request()->input('filter.university_supervisor'));
     }
 
     /**

@@ -5,6 +5,7 @@ namespace Modules\PPUDS\Transformers\V1;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
 
@@ -98,11 +99,11 @@ class LeaveRequestResource extends JsonResource
             }),
 
             AllowedFilter::callback('university_supervisor', function (Builder $query, $value) {
-                $query->forUniversitySupervisor((int) self::filterValue($value));
+                self::whereHasUniversitySupervisor($query, $value);
             }),
 
             AllowedFilter::callback('supervisor_id', function (Builder $query, $value) {
-                $query->forUniversitySupervisor((int) self::filterValue($value));
+                self::whereHasUniversitySupervisor($query, $value);
             }),
 
             AllowedFilter::callback('student_name', function (Builder $query, $value) {
@@ -143,8 +144,25 @@ class LeaveRequestResource extends JsonResource
         ];
     }
 
-    private static function filterValue(mixed $value): mixed
+    private static function whereHasUniversitySupervisor(Builder $query, mixed $value): void
     {
-        return is_array($value) ? reset($value) : $value;
+        $supervisorIds = collect(Arr::wrap($value))
+            ->filter(fn (mixed $supervisorId): bool => filled($supervisorId))
+            ->map(fn (mixed $supervisorId): int => (int) $supervisorId)
+            ->values();
+
+        if ($supervisorIds->isEmpty()) {
+            return;
+        }
+
+        $query->whereHas('studentCompany.registration', function (Builder $registrationQuery) use ($supervisorIds): void {
+            if ($supervisorIds->count() === 1) {
+                $registrationQuery->where('supervisor_id', $supervisorIds->first());
+
+                return;
+            }
+
+            $registrationQuery->whereIn('supervisor_id', $supervisorIds->all());
+        });
     }
 }
