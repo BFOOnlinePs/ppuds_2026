@@ -2,6 +2,7 @@
 
 namespace Modules\PPUDS\Transformers\V1;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -71,6 +72,17 @@ class StudentAttendanceReportResource extends JsonResource
             AllowedFilter::exact('created_by'),
             AllowedFilter::exact('created_at'),
             AllowedFilter::scope('today'),
+
+            AllowedFilter::callback('student_name', function (Builder $query, $value) {
+                $query->whereHas('studentCompany.student', function ($q) use ($value) {
+                    $q->where('name', 'like', "%{$value}%");
+                });
+            }),
+            AllowedFilter::callback('company_name', function (Builder $query, $value) {
+                $query->whereHas('studentCompany.company', function (Builder $q) use ($value) {
+                    $q->whereTranslationLike('name', "%{$value}%");
+                });
+            }),
 
             AllowedFilter::callback('date_from', function ($query, $value) {
                 $query->whereDate('created_at', '>=', $value);
