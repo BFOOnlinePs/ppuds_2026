@@ -83,9 +83,9 @@ class StudentAttendanceResource extends JsonResource
                     $query->where('company_id', $value);
                 });
             }),
-            AllowedFilter::callback('supervisor_id', function (Builder $query, $value) {
-                $query->whereHas('studentCompany.registration', function ($query) use ($value) {
-                    $query->where('supervisor_id', $value);
+            AllowedFilter::callback('supervisor_id', function ($query, $value) {
+                $query->whereHas('studentCompany.registration', function ($q) use ($value) {
+                    $q->where('supervisor_id', $value);
                 });
             }),
             AllowedFilter::callback('semester', function (Builder $query, $value) {

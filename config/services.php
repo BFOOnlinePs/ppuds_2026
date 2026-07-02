@@ -54,6 +54,7 @@ return [
 
     'ppu_api' => [
         'base_url' => env('PPU_API_BASE_URL', 'https://api-core.ppu.edu'),
+        'access_token' => env('PPU_API_ACCESS_TOKEN'),
     ],
 
 ];

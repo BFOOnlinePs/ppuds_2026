@@ -13,6 +13,9 @@ return Application::configure(basePath: dirname(__DIR__))
         channels: __DIR__.'/../routes/channels.php',
         health: '/up',
     )
+    ->withCommands([
+        \App\Console\Commands\CheckCompanySupervisorsUniversityRegistration::class,
+    ])
     ->withMiddleware(function (Middleware $middleware): void {
 
         $middleware->trustProxies(at: '*');
