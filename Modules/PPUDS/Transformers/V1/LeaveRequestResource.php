@@ -119,7 +119,15 @@ class LeaveRequestResource extends JsonResource
                 $query->whereHas('studentCompany.company', function (Builder $q) use ($value) {
                     $q->whereTranslationLike('name', '%' . $value . '%');
                 });
-            })
+            }),
+
+            AllowedFilter::callback('from_date', function (Builder $query, $value) {
+                $query->whereDate('start_at', '>=', $value);
+            }),
+
+            AllowedFilter::callback('to_date', function (Builder $query, $value) {
+                $query->whereDate('start_at', '<=', $value);
+            }),
         ];
     }
 
@@ -151,8 +159,8 @@ class LeaveRequestResource extends JsonResource
     private static function whereHasUniversitySupervisor(Builder $query, mixed $value): void
     {
         $supervisorIds = collect(Arr::wrap($value))
-            ->filter(fn (mixed $supervisorId): bool => filled($supervisorId))
-            ->map(fn (mixed $supervisorId): int => (int) $supervisorId)
+            ->filter(fn(mixed $supervisorId): bool => filled($supervisorId))
+            ->map(fn(mixed $supervisorId): int => (int) $supervisorId)
             ->values();
 
         if ($supervisorIds->isEmpty()) {

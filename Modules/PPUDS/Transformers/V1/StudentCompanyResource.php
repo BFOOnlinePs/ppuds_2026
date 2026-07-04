@@ -82,12 +82,12 @@ class StudentCompanyResource extends JsonResource
 
             AllowedFilter::callback('student_name', function (Builder $query, $value) {
                 $query->whereHas('student', function (Builder $q) use ($value) {
-                    $q->where('name', 'like', '%'.$value.'%');
+                    $q->where('name', 'like', '%' . $value . '%');
                 });
             }),
             AllowedFilter::callback('company_name', function (Builder $query, $value) {
                 $query->whereHas('company', function (Builder $q) use ($value) {
-                    $q->whereTranslationLike('name', '%'.$value.'%');
+                    $q->whereTranslationLike('name', '%' . $value . '%');
                 });
             }),
 
@@ -95,15 +95,15 @@ class StudentCompanyResource extends JsonResource
                 $query->where(function (Builder $q) use ($value) {
                     $q->whereHas('student', function (Builder $studentQuery) use ($value) {
                         $studentQuery
-                            ->where('name', 'like', '%'.$value.'%')
-                            ->orWhere('email', 'like', '%'.$value.'%')
-                            ->orWhere('phone', 'like', '%'.$value.'%');
+                            ->where('name', 'like', '%' . $value . '%')
+                            ->orWhere('email', 'like', '%' . $value . '%')
+                            ->orWhere('phone', 'like', '%' . $value . '%');
                     })
                         ->orWhereHas('student.studentProfile', function (Builder $profileQuery) use ($value) {
-                            $profileQuery->where('student_number', 'like', '%'.$value.'%');
+                            $profileQuery->where('student_number', 'like', '%' . $value . '%');
                         })
                         ->orWhereHas('company', function (Builder $companyQuery) use ($value) {
-                            $companyQuery->whereTranslationLike('name', '%'.$value.'%');
+                            $companyQuery->whereTranslationLike('name', '%' . $value . '%');
                         });
                 });
             }),
