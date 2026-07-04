@@ -75,6 +75,7 @@ class LeaveRequestResource extends JsonResource
             'company_supervisor_id',
             'university_supervisor_id',
             'rejection_reason',
+            'created_at',
             'created_by',
         ];
     }
