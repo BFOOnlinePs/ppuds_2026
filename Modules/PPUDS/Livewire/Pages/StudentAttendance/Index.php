@@ -42,6 +42,7 @@ use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\Major;
 use Modules\PPUDS\Entities\StudentAttendance;
 use Modules\PPUDS\Entities\StudentCompany;
+use Modules\PPUDS\Entities\StudentReport;
 use Modules\PPUDS\Enums\AttendanceStatus;
 use Modules\PPUDS\Exports\TodayAbsentStudentsExport;
 use Modules\PPUDS\Livewire\Concerns\SearchesStudentAttendanceRelationships;
@@ -495,23 +496,103 @@ class Index extends Component implements HasForms, HasTable
                 ->label('')
                 ->visible(fn (Model $record) => ! $this->isTodayAbsentStudentRecord($record) && auth()->user()->can('StudentAttendance Info')),
             ViewAction::make('view')
-                ->form(function (Forms\Form $form, $record) {
+                ->modalHeading(__('Attendance Details'))
+                ->modalWidth(MaxWidth::FourExtraLarge)
+                ->form(function (Forms\Form $form, StudentAttendance $record) {
+                    $record->loadMissing([
+                        'studentCompany.company',
+                        'studentCompany.branch',
+                        'studentCompany.student.studentProfile',
+                        'studentReport.media',
+                    ]);
+
+                    $report = $record->studentReport;
+
                     return $form->schema([
-                        TextInput::make('name')
-                            ->label(__('Name'))
-                            ->default($record->name)
-                            ->disabled(),
-                        TextInput::make('website')
-                            ->label(__('Website'))
-                            ->default($record->website)
-                            ->disabled(),
-                        TextInput::make('category.name')
-                            ->label(__('Category'))
-                            ->default($record->category->name)
-                            ->disabled(),
-                        Textarea::make('description')
-                            ->default($record->description)
-                            ->disabled(),
+                        Forms\Components\Section::make(__('Attendance Information'))
+                            ->schema([
+                                Forms\Components\Grid::make(2)
+                                    ->schema([
+                                        TextInput::make('student_name')
+                                            ->label(__('Student Name'))
+                                            ->default($record->studentCompany?->student?->name ?? '---')
+                                            ->disabled(),
+
+                                        TextInput::make('student_number')
+                                            ->label(__('Student Number'))
+                                            ->default($record->studentCompany?->student?->studentProfile?->student_number ?? '---')
+                                            ->disabled(),
+
+                                        TextInput::make('company_name')
+                                            ->label(__('Company Name'))
+                                            ->default($record->studentCompany?->company?->name ?? '---')
+                                            ->disabled(),
+
+                                        TextInput::make('branch_name')
+                                            ->label(__('Branch'))
+                                            ->default($record->studentCompany?->branch?->name ?? '---')
+                                            ->disabled(),
+
+                                        TextInput::make('attendance_date_view')
+                                            ->label(__('Date'))
+                                            ->default($record->attendance_date?->format('Y-m-d') ?? '---')
+                                            ->disabled(),
+
+                                        TextInput::make('attendance_status_view')
+                                            ->label(__('Status'))
+                                            ->default($record->status instanceof AttendanceStatus ? $record->status->getLabel() : ($record->status ?: '---'))
+                                            ->disabled(),
+
+                                        TextInput::make('check_in_view')
+                                            ->label(__('Check In'))
+                                            ->default($record->check_in?->format('H:i A') ?? '---')
+                                            ->disabled(),
+
+                                        TextInput::make('check_out_view')
+                                            ->label(__('Check Out'))
+                                            ->default($record->check_out?->format('H:i A') ?? '---')
+                                            ->disabled(),
+                                    ]),
+
+                                Textarea::make('attendance_description')
+                                    ->label(__('Notes'))
+                                    ->default($record->description ?: '---')
+                                    ->disabled()
+                                    ->columnSpanFull(),
+                            ]),
+
+                        Forms\Components\Section::make(__('Daily Report'))
+                            ->schema($report ? [
+                                Forms\Components\RichEditor::make('report_text_view')
+                                    ->label(__('Report Text'))
+                                    ->default($report->report_text)
+                                    ->disabled()
+                                    ->toolbarButtons([])
+                                    ->columnSpanFull(),
+
+                                Forms\Components\RichEditor::make('company_feedback_view')
+                                    ->label(__('Company Feedback'))
+                                    ->default($report->company_feedback)
+                                    ->disabled()
+                                    ->toolbarButtons([])
+                                    ->columnSpanFull(),
+
+                                Forms\Components\RichEditor::make('academic_feedback_view')
+                                    ->label(__('Academic Feedback'))
+                                    ->default($report->academic_feedback)
+                                    ->disabled()
+                                    ->toolbarButtons([])
+                                    ->columnSpanFull(),
+
+                                Forms\Components\Placeholder::make('report_attachments_view')
+                                    ->label(__('Report Attachments'))
+                                    ->content(fn (): HtmlString => $this->reportAttachmentsHtml($report))
+                                    ->columnSpanFull(),
+                            ] : [
+                                Forms\Components\Placeholder::make('missing_report')
+                                    ->label(__('Daily Report'))
+                                    ->content(__('No daily report has been submitted yet.')),
+                            ]),
                     ]);
                 })
                 ->modalSubmitAction(false)
@@ -551,6 +632,38 @@ class Index extends Component implements HasForms, HasTable
                 })
                 ->visible(fn (Model $record) => ! $this->isTodayAbsentStudentRecord($record) && auth()->user()->can('StudentAttendance Delete')),
         ];
+    }
+
+    protected function reportAttachmentsHtml(StudentReport $report): HtmlString
+    {
+        $attachments = $report->getFileReportItems();
+
+        if ($attachments->isEmpty()) {
+            return new HtmlString('<span class="text-sm text-gray-500">---</span>');
+        }
+
+        $items = $attachments
+            ->map(function (array $attachment): string {
+                $url = e($attachment['url'] ?? '#');
+                $name = e($attachment['name'] ?? __('Attachment'));
+                $preview = '';
+
+                if ($attachment['is_image'] ?? false) {
+                    $preview = <<<HTML
+                        <img src="{$url}" alt="{$name}" class="h-16 w-16 rounded object-cover ring-1 ring-gray-200 dark:ring-gray-700">
+                    HTML;
+                }
+
+                return <<<HTML
+                    <a href="{$url}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3 rounded-md border border-gray-200 bg-white p-2 text-sm text-primary-600 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800">
+                        {$preview}
+                        <span class="truncate">{$name}</span>
+                    </a>
+                HTML;
+            })
+            ->implode('');
+
+        return new HtmlString('<div class="grid gap-2 sm:grid-cols-2">'.$items.'</div>');
     }
 
     public function render()
