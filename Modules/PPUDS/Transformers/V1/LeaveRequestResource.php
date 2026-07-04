@@ -57,6 +57,7 @@ class LeaveRequestResource extends JsonResource
             'attachment_file_name'          => $this->attachment_file_name,
             'attachment_file_mime_type'     => $this->attachment_file_mime_type,
             'student_company'               => $this->whenLoaded('studentCompany'),
+            'created_at'                    => $this->created_at,
             'created_by'                    => $this->whenLoaded('createdBy'),
         ];
     }
