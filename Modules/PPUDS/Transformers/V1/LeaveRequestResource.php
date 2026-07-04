@@ -121,11 +121,11 @@ class LeaveRequestResource extends JsonResource
                 });
             }),
 
-            AllowedFilter::callback('from_date', function (Builder $query, $value) {
+            AllowedFilter::callback('date_from', function (Builder $query, $value) {
                 $query->whereDate('start_at', '>=', $value);
             }),
 
-            AllowedFilter::callback('to_date', function (Builder $query, $value) {
+            AllowedFilter::callback('date_to', function (Builder $query, $value) {
                 $query->whereDate('start_at', '<=', $value);
             }),
         ];
