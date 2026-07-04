@@ -2,8 +2,10 @@
 
 namespace Modules\PPUDS\Transformers\V1;
 
+use BackedEnum;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Modules\Core\Entities\User;
 use Modules\Core\Transformers\V1\UserResource;
 use Spatie\QueryBuilder\AllowedSort;
 
@@ -11,58 +13,54 @@ class ConversationResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $authId = auth()->id();
+        $auth = $request->user();
+        $participant = $auth ? $this->participant($auth) : null;
+        $partner = $this->partner($auth);
 
         return [
             'id' => $this->id,
-            'type' => $this->type,
+            'type' => $this->type instanceof BackedEnum ? $this->type->value : $this->type,
 
-            'name' => $this->name ?? ($this->type == 'private' ? $this->getRecipientName() : null),
+            'name' => $this->conversationName($partner),
 
-            'partner' => $this->whenLoaded('participants', function () use ($authId) {
+            'partner' => $this->when($partner instanceof User, fn () => new UserResource($partner)),
 
-                $user = $this->participants->firstWhere('participantable_id', '!=', $authId)?->participantable;
+            'unread_count' => $auth ? $this->getUnreadCountFor($auth) : 0,
 
-                return $user ? new UserResource($user) : null;
-
-            }),
-
-            'unread_count' => $this->getUnreadCount($authId),
-
-            'last_active_at' => $this->whenLoaded('participants', fn () => $this->participants->firstWhere('participantable_id', $authId)?->last_active_at
-            ),
+            'last_active_at' => $participant?->last_active_at,
 
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
 
             'last_message' => new MessageResource($this->whenLoaded('lastMessage')),
             'participants' => $this->whenLoaded('participants'),
-            'group_details' => $this->when($this->type === 'group', $this->group),
+            'group_details' => $this->when($this->isGroup(), $this->group),
         ];
     }
 
-    private function getPartnerName(int $authId)
+    private function partner(?User $auth): ?User
     {
-        return $this->whenLoaded('participants', fn () => $this->participants->firstWhere('participantable_id', '!=', $authId)?->participantable?->name
-        );
+        if (! $auth) {
+            return null;
+        }
+
+        $partner = $this->peerParticipant($auth)?->participantable;
+
+        return $partner instanceof User ? $partner : null;
     }
 
-    private function getUnreadCount(int $authId): int
+    private function conversationName(?User $partner): ?string
     {
-        return (int) $this->messages()
-            ->where('sendable_id', '!=', $authId)
-            ->where('created_at', '>', function ($query) use ($authId) {
-                $query->select('conversation_read_at')
-                    ->from('wirechat_participants')
-                    ->where('conversation_id', $this->id)
-                    ->where('participantable_id', $authId)
-                    ->limit(1);
-            })->count();
+        if ($this->isGroup()) {
+            return $this->group?->name;
+        }
+
+        return $partner?->name;
     }
 
     public static function allowedIncludes(): array
     {
-        return ['lastMessage', 'participants', 'participants.participantable', 'group', 'messages'];
+        return ['lastMessage', 'lastMessage.attachment', 'lastMessage.sendable', 'participants', 'participants.participantable', 'group', 'messages'];
     }
 
     public static function allowedSorts(): array

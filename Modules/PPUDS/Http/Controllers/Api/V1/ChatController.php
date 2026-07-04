@@ -4,18 +4,14 @@ namespace Modules\PPUDS\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Modules\Core\Entities\User;
-use Modules\Core\Enums\UserRole;
 use Modules\Core\Traits\ApiResponse;
-use Modules\PPUDS\Entities\Registration;
-use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Http\Requests\ConversationRequest;
+use Modules\PPUDS\Services\ChatContactService;
 use Modules\PPUDS\Services\PpudsNotificationService;
-use Modules\PPUDS\Settings\GeneralSettings;
 use Modules\PPUDS\Transformers\V1\ConversationResource;
 use Modules\PPUDS\Transformers\V1\MessageResource;
+use Spatie\QueryBuilder\AllowedInclude;
 use Spatie\QueryBuilder\QueryBuilder;
 use Wirechat\Wirechat\Events\MessageCreated;
 use Wirechat\Wirechat\Models\Conversation;
@@ -76,13 +72,18 @@ class ChatController extends Controller
      * )
      * )
      */
-    public function index()
+    public function index(Request $request)
     {
+        $user = $request->user();
+
         $conversations = QueryBuilder::for(Conversation::class)
-            ->whereHas('participants', function ($q) {
-                $q->where('participantable_id', auth()->id());
+            ->whereHas('participants', function ($query) use ($user) {
+                $query->where('participantable_id', $user->getKey())
+                    ->where('participantable_type', $user->getMorphClass());
             })
+            ->with(['participants.participantable', 'lastMessage.attachment', 'lastMessage.sendable', 'group'])
             ->allowedIncludes(ConversationResource::allowedIncludes())
+            ->allowedSorts(ConversationResource::allowedSorts())
             ->defaultSort('-updated_at')
             ->paginate(request('per_page', 15));
 
@@ -94,30 +95,10 @@ class ChatController extends Controller
 
     public function contacts(Request $request)
     {
-        $contactTypes = $this->studentSupervisorContactTypes(auth()->user());
-        $contactIds = array_keys($contactTypes);
-
-        $contacts = User::query()
-            ->whereIn('id', $contactIds)
-            ->when($request->input('search') ?? data_get($request->input('filter', []), 'search'), function ($query, $search) {
-                $query->where(function ($query) use ($search) {
-                    $query->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%");
-                });
-            })
-            ->orderBy('name')
-            ->get()
-            ->map(function (User $user) use ($contactTypes) {
-                return [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'phone' => $user->phone,
-                    'image' => $user->getProfileImageUrlAttribute(),
-                    'supervisor_types' => $contactTypes[$user->id] ?? [],
-                ];
-            })
-            ->values();
+        $contacts = app(ChatContactService::class)->contactsFor(
+            $request->user(),
+            $request->input('search') ?? data_get($request->input('filter', []), 'search')
+        );
 
         return $this->successResponse(
             $contacts,
@@ -164,8 +145,8 @@ class ChatController extends Controller
 
         abort_if(auth()->id() === $receiver->id, 400, __('You cannot create a conversation with yourself.'));
 
-        if (auth()->user()?->hasRole(UserRole::STUDENT->value) && ! $this->studentSupervisorContactIds(auth()->user())->contains($receiver->id)) {
-            return $this->errorResponse(__('You can only create conversations with your assigned supervisors.'), 422);
+        if (! app(ChatContactService::class)->canStartConversation($request->user(), $receiver)) {
+            return $this->errorResponse(__('You can only create conversations with your assigned contacts.'), 422);
         }
 
         $conversation = auth()->user()->createConversationWith($receiver);
@@ -201,10 +182,15 @@ class ChatController extends Controller
      */
     public function messages(Conversation $conversation)
     {
-        // abort_unless($conversation->hasParticipant(auth()->user()), 403);
+        $this->authorizeConversationAccess($conversation);
 
         $messages = QueryBuilder::for($conversation->messages())
-            ->allowedIncludes(['sendable', 'attachments'])
+            ->with(['sendable', 'attachment'])
+            ->allowedIncludes([
+                'sendable',
+                'attachment',
+                ...AllowedInclude::relationship('attachments', 'attachment')->all(),
+            ])
             ->defaultSort('-created_at')
             ->paginate(request('per_page', 25));
 
@@ -254,12 +240,15 @@ class ChatController extends Controller
      * )
      * )
      */
-    public function sendMessage(Request $request, $conversationId)
+    public function sendMessage(Request $request, Conversation $conversation)
     {
-        $conversation = Conversation::findOrFail($conversationId);
-        $request->validate(['body' => 'required|string']);
+        $this->authorizeConversationAccess($conversation);
 
-        $message = auth()->user()->sendMessageTo($conversation, $request->body);
+        $request->merge(['body' => trim((string) $request->input('body'))]);
+        $validated = $request->validate(['body' => ['required', 'string', 'max:5000']]);
+
+        $message = $request->user()->sendMessageTo($conversation, $validated['body']);
+        $message->load(['sendable', 'attachment', 'conversation.participants.participantable']);
 
         broadcast(new MessageCreated($message, 'chats'))->toOthers();
 
@@ -303,111 +292,15 @@ class ChatController extends Controller
      */
     public function markAsRead(Conversation $conversation)
     {
+        $this->authorizeConversationAccess($conversation);
+
         $conversation->markAsRead(auth()->user());
 
         return $this->successResponse(null, __('Marked as read'));
     }
 
-    private function studentSupervisorContactIds(User $student): Collection
+    private function authorizeConversationAccess(Conversation $conversation): void
     {
-        return collect(array_keys($this->studentSupervisorContactTypes($student)))
-            ->map(fn ($id) => (int) $id)
-            ->values();
-    }
-
-    private function studentSupervisorContactTypes(User $student): array
-    {
-        if (! $student->hasRole(UserRole::STUDENT->value)) {
-            return [];
-        }
-
-        $contactTypes = [];
-
-        $this->currentStudentRegistrations($student)
-            ->pluck('supervisor_id')
-            ->filter()
-            ->each(function ($supervisorId) use (&$contactTypes) {
-                $contactTypes[(int) $supervisorId][] = 'university_supervisor';
-            });
-
-        $this->companySupervisorIds($student)
-            ->each(function ($supervisorId) use (&$contactTypes) {
-                $contactTypes[(int) $supervisorId][] = 'company_supervisor';
-            });
-
-        unset($contactTypes[$student->id]);
-
-        return collect($contactTypes)
-            ->map(fn (array $types) => array_values(array_unique($types)))
-            ->toArray();
-    }
-
-    private function currentStudentRegistrations(User $student): Collection
-    {
-        $settings = app(GeneralSettings::class);
-
-        return Registration::query()
-            ->where('student_id', $student->id)
-            ->where('semester', $settings->semester_type?->value)
-            ->where('year', $settings->year)
-            ->get();
-    }
-
-    private function companySupervisorIds(User $student): Collection
-    {
-        $studentCompanies = StudentCompany::query()
-            ->where('student_id', $student->id)
-            ->whereHas('registration', function ($query) {
-                $settings = app(GeneralSettings::class);
-
-                $query->where('semester', $settings->semester_type?->value)
-                    ->where('year', $settings->year);
-            })
-            ->get(['branch_id', 'department_id']);
-
-        $branchDepartmentPairs = $studentCompanies
-            ->filter(fn (StudentCompany $studentCompany) => $studentCompany->branch_id && $studentCompany->department_id)
-            ->map(fn (StudentCompany $studentCompany) => [
-                'branch_id' => $studentCompany->branch_id,
-                'department_id' => $studentCompany->department_id,
-            ])
-            ->unique(fn (array $pair) => $pair['branch_id'].'-'.$pair['department_id'])
-            ->values();
-
-        $branchIds = $studentCompanies
-            ->filter(fn (StudentCompany $studentCompany) => $studentCompany->branch_id && ! $studentCompany->department_id)
-            ->pluck('branch_id')
-            ->unique()
-            ->values();
-
-        $companySupervisorIds = collect();
-
-        if ($branchDepartmentPairs->isNotEmpty()) {
-            $companySupervisorIds = $companySupervisorIds->merge(
-                DB::table(config('ppuds.table_prefix').'branch_department')
-                    ->where(function ($query) use ($branchDepartmentPairs) {
-                        $branchDepartmentPairs->each(function (array $pair) use ($query) {
-                            $query->orWhere(function ($query) use ($pair) {
-                                $query->where('branch_id', $pair['branch_id'])
-                                    ->where('company_department_id', $pair['department_id']);
-                            });
-                        });
-                    })
-                    ->pluck('user_id')
-            );
-        }
-
-        if ($branchIds->isNotEmpty()) {
-            $companySupervisorIds = $companySupervisorIds->merge(
-                DB::table(config('ppuds.table_prefix').'branch_department')
-                    ->whereIn('branch_id', $branchIds)
-                    ->pluck('user_id')
-            );
-        }
-
-        return $companySupervisorIds
-            ->filter()
-            ->unique()
-            ->values();
+        abort_unless(auth()->user()?->belongsToConversation($conversation), 403, __('You do not have access to this conversation.'));
     }
 }

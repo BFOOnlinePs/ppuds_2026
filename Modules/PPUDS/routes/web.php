@@ -201,7 +201,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     });
 
                     // Route::get('/chats', \Wirechat\Wirechat\Livewire\Chats\Chats::class)->name('chats');
-                    Route::get('/{conversation}', \Modules\PPUDS\Livewire\Pages\ChatMessage\Show::class)->name('show');
+                    Route::get('/{conversation}', \Modules\PPUDS\Livewire\Pages\ChatMessage\Show::class)
+                        ->middleware('belongsToConversation')
+                        ->name('show');
                 });
 
                 Route::group([

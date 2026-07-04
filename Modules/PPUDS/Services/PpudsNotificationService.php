@@ -181,7 +181,8 @@ class PpudsNotificationService
         $users = $message->conversation?->participants
             ?->pluck('participantable')
             ->filter(fn ($participant) => $participant instanceof User)
-            ->reject(fn (User $participant) => $participant->id === $message->sendable_id)
+            ->reject(fn (User $participant) => $participant->getKey() == $message->sendable_id
+                && $participant->getMorphClass() === $message->sendable_type)
             ->values() ?? collect();
 
         $this->notifyUsers($users, new GeneralNotification(
