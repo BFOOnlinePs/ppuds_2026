@@ -84,7 +84,7 @@ class StudentCompanyController extends Controller
             ->allowedSorts(StudentCompanyResource::allowedSorts())
             ->allowedIncludes(StudentCompanyResource::allowedIncludes())
             ->withAttendanceDays()
-            ->with(['media'])
+            ->with(['media', 'branch.workingHours'])
             ->paginate($perPage)
             ->appends(request()->query());
 
@@ -178,7 +178,7 @@ class StudentCompanyController extends Controller
             $studentCompany = StudentCompany::create($data);
         }
 
-        $studentCompany->load(['company', 'branch', 'department']);
+        $studentCompany->load(['company', 'branch.workingHours', 'department']);
 
         return $this->successResponse(
             new StudentCompanyResource($studentCompany),
@@ -236,6 +236,7 @@ class StudentCompanyController extends Controller
             ->allowedFilters(StudentCompanyResource::allowedFilters())
             ->allowedFields(StudentCompanyResource::allowedFields())
             ->allowedIncludes(StudentCompanyResource::allowedIncludes())
+            ->with('branch.workingHours')
             ->firstOrFail();
 
         return $this->successResponse(

@@ -184,7 +184,7 @@ class FieldVisitController extends Controller
                 'registration.course',
                 'registration.supervisor',
                 'company',
-                'branch',
+                'branch.workingHours',
                 'department',
             ])
             ->orderBy('student_id')

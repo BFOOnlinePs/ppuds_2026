@@ -247,6 +247,7 @@ class StudentCompanyAssistantController extends Controller
                 'student.studentProfile.major',
                 'company.branches.departments',
                 'branch.departments',
+                'branch.workingHours',
                 'department',
             ])
             ->where('registration_id', $registrationId)
