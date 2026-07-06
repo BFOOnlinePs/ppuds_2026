@@ -171,7 +171,7 @@ class CompanyController extends Controller
                         ->except(['departments', 'working_hours'])
                         ->toArray();
 
-                    $branchAttributes = $this->normalizeBranchCoordinates($branchAttributes);
+                    $branchAttributes = $this->nullifyBranchCoordinates($branchAttributes);
 
                     $branchAttributes['created_by'] = auth()->id();
 
@@ -381,6 +381,15 @@ class CompanyController extends Controller
             if (array_key_exists($coordinate, $branchAttributes) && blank($branchAttributes[$coordinate])) {
                 $branchAttributes[$coordinate] = null;
             }
+        }
+
+        return $branchAttributes;
+    }
+
+    private function nullifyBranchCoordinates(array $branchAttributes): array
+    {
+        foreach (['latitude', 'longitude'] as $coordinate) {
+            $branchAttributes[$coordinate] = null;
         }
 
         return $branchAttributes;

@@ -689,7 +689,7 @@ class Add extends Component implements HasActions, HasForms
 
                 // تنظيف بيانات الفرع
                 $branchCleanData = Arr::except($branchData, ['departments', 'working_hours', 'location']);
-                $branchCleanData = $this->normalizeBranchCoordinates($branchCleanData);
+                $branchCleanData = $this->nullifyBranchCoordinates($branchCleanData);
                 $branchCleanData['created_by'] = auth()->id();
 
                 // إنشاء الفرع
@@ -721,12 +721,10 @@ class Add extends Component implements HasActions, HasForms
         $this->redirect(route('companies.index'));
     }
 
-    private function normalizeBranchCoordinates(array $branchData): array
+    private function nullifyBranchCoordinates(array $branchData): array
     {
         foreach (['latitude', 'longitude'] as $coordinate) {
-            if (array_key_exists($coordinate, $branchData) && blank($branchData[$coordinate])) {
-                $branchData[$coordinate] = null;
-            }
+            $branchData[$coordinate] = null;
         }
 
         return $branchData;
