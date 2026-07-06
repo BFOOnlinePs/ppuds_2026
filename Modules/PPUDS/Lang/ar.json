@@ -658,6 +658,7 @@
     "Companies processed successfully": "تمت معالجة الشركات بنجاح",
     "Company sent to university successfully": "تم إرسال الشركة إلى نظام الجامعة بنجاح",
     "Company already exists in university system": "الشركة مضافة مسبقًا في نظام الجامعة",
+    "Unable to send company to university system": "تعذر إرسال الشركة إلى نظام الجامعة",
     "Company supervisor sent to university successfully": "تم إرسال مشرف الشركة إلى نظام الجامعة بنجاح",
     "Company supervisors sent to university successfully": "تم إرسال مشرفي الشركة إلى نظام الجامعة بنجاح",
     "Company supervisor already exists in university system": "مشرف الشركة مضاف مسبقًا في نظام الجامعة",

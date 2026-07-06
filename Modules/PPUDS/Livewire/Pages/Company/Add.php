@@ -754,43 +754,36 @@ class Add extends Component implements HasActions, HasForms
             return;
         }
 
-        $created = 0;
-        $alreadyExists = 0;
-        $failed = 0;
+        $supervisor = $supervisors[0];
+        $password = session()->pull($this->supervisorPasswordSessionKey($supervisor['id']));
 
-        foreach ($supervisors as $index => $supervisor) {
-            $password = session()->pull($this->supervisorPasswordSessionKey($supervisor['id']));
-            $result = $apiService->addCompanyToUniversity(
-                $company->refresh(),
-                $password,
-                $supervisor['id'],
-                sendEvenIfCompanyExists: true,
-            );
+        $this->forgetSupervisorPasswords(
+            collect($supervisors)
+                ->pluck('id')
+                ->reject(fn (mixed $supervisorId): bool => (int) $supervisorId === (int) $supervisor['id'])
+                ->all()
+        );
 
-            if (($result['operation'] ?? null) === 'already_exists') {
-                $alreadyExists++;
-            } elseif (($result['success'] ?? false) === true) {
-                $created++;
-            } else {
-                $failed++;
-            }
-        }
+        $result = $apiService->addCompanyToUniversity(
+            $company->refresh(),
+            $password,
+            $supervisor['id'],
+            sendEvenIfCompanyExists: true,
+        );
 
-        if ($created > 0) {
-            Toaster::success(count($supervisors) > 1
-                ? __('Company supervisors sent to university successfully')
-                : __('Company supervisor sent to university successfully'));
+        if (($result['operation'] ?? null) === 'already_exists') {
+            Toaster::success(__('Company supervisor already exists in university system'));
 
             return;
         }
 
-        if ($alreadyExists > 0) {
-            Toaster::success(__('Company supervisor already exists in university system'));
+        if ($result === null || ($result['success'] ?? null) === false) {
+            Toaster::error(__('Unable to send company supervisor to university system'));
+
+            return;
         }
 
-        if ($failed > 0) {
-            Toaster::error(__('Unable to send company supervisor to university system'));
-        }
+        Toaster::success(__('Company supervisor sent to university successfully'));
     }
 
     private function toastUniversitySyncResult(?array $result): void
@@ -801,6 +794,12 @@ class Add extends Component implements HasActions, HasForms
 
         if (($result['operation'] ?? null) === 'already_exists') {
             Toaster::success(__('Company already exists in university system'));
+
+            return;
+        }
+
+        if (($result['success'] ?? null) === false) {
+            Toaster::error(__('Unable to send company to university system'));
 
             return;
         }
@@ -975,5 +974,12 @@ class Add extends Component implements HasActions, HasForms
     private function supervisorPasswordSessionKey(int $supervisorId): string
     {
         return "company_supervisor_plain_password_{$supervisorId}";
+    }
+
+    private function forgetSupervisorPasswords(array $supervisorIds): void
+    {
+        foreach ($supervisorIds as $supervisorId) {
+            session()->forget($this->supervisorPasswordSessionKey((int) $supervisorId));
+        }
     }
 }
