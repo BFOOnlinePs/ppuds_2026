@@ -10,6 +10,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Throwable;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Modules\Core\Entities\User;
 use Modules\Core\Enums\ImageQuality;
@@ -77,7 +78,7 @@ class LeaveRequest extends Model implements HasMedia
 
     public function registerMediaConversions(?Media $media = null): void
     {
-        if ($media !== null && ! str_starts_with((string) $media->mime_type, 'image/')) {
+        if ($media === null || ! str_starts_with((string) $media->mime_type, 'image/')) {
             return;
         }
 
@@ -105,7 +106,8 @@ class LeaveRequest extends Model implements HasMedia
         try {
             $originalName = $file->getClientOriginalName();
             $extension = $file->getClientOriginalExtension();
-            $fileName = time() . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $extension;
+            $baseName = Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) ?: 'attachment';
+            $fileName = time() . '_' . $baseName . '.' . $extension;
 
             $media = $this
                 ->addMedia($file)
@@ -113,16 +115,27 @@ class LeaveRequest extends Model implements HasMedia
                 ->toMediaCollection(self::ATTACHMENT_COLLECTION, self::ATTACHMENT_DISK);
 
             if (str_starts_with((string) $media->mime_type, 'image/')) {
-                $size = ImageSize::MEDIUM;
-
-                ImageService::optimize($media->getPath(), ImageQuality::HIGH->value);
-                ImageService::resize($media->getPath(), $size->width(), $size->height());
+                $this->optimizeAttachmentImage($media);
             }
 
             return $media;
-        } catch (\Exception $e) {
+        } catch (Throwable $e) {
             Log::error('Error uploading attachment file: ' . $e->getMessage());
             return null;
+        }
+    }
+
+    protected function optimizeAttachmentImage(Media $media): void
+    {
+        try {
+            $size = ImageSize::MEDIUM;
+
+            ImageService::optimize($media->getPath(), ImageQuality::HIGH->value);
+            ImageService::resize($media->getPath(), $size->width(), $size->height());
+        } catch (Throwable $e) {
+            Log::warning('Leave request attachment image optimization skipped: ' . $e->getMessage(), [
+                'media_id' => $media->id,
+            ]);
         }
     }
 

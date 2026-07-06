@@ -2,7 +2,8 @@
 
 namespace Modules\Core\Services;
 
-use Intervention\Image\Drivers\Imagick\Driver;
+use Intervention\Image\Drivers\Gd\Driver as GdDriver;
+use Intervention\Image\Drivers\Imagick\Driver as ImagickDriver;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Interfaces\ImageManagerInterface;
 
@@ -14,7 +15,16 @@ class ImageService
 
     protected static function manager(): ImageManagerInterface
     {
-        return new ImageManager(new Driver());
+        $driver = config('media-library.image_driver', 'gd');
+
+        try {
+            return new ImageManager(match ($driver) {
+                'imagick' => new ImagickDriver(),
+                default => new GdDriver(),
+            });
+        } catch (\Throwable) {
+            return new ImageManager(new GdDriver());
+        }
     }
 
     public static function optimize(string $path, int $quality = 75) : void
