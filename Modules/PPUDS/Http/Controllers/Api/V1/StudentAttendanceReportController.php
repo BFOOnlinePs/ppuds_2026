@@ -36,6 +36,7 @@ class StudentAttendanceReportController extends Controller
             ->allowedFilters(StudentAttendanceReportResource::allowedFilters())
             ->allowedSorts(StudentAttendanceReportResource::allowedSorts())
             ->allowedIncludes(StudentAttendanceReportResource::allowedIncludes())
+            ->with('media')
             ->paginate(request('per_page', 15));
 
         return $this->successResponse(
@@ -132,7 +133,7 @@ class StudentAttendanceReportController extends Controller
         }
 
         return $this->successResponse(
-            new StudentAttendanceReportResource($report),
+            new StudentAttendanceReportResource($report->loadMissing('media')),
             __('Student Attendance Report created successfully'),
             201
         );
@@ -196,6 +197,7 @@ class StudentAttendanceReportController extends Controller
             ->allowedFilters(StudentAttendanceReportResource::allowedFilters())
             ->allowedSorts(StudentAttendanceReportResource::allowedSorts())
             ->allowedIncludes(StudentAttendanceReportResource::allowedIncludes())
+            ->with('media')
             ->where('id', $report->id)
             ->firstOrFail();
 

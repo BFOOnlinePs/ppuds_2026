@@ -89,7 +89,7 @@ class Report extends Component implements HasForms
                                         ->maxFiles(5)
                                         ->reorderable()
                                         ->panelLayout('grid')
-                                        ->maxSize(5120) // 5MB
+                                        ->maxSize(10240) // 10MB
                                         ->columnSpanFull(),
                                 ]),
                         ]),

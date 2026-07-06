@@ -25,8 +25,8 @@ class LeaveRequestUpdate extends FormRequest
             'university_approval' => ['sometimes', 'in:' . implode(',', array_column(LeaveRequestStatus::cases(), 'value'))],
             'company_supervisor_comment' => ['sometimes', 'string', 'max:1000'],
             'university_supervisor_comment' => ['sometimes', 'string', 'max:1000'],
-            'attachment_file'    => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:5120'],
-            'attachment'         => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:5120'],
+            'attachment_file'    => ['nullable', 'file', 'mimes:pdf,doc,docx,jpg,jpeg,png,webp', 'max:5120'],
+            'attachment'         => ['nullable', 'file', 'mimes:pdf,doc,docx,jpg,jpeg,png,webp', 'max:5120'],
         ];
     }
 

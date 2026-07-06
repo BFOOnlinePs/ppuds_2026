@@ -5,6 +5,7 @@ namespace Modules\PPUDS\Livewire\Pages\StudentAttendanceReport;
 use App\View\Components\AppLayout;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -48,6 +49,7 @@ class Index extends Component implements HasForms, HasTable
                 $filtersData = $this->filters;
 
                 $query = StudentReport::query()->with([
+                    'media',
                     'studentAttendance.studentCompany.student.media',
                 ]);
 
@@ -110,6 +112,14 @@ class Index extends Component implements HasForms, HasTable
                     ->html() // ترجمة أكواد HTML
                     ->limit(40)
                     ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('attachments_count')
+                    ->label(__('Attachments'))
+                    ->getStateUsing(fn (StudentReport $record): int => $record->getMedia('file_report')->count())
+                    ->badge()
+                    ->formatStateUsing(fn (int $state): string => $state > 0 ? (string) $state : '-')
+                    ->color(fn (int $state): string => $state > 0 ? 'primary' : 'gray')
+                    ->toggleable(),
 
                 TextColumn::make('submit_lattitude')
                     ->label(__('Location'))
@@ -310,6 +320,11 @@ class Index extends Component implements HasForms, HasTable
                             ->default($record->academic_feedback)
                             ->disabled()
                             ->toolbarButtons([]),
+
+                        Placeholder::make('file_report')
+                            ->label(__('Report Attachments'))
+                            ->content(fn (): HtmlString => $this->reportAttachmentsHtml($record))
+                            ->columnSpanFull(),
                     ]),
                 ])
                 ->modalSubmitAction(false) // إخفاء زر الحفظ لأنها شاشة عرض فقط
@@ -324,6 +339,38 @@ class Index extends Component implements HasForms, HasTable
                 })
                 ->visible(fn() => auth()->user()->can('StudentReport Delete')), // تعديل الصلاحية
         ];
+    }
+
+    protected function reportAttachmentsHtml(StudentReport $report): HtmlString
+    {
+        $attachments = $report->getFileReportItems();
+
+        if ($attachments->isEmpty()) {
+            return new HtmlString('<span class="text-sm text-gray-500">---</span>');
+        }
+
+        $items = $attachments
+            ->map(function (array $attachment): string {
+                $url = e($attachment['url'] ?? '#');
+                $name = e($attachment['name'] ?? __('Attachment'));
+                $preview = '';
+
+                if ($attachment['is_image'] ?? false) {
+                    $preview = <<<HTML
+                        <img src="{$url}" alt="{$name}" class="h-16 w-16 rounded object-cover ring-1 ring-gray-200 dark:ring-gray-700">
+                    HTML;
+                }
+
+                return <<<HTML
+                    <a href="{$url}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3 rounded-md border border-gray-200 bg-white p-2 text-sm text-primary-600 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:hover:bg-gray-800">
+                        {$preview}
+                        <span class="truncate">{$name}</span>
+                    </a>
+                HTML;
+            })
+            ->implode('');
+
+        return new HtmlString('<div class="grid gap-2 sm:grid-cols-2">'.$items.'</div>');
     }
 
     public function getTableBulkAction(): array

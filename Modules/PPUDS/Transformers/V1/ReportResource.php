@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Modules\Core\Transformers\V1\UserResource;
-use Modules\PPUDS\Enums\AttendanceStatus;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
 
@@ -60,7 +59,7 @@ class ReportResource extends JsonResource
             'company_name' => $this->company?->name,
 
             // Computed/Appended Attributes
-            'attendance_days' => $this->attendance_days,
+            'attendance_days' => (int) ($this->attendance_days ?? 0),
             'required_training_days' => $this->branch?->required_training_days,
             'attended_training_days' => $this->branch?->attended_training_days,
             'actual_working_hours' => $this->actual_working_hours,
@@ -126,16 +125,25 @@ class ReportResource extends JsonResource
 
             // فلتر أيام الحضور (من - إلى)
             AllowedFilter::callback('attendance_days_from', function (Builder $query, $value) {
-                $query->whereHas('attendances', function ($subQ) {
-                    $subQ->where('status', AttendanceStatus::UNDETERMINED);
-                }, '>=', $value);
+                $value = self::filterValue($value);
+
+                if (is_numeric($value)) {
+                    $query->whereAttendanceDays('>=', (int) $value);
+                }
             }),
             AllowedFilter::callback('attendance_days_to', function (Builder $query, $value) {
-                $query->whereHas('attendances', function ($subQ) {
-                    $subQ->where('status', AttendanceStatus::UNDETERMINED);
-                }, '<=', $value);
+                $value = self::filterValue($value);
+
+                if (is_numeric($value)) {
+                    $query->whereAttendanceDays('<=', (int) $value);
+                }
             }),
         ];
+    }
+
+    private static function filterValue(mixed $value): mixed
+    {
+        return is_array($value) ? reset($value) : $value;
     }
 
     public static function allowedSorts(): array

@@ -166,12 +166,39 @@ class StudentCompany extends Model implements HasMedia
 
     public function scopeWithAttendanceDays($query)
     {
-        return $query->withCount([
-            'attendances as attendance_days' => function (Builder $query) {
-                $query->where('status', AttendanceStatus::UNDETERMINED)
-                    ->distinct('attendance_date');
-            },
+        $table = $this->getTable();
+
+        return $query->addSelect([
+            'attendance_days' => StudentAttendance::query()
+                ->selectRaw('COUNT(DISTINCT attendance_date)')
+                ->whereColumn('student_company_id', "{$table}.id")
+                ->whereNotNull('attendance_date')
+                ->whereNotNull('check_in'),
         ]);
+    }
+
+    public function scopeWhereAttendanceDays(Builder $query, string $operator, int $days): Builder
+    {
+        $allowedOperators = ['>=', '<=', '=', '>', '<'];
+
+        if (! in_array($operator, $allowedOperators, true)) {
+            $operator = '=';
+        }
+
+        $table = $this->getTable();
+        $attendanceTable = (new StudentAttendance())->getTable();
+
+        return $query->whereRaw(
+            "(
+                SELECT COUNT(DISTINCT {$attendanceTable}.attendance_date)
+                FROM {$attendanceTable}
+                WHERE {$attendanceTable}.student_company_id = {$table}.id
+                    AND {$attendanceTable}.attendance_date IS NOT NULL
+                    AND {$attendanceTable}.check_in IS NOT NULL
+                    AND {$attendanceTable}.deleted_at IS NULL
+            ) {$operator} ?",
+            [$days]
+        );
     }
 
     public function scopeWithActualWorkingHours($query)

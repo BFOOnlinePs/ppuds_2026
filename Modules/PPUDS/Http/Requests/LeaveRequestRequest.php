@@ -18,8 +18,8 @@ class LeaveRequestRequest extends FormRequest
             'start_at'                  => ['required', 'date'],
             'end_at'                    => ['required', 'date', 'after_or_equal:start_at'],
             'reason'                    => ['required', 'string', 'max:1000'],
-            'attachment_file'           => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:5120'],
-            'attachment'                => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:5120'],
+            'attachment_file'           => ['nullable', 'file', 'mimes:pdf,doc,docx,jpg,jpeg,png,webp', 'max:5120'],
+            'attachment'                => ['nullable', 'file', 'mimes:pdf,doc,docx,jpg,jpeg,png,webp', 'max:5120'],
         ];
     }
 

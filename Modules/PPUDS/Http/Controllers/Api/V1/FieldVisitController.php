@@ -50,7 +50,23 @@ class FieldVisitController extends Controller
      * @OA\Parameter(
      * name="filter[supervisor_id]",
      * in="query",
-     * description="Filter by Supervisor ID",
+     * description="Filter by the student's university supervisor ID",
+     *
+     * @OA\Schema(type="integer")
+     * ),
+     *
+     * @OA\Parameter(
+     * name="filter[supercisor_id]",
+     * in="query",
+     * description="Alias for filter[supervisor_id]",
+     *
+     * @OA\Schema(type="integer")
+     * ),
+     *
+     * @OA\Parameter(
+     * name="filter[field_visit_supervisor_id]",
+     * in="query",
+     * description="Filter by the supervisor assigned on the field visit record",
      *
      * @OA\Schema(type="integer")
      * ),
@@ -139,6 +155,10 @@ class FieldVisitController extends Controller
             return $response;
         }
 
+        if (! $this->studentCompanyBelongsToSupervisor((int) $data['student_company_id'], (int) $data['supervisor_id'])) {
+            return $this->errorResponse(__('The selected student does not belong to the selected supervisor.'), 422);
+        }
+
         $data['created_by'] = auth()->id();
 
         $fieldVisit = FieldVisit::create($data);
@@ -160,6 +180,7 @@ class FieldVisitController extends Controller
      *
      * @OA\Parameter(name="filter[company_id]", in="query", required=true, @OA\Schema(type="integer", example=1)),
      * @OA\Parameter(name="filter[supervisor_id]", in="query", required=false, @OA\Schema(type="integer", example=3)),
+     * @OA\Parameter(name="filter[supercisor_id]", in="query", required=false, description="Alias for filter[supervisor_id]", @OA\Schema(type="integer", example=3)),
      * @OA\Parameter(name="filter[search]", in="query", required=false, @OA\Schema(type="string", example="Ahmad")),
      * @OA\Parameter(name="filter[visit_date]", in="query", required=false, @OA\Schema(type="string", format="date", example="2026-07-01")),
      * @OA\Parameter(name="filter[without_visit_date]", in="query", required=false, @OA\Schema(type="string", format="date", example="2026-07-01")),
@@ -236,6 +257,9 @@ class FieldVisitController extends Controller
 
         $studentCompanies = $this->currentSemesterStudentCompanyQuery()
             ->where('company_id', $data['company_id'])
+            ->whereHas('registration', function (Builder $query) use ($data): void {
+                $query->where('supervisor_id', $data['supervisor_id']);
+            })
             ->whereIn('id', $studentCompanyIds)
             ->get();
 
@@ -345,6 +369,8 @@ class FieldVisitController extends Controller
      */
     public function update(FieldVisitUpdate $request, FieldVisit $fieldVisit)
     {
+        $data = $request->validated();
+
         if (! $this->canAccessStudentCompanyRecord($fieldVisit->student_company_id)) {
             return $this->errorResponse(__('You are not authorized to access this student company.'), 403);
         }
@@ -363,7 +389,14 @@ class FieldVisitController extends Controller
             }
         }
 
-        $fieldVisit->update($request->validated());
+        $studentCompanyId = (int) ($data['student_company_id'] ?? $fieldVisit->student_company_id);
+        $supervisorId = (int) ($data['supervisor_id'] ?? $fieldVisit->supervisor_id);
+
+        if (! $this->studentCompanyBelongsToSupervisor($studentCompanyId, $supervisorId)) {
+            return $this->errorResponse(__('The selected student does not belong to the selected supervisor.'), 422);
+        }
+
+        $fieldVisit->update($data);
 
         return $this->successResponse(
             new FieldVisitResource($fieldVisit->refresh()),
@@ -391,5 +424,15 @@ class FieldVisitController extends Controller
                         ->where('semester', $settings->semester_type->value);
                 })
         );
+    }
+
+    private function studentCompanyBelongsToSupervisor(int $studentCompanyId, int $supervisorId): bool
+    {
+        return StudentCompany::query()
+            ->whereKey($studentCompanyId)
+            ->whereHas('registration', function (Builder $query) use ($supervisorId): void {
+                $query->where('supervisor_id', $supervisorId);
+            })
+            ->exists();
     }
 }

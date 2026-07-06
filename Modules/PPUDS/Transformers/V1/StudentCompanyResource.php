@@ -22,7 +22,7 @@ class StudentCompanyResource extends JsonResource
             'branch_id' => $this->branch_id,
             'department_id' => $this->department_id,
             'status' => $this->status,
-            'attendance_days' => (int) $this->attendance_days ?? 0,
+            'attendance_days' => (int) ($this->attendance_days ?? 0),
             'created_by' => $this->created_by,
             'created_at' => $this->created_at,
 
@@ -75,6 +75,12 @@ class StudentCompanyResource extends JsonResource
             }),
 
             AllowedFilter::callback('supervisor_id', function (Builder $query, $value) {
+                $query->whereHas('registration', function ($registrationQuery) use ($value) {
+                    $registrationQuery->where('supervisor_id', $value);
+                });
+            }),
+
+            AllowedFilter::callback('supercisor_id', function (Builder $query, $value) {
                 $query->whereHas('registration', function ($registrationQuery) use ($value) {
                     $registrationQuery->where('supervisor_id', $value);
                 });

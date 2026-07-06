@@ -336,11 +336,13 @@ class Index extends Component implements HasTable, HasForms
                             ->storeFiles(false)
                             ->acceptedFileTypes([
                                 'application/pdf',
+                                'application/msword',
+                                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                                 'image/jpeg',
                                 'image/png',
                                 'image/webp',
                             ])
-                            ->rules(['mimes:pdf,jpg,jpeg,png,webp'])
+                            ->rules(['mimes:pdf,doc,docx,jpg,jpeg,png,webp'])
                             ->maxSize(5120)
                             ->visible(! $isView)
                             ->columnSpanFull(),

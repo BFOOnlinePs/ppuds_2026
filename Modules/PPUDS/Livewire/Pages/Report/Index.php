@@ -27,7 +27,6 @@ use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\Note;
 use Modules\PPUDS\Entities\StudentCompany;
-use Modules\PPUDS\Enums\AttendanceStatus;
 use Modules\PPUDS\Enums\SemesterType;
 use Modules\PPUDS\Enums\StudentGender;
 use Modules\PPUDS\Settings\GeneralSettings;
@@ -179,14 +178,8 @@ class Index extends Component implements HasForms, HasTable
                     }
 
                     return $query
-                        ->when($from !== null, fn ($q) => $q->whereHas('attendances', function (Builder $subQ) {
-                            $subQ->where('status', AttendanceStatus::UNDETERMINED);
-                        }, '>=', $from)
-                        )
-                        ->when($to !== null, fn ($q) => $q->whereHas('attendances', function (Builder $subQ) {
-                            $subQ->where('status', AttendanceStatus::UNDETERMINED);
-                        }, '<=', $to)
-                        );
+                        ->when($from !== null, fn (Builder $q) => $q->whereAttendanceDays('>=', $from))
+                        ->when($to !== null, fn (Builder $q) => $q->whereAttendanceDays('<=', $to));
                 }),
 
             Filter::make('year')

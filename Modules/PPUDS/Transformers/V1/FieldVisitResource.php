@@ -5,6 +5,7 @@ namespace Modules\PPUDS\Transformers\V1;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
 
@@ -70,7 +71,13 @@ class FieldVisitResource extends JsonResource
         return [
             AllowedFilter::exact('id'),
             AllowedFilter::exact('student_company_id'),
-            AllowedFilter::exact('supervisor_id'),
+            AllowedFilter::callback('supervisor_id', function (Builder $query, $value) {
+                self::whereHasUniversitySupervisor($query, $value);
+            }),
+            AllowedFilter::callback('supercisor_id', function (Builder $query, $value) {
+                self::whereHasUniversitySupervisor($query, $value);
+            }),
+            AllowedFilter::exact('field_visit_supervisor_id', 'supervisor_id'),
             AllowedFilter::partial('visiting_place'),
             AllowedFilter::exact('visit_date'),
             AllowedFilter::exact('created_by'),
@@ -78,9 +85,7 @@ class FieldVisitResource extends JsonResource
             AllowedFilter::exact('updated_at'),
 
             AllowedFilter::callback('university_supervisor', function (Builder $query, $value) {
-                $query->whereHas('studentCompany.registration', function (Builder $query) use ($value) {
-                    $query->where('supervisor_id', $value);
-                });
+                self::whereHasUniversitySupervisor($query, $value);
             }),
 
             AllowedFilter::callback('student_name', function (Builder $query, $value) {
@@ -95,6 +100,28 @@ class FieldVisitResource extends JsonResource
                 });
             }),
         ];
+    }
+
+    private static function whereHasUniversitySupervisor(Builder $query, mixed $value): void
+    {
+        $supervisorIds = collect(Arr::wrap($value))
+            ->filter(fn (mixed $supervisorId): bool => filled($supervisorId))
+            ->map(fn (mixed $supervisorId): int => (int) $supervisorId)
+            ->values();
+
+        if ($supervisorIds->isEmpty()) {
+            return;
+        }
+
+        $query->whereHas('studentCompany.registration', function (Builder $registrationQuery) use ($supervisorIds): void {
+            if ($supervisorIds->count() === 1) {
+                $registrationQuery->where('supervisor_id', $supervisorIds->first());
+
+                return;
+            }
+
+            $registrationQuery->whereIn('supervisor_id', $supervisorIds->all());
+        });
     }
 
     public static function allowedSorts(): array

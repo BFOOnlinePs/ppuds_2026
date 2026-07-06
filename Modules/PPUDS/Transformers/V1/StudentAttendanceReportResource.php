@@ -22,7 +22,20 @@ use Spatie\QueryBuilder\AllowedSort;
  * @OA\Property(property="academic_feedback", type="string", example="Keep it up"),
  * @OA\Property(property="submit_latitude", type="number", format="float", example=31.9038),
  * @OA\Property(property="submit_longitude", type="number", format="float", example=35.2034),
- * @OA\Property(property="file_report", type="string", example="/uploads/report_1.jpg"),
+ * @OA\Property(property="file_report", type="array", @OA\Items(type="string", example="/uploads/report_1.jpg")),
+ * @OA\Property(
+ * property="file_report_items",
+ * type="array",
+ *
+ * @OA\Items(
+ * type="object",
+ *
+ * @OA\Property(property="url", type="string", example="/uploads/report_1.jpg"),
+ * @OA\Property(property="name", type="string", example="daily-report.pdf"),
+ * @OA\Property(property="mime_type", type="string", example="application/pdf"),
+ * @OA\Property(property="is_image", type="boolean", example=false)
+ * )
+ * ),
  * @OA\Property(property="created_by", type="integer", example=123),
  * @OA\Property(property="created_at", type="string", format="date-time")
  * )
@@ -41,6 +54,7 @@ class StudentAttendanceReportResource extends JsonResource
             'submit_latitude'           => $this->submit_latitude,
             'submit_longitude'          => $this->submit_longitude,
             'file_report'               => $this->getMultipleImage(),
+            'file_report_items'         => $this->getFileReportItems(),
             'created_at'                => $this->created_at,
             'student_attendance'        => new StudentAttendanceResource($this->whenLoaded('studentAttendance')),
             'created_by'                => $this->whenLoaded('createdBy'),

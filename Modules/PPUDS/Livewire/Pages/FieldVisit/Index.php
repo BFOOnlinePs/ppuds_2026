@@ -16,25 +16,34 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
+use Modules\Core\Entities\User;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\FieldVisit;
 use Modules\PPUDS\Enums\SemesterType;
+use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
 class Index extends Component implements HasForms, HasTable
 {
     use InteractsWithForms;
     use InteractsWithTable;
+    use ScopesStudentCompanyVisibility;
 
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn () => FieldVisit::query()->with(['studentCompany.registration.student', 'supervisor']))
+            ->query(fn () => FieldVisit::query()
+                ->with(['studentCompany.registration.student', 'supervisor'])
+                ->whereHas(
+                    'studentCompany',
+                    fn (Builder $studentCompanyQuery): Builder => $this->applyStudentCompanyVisibilityScope($studentCompanyQuery)
+                ))
             ->columns([
                 TextColumn::make('studentCompany.registration.student.name')
                     ->label(__('Student'))
@@ -102,7 +111,16 @@ class Index extends Component implements HasForms, HasTable
 
             \Filament\Tables\Filters\SelectFilter::make('supervisor_id')
                 ->label(__('Supervisor'))
-                ->relationship('supervisor', 'name')
+                ->options(fn (): array => User::query()->pluck('name', 'id')->toArray())
+                ->query(function (Builder $query, array $data): Builder {
+                    return $query->when(
+                        $data['value'] ?? null,
+                        fn (Builder $fieldVisitQuery, $supervisorId): Builder => $fieldVisitQuery->whereHas(
+                            'studentCompany.registration',
+                            fn (Builder $registrationQuery): Builder => $registrationQuery->where('supervisor_id', $supervisorId)
+                        )
+                    );
+                })
                 ->searchable()
                 ->preload(),
 

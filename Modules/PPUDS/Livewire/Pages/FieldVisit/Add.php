@@ -5,6 +5,7 @@ namespace Modules\PPUDS\Livewire\Pages\FieldVisit;
 use App\View\Components\AppLayout;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
+use Filament\Forms\Get;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Group;
@@ -16,16 +17,20 @@ use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
+use Filament\Forms\Set;
+use Illuminate\Database\Eloquent\Builder;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Core\Entities\User;
 use Modules\PPUDS\Entities\FieldVisit;
 use Modules\PPUDS\Entities\StudentCompany;
+use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
 class Add extends Component implements HasForms, HasActions
 {
     use InteractsWithForms;
     use InteractsWithActions;
+    use ScopesStudentCompanyVisibility;
 
     public ?array $data = [];
 
@@ -47,29 +52,24 @@ class Add extends Component implements HasForms, HasActions
                             Section::make(__('Visit Details'))
                                 ->icon('solar-document-add-bold-duotone')
                                 ->schema([
-                                    Select::make('student_company_id')
-                                        ->label(__('Student Company'))
-                                        ->required()
-                                        ->searchable()
-                                        ->preload()
-                                        ->prefixIcon('solar-user-id-linear')
-                                        ->options(function () {
-                                            return StudentCompany::with(['registration.student', 'company'])
-                                                ->get()
-                                                ->mapWithKeys(function ($sc) {
-                                                    $studentName = $sc->registration?->student?->name ?? 'Unknown Student';
-                                                    $companyName = $sc->company?->name ?? 'Unknown Company';
-                                                    return [$sc->id => "{$studentName} - {$companyName}"];
-                                                });
-                                        }),
-
                                     Select::make('supervisor_id')
                                         ->label(__('Supervisor'))
                                         ->required()
                                         ->searchable()
                                         ->preload()
                                         ->prefixIcon('solar-user-id-bold-duotone')
-                                        ->options(User::pluck('name', 'id')),
+                                        ->options(User::pluck('name', 'id'))
+                                        ->live()
+                                        ->afterStateUpdated(fn (Set $set): mixed => $set('student_company_id', null)),
+
+                                    Select::make('student_company_id')
+                                        ->label(__('Student Company'))
+                                        ->required()
+                                        ->searchable()
+                                        ->preload()
+                                        ->prefixIcon('solar-user-id-linear')
+                                        ->options(fn (Get $get): array => $this->studentCompanyOptions($get('supervisor_id')))
+                                        ->disabled(fn (Get $get): bool => blank($get('supervisor_id'))),
 
                                     TextInput::make('visiting_place')
                                         ->label(__('Visiting Place'))
@@ -116,6 +116,36 @@ class Add extends Component implements HasForms, HasActions
             ->statePath('data');
     }
 
+    protected function studentCompanyOptions(mixed $supervisorId): array
+    {
+        return StudentCompany::query()
+            ->with(['registration.student', 'company'])
+            ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query))
+            ->when(filled($supervisorId), function (Builder $query) use ($supervisorId): void {
+                $query->whereHas('registration', function (Builder $registrationQuery) use ($supervisorId): void {
+                    $registrationQuery->where('supervisor_id', (int) $supervisorId);
+                });
+            })
+            ->get()
+            ->mapWithKeys(function (StudentCompany $studentCompany): array {
+                $studentName = $studentCompany->registration?->student?->name ?? 'Unknown Student';
+                $companyName = $studentCompany->company?->name ?? 'Unknown Company';
+
+                return [$studentCompany->id => "{$studentName} - {$companyName}"];
+            })
+            ->toArray();
+    }
+
+    protected function studentCompanyBelongsToSupervisor(int $studentCompanyId, int $supervisorId): bool
+    {
+        return StudentCompany::query()
+            ->whereKey($studentCompanyId)
+            ->whereHas('registration', function (Builder $registrationQuery) use ($supervisorId): void {
+                $registrationQuery->where('supervisor_id', $supervisorId);
+            })
+            ->exists();
+    }
+
     protected function messages(): array
     {
         return [
@@ -134,6 +164,13 @@ class Add extends Component implements HasForms, HasActions
         $this->validate();
 
         $data = $this->data;
+
+        if (! $this->studentCompanyBelongsToSupervisor((int) $data['student_company_id'], (int) $data['supervisor_id'])) {
+            $this->addError('data.student_company_id', __('The selected student does not belong to the selected supervisor.'));
+
+            return;
+        }
+
         $data['created_by'] = auth()->id();
 
         FieldVisit::create($data);

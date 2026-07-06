@@ -144,9 +144,9 @@ class LeaveRequestController extends Controller
      * property="attachment_file",
      * type="string",
      * format="binary",
-     * description="Optional supporting PDF or image"
+     * description="Optional supporting PDF, Word, or image"
      * ),
-     * @OA\Property(property="attachment", type="string", format="binary", description="Optional supporting PDF or image")
+     * @OA\Property(property="attachment", type="string", format="binary", description="Optional supporting PDF, Word, or image")
      * )
      * )
      * ),
@@ -236,8 +236,8 @@ class LeaveRequestController extends Controller
      *
      * @OA\Property(property="_method", type="string", example="PUT"),
      * @OA\Property(property="reason", type="string"),
-     * @OA\Property(property="attachment_file", type="string", format="binary", description="Optional supporting PDF or image"),
-     * @OA\Property(property="attachment", type="string", format="binary", description="Optional supporting PDF or image")
+     * @OA\Property(property="attachment_file", type="string", format="binary", description="Optional supporting PDF, Word, or image"),
+     * @OA\Property(property="attachment", type="string", format="binary", description="Optional supporting PDF, Word, or image")
      * )
      * )
      * ),
