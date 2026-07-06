@@ -119,14 +119,14 @@ class CompanyController extends Controller
      * type="array",
      * @OA\Items(
      * type="object",
-     * required={"name", "country_id", "city_id", "latitude", "longitude", "opening_time", "closing_time"},
+     * required={"name", "country_id", "city_id", "opening_time", "closing_time"},
      * @OA\Property(property="name", type="string", example="Main Branch"),
      * @OA\Property(property="email", type="string", format="email", example="branch@example.com"),
      * @OA\Property(property="phone", type="string", example="+970599999999"),
      * @OA\Property(property="country_id", type="integer", example=1),
      * @OA\Property(property="city_id", type="integer", example=1),
-     * @OA\Property(property="latitude", type="number", example=31.90),
-     * @OA\Property(property="longitude", type="number", example=35.20),
+     * @OA\Property(property="latitude", type="number", nullable=true, example=31.90),
+     * @OA\Property(property="longitude", type="number", nullable=true, example=35.20),
      * @OA\Property(property="opening_time", type="string", example="08:00"),
      * @OA\Property(property="closing_time", type="string", example="17:00"),
      * @OA\Property(
@@ -170,6 +170,8 @@ class CompanyController extends Controller
                     $branchAttributes = collect($branchData)
                         ->except(['departments', 'working_hours'])
                         ->toArray();
+
+                    $branchAttributes = $this->normalizeBranchCoordinates($branchAttributes);
 
                     $branchAttributes['created_by'] = auth()->id();
 
@@ -268,8 +270,8 @@ class CompanyController extends Controller
      * @OA\Property(property="name", type="string", example="Updated Main Branch"),
      * @OA\Property(property="country_id", type="integer", example=1),
      * @OA\Property(property="city_id", type="integer", example=1),
-     * @OA\Property(property="latitude", type="number", example=31.90),
-     * @OA\Property(property="longitude", type="number", example=35.20)
+     * @OA\Property(property="latitude", type="number", nullable=true, example=31.90),
+     * @OA\Property(property="longitude", type="number", nullable=true, example=35.20)
      * )
      * )
      * )
@@ -305,6 +307,8 @@ class CompanyController extends Controller
                     $branchAttributes = collect($branchData)
                         ->except(['id', 'departments', 'working_hours'])
                         ->toArray();
+
+                    $branchAttributes = $this->normalizeBranchCoordinates($branchAttributes);
 
                     if (isset($branchData['id']) && $branchData['id']) {
                         // تحديث فرع موجود
@@ -369,6 +373,17 @@ class CompanyController extends Controller
             __('Company updated successfully'),
             200
         );
+    }
+
+    private function normalizeBranchCoordinates(array $branchAttributes): array
+    {
+        foreach (['latitude', 'longitude'] as $coordinate) {
+            if (array_key_exists($coordinate, $branchAttributes) && blank($branchAttributes[$coordinate])) {
+                $branchAttributes[$coordinate] = null;
+            }
+        }
+
+        return $branchAttributes;
     }
 
     /**

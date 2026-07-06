@@ -60,8 +60,8 @@ class CompanyUpdateRequest extends FormRequest
             'branches.*.phone'        => ['nullable', 'string', 'max:50'],
             'branches.*.country_id'   => ['required_with:branches', 'integer', 'exists:geolocation_countries,id'],
             'branches.*.city_id'      => ['required_with:branches', 'integer', 'exists:geolocation_cities,id'],
-            'branches.*.latitude'     => ['required_with:branches', 'numeric'],
-            'branches.*.longitude'    => ['required_with:branches', 'numeric'],
+            'branches.*.latitude'     => ['nullable', 'numeric'],
+            'branches.*.longitude'    => ['nullable', 'numeric'],
 
             // الأقسام
             'branches.*.departments'           => ['nullable', 'array'],

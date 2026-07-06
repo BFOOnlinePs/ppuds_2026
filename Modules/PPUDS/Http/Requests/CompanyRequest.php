@@ -27,8 +27,8 @@ class CompanyRequest extends FormRequest
             'branches.*.phone'        => ['nullable', 'string', 'max:50'],
             'branches.*.country_id'   => ['required', 'integer', 'exists:geolocation_countries,id'],
             'branches.*.city_id'      => ['required', 'integer', 'exists:geolocation_cities,id'],
-            'branches.*.latitude'     => ['required', 'numeric'],
-            'branches.*.longitude'    => ['required', 'numeric'],
+            'branches.*.latitude'     => ['nullable', 'numeric'],
+            'branches.*.longitude'    => ['nullable', 'numeric'],
 
             // Department Validation (Updated)
             'branches.*.departments'         => ['nullable', 'array'],

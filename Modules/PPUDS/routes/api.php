@@ -19,6 +19,7 @@ use Modules\PPUDS\Http\Controllers\Api\V1\StudentAttendanceController;
 use Modules\PPUDS\Http\Controllers\Api\V1\StudentAttendanceReportController;
 use Modules\PPUDS\Http\Controllers\Api\V1\StudentCompanyAssistantController;
 use Modules\PPUDS\Http\Controllers\Api\V1\StudentCompanyController;
+use Modules\PPUDS\Http\Controllers\Api\V1\SupervisorStatisticsController;
 use Modules\PPUDS\Http\Controllers\Api\V1\SurveyAnswerController;
 use Modules\PPUDS\Http\Controllers\Api\V1\SurveyController;
 use Modules\PPUDS\Http\Controllers\Api\V1\WorkExperienceController;
@@ -40,6 +41,13 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
         Route::prefix('ppuds')->as('ppuds.')->group(function () {
 
             Route::get('/me', [ProfileController::class, 'show'])->name('profile.me');
+
+            Route::controller(SupervisorStatisticsController::class)
+                ->prefix('supervisors/statistics')
+                ->as('supervisors.statistics.')
+                ->group(function () {
+                    Route::get('/', 'index')->name('index');
+                });
 
             Route::controller(CompanyController::class)
                 ->prefix('companies')
