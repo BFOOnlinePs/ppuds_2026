@@ -43,10 +43,11 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
             Route::get('/me', [ProfileController::class, 'show'])->name('profile.me');
 
             Route::controller(SupervisorStatisticsController::class)
-                ->prefix('supervisors/statistics')
-                ->as('supervisors.statistics.')
+                ->prefix('supervisors')
+                ->as('supervisors.')
                 ->group(function () {
-                    Route::get('/', 'index')->name('index');
+                    Route::get('/statistics', 'index')->name('statistics.index');
+                    Route::get('/{supervisor}/statistics', 'show')->name('statistics.show');
                 });
 
             Route::controller(CompanyController::class)
