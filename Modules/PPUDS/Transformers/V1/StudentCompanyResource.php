@@ -80,7 +80,7 @@ class StudentCompanyResource extends JsonResource
                 });
             }),
 
-            AllowedFilter::callback('supercisor_id', function (Builder $query, $value) {
+            AllowedFilter::callback('supervisor_id', function (Builder $query, $value) {
                 $query->whereHas('registration', function ($registrationQuery) use ($value) {
                     $registrationQuery->where('supervisor_id', $value);
                 });

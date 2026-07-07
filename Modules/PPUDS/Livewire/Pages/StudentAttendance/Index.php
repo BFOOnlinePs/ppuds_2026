@@ -29,6 +29,7 @@ use Illuminate\Support\HtmlString;
 use Livewire\Component;
 use Maatwebsite\Excel\Excel as WriterType;
 use Masmerise\Toaster\Toaster;
+use Modules\Branch\Entities\Branch;
 use Modules\Core\Entities\User;
 use Modules\Core\Enums\UserRole;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
@@ -135,6 +136,12 @@ class Index extends Component implements HasForms, HasTable
                         : null)
                     ->openUrlInNewTab(),
 
+                TextColumn::make('work_range_distance')
+                    ->label(__('Distance From Work'))
+                    ->getStateUsing(fn (Model $record): ?string => $this->workRangeDistanceColumnState($record))
+                    ->placeholder('---')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 TextColumn::make('description')
                     ->label(__('Notes'))
                     ->limit(20)
@@ -146,6 +153,13 @@ class Index extends Component implements HasForms, HasTable
                 $this->getTableActions()
             )
             ->headerActions([
+                Action::make('today_present_students')
+                    ->label(__('Today Present Students'))
+                    ->icon('heroicon-o-user-group')
+                    ->color('primary')
+                    ->action(fn () => $this->showTodayPresentStudents())
+                    ->visible(fn () => auth()->user()->can('StudentAttendance View List')),
+
                 Action::make('export_today_absent_students')
                     ->label(__('Export Today Absentees'))
                     ->icon('heroicon-m-arrow-down-tray')
@@ -315,7 +329,7 @@ class Index extends Component implements HasForms, HasTable
                 ])
                 ->columns(2)
                 ->query(function (Builder $query, array $data): Builder {
-                    if ($this->todayAbsentStudentsFilterIsActive()) {
+                    if ($this->todayAbsentStudentsFilterIsActive() || $this->todayPresentStudentsFilterIsActive()) {
                         return $query;
                     }
 
@@ -330,7 +344,7 @@ class Index extends Component implements HasForms, HasTable
                         );
                 })
                 ->indicateUsing(function (array $data): array {
-                    if ($this->todayAbsentStudentsFilterIsActive()) {
+                    if ($this->todayAbsentStudentsFilterIsActive() || $this->todayPresentStudentsFilterIsActive()) {
                         return [];
                     }
 
@@ -351,6 +365,18 @@ class Index extends Component implements HasForms, HasTable
 
             Filter::make('today_absent_students')
                 ->label(__('Today Absentees')),
+
+            Filter::make('today_present_students')
+                ->label(__('Today Present Students'))
+                ->query(function (Builder $query, array $data): Builder {
+                    if (empty($data['isActive']) || $this->todayAbsentStudentsFilterIsActive()) {
+                        return $query;
+                    }
+
+                    return $query
+                        ->whereDate('attendance_date', now()->toDateString())
+                        ->whereNotNull('check_in');
+                }),
 
             Filter::make('student')
                 ->label(__('Student'))
@@ -445,6 +471,49 @@ class Index extends Component implements HasForms, HasTable
                         'pending' => $query->whereNull('check_out'),
                         default => $query,
                     };
+                }),
+
+            Filter::make('outside_work_range')
+                ->label(__('Outside Work Range'))
+                ->form([
+                    Forms\Components\Toggle::make('isActive')
+                        ->label(__('Outside Work Range')),
+
+                    TextInput::make('distance_meters')
+                        ->label(__('Allowed Range (meters)'))
+                        ->numeric()
+                        ->minValue(1)
+                        ->default(200),
+
+                    Select::make('location_type')
+                        ->label(__('Location Type'))
+                        ->options([
+                            'check_in' => __('Check In Location'),
+                            'check_out' => __('Check Out Location'),
+                        ])
+                        ->default('check_in')
+                        ->native(false),
+                ])
+                ->columns(3)
+                ->query(function (Builder $query, array $data): Builder {
+                    if (empty($data['isActive']) || $this->todayAbsentStudentsFilterIsActive()) {
+                        return $query;
+                    }
+
+                    return $this->applyOutsideWorkRangeFilter(
+                        $query,
+                        $this->outsideWorkRangeDistanceMeters($data['distance_meters'] ?? null),
+                        $this->outsideWorkRangeLocationType($data['location_type'] ?? null),
+                    );
+                })
+                ->indicateUsing(function (array $data): array {
+                    if (empty($data['isActive'])) {
+                        return [];
+                    }
+
+                    return [
+                        Indicator::make(__('Outside Work Range').': '.$this->outsideWorkRangeDistanceMeters($data['distance_meters'] ?? null).' '.__('meters')),
+                    ];
                 }),
         ];
     }
@@ -761,6 +830,83 @@ class Index extends Component implements HasForms, HasTable
         return (bool) data_get($this->getTableFilterState('today_absent_students'), 'isActive', false);
     }
 
+    protected function todayPresentStudentsFilterIsActive(): bool
+    {
+        return (bool) data_get($this->getTableFilterState('today_present_students'), 'isActive', false);
+    }
+
+    protected function applyOutsideWorkRangeFilter(Builder $query, int $distanceMeters, string $locationType): Builder
+    {
+        $attendanceTable = (new StudentAttendance())->getTable();
+        $branchTable = (new Branch())->getTable();
+        $latitudeColumn = $locationType === 'check_out' ? 'check_out_latitude' : 'check_in_latitude';
+        $longitudeColumn = $locationType === 'check_out' ? 'check_out_longitude' : 'check_in_longitude';
+
+        return $query
+            ->whereNotNull("{$attendanceTable}.{$latitudeColumn}")
+            ->whereNotNull("{$attendanceTable}.{$longitudeColumn}")
+            ->whereHas('studentCompany.branch', function (Builder $branchQuery) use ($attendanceTable, $branchTable, $latitudeColumn, $longitudeColumn, $distanceMeters): Builder {
+                return $branchQuery
+                    ->whereNotNull("{$branchTable}.latitude")
+                    ->whereNotNull("{$branchTable}.longitude")
+                    ->whereRaw(
+                        $this->distanceFromBranchSql($attendanceTable, $branchTable, $latitudeColumn, $longitudeColumn).' > ?',
+                        [$distanceMeters]
+                    );
+            });
+    }
+
+    protected function distanceFromBranchSql(string $attendanceTable, string $branchTable, string $latitudeColumn, string $longitudeColumn): string
+    {
+        return "(
+            6371000 * ACOS(
+                LEAST(
+                    1,
+                    GREATEST(
+                        -1,
+                        COS(RADIANS({$attendanceTable}.{$latitudeColumn}))
+                        * COS(RADIANS({$branchTable}.latitude))
+                        * COS(RADIANS({$branchTable}.longitude) - RADIANS({$attendanceTable}.{$longitudeColumn}))
+                        + SIN(RADIANS({$attendanceTable}.{$latitudeColumn}))
+                        * SIN(RADIANS({$branchTable}.latitude))
+                    )
+                )
+            )
+        )";
+    }
+
+    protected function outsideWorkRangeDistanceMeters(mixed $value): int
+    {
+        $distance = (int) $value;
+
+        return $distance > 0 ? $distance : 200;
+    }
+
+    protected function outsideWorkRangeLocationType(mixed $value): string
+    {
+        return $value === 'check_out' ? 'check_out' : 'check_in';
+    }
+
+    public function showTodayPresentStudents(): void
+    {
+        $today = now()->toDateString();
+
+        $this->tableFilters = array_replace($this->tableFilters ?? [], [
+            'attendance_date' => [
+                'from' => $today,
+                'until' => $today,
+            ],
+            'today_absent_students' => [
+                'isActive' => false,
+            ],
+            'today_present_students' => [
+                'isActive' => true,
+            ],
+        ]);
+
+        $this->handleTableFilterUpdates();
+    }
+
     protected function isTodayAbsentStudentRecord(Model $record): bool
     {
         return $record instanceof StudentCompany;
@@ -779,6 +925,46 @@ class Index extends Component implements HasForms, HasTable
     protected function studentPhoneColumnState(Model $record): ?string
     {
         return $this->studentFromRecord($record)?->phone;
+    }
+
+    protected function workRangeDistanceColumnState(Model $record): ?string
+    {
+        if (! $record instanceof StudentAttendance) {
+            return null;
+        }
+
+        $branch = $record->studentCompany?->branch;
+
+        if (
+            blank($record->check_in_latitude)
+            || blank($record->check_in_longitude)
+            || blank($branch?->latitude)
+            || blank($branch?->longitude)
+        ) {
+            return null;
+        }
+
+        $distance = $this->distanceInMeters(
+            (float) $record->check_in_latitude,
+            (float) $record->check_in_longitude,
+            (float) $branch->latitude,
+            (float) $branch->longitude,
+        );
+
+        return number_format($distance).' '.__('meters');
+    }
+
+    protected function distanceInMeters(float $latitudeA, float $longitudeA, float $latitudeB, float $longitudeB): int
+    {
+        $earthRadius = 6371000;
+        $latitudeDelta = deg2rad($latitudeB - $latitudeA);
+        $longitudeDelta = deg2rad($longitudeB - $longitudeA);
+
+        $a = sin($latitudeDelta / 2) ** 2
+            + cos(deg2rad($latitudeA)) * cos(deg2rad($latitudeB))
+            * sin($longitudeDelta / 2) ** 2;
+
+        return (int) round($earthRadius * 2 * atan2(sqrt($a), sqrt(1 - $a)));
     }
 
     protected function studentDetailsUrl(Model $record): ?string
