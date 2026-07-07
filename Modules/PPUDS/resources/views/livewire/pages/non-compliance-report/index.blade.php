@@ -6,7 +6,7 @@
     {{ $this->form }}
 
     @if ($records->count() > 0)
-        <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <div class="grid grid-cols-1 gap-4 2xl:grid-cols-2">
             @foreach ($records as $studentCompany)
                 @php
                     $summary = $this->summary($studentCompany);
@@ -16,23 +16,39 @@
 
                 <article class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
                     <div class="border-b border-gray-100 px-5 py-4 dark:border-gray-800">
-                        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                            <div class="min-w-0">
-                                <h3 class="truncate text-base font-semibold text-gray-950 dark:text-white">
+                        <div class="space-y-4">
+                            <div>
+                                <h3 class="whitespace-normal break-words text-lg font-semibold leading-7 text-gray-950 dark:text-white">
                                     {{ $studentCompany->student?->name ?? __('Unknown Student') }}
                                 </h3>
-                                <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
-                                    <span>{{ __('Student Number') }}: {{ $studentCompany->student?->studentProfile?->student_number ?? '-' }}</span>
-                                    <span>{{ __('Company') }}: {{ $studentCompany->company?->name ?? '-' }}</span>
-                                    <span>{{ __('Branch') }}: {{ $studentCompany->branch?->name ?? '-' }}</span>
+
+                                <div class="mt-3 grid grid-cols-1 gap-2 text-sm text-gray-600 dark:text-gray-300 sm:grid-cols-3">
+                                    <div class="min-w-0">
+                                        <div class="text-xs text-gray-400 dark:text-gray-500">{{ __('Student Number') }}</div>
+                                        <div class="break-words font-medium text-gray-700 dark:text-gray-200">
+                                            {{ $studentCompany->student?->studentProfile?->student_number ?? '-' }}
+                                        </div>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="text-xs text-gray-400 dark:text-gray-500">{{ __('Company') }}</div>
+                                        <div class="break-words font-medium text-gray-700 dark:text-gray-200">
+                                            {{ $studentCompany->company?->name ?? '-' }}
+                                        </div>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="text-xs text-gray-400 dark:text-gray-500">{{ __('Branch') }}</div>
+                                        <div class="break-words font-medium text-gray-700 dark:text-gray-200">
+                                            {{ $studentCompany->branch?->name ?? '-' }}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div class="flex shrink-0 flex-wrap gap-2">
-                                <span class="inline-flex items-center rounded-md bg-red-50 px-2.5 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-500/20">
+                            <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                <span class="inline-flex items-center justify-center rounded-md bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-500/20">
                                     {{ __('Total Non Compliance Days') }}: {{ (int) ($summary['total_non_compliance_days'] ?? 0) }}
                                 </span>
-                                <span class="inline-flex items-center rounded-md bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-600/10 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20">
+                                <span class="inline-flex items-center justify-center rounded-md bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 ring-1 ring-inset ring-amber-600/10 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20">
                                     {{ __('Total Late Hours') }}: {{ number_format((float) ($summary['total_late_hours'] ?? 0), 2) }}
                                 </span>
                             </div>
@@ -56,10 +72,10 @@
                                     </div>
                                 </div>
 
-                                <div class="flex flex-wrap gap-2">
+                                <div class="grid max-h-72 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2 xl:grid-cols-3">
                                     @foreach ($absenceDates as $absence)
-                                        <span class="inline-flex items-center gap-2 rounded-md border border-red-100 bg-red-50 px-2.5 py-1.5 text-sm text-red-800 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-200">
-                                            <span>{{ $absence['date'] ?? '-' }}</span>
+                                        <span class="flex min-w-0 items-center justify-between gap-3 rounded-md border border-red-100 bg-red-50 px-2.5 py-1.5 text-sm text-red-800 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-200">
+                                            <span class="font-medium">{{ $absence['date'] ?? '-' }}</span>
                                             <span class="text-xs text-red-600 dark:text-red-300">{{ $absence['label'] ?? '-' }}</span>
                                         </span>
                                     @endforeach
@@ -78,7 +94,7 @@
                                     </span>
                                 </div>
 
-                                <div class="space-y-2">
+                                <div class="max-h-80 space-y-2 overflow-y-auto">
                                     @foreach ($lateAttendances as $lateAttendance)
                                         <div class="rounded-md border border-amber-100 bg-amber-50 px-3 py-2 text-sm dark:border-amber-500/20 dark:bg-amber-500/10">
                                             <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

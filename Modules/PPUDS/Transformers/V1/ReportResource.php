@@ -63,7 +63,8 @@ class ReportResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $nonComplianceSummary = app(NonComplianceReportService::class)->summary($this->resource);
+        $nonComplianceSummary = app(NonComplianceReportService::class)
+            ->summary($this->resource, ...self::nonComplianceDateFilters($request));
 
         return [
             'id' => $this->id,
@@ -166,7 +167,8 @@ class ReportResource extends JsonResource
 
             AllowedFilter::callback('non_compliance', function (Builder $query, $value) {
                 if (self::truthyFilterValue($value)) {
-                    app(NonComplianceReportService::class)->applyNonComplianceFilter($query);
+                    app(NonComplianceReportService::class)
+                        ->applyNonComplianceFilter($query, ...self::nonComplianceDateFilters());
                 }
             }),
 
@@ -174,9 +176,14 @@ class ReportResource extends JsonResource
                 $value = self::filterValue($value);
 
                 if (is_numeric($value)) {
-                    app(NonComplianceReportService::class)->applyMinimumLateHoursFilter($query, $value);
+                    app(NonComplianceReportService::class)
+                        ->applyMinimumLateHoursFilter($query, $value, ...self::nonComplianceDateFilters());
                 }
             }),
+
+            AllowedFilter::callback('date', fn (Builder $query, $value): Builder => $query),
+            AllowedFilter::callback('date_from', fn (Builder $query, $value): Builder => $query),
+            AllowedFilter::callback('date_to', fn (Builder $query, $value): Builder => $query),
         ];
     }
 
@@ -194,6 +201,24 @@ class ReportResource extends JsonResource
         }
 
         return in_array(strtolower((string) $value), ['1', 'true', 'yes', 'on'], true);
+    }
+
+    private static function nonComplianceDateFilters(?Request $request = null): array
+    {
+        $request ??= request();
+
+        return [
+            self::stringFilterValue($request->input('filter.date')),
+            self::stringFilterValue($request->input('filter.date_from')),
+            self::stringFilterValue($request->input('filter.date_to')),
+        ];
+    }
+
+    private static function stringFilterValue(mixed $value): ?string
+    {
+        $value = self::filterValue($value);
+
+        return filled($value) ? (string) $value : null;
     }
 
     public static function allowedSorts(): array

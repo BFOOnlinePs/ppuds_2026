@@ -42,6 +42,9 @@ class ReportController extends Controller
      * @OA\Parameter(name="filter[attendance_days_to]", in="query", required=false, description="Filter attendance days to", @OA\Schema(type="integer")),
      * @OA\Parameter(name="filter[non_compliance]", in="query", required=false, description="When true, return students with absence or late attendance in the current semester period", @OA\Schema(type="boolean", example=true)),
      * @OA\Parameter(name="filter[minimum_late_hours]", in="query", required=false, description="Return students with at least one check-in late by this many hours from branch start time", @OA\Schema(type="number", format="float", example=2)),
+     * @OA\Parameter(name="filter[date]", in="query", required=false, description="Limit non-compliance calculations to one specific day. Overrides date_from/date_to.", @OA\Schema(type="string", format="date", example="2026-01-05")),
+     * @OA\Parameter(name="filter[date_from]", in="query", required=false, description="Limit non-compliance calculations from this date", @OA\Schema(type="string", format="date", example="2026-01-01")),
+     * @OA\Parameter(name="filter[date_to]", in="query", required=false, description="Limit non-compliance calculations until this date", @OA\Schema(type="string", format="date", example="2026-01-31")),
      *
      * @OA\Response(
      * response=200,

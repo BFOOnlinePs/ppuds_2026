@@ -15,7 +15,13 @@ use Modules\PPUDS\Settings\GeneralSettings;
 
 class NonComplianceReportService
 {
-    public function applyMinimumLateHoursFilter(Builder $query, int|float|string $hours): Builder
+    public function applyMinimumLateHoursFilter(
+        Builder $query,
+        int|float|string $hours,
+        ?string $date = null,
+        ?string $dateFrom = null,
+        ?string $dateTo = null
+    ): Builder
     {
         if (! is_numeric($hours)) {
             return $query;
@@ -23,7 +29,7 @@ class NonComplianceReportService
 
         $minutes = max(0, (int) round(((float) $hours) * 60));
         $operator = $minutes > 0 ? '>=' : '>';
-        $period = $this->trainingPeriod();
+        $period = $this->reportPeriod($date, $dateFrom, $dateTo);
 
         if ($period === null) {
             return $query->whereRaw('1 = 0');
@@ -71,12 +77,22 @@ class NonComplianceReportService
         });
     }
 
-    public function applyNonComplianceFilter(Builder $query): Builder
+    public function applyNonComplianceFilter(
+        Builder $query,
+        ?string $date = null,
+        ?string $dateFrom = null,
+        ?string $dateTo = null
+    ): Builder
     {
-        return $query->whereKey($this->nonCompliantStudentCompanyIds(clone $query));
+        return $query->whereKey($this->nonCompliantStudentCompanyIds(clone $query, $date, $dateFrom, $dateTo));
     }
 
-    public function nonCompliantStudentCompanyIds(Builder $query): array
+    public function nonCompliantStudentCompanyIds(
+        Builder $query,
+        ?string $date = null,
+        ?string $dateFrom = null,
+        ?string $dateTo = null
+    ): array
     {
         return $query
             ->with([
@@ -86,8 +102,8 @@ class NonComplianceReportService
                 'registration',
             ])
             ->get()
-            ->filter(function (StudentCompany $studentCompany): bool {
-                $summary = $this->summary($studentCompany);
+            ->filter(function (StudentCompany $studentCompany) use ($date, $dateFrom, $dateTo): bool {
+                $summary = $this->summary($studentCompany, $date, $dateFrom, $dateTo);
 
                 return ($summary['total_absence_days'] ?? 0) > 0
                     || ($summary['late_days'] ?? 0) > 0;
@@ -97,7 +113,12 @@ class NonComplianceReportService
             ->all();
     }
 
-    public function summary(StudentCompany $studentCompany): array
+    public function summary(
+        StudentCompany $studentCompany,
+        ?string $date = null,
+        ?string $dateFrom = null,
+        ?string $dateTo = null
+    ): array
     {
         $studentCompany->loadMissing([
             'attendances',
@@ -105,8 +126,7 @@ class NonComplianceReportService
             'leaveRequests',
         ]);
 
-        $absenceSummary = app(AbsenceReportService::class)->summary($studentCompany);
-        $period = $this->trainingPeriod();
+        $period = $this->reportPeriod($date, $dateFrom, $dateTo);
         $absenceDetails = $period === null
             ? $this->emptyAbsenceDetails()
             : $this->absenceDetails($studentCompany, ...$period);
@@ -119,7 +139,7 @@ class NonComplianceReportService
             ->sortByDesc(fn (array $lateAttendance): string => $lateAttendance['date'])
             ->first();
 
-        return array_merge($absenceSummary, [
+        return array_merge($absenceDetails, [
             'absence_dates' => $absenceDetails['absence_dates'],
             'excused_absence_dates' => $absenceDetails['excused_absence_dates'],
             'unexcused_absence_dates' => $absenceDetails['unexcused_absence_dates'],
@@ -133,7 +153,7 @@ class NonComplianceReportService
             'last_late_duration' => $lastLateAttendance
                 ? $this->formatMinutes($lastLateAttendance['late_minutes'])
                 : null,
-            'total_non_compliance_days' => (int) ($absenceSummary['total_absence_days'] ?? 0) + $lateAttendances->count(),
+            'total_non_compliance_days' => (int) ($absenceDetails['total_absence_days'] ?? 0) + $lateAttendances->count(),
         ]);
     }
 
@@ -181,6 +201,9 @@ class NonComplianceReportService
     {
         $workingDates = $this->workingDates($studentCompany, $periodStart, $periodEnd);
         $attendanceDates = $this->attendanceDates($studentCompany)->intersect($workingDates)->values();
+        $leaveRequestDates = $this->leaveRequestDates($studentCompany, $periodStart, $periodEnd)
+            ->intersect($workingDates)
+            ->values();
         $approvedLeaveDates = $this->leaveRequestDates($studentCompany, $periodStart, $periodEnd, approvedOnly: true)
             ->intersect($workingDates)
             ->values();
@@ -190,6 +213,16 @@ class NonComplianceReportService
         $unexcusedAbsenceDates = $actualAbsenceDates->diff($approvedLeaveDates)->values();
 
         return [
+            'training_start' => $periodStart->toDateString(),
+            'training_end' => $periodEnd->toDateString(),
+            'required_working_days' => $workingDates->count(),
+            'scheduled_training_days' => $workingDates->count(),
+            'attendance_days' => $attendanceDates->count(),
+            'total_absence_days' => $actualAbsenceDates->count(),
+            'excused_absence_days' => $excusedAbsenceDates->count(),
+            'unexcused_absence_days' => $unexcusedAbsenceDates->count(),
+            'actual_absence_days' => $actualAbsenceDates->count(),
+            'leave_request_days' => $leaveRequestDates->count(),
             'absence_dates' => $actualAbsenceDates
                 ->map(fn (string $date): array => [
                     'date' => $date,
@@ -280,6 +313,68 @@ class NonComplianceReportService
             ->map(fn (Carbon $date) => $date->toDateString());
     }
 
+    private function reportPeriod(?string $date = null, ?string $dateFrom = null, ?string $dateTo = null): ?array
+    {
+        $period = $this->trainingPeriod();
+
+        if ($period === null) {
+            return null;
+        }
+
+        [$periodStart, $periodEnd] = $period;
+        $start = $periodStart->copy();
+        $end = $periodEnd->copy();
+
+        if (filled($date)) {
+            $specificDate = $this->dateFilterValue($date);
+
+            if ($specificDate === null) {
+                return null;
+            }
+
+            $start = $specificDate;
+            $end = $specificDate->copy();
+        } else {
+            $from = $this->dateFilterValue($dateFrom);
+            $to = $this->dateFilterValue($dateTo);
+
+            if ($from !== null) {
+                $start = $from;
+            }
+
+            if ($to !== null) {
+                $end = $to;
+            }
+        }
+
+        if ($start->lt($periodStart)) {
+            $start = $periodStart->copy();
+        }
+
+        if ($end->gt($periodEnd)) {
+            $end = $periodEnd->copy();
+        }
+
+        if ($end->lt($start)) {
+            return null;
+        }
+
+        return [$start->startOfDay(), $end->startOfDay()];
+    }
+
+    private function dateFilterValue(?string $date): ?Carbon
+    {
+        if (blank($date)) {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($date)->startOfDay();
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
     private function trainingPeriod(): ?array
     {
         $settings = app(GeneralSettings::class);
@@ -344,6 +439,16 @@ class NonComplianceReportService
     private function emptyAbsenceDetails(): array
     {
         return [
+            'training_start' => null,
+            'training_end' => null,
+            'required_working_days' => 0,
+            'scheduled_training_days' => 0,
+            'attendance_days' => 0,
+            'total_absence_days' => 0,
+            'excused_absence_days' => 0,
+            'unexcused_absence_days' => 0,
+            'actual_absence_days' => 0,
+            'leave_request_days' => 0,
             'absence_dates' => [],
             'excused_absence_dates' => [],
             'unexcused_absence_dates' => [],

@@ -3,6 +3,7 @@
 namespace Modules\PPUDS\Livewire\Pages\NonComplianceReport;
 
 use App\View\Components\AppLayout;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -42,6 +43,9 @@ class Index extends Component implements HasForms
             'company_id' => null,
             'supervisor_id' => null,
             'minimum_late_hours' => null,
+            'date' => null,
+            'date_from' => null,
+            'date_to' => null,
             'year' => $settings->year,
             'semester_type' => $settings->semester_type->value,
         ]);
@@ -53,7 +57,7 @@ class Index extends Component implements HasForms
             ->schema([
                 Section::make(__('Search Details'))
                     ->schema([
-                        Grid::make(['default' => 1, 'md' => 2, 'xl' => 6])
+                        Grid::make(['default' => 1, 'md' => 2, 'xl' => 3, '2xl' => 6])
                             ->schema([
                                 TextInput::make('search')
                                     ->label(__('Number / Name'))
@@ -79,6 +83,24 @@ class Index extends Component implements HasForms
                                     ->minValue(0)
                                     ->step('0.25')
                                     ->live(debounce: 500),
+
+                                DatePicker::make('date')
+                                    ->label(__('Specific Day'))
+                                    ->native(false)
+                                    ->closeOnDateSelection()
+                                    ->live(),
+
+                                DatePicker::make('date_from')
+                                    ->label(__('From Date'))
+                                    ->native(false)
+                                    ->closeOnDateSelection()
+                                    ->live(),
+
+                                DatePicker::make('date_to')
+                                    ->label(__('To Date'))
+                                    ->native(false)
+                                    ->closeOnDateSelection()
+                                    ->live(),
 
                                 TextInput::make('year')
                                     ->label(__('Academic Year'))
@@ -108,7 +130,7 @@ class Index extends Component implements HasForms
     {
         $query = $this->filteredBaseQuery();
         $nonCompliantIds = app(NonComplianceReportService::class)
-            ->nonCompliantStudentCompanyIds(clone $query);
+            ->nonCompliantStudentCompanyIds(clone $query, ...$this->dateFilters());
 
         return $query
             ->whereKey($nonCompliantIds)
@@ -119,7 +141,7 @@ class Index extends Component implements HasForms
     public function summary(StudentCompany $studentCompany): array
     {
         return $this->nonComplianceSummaries[$studentCompany->id]
-            ??= app(NonComplianceReportService::class)->summary($studentCompany);
+            ??= app(NonComplianceReportService::class)->summary($studentCompany, ...$this->dateFilters());
     }
 
     private function filteredBaseQuery(): Builder
@@ -178,10 +200,26 @@ class Index extends Component implements HasForms
 
         if (is_numeric($this->filters['minimum_late_hours'] ?? null)) {
             app(NonComplianceReportService::class)
-                ->applyMinimumLateHoursFilter($query, $this->filters['minimum_late_hours']);
+                ->applyMinimumLateHoursFilter($query, $this->filters['minimum_late_hours'], ...$this->dateFilters());
         }
 
         return $query;
+    }
+
+    private function dateFilters(): array
+    {
+        return [
+            $this->filledFilter('date'),
+            $this->filledFilter('date_from'),
+            $this->filledFilter('date_to'),
+        ];
+    }
+
+    private function filledFilter(string $key): ?string
+    {
+        $value = $this->filters[$key] ?? null;
+
+        return filled($value) ? (string) $value : null;
     }
 
     private function companyOptions(): array
