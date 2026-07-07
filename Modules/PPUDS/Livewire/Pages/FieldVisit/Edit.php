@@ -38,7 +38,19 @@ class Edit extends Component implements HasForms, HasActions
     public function mount($fieldVisit)
     {
         $this->record = FieldVisit::findOrFail($fieldVisit);
-        $this->form->fill($this->record->toArray());
+
+        abort_unless($this->canAccessStudentCompanyRecord($this->record->student_company_id), 403);
+
+        $this->form->fill($this->defaultFormData($this->record->toArray()));
+    }
+
+    protected function defaultFormData(array $data): array
+    {
+        if ($this->shouldLockSupervisorSelection()) {
+            $data['supervisor_id'] = $this->lockedSupervisorId();
+        }
+
+        return $data;
     }
 
     public function form(Form $form): Form
@@ -60,7 +72,10 @@ class Edit extends Component implements HasForms, HasActions
                                         ->searchable()
                                         ->preload()
                                         ->prefixIcon('solar-user-id-bold-duotone')
-                                        ->options(User::pluck('name', 'id'))
+                                        ->options(fn (): array => $this->supervisorOptions())
+                                        ->default(fn (): ?int => $this->lockedSupervisorId())
+                                        ->disabled(fn (): bool => $this->shouldLockSupervisorSelection())
+                                        ->dehydrated()
                                         ->live()
                                         ->afterStateUpdated(fn (Set $set): mixed => $set('student_company_id', null)),
 
@@ -71,7 +86,7 @@ class Edit extends Component implements HasForms, HasActions
                                         ->preload()
                                         ->prefixIcon('solar-user-id-linear')
                                         ->options(fn (Get $get): array => $this->studentCompanyOptions($get('supervisor_id')))
-                                        ->disabled(fn (Get $get): bool => blank($get('supervisor_id'))),
+                                        ->disabled(fn (Get $get): bool => blank($this->effectiveSupervisorId($get('supervisor_id')))),
 
                                     TextInput::make('visiting_place')
                                         ->label(__('Visiting Place'))
@@ -120,6 +135,8 @@ class Edit extends Component implements HasForms, HasActions
 
     protected function studentCompanyOptions(mixed $supervisorId): array
     {
+        $supervisorId = $this->effectiveSupervisorId($supervisorId);
+
         return StudentCompany::query()
             ->with(['registration.student', 'company'])
             ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query))
@@ -142,6 +159,7 @@ class Edit extends Component implements HasForms, HasActions
     {
         return StudentCompany::query()
             ->whereKey($studentCompanyId)
+            ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query))
             ->whereHas('registration', function (Builder $registrationQuery) use ($supervisorId): void {
                 $registrationQuery->where('supervisor_id', $supervisorId);
             })
@@ -163,7 +181,17 @@ class Edit extends Component implements HasForms, HasActions
     {
         $this->authorize("FieldVisit Update");
 
+        $this->syncLockedSupervisorState();
+
         $this->validate();
+
+        $this->data = $this->lockedSupervisorData($this->data);
+
+        if (! $this->canAccessStudentCompanyRecord((int) $this->data['student_company_id'])) {
+            $this->addError('data.student_company_id', __('You are not authorized to access this student company.'));
+
+            return;
+        }
 
         if (! $this->studentCompanyBelongsToSupervisor((int) $this->data['student_company_id'], (int) $this->data['supervisor_id'])) {
             $this->addError('data.student_company_id', __('The selected student does not belong to the selected supervisor.'));
