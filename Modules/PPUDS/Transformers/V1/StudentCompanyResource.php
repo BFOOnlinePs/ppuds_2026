@@ -168,6 +168,7 @@ class StudentCompanyResource extends JsonResource
             'student',
             'student.user',
             'company',
+            'company.user',
             'branch',
             'department',
             'payments',
