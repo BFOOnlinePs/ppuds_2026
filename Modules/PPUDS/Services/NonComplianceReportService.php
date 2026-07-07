@@ -3,10 +3,12 @@
 namespace Modules\PPUDS\Services;
 
 use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Branch\Entities\BranchWorkingHour;
+use Modules\PPUDS\Entities\LeaveRequest;
 use Modules\PPUDS\Entities\StudentAttendance;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Settings\GeneralSettings;
@@ -105,6 +107,9 @@ class NonComplianceReportService
 
         $absenceSummary = app(AbsenceReportService::class)->summary($studentCompany);
         $period = $this->trainingPeriod();
+        $absenceDetails = $period === null
+            ? $this->emptyAbsenceDetails()
+            : $this->absenceDetails($studentCompany, ...$period);
         $lateAttendances = $period === null
             ? collect()
             : $this->lateAttendances($studentCompany, ...$period);
@@ -115,7 +120,11 @@ class NonComplianceReportService
             ->first();
 
         return array_merge($absenceSummary, [
+            'absence_dates' => $absenceDetails['absence_dates'],
+            'excused_absence_dates' => $absenceDetails['excused_absence_dates'],
+            'unexcused_absence_dates' => $absenceDetails['unexcused_absence_dates'],
             'late_days' => $lateAttendances->count(),
+            'late_attendances' => $lateAttendances->values()->all(),
             'total_late_minutes' => $lateMinutes,
             'total_late_hours' => round($lateMinutes / 60, 2),
             'max_late_minutes' => $maxLateMinutes,
@@ -149,7 +158,8 @@ class NonComplianceReportService
                     return null;
                 }
 
-                $lateMinutes = $this->lateMinutes($attendance, $workingHour->start_time);
+                $scheduledCheckIn = $this->scheduledCheckIn($attendance, $workingHour->start_time);
+                $lateMinutes = $this->lateMinutes($attendance, $scheduledCheckIn);
 
                 if ($lateMinutes <= 0) {
                     return null;
@@ -157,11 +167,117 @@ class NonComplianceReportService
 
                 return [
                     'date' => $attendance->attendance_date->toDateString(),
+                    'expected_check_in' => $scheduledCheckIn->format('H:i'),
+                    'check_in' => $attendance->check_in->format('H:i'),
                     'late_minutes' => $lateMinutes,
+                    'late_duration' => $this->formatMinutes($lateMinutes),
                 ];
             })
             ->filter()
             ->values();
+    }
+
+    private function absenceDetails(StudentCompany $studentCompany, Carbon $periodStart, Carbon $periodEnd): array
+    {
+        $workingDates = $this->workingDates($studentCompany, $periodStart, $periodEnd);
+        $attendanceDates = $this->attendanceDates($studentCompany)->intersect($workingDates)->values();
+        $approvedLeaveDates = $this->leaveRequestDates($studentCompany, $periodStart, $periodEnd, approvedOnly: true)
+            ->intersect($workingDates)
+            ->values();
+
+        $actualAbsenceDates = $workingDates->diff($attendanceDates)->values();
+        $excusedAbsenceDates = $actualAbsenceDates->intersect($approvedLeaveDates)->values();
+        $unexcusedAbsenceDates = $actualAbsenceDates->diff($approvedLeaveDates)->values();
+
+        return [
+            'absence_dates' => $actualAbsenceDates
+                ->map(fn (string $date): array => [
+                    'date' => $date,
+                    'type' => $approvedLeaveDates->contains($date) ? 'excused' : 'unexcused',
+                    'label' => $approvedLeaveDates->contains($date) ? __('Excused') : __('Unexcused'),
+                ])
+                ->values()
+                ->all(),
+            'excused_absence_dates' => $excusedAbsenceDates->values()->all(),
+            'unexcused_absence_dates' => $unexcusedAbsenceDates->values()->all(),
+        ];
+    }
+
+    private function workingDates(StudentCompany $studentCompany, Carbon $periodStart, Carbon $periodEnd): Collection
+    {
+        $branch = $studentCompany->branch;
+
+        if (! $branch?->relationLoaded('workingHours')) {
+            return collect();
+        }
+
+        $openDayValues = $branch->workingHours
+            ->filter(fn ($workingHour) => ! $workingHour->is_closed && $workingHour->day)
+            ->map(fn ($workingHour) => $workingHour->day->value)
+            ->unique()
+            ->values();
+
+        if ($openDayValues->isEmpty()) {
+            return collect();
+        }
+
+        return collect(CarbonPeriod::create($periodStart, $periodEnd))
+            ->filter(fn (Carbon $date) => $openDayValues->contains($this->weekDayValue($date)))
+            ->map(fn (Carbon $date) => $date->toDateString())
+            ->unique()
+            ->sort()
+            ->values();
+    }
+
+    private function attendanceDates(StudentCompany $studentCompany): Collection
+    {
+        return $studentCompany->attendances
+            ->toBase()
+            ->filter(fn (StudentAttendance $attendance) => $attendance->attendance_date && $attendance->check_in)
+            ->map(fn (StudentAttendance $attendance) => $attendance->attendance_date->toDateString())
+            ->unique()
+            ->sort()
+            ->values();
+    }
+
+    private function leaveRequestDates(
+        StudentCompany $studentCompany,
+        Carbon $periodStart,
+        Carbon $periodEnd,
+        bool $approvedOnly = false
+    ): Collection {
+        return $studentCompany->leaveRequests
+            ->toBase()
+            ->filter(fn (LeaveRequest $leaveRequest) => ! $approvedOnly || $leaveRequest->isFullyApproved())
+            ->flatMap(fn (LeaveRequest $leaveRequest) => $this->leaveDatesWithinPeriod($leaveRequest, $periodStart, $periodEnd))
+            ->unique()
+            ->sort()
+            ->values();
+    }
+
+    private function leaveDatesWithinPeriod(LeaveRequest $leaveRequest, Carbon $periodStart, Carbon $periodEnd): Collection
+    {
+        if (! $leaveRequest->start_at || ! $leaveRequest->end_at) {
+            return collect();
+        }
+
+        $start = $leaveRequest->start_at->copy()->startOfDay();
+        $end = $leaveRequest->end_at->copy()->startOfDay();
+
+        if ($end->lt($periodStart) || $start->gt($periodEnd)) {
+            return collect();
+        }
+
+        if ($start->lt($periodStart)) {
+            $start = $periodStart->copy();
+        }
+
+        if ($end->gt($periodEnd)) {
+            $end = $periodEnd->copy();
+        }
+
+        return collect(CarbonPeriod::create($start, $end))
+            ->map(fn (Carbon $date) => $date->toDateString());
     }
 
     private function trainingPeriod(): ?array
@@ -188,12 +304,15 @@ class NonComplianceReportService
         return [$start, $end];
     }
 
-    private function lateMinutes(StudentAttendance $attendance, Carbon $startTime): int
+    private function scheduledCheckIn(StudentAttendance $attendance, Carbon $startTime): Carbon
     {
-        $scheduledCheckIn = $attendance->attendance_date
+        return $attendance->attendance_date
             ->copy()
             ->setTimeFromTimeString($startTime->format('H:i:s'));
+    }
 
+    private function lateMinutes(StudentAttendance $attendance, Carbon $scheduledCheckIn): int
+    {
         return max(0, (int) floor(($attendance->check_in->getTimestamp() - $scheduledCheckIn->getTimestamp()) / 60));
     }
 
@@ -220,5 +339,14 @@ class NonComplianceReportService
         }
 
         return $hours.' '.__('Hours').' '.$remainingMinutes.' '.__('Minutes');
+    }
+
+    private function emptyAbsenceDetails(): array
+    {
+        return [
+            'absence_dates' => [],
+            'excused_absence_dates' => [],
+            'unexcused_absence_dates' => [],
+        ];
     }
 }

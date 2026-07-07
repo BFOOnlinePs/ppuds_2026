@@ -3,6 +3,7 @@
 namespace Modules\PPUDS\Services;
 
 use Illuminate\Http\Client\Response;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -549,22 +550,22 @@ class PpuApiService
             ]);
         }
 
-        if (! $response->successful()) {
-            if ($this->companyAlreadyExistsResponse($response, $responseData)) {
-                if ($universityCompanyId && blank($company->old_company_id)) {
-                    $company->forceFill(['old_company_id' => $universityCompanyId])->save();
-                }
-
-                self::logToTerminal("الشركة {$company->name} مضافة مسبقًا في API الجامعة، لذلك لم يتم إنشاؤها مرة أخرى.", $userId);
-
-                return [
-                    'success' => true,
-                    'operation' => 'already_exists',
-                    'old_company_id' => $universityCompanyId,
-                    'response' => $responseData,
-                ];
+        if ($this->companyAlreadyExistsResponse($response, $responseData)) {
+            if ($universityCompanyId && blank($company->old_company_id)) {
+                $company->forceFill(['old_company_id' => $universityCompanyId])->save();
             }
 
+            self::logToTerminal("الشركة {$company->name} مضافة مسبقًا في API الجامعة، لذلك لم يتم إنشاؤها مرة أخرى.", $userId);
+
+            return [
+                'success' => true,
+                'operation' => 'already_exists',
+                'old_company_id' => $universityCompanyId,
+                'response' => $responseData,
+            ];
+        }
+
+        if (! $response->successful()) {
             self::logToTerminal("✗ فشل إرسال الشركة {$company->name} إلى API الجامعة (كود: {$response->status()})", $userId);
             Log::error('Failed to add company to PPU API', [
                 'company_id' => $company->id,
@@ -572,7 +573,13 @@ class PpuApiService
                 'body' => $response->body(),
             ]);
 
-            return null;
+            return [
+                'success' => false,
+                'operation' => 'failed',
+                'old_company_id' => $universityCompanyId,
+                'status' => $response->status(),
+                'response' => $responseData ?: ['message' => $response->body()],
+            ];
         }
 
         if (data_get($responseData, 'success') === false) {
@@ -985,11 +992,27 @@ class PpuApiService
 
         $message = data_get($result, 'response.message')
             ?? data_get($result, 'response.msg')
-            ?? data_get($result, 'response.error');
+            ?? data_get($result, 'response.error')
+            ?? data_get($result, 'response.title');
 
-        return is_string($message) && $message !== ''
+        if (! is_string($message) || $message === '') {
+            $errors = data_get($result, 'response.errors');
+
+            if (is_array($errors)) {
+                $message = collect(Arr::dot($errors))
+                    ->filter(fn ($value): bool => is_scalar($value))
+                    ->map(fn ($value): string => (string) $value)
+                    ->implode(' ');
+            }
+        }
+
+        $message = is_string($message) && $message !== ''
             ? $message
             : 'رفض API الجامعة الطلب.';
+
+        return isset($result['status'])
+            ? "كود {$result['status']}: {$message}"
+            : $message;
     }
 
     private function universityCompanyPayload(Company $company, ?string $password = null, ?int $supervisorId = null): ?array
@@ -1115,7 +1138,7 @@ class PpuApiService
 
     private function companyAlreadyExistsResponse(Response $response, array $responseData): bool
     {
-        if (! in_array($response->status(), [400, 409, 422], true)) {
+        if (! $response->successful() && ! in_array($response->status(), [400, 409, 422], true)) {
             return false;
         }
 
@@ -1125,15 +1148,9 @@ class PpuApiService
 
     private function universityCompanyAlreadyExists(array $responseData): bool
     {
-        $text = collect([
-            data_get($responseData, 'status'),
-            data_get($responseData, 'message'),
-            data_get($responseData, 'msg'),
-            data_get($responseData, 'error'),
-            data_get($responseData, 'errors'),
-        ])
-            ->filter()
-            ->map(fn($value) => is_array($value) ? json_encode($value, JSON_UNESCAPED_UNICODE) : (string) $value)
+        $text = collect(Arr::dot($responseData))
+            ->filter(fn ($value): bool => is_scalar($value))
+            ->map(fn ($value): string => (string) $value)
             ->implode(' ');
 
         return $this->containsAlreadyExistsText($text);
@@ -1143,7 +1160,18 @@ class PpuApiService
     {
         $text = Str::lower($text);
 
-        foreach (['already', 'exist', 'duplicate', 'موجود', 'مضافة', 'مكرر'] as $needle) {
+        foreach ([
+            'already exists',
+            'already exist',
+            'exists already',
+            'duplicate',
+            'موجود مسبق',
+            'موجودة مسبق',
+            'مضاف مسبق',
+            'مضافة مسبق',
+            'مكرر',
+            'مكررة',
+        ] as $needle) {
             if (str_contains($text, $needle)) {
                 return true;
             }
