@@ -14,7 +14,6 @@ class FieldVisitCompanyStudentsRequest extends FormRequest
             'filter' => ['required', 'array'],
             'filter.company_id' => ['required', 'integer', Rule::exists((new Company)->getTable(), 'id')],
             'filter.supervisor_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
-            'filter.supercisor_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
             'filter.search' => ['nullable', 'string', 'max:255'],
             'filter.visit_date' => ['nullable', 'date_format:Y-m-d'],
             'filter.without_visit_date' => ['nullable', 'date_format:Y-m-d'],

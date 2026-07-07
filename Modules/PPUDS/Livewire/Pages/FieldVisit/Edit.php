@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Core\Entities\User;
+use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\FieldVisit;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
@@ -46,6 +47,8 @@ class Edit extends Component implements HasForms, HasActions
 
     protected function defaultFormData(array $data): array
     {
+        $data['company_id'] = $this->record->studentCompany?->company_id;
+
         if ($this->shouldLockSupervisorSelection()) {
             $data['supervisor_id'] = $this->lockedSupervisorId();
         }
@@ -77,16 +80,30 @@ class Edit extends Component implements HasForms, HasActions
                                         ->disabled(fn (): bool => $this->shouldLockSupervisorSelection())
                                         ->dehydrated()
                                         ->live()
+                                        ->afterStateUpdated(function (Set $set): void {
+                                            $set('company_id', null);
+                                            $set('student_company_id', null);
+                                        }),
+
+                                    Select::make('company_id')
+                                        ->label(__('Company'))
+                                        ->required()
+                                        ->searchable()
+                                        ->preload()
+                                        ->prefixIcon('solar-buildings-3-bold-duotone')
+                                        ->options(fn (Get $get): array => $this->companyOptions($get('supervisor_id')))
+                                        ->disabled(fn (Get $get): bool => blank($this->effectiveSupervisorId($get('supervisor_id'))))
+                                        ->live()
                                         ->afterStateUpdated(fn (Set $set): mixed => $set('student_company_id', null)),
 
                                     Select::make('student_company_id')
-                                        ->label(__('Student Company'))
+                                        ->label(__('Student'))
                                         ->required()
                                         ->searchable()
                                         ->preload()
                                         ->prefixIcon('solar-user-id-linear')
-                                        ->options(fn (Get $get): array => $this->studentCompanyOptions($get('supervisor_id')))
-                                        ->disabled(fn (Get $get): bool => blank($this->effectiveSupervisorId($get('supervisor_id')))),
+                                        ->options(fn (Get $get): array => $this->studentCompanyOptions($get('supervisor_id'), $get('company_id')))
+                                        ->disabled(fn (Get $get): bool => blank($this->effectiveSupervisorId($get('supervisor_id'))) || blank($get('company_id'))),
 
                                     TextInput::make('visiting_place')
                                         ->label(__('Visiting Place'))
@@ -185,33 +202,56 @@ class Edit extends Component implements HasForms, HasActions
         return $data;
     }
 
-    protected function studentCompanyOptions(mixed $supervisorId): array
+    protected function companyOptions(mixed $supervisorId): array
     {
         $supervisorId = $this->effectiveSupervisorId($supervisorId);
 
+        if (blank($supervisorId)) {
+            return [];
+        }
+
+        return Company::query()
+            ->tap(fn (Builder $query) => $this->applyCompanyVisibilityScope($query))
+            ->whereHas('studentCompanies.registration', function (Builder $registrationQuery) use ($supervisorId): void {
+                $registrationQuery->where('supervisor_id', (int) $supervisorId);
+            })
+            ->get()
+            ->pluck('name', 'id')
+            ->sort()
+            ->toArray();
+    }
+
+    protected function studentCompanyOptions(mixed $supervisorId, mixed $companyId): array
+    {
+        $supervisorId = $this->effectiveSupervisorId($supervisorId);
+
+        if (blank($supervisorId) || blank($companyId)) {
+            return [];
+        }
+
         return StudentCompany::query()
-            ->with(['registration.student', 'company'])
+            ->with(['registration.student'])
             ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query))
-            ->when(filled($supervisorId), function (Builder $query) use ($supervisorId): void {
-                $query->whereHas('registration', function (Builder $registrationQuery) use ($supervisorId): void {
-                    $registrationQuery->where('supervisor_id', (int) $supervisorId);
-                });
+            ->where('company_id', (int) $companyId)
+            ->whereHas('registration', function (Builder $registrationQuery) use ($supervisorId): void {
+                $registrationQuery->where('supervisor_id', (int) $supervisorId);
             })
             ->get()
             ->mapWithKeys(function (StudentCompany $studentCompany): array {
                 $studentName = $studentCompany->registration?->student?->name ?? 'Unknown Student';
-                $companyName = $studentCompany->company?->name ?? 'Unknown Company';
 
-                return [$studentCompany->id => "{$studentName} - {$companyName}"];
+                return [$studentCompany->id => $studentName];
             })
+            ->sort()
             ->toArray();
     }
 
-    protected function studentCompanyBelongsToSupervisor(int $studentCompanyId, int $supervisorId): bool
+    protected function studentCompanyMatchesSelection(int $studentCompanyId, int $supervisorId, int $companyId): bool
     {
         return StudentCompany::query()
             ->whereKey($studentCompanyId)
             ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query))
+            ->where('company_id', $companyId)
             ->whereHas('registration', function (Builder $registrationQuery) use ($supervisorId): void {
                 $registrationQuery->where('supervisor_id', $supervisorId);
             })
@@ -221,6 +261,7 @@ class Edit extends Component implements HasForms, HasActions
     protected function messages(): array
     {
         return [
+            'data.company_id.required' => __('Please select a company.'),
             'data.student_company_id.required' => __('Please select a student company.'),
             'data.supervisor_id.required' => __('Please select a supervisor.'),
             'data.visit_date.required' => __('The visit date is required.'),
@@ -245,11 +286,13 @@ class Edit extends Component implements HasForms, HasActions
             return;
         }
 
-        if (! $this->studentCompanyBelongsToSupervisor((int) $this->data['student_company_id'], (int) $this->data['supervisor_id'])) {
-            $this->addError('data.student_company_id', __('The selected student does not belong to the selected supervisor.'));
+        if (! $this->studentCompanyMatchesSelection((int) $this->data['student_company_id'], (int) $this->data['supervisor_id'], (int) $this->data['company_id'])) {
+            $this->addError('data.student_company_id', __('The selected student does not belong to the selected company and supervisor.'));
 
             return;
         }
+
+        unset($this->data['company_id']);
 
         $this->record->update($this->data);
 

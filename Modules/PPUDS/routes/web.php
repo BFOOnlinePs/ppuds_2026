@@ -234,6 +234,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 });
 
                 Route::group([
+                    'prefix' => 'non-compliance-reports',
+                    'as' => 'non-compliance-reports.',
+                    'namespace' => 'Modules\PPUDS\Livewire\Pages\NonComplianceReport',
+                ], function () {
+                    Route::get('/', Index::class)->name('index')->can('Report View List');
+                });
+
+                Route::group([
                     'prefix' => 'sync-company-supervisors',
                     'as' => 'sync-company-supervisors.',
                     'namespace' => 'Modules\PPUDS\Livewire\Pages\SyncCompanySupervisors',

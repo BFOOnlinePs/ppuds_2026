@@ -40,6 +40,8 @@ class ReportController extends Controller
      * @OA\Parameter(name="filter[semester_type]", in="query", required=false, description="Filter by semester type", @OA\Schema(type="string")),
      * @OA\Parameter(name="filter[attendance_days_from]", in="query", required=false, description="Filter attendance days from", @OA\Schema(type="integer")),
      * @OA\Parameter(name="filter[attendance_days_to]", in="query", required=false, description="Filter attendance days to", @OA\Schema(type="integer")),
+     * @OA\Parameter(name="filter[non_compliance]", in="query", required=false, description="When true, return students with absence or late attendance in the current semester period", @OA\Schema(type="boolean", example=true)),
+     * @OA\Parameter(name="filter[minimum_late_hours]", in="query", required=false, description="Return students with at least one check-in late by this many hours from branch start time", @OA\Schema(type="number", format="float", example=2)),
      *
      * @OA\Response(
      * response=200,

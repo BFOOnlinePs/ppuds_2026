@@ -92,7 +92,7 @@ class FieldVisitResource extends JsonResource
             AllowedFilter::callback('supervisor_id', function (Builder $query, $value) {
                 self::whereHasUniversitySupervisor($query, $value);
             }),
-            AllowedFilter::callback('supercisor_id', function (Builder $query, $value) {
+            AllowedFilter::callback('supervisor_id', function (Builder $query, $value) {
                 self::whereHasUniversitySupervisor($query, $value);
             }),
             AllowedFilter::exact('field_visit_supervisor_id', 'supervisor_id'),

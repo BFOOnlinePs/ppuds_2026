@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Modules\Core\Transformers\V1\UserResource;
+use Modules\PPUDS\Services\NonComplianceReportService;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
 
@@ -26,6 +27,18 @@ use Spatie\QueryBuilder\AllowedSort;
  * @OA\Property(property="required_training_days", type="integer", example=40),
  * @OA\Property(property="attended_training_days", type="integer", example=15),
  * @OA\Property(property="actual_working_hours", type="number", format="float", example=120.5),
+ * @OA\Property(
+ * property="non_compliance",
+ * type="object",
+ * @OA\Property(property="total_days", type="integer", example=3),
+ * @OA\Property(property="absence_days", type="integer", example=1),
+ * @OA\Property(property="unexcused_absence_days", type="integer", example=1),
+ * @OA\Property(property="late_days", type="integer", example=2),
+ * @OA\Property(property="total_late_hours", type="number", format="float", example=3.5),
+ * @OA\Property(property="max_late_hours", type="number", format="float", example=2),
+ * @OA\Property(property="last_late_date", type="string", nullable=true, example="2026-07-07"),
+ * @OA\Property(property="last_late_duration", type="string", nullable=true, example="2 Hours")
+ * ),
  * @OA\Property(property="total_payment_amount", type="number", format="float", example=250.5),
  * @OA\Property(
  * property="total_payment_summary",
@@ -50,6 +63,8 @@ class ReportResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $nonComplianceSummary = app(NonComplianceReportService::class)->summary($this->resource);
+
         return [
             'id' => $this->id,
 
@@ -63,6 +78,16 @@ class ReportResource extends JsonResource
             'required_training_days' => $this->branch?->required_training_days,
             'attended_training_days' => $this->branch?->attended_training_days,
             'actual_working_hours' => $this->actual_working_hours,
+            'non_compliance' => [
+                'total_days' => (int) ($nonComplianceSummary['total_non_compliance_days'] ?? 0),
+                'absence_days' => (int) ($nonComplianceSummary['total_absence_days'] ?? 0),
+                'unexcused_absence_days' => (int) ($nonComplianceSummary['unexcused_absence_days'] ?? 0),
+                'late_days' => (int) ($nonComplianceSummary['late_days'] ?? 0),
+                'total_late_hours' => (float) ($nonComplianceSummary['total_late_hours'] ?? 0),
+                'max_late_hours' => (float) ($nonComplianceSummary['max_late_hours'] ?? 0),
+                'last_late_date' => $nonComplianceSummary['last_late_date'] ?? null,
+                'last_late_duration' => $nonComplianceSummary['last_late_duration'] ?? null,
+            ],
             'total_payment_amount' => (float) $this->total_payment_amount ?? 0,
             'total_payment_summary' => $this->totalPaymentSummary(),
             'total_attendance_leaves_days' => $this->total_attendance_leaves_days,
@@ -138,12 +163,37 @@ class ReportResource extends JsonResource
                     $query->whereAttendanceDays('<=', (int) $value);
                 }
             }),
+
+            AllowedFilter::callback('non_compliance', function (Builder $query, $value) {
+                if (self::truthyFilterValue($value)) {
+                    app(NonComplianceReportService::class)->applyNonComplianceFilter($query);
+                }
+            }),
+
+            AllowedFilter::callback('minimum_late_hours', function (Builder $query, $value) {
+                $value = self::filterValue($value);
+
+                if (is_numeric($value)) {
+                    app(NonComplianceReportService::class)->applyMinimumLateHoursFilter($query, $value);
+                }
+            }),
         ];
     }
 
     private static function filterValue(mixed $value): mixed
     {
         return is_array($value) ? reset($value) : $value;
+    }
+
+    private static function truthyFilterValue(mixed $value): bool
+    {
+        $value = self::filterValue($value);
+
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        return in_array(strtolower((string) $value), ['1', 'true', 'yes', 'on'], true);
     }
 
     public static function allowedSorts(): array
