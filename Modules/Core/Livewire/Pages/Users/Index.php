@@ -46,6 +46,11 @@ class Index extends Component implements HasTable, HasForms
                     ->searchable()
                     ->sortable(),
 
+                TextColumn::make('phone')
+                    ->label(__('Phone'))
+                    ->searchable()
+                    ->sortable(),
+
                 TextColumn::make('roles.name')
                     ->label(__('Roles'))
                     ->badge()
@@ -98,6 +103,7 @@ class Index extends Component implements HasTable, HasForms
                 ->form([
                     TextInput::make('name')->label(__('Name')),
                     TextInput::make('email')->label(__('Email')),
+                    TextInput::make('phone')->label(__('Phone')),
                 ])
                 ->query(function (Builder $query, array $data): Builder {
                     return $query
@@ -108,9 +114,13 @@ class Index extends Component implements HasTable, HasForms
                         ->when(
                             $data['email'],
                             fn (Builder $q) => $q->where('email', 'like', '%' . $data['email'] . '%')
+                        )
+                        ->when(
+                            $data['phone'],
+                            fn (Builder $q) => $q->where('phone', 'like', '%' . $data['phone'] . '%')
                         );
                 })
-                ->columns(2), // لجعل حقلي الاسم والبريد بجانب بعضهما داخل الفلتر
+                ->columns(3), // لجعل حقول البحث بجانب بعضها داخل الفلتر
 
             // 3. فلتر التاريخ
             Filter::make('created_at')

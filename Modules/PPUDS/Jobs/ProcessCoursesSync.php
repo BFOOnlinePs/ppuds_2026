@@ -24,14 +24,17 @@ class ProcessCoursesSync implements ShouldQueue
 
     protected string $token;
 
+    protected ?string $refreshToken;
+
     protected ?int $initiatorId;
 
-    public function __construct(string $academicYear, string $semesterNo, string $token, ?int $initiatorId = null)
+    public function __construct(string $academicYear, string $semesterNo, string $token, ?int $initiatorId = null, ?string $refreshToken = null)
     {
         $this->academicYear = $academicYear;
         $this->semesterNo = $semesterNo;
         $this->token = $token;
         $this->initiatorId = $initiatorId;
+        $this->refreshToken = $refreshToken;
     }
 
     public function handle(PpuApiService $apiService): void
@@ -43,7 +46,8 @@ class ProcessCoursesSync implements ShouldQueue
                 $this->academicYear,
                 $this->semesterNo,
                 $this->token,
-                $this->initiatorId
+                $this->initiatorId,
+                $this->refreshToken
             );
         } catch (\Exception $e) {
             PpuApiService::logToTerminal('✗ فشل تنفيذ مزامنة المساقات في الخلفية: ' . $e->getMessage(), $this->initiatorId);

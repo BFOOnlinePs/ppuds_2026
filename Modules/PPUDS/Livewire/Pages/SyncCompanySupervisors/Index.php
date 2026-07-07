@@ -53,6 +53,7 @@ class Index extends Component
             ProcessCompanySupervisorsUniversitySync::dispatch(
                 $apiService->getAccessToken(),
                 $userId,
+                $apiService->getRefreshToken($userId),
             );
 
             PpuApiService::logToTerminal('تم إرسال مزامنة مشرفي الشركات للخلفية.', $userId);

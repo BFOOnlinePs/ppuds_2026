@@ -16,19 +16,48 @@ use Modules\PPUDS\Jobs\ProcessStudentCourseSync;
 
 class PpuApiService
 {
+    private const TOKEN_CACHE_TTL_HOURS = 12;
 
-    public function getAccessToken(): string
+    private ?string $runtimeAccessToken = null;
+
+    private ?string $runtimeRefreshToken = null;
+
+    public function getAccessToken(?string $accessToken = null, ?string $refreshToken = null, ?int $userId = null): string
     {
-        $token = session('keycloak_access_token');
+        $userId = $userId ?? auth()->id();
+        $cachedTokenPair = $this->cachedTokenPair($userId);
+
+        $token = $accessToken
+            ?? $this->runtimeAccessToken
+            ?? ($cachedTokenPair['access_token'] ?? null)
+            ?? session('keycloak_access_token');
+
+        $refreshToken = $refreshToken
+            ?? $this->runtimeRefreshToken
+            ?? ($cachedTokenPair['refresh_token'] ?? null)
+            ?? session('keycloak_refresh_token');
         if (!$token) {
             throw new \Exception('لا يوجد صلاحية للوصول إلى بيانات الجامعة. يرجى تسجيل الدخول عبر بوابة الجامعة.');
         }
 
+        $this->runtimeAccessToken = $token;
+        $this->runtimeRefreshToken = $refreshToken;
+
         if ($this->isTokenExpired($token)) {
-            $token = $this->refreshToken();
+            $token = $this->refreshAccessToken($refreshToken, $userId);
         }
 
         return $token;
+    }
+
+    public function getRefreshToken(?int $userId = null): ?string
+    {
+        $userId = $userId ?? auth()->id();
+        $cachedTokenPair = $this->cachedTokenPair($userId);
+
+        return $this->runtimeRefreshToken
+            ?? ($cachedTokenPair['refresh_token'] ?? null)
+            ?? session('keycloak_refresh_token');
     }
 
     private function isTokenExpired(string $token): bool
@@ -39,9 +68,14 @@ class PpuApiService
         return ($exp - 30) < now()->timestamp;
     }
 
-    private function refreshToken(): string
+    public function refreshAccessToken(?string $refreshToken = null, ?int $userId = null): string
     {
-        $refreshToken = session('keycloak_refresh_token');
+        $userId = $userId ?? auth()->id();
+        $cachedTokenPair = $this->cachedTokenPair($userId);
+        $refreshToken = ($cachedTokenPair['refresh_token'] ?? null)
+            ?? $refreshToken
+            ?? $this->runtimeRefreshToken
+            ?? session('keycloak_refresh_token');
         if (!$refreshToken) {
             throw new \Exception('انتهت صلاحية التوكن ولا يوجد توكن تحديث. يرجى تسجيل الدخول مرة أخرى.');
         }
@@ -59,18 +93,171 @@ class PpuApiService
         ]);
 
         if (!$response->successful()) {
-            session()->forget(['keycloak_access_token', 'keycloak_refresh_token']);
+            $this->forgetTokenPair($userId);
             throw new \Exception('فشل تحديث التوكن. يرجى تسجيل الدخول مرة أخرى.');
         }
 
         $data = $response->json();
+        $newAccessToken = $data['access_token'] ?? null;
+        $newRefreshToken = $data['refresh_token'] ?? $refreshToken;
 
-        session([
-            'keycloak_access_token'  => $data['access_token'],
-            'keycloak_refresh_token' => $data['refresh_token'] ?? $refreshToken,
-        ]);
+        if (!$newAccessToken) {
+            $this->forgetTokenPair($userId);
+            throw new \Exception('لم يرجع نظام الجامعة access token جديد. يرجى تسجيل الدخول مرة أخرى.');
+        }
 
-        return $data['access_token'];
+        $this->storeTokenPair($newAccessToken, $newRefreshToken, $userId);
+
+        return $newAccessToken;
+    }
+
+    public function storeTokenPair(string $accessToken, ?string $refreshToken = null, ?int $userId = null): void
+    {
+        $userId = $userId ?? auth()->id();
+        $this->runtimeAccessToken = $accessToken;
+        $this->runtimeRefreshToken = $refreshToken;
+
+        try {
+            session([
+                'keycloak_access_token' => $accessToken,
+                'keycloak_refresh_token' => $refreshToken,
+            ]);
+        } catch (\Throwable) {
+            // Queue workers do not always have an active web session.
+        }
+
+        if ($userId) {
+            cache()->put($this->tokenCacheKey($userId), [
+                'access_token' => $accessToken,
+                'refresh_token' => $refreshToken,
+            ], now()->addHours(self::TOKEN_CACHE_TTL_HOURS));
+        }
+    }
+
+    public function forgetTokenPair(?int $userId = null): void
+    {
+        $userId = $userId ?? auth()->id();
+        $this->runtimeAccessToken = null;
+        $this->runtimeRefreshToken = null;
+
+        try {
+            session()->forget(['keycloak_access_token', 'keycloak_refresh_token']);
+        } catch (\Throwable) {
+            // Queue workers do not always have an active web session.
+        }
+
+        if ($userId) {
+            cache()->forget($this->tokenCacheKey($userId));
+        }
+    }
+
+    public function revokeRefreshToken(?string $refreshToken = null, ?int $userId = null): void
+    {
+        $refreshToken = $refreshToken ?? $this->getRefreshToken($userId);
+
+        if (!$refreshToken) {
+            return;
+        }
+
+        $baseUrl = config('services.keycloak.base_url');
+        $realm = config('services.keycloak.realms');
+        $clientId = config('services.keycloak.client_id');
+        $clientSecret = config('services.keycloak.client_secret');
+
+        try {
+            Http::asForm()->post("{$baseUrl}/realms/{$realm}/protocol/openid-connect/logout", [
+                'client_id' => $clientId,
+                'client_secret' => $clientSecret,
+                'refresh_token' => $refreshToken,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Failed to revoke Keycloak refresh token', [
+                'user_id' => $userId ?? auth()->id(),
+                'exception' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    public function universityGet(
+        string $url,
+        array $query = [],
+        ?string &$token = null,
+        ?string &$refreshToken = null,
+        ?int $userId = null,
+        int $connectTimeout = 15,
+        int $timeout = 60,
+        int $retries = 3,
+    ): Response {
+        return $this->sendUniversityRequest('get', $url, ['query' => $query], $token, $refreshToken, $userId, $connectTimeout, $timeout, $retries);
+    }
+
+    public function universityPostJson(
+        string $url,
+        array $payload = [],
+        ?string &$token = null,
+        ?string &$refreshToken = null,
+        ?int $userId = null,
+        int $connectTimeout = 10,
+        int $timeout = 30,
+        int $retries = 0,
+    ): Response {
+        return $this->sendUniversityRequest('post', $url, ['json' => $payload], $token, $refreshToken, $userId, $connectTimeout, $timeout, $retries);
+    }
+
+    private function sendUniversityRequest(
+        string $method,
+        string $url,
+        array $options,
+        ?string &$token,
+        ?string &$refreshToken,
+        ?int $userId,
+        int $connectTimeout,
+        int $timeout,
+        int $retries,
+    ): Response {
+        $token = $this->getAccessToken($token, $refreshToken, $userId);
+        $refreshToken = $refreshToken ?? $this->getRefreshToken($userId);
+
+        $response = $this->newUniversityPendingRequest($token, $connectTimeout, $timeout, $retries)
+            ->send($method, $url, $options);
+
+        if ($response->status() !== 401 || !$refreshToken) {
+            return $response;
+        }
+
+        $token = $this->refreshAccessToken($refreshToken, $userId);
+        $refreshToken = $this->getRefreshToken($userId) ?? $refreshToken;
+
+        return $this->newUniversityPendingRequest($token, $connectTimeout, $timeout, $retries)
+            ->send($method, $url, $options);
+    }
+
+    private function newUniversityPendingRequest(string $token, int $connectTimeout, int $timeout, int $retries)
+    {
+        $request = Http::withHeaders(['Accept' => 'application/json'])
+            ->withToken($token)
+            ->connectTimeout($connectTimeout)
+            ->timeout($timeout);
+
+        if ($retries > 0) {
+            $request->retry($retries, 1000, throw: false);
+        }
+
+        return $request;
+    }
+
+    private function cachedTokenPair(?int $userId): array
+    {
+        if (!$userId) {
+            return [];
+        }
+
+        return cache()->get($this->tokenCacheKey($userId), []);
+    }
+
+    private function tokenCacheKey(int $userId): string
+    {
+        return "keycloak_token_pair_{$userId}";
     }
 
     public static function logToTerminal(string $message, ?int $userId = null): void
@@ -104,12 +291,13 @@ class PpuApiService
         }
     }
 
-    public function syncSystemData($academicYear, $semesterNo, ?string $token = null, ?int $userId = null): bool
+    public function syncSystemData($academicYear, $semesterNo, ?string $token = null, ?int $userId = null, ?string $refreshToken = null): bool
     {
         $userId = $userId ?? auth()->id();
-        $token = $token ?? $this->getAccessToken();
+        $token = $this->getAccessToken($token, $refreshToken, $userId);
+        $refreshToken = $refreshToken ?? $this->getRefreshToken($userId);
 
-        $majorsSynced = $this->syncMajors($token, $userId);
+        $majorsSynced = $this->syncMajors($token, $userId, $refreshToken);
         if (! $majorsSynced) {
             self::logToTerminal('تم إيقاف المزامنة لأن مزامنة التخصصات فشلت.', $userId);
 
@@ -117,7 +305,7 @@ class PpuApiService
         }
 
         try {
-            $students = $this->fetchStudentsFromUniversity($academicYear, $semesterNo, $token, $userId);
+            $students = $this->fetchStudentsFromUniversity($academicYear, $semesterNo, $token, $userId, $refreshToken);
 
             if ($students === null) {
                 return false;
@@ -147,7 +335,7 @@ class PpuApiService
 
             foreach ($students as $student) {
                 try {
-                    $registrationSynced += ProcessStudentCourseSync::dispatchSync($student, $token, $academicYear, $semesterNo, $userId) ?? 0;
+                    $registrationSynced += ProcessStudentCourseSync::dispatchSync($student, $token, $academicYear, $semesterNo, $userId, $refreshToken) ?? 0;
                 } catch (\Exception $e) {
                     $registrationFailed++;
                     self::logToTerminal('✗ فشل اسناد مقررات الطالب: ' . ($student['studentNo'] ?? 'Unknown'), $userId);
@@ -170,15 +358,16 @@ class PpuApiService
         }
     }
 
-    public function syncCourses($academicYear, $semesterNo, ?string $token = null, ?int $userId = null): bool
+    public function syncCourses($academicYear, $semesterNo, ?string $token = null, ?int $userId = null, ?string $refreshToken = null): bool
     {
         $userId = $userId ?? auth()->id();
-        $token = $token ?? $this->getAccessToken();
+        $token = $this->getAccessToken($token, $refreshToken, $userId);
+        $refreshToken = $refreshToken ?? $this->getRefreshToken($userId);
 
         self::logToTerminal("جارٍ بدء مزامنة المساقات للسنة: {$academicYear} الفصل: {$semesterNo}...", $userId);
 
         try {
-            $students = $this->fetchStudentsFromUniversity($academicYear, $semesterNo, $token, $userId);
+            $students = $this->fetchStudentsFromUniversity($academicYear, $semesterNo, $token, $userId, $refreshToken);
 
             if ($students === null) {
                 return false;
@@ -197,7 +386,7 @@ class PpuApiService
                     continue;
                 }
 
-                $courses = $this->fetchStudentPracticalCourses($studentNumber, $academicYear, $semesterNo, $token, $userId);
+                $courses = $this->fetchStudentPracticalCourses($studentNumber, $academicYear, $semesterNo, $token, $userId, $refreshToken);
 
                 if ($courses === null) {
                     $failed++;
@@ -254,10 +443,18 @@ class PpuApiService
         self::logToTerminal('جلب إعدادات الفصل الحالي من API الجامعة...', $userId);
 
         try {
-            $response = Http::withHeaders(['Accept' => 'application/json'])
-                ->withToken($this->getAccessToken())
-                ->connectTimeout(5)
-                ->get('https://api-core.ppu.edu/api/DualStudies/getCurrentSemesterSettings');
+            $token = $this->getAccessToken(userId: $userId);
+            $refreshToken = $this->getRefreshToken($userId);
+            $response = $this->universityGet(
+                'https://api-core.ppu.edu/api/DualStudies/getCurrentSemesterSettings',
+                [],
+                $token,
+                $refreshToken,
+                $userId,
+                5,
+                60,
+                0
+            );
 
             if (! $response->successful()) {
                 self::logToTerminal('✗ فشل جلب إعدادات الفصل من API الجامعة (كود: ' . $response->status() . ')', $userId);
@@ -301,8 +498,11 @@ class PpuApiService
         ?string $token = null,
         ?int $userId = null,
         bool $sendEvenIfCompanyExists = false,
+        ?string $refreshToken = null,
     ): ?array {
         $userId = $userId ?? auth()->id();
+        $token = $this->getAccessToken($token, $refreshToken, $userId);
+        $refreshToken = $refreshToken ?? $this->getRefreshToken($userId);
         $company->loadMissing(['branches.supervisors', 'translations']);
 
         if (! $sendEvenIfCompanyExists && filled($company->old_company_id)) {
@@ -349,14 +549,7 @@ class PpuApiService
         }
 
         try {
-            $response = Http::withHeaders([
-                'Accept' => 'application/json',
-            ])
-                ->withToken($token ?? $this->getAccessToken())
-                ->asJson()
-                ->connectTimeout(10)
-                ->timeout(30)
-                ->post($url, $payload);
+            $response = $this->universityPostJson($url, $payload, $token, $refreshToken, $userId);
         } catch (\Exception $e) {
             self::logToTerminal("✗ تعذر إرسال الشركة {$company->name} إلى API الجامعة: " . $e->getMessage(), $userId);
             Log::error('Failed to connect to PPU add company API', [
@@ -452,9 +645,11 @@ class PpuApiService
         ?int $userId = null,
         ?string $password = null,
         int $chunkSize = 100,
+        ?string $refreshToken = null,
     ): array {
         $userId = $userId ?? auth()->id();
-        $token = $token ?? $this->getAccessToken();
+        $token = $this->getAccessToken($token, $refreshToken, $userId);
+        $refreshToken = $refreshToken ?? $this->getRefreshToken($userId);
         $chunkSize = max(1, $chunkSize);
 
         $stats = [
@@ -483,7 +678,7 @@ class PpuApiService
         }
 
         try {
-            $query->chunkById($chunkSize, function ($companies) use (&$stats, $token, $userId, $password): void {
+            $query->chunkById($chunkSize, function ($companies) use (&$stats, &$token, $userId, $password, &$refreshToken): void {
                 foreach ($companies as $company) {
                     $stats['companies']++;
 
@@ -505,6 +700,7 @@ class PpuApiService
                             $token,
                             $userId,
                             sendEvenIfCompanyExists: true,
+                            refreshToken: $refreshToken,
                         );
 
                         if (($result['operation'] ?? null) === 'already_exists') {
@@ -547,13 +743,12 @@ class PpuApiService
 
         try {
             $url = "https://api-core.ppu.edu/api/DualStudies/getDsStudentsByYear/{$academicYear}/{$semesterNo}";
-            $token = $this->getAccessToken();
+            $token = $this->getAccessToken(userId: $userId);
+            $refreshToken = $this->getRefreshToken($userId);
 
             self::logToTerminal('جلب البيانات من API الجامعة...', $userId);
 
-            $response = Http::withHeaders(['Accept' => 'application/json'])
-                ->withToken($token)
-                ->get($url);
+            $response = $this->universityGet($url, [], $token, $refreshToken, $userId, 15, 60, 0);
 
             if ($response->successful()) {
                 $students = $response->json('data') ?? [];
@@ -594,9 +789,10 @@ class PpuApiService
         self::logToTerminal("جارٍ بدء اسناد الطلاب للمقررات العملية للسنة: {$academicYear} الفصل: {$semesterNo}...", $userId);
 
         try {
-            $token = $this->getAccessToken();
+            $token = $this->getAccessToken(userId: $userId);
+            $refreshToken = $this->getRefreshToken($userId);
 
-            $students = $this->fetchStudentsFromUniversity($academicYear, $semesterNo, $token, $userId);
+            $students = $this->fetchStudentsFromUniversity($academicYear, $semesterNo, $token, $userId, $refreshToken);
             if ($students === null) {
                 return false;
             }
@@ -606,10 +802,10 @@ class PpuApiService
 
             $synced = 0;
             $failed = 0;
-            collect($students)->chunk(50)->each(function ($chunk) use ($token, $academicYear, $semesterNo, $userId, &$synced, &$failed) {
+            collect($students)->chunk(50)->each(function ($chunk) use ($token, $refreshToken, $academicYear, $semesterNo, $userId, &$synced, &$failed) {
                 foreach ($chunk as $student) {
                     try {
-                        $synced += ProcessStudentCourseSync::dispatchSync($student, $token, $academicYear, $semesterNo, $userId) ?? 0;
+                        $synced += ProcessStudentCourseSync::dispatchSync($student, $token, $academicYear, $semesterNo, $userId, $refreshToken) ?? 0;
                     } catch (\Exception $e) {
                         $failed++;
                         self::logToTerminal("فشل اسناد مقررات الطالب: " . ($student['studentNo'] ?? 'Unknown'), $userId);
@@ -629,22 +825,27 @@ class PpuApiService
         }
     }
 
-    public function syncMajors(?string $token = null, ?int $userId = null)
+    public function syncMajors(?string $token = null, ?int $userId = null, ?string $refreshToken = null)
     {
         $userId = $userId ?? auth()->id();
         self::logToTerminal('جارٍ بدء مزامنة التخصصات...', $userId);
 
         try {
-            $token = $token ?? $this->getAccessToken();
+            $token = $this->getAccessToken($token, $refreshToken, $userId);
+            $refreshToken = $refreshToken ?? $this->getRefreshToken($userId);
 
             self::logToTerminal('جلب البيانات من API الجامعة...', $userId);
 
-            $response = Http::withHeaders([
-                'Accept' => 'application/json',
-            ])
-                ->withToken($token)
-                ->connectTimeout(5)
-                ->get("https://api-core.ppu.edu/api/DualStudies/getAllDSMajors");
+            $response = $this->universityGet(
+                'https://api-core.ppu.edu/api/DualStudies/getAllDSMajors',
+                [],
+                $token,
+                $refreshToken,
+                $userId,
+                5,
+                60,
+                0
+            );
 
             if ($response->successful()) {
                 $majors = $response->json('data') ?? [];
@@ -684,18 +885,13 @@ class PpuApiService
         }
     }
 
-    private function fetchStudentsFromUniversity($academicYear, $semesterNo, string $token, ?int $userId = null): ?array
+    private function fetchStudentsFromUniversity($academicYear, $semesterNo, ?string &$token = null, ?int $userId = null, ?string &$refreshToken = null): ?array
     {
         self::logToTerminal('جلب الطلاب من API الجامعة...', $userId);
 
         $studentsUrl = "https://api-core.ppu.edu/api/DualStudies/getDsStudentsByYear/{$academicYear}/{$semesterNo}";
         try {
-            $response = Http::withHeaders(['Accept' => 'application/json'])
-                ->withToken($token)
-                ->retry(3, 1000, throw: false)
-                ->connectTimeout(15)
-                ->timeout(60)
-                ->get($studentsUrl);
+            $response = $this->universityGet($studentsUrl, [], $token, $refreshToken, $userId);
         } catch (\Exception $e) {
             self::logToTerminal('✗ تعذر الاتصال بـ API الطلاب من الجامعة: ' . $e->getMessage(), $userId);
             Log::error('Failed to connect to students API', [
@@ -716,20 +912,23 @@ class PpuApiService
         return $response->json('data') ?? [];
     }
 
-    private function fetchStudentPracticalCourses($studentNumber, $academicYear, $semesterNo, string $token, ?int $userId = null): ?array
+    private function fetchStudentPracticalCourses($studentNumber, $academicYear, $semesterNo, ?string &$token = null, ?int $userId = null, ?string &$refreshToken = null): ?array
     {
         $url = "https://api-core.ppu.edu/api/DualStudies/getStudentPracticalCourses/{$studentNumber}";
 
         try {
-            $response = Http::withHeaders(['Accept' => 'application/json'])
-                ->withToken($token)
-                ->retry(3, 1000, throw: false)
-                ->connectTimeout(15)
-                ->timeout(45)
-                ->get($url, [
+            $response = $this->universityGet(
+                $url,
+                [
                     'academicYear' => $academicYear,
                     'semesterNo' => $semesterNo,
-                ]);
+                ],
+                $token,
+                $refreshToken,
+                $userId,
+                15,
+                45
+            );
         } catch (\Exception $e) {
             self::logToTerminal("✗ تعذر الاتصال لجلب مساقات الطالب {$studentNumber}: " . $e->getMessage(), $userId);
             Log::error('Failed to connect to student practical courses API', [

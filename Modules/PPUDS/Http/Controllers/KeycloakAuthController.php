@@ -10,6 +10,7 @@ use Illuminate\Validation\ValidationException;
 use Laravel\Socialite\Facades\Socialite;
 use Modules\PPUDS\Actions\AuthenticateViaKeycloakAction;
 use Modules\PPUDS\Enums\LoginMethod;
+use Modules\PPUDS\Services\PpuApiService;
 use Modules\PPUDS\Settings\GeneralSettings;
 
 class KeycloakAuthController extends Controller
@@ -56,6 +57,13 @@ class KeycloakAuthController extends Controller
     public function logout(Request $request)
     {
         $loginMethod = app(GeneralSettings::class)->login_method;
+        $userId = auth()->id();
+        $refreshToken = $request->session()->get('keycloak_refresh_token');
+
+        if ($loginMethod === LoginMethod::PPU) {
+            app(PpuApiService::class)->revokeRefreshToken($refreshToken, $userId);
+            app(PpuApiService::class)->forgetTokenPair($userId);
+        }
 
         $this->logoutFromLaravel($request);
 

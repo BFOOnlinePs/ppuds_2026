@@ -7,7 +7,6 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Modules\Core\Entities\User;
 use Modules\Core\Enums\UserRole;
@@ -26,22 +25,25 @@ class ProcessStudentCourseSync implements ShouldQueue
 
     protected $token;
 
+    protected ?string $refreshToken;
+
     protected $academicYear;
 
     protected $semesterNo;
 
     protected $initiatorId;
 
-    public function __construct(array $data, string $token, $academicYear, $semesterNo, ?int $initiatorId = null)
+    public function __construct(array $data, string $token, $academicYear, $semesterNo, ?int $initiatorId = null, ?string $refreshToken = null)
     {
         $this->data = $data;
         $this->token = $token;
         $this->academicYear = $academicYear;
         $this->semesterNo = $semesterNo;
         $this->initiatorId = $initiatorId;
+        $this->refreshToken = $refreshToken;
     }
 
-    public function handle(): int
+    public function handle(PpuApiService $apiService): int
     {
         $studentNumber = $this->data['studentNo'] ?? null;
         if (!$studentNumber) return 0;
@@ -58,15 +60,18 @@ class ProcessStudentCourseSync implements ShouldQueue
             $url = "https://api-core.ppu.edu/api/DualStudies/getStudentPracticalCourses/{$studentNumber}";
 
             try {
-                $response = Http::withHeaders(['Accept' => 'application/json'])
-                    ->withToken($this->token)
-                    ->retry(3, 1000, throw: false)
-                    ->connectTimeout(15)
-                    ->timeout(45)
-                    ->get($url, [
+                $response = $apiService->universityGet(
+                    $url,
+                    [
                         'academicYear' => $this->academicYear,
                         'semesterNo' => $this->semesterNo,
-                    ]);
+                    ],
+                    $this->token,
+                    $this->refreshToken,
+                    $this->initiatorId,
+                    15,
+                    45
+                );
             } catch (\Exception $e) {
                 PpuApiService::logToTerminal("✗ تعذر الاتصال لجلب مقررات الطالب {$studentName}: " . $e->getMessage(), $this->initiatorId);
                 Log::error("Failed to connect to practical courses API for {$studentNumber}: " . $e->getMessage());

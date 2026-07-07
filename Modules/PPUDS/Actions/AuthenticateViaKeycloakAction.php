@@ -9,6 +9,7 @@ use Laravel\Socialite\Contracts\User as KeycloakUser;
 use Modules\Core\Entities\User;
 use Modules\Core\Enums\UserRole;
 use Modules\PPUDS\Entities\StudentProfile;
+use Modules\PPUDS\Services\PpuApiService;
 
 class AuthenticateViaKeycloakAction
 {
@@ -54,6 +55,12 @@ class AuthenticateViaKeycloakAction
                 'keycloak_access_token' => $keycloakUser->token,
                 'keycloak_refresh_token' => $keycloakUser->refreshToken,
             ]);
+
+            app(PpuApiService::class)->storeTokenPair(
+                $keycloakUser->token,
+                $keycloakUser->refreshToken,
+                $user->id
+            );
 
             return $user;
         });

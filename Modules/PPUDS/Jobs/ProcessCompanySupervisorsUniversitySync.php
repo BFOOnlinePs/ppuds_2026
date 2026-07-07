@@ -20,12 +20,15 @@ class ProcessCompanySupervisorsUniversitySync implements ShouldQueue
 
     protected string $token;
 
+    protected ?string $refreshToken;
+
     protected ?int $initiatorId;
 
-    public function __construct(string $token, ?int $initiatorId = null)
+    public function __construct(string $token, ?int $initiatorId = null, ?string $refreshToken = null)
     {
         $this->token = $token;
         $this->initiatorId = $initiatorId;
+        $this->refreshToken = $refreshToken;
     }
 
     public function handle(PpuApiService $apiService): void
@@ -36,6 +39,7 @@ class ProcessCompanySupervisorsUniversitySync implements ShouldQueue
             $apiService->syncCompanySupervisorsToUniversity(
                 $this->token,
                 $this->initiatorId,
+                refreshToken: $this->refreshToken,
             );
         } catch (\Exception $e) {
             PpuApiService::logToTerminal('✗ فشل تنفيذ مزامنة مشرفي الشركات في الخلفية: '.$e->getMessage(), $this->initiatorId);

@@ -65,6 +65,7 @@ class Index extends Component
                 (string) $semester,
                 $apiService->getAccessToken(),
                 $userId,
+                $apiService->getRefreshToken($userId),
             );
 
             $this->showCourseStatusReview = true;
@@ -124,6 +125,7 @@ class Index extends Component
                 (string) $semester,
                 $apiService->getAccessToken(),
                 $userId,
+                $apiService->getRefreshToken($userId),
             );
 
             PpuApiService::logToTerminal("تم إرسال المزامنة للخلفية للسنة {$academicYear} / الفصل {$semester}.", $userId);
