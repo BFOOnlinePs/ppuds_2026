@@ -24,17 +24,12 @@ class PpuApiService
 
     public function getAccessToken(?string $accessToken = null, ?string $refreshToken = null, ?int $userId = null): string
     {
-        $userId = $userId ?? auth()->id();
-        $cachedTokenPair = $this->cachedTokenPair($userId);
-
         $token = $accessToken
             ?? $this->runtimeAccessToken
-            ?? ($cachedTokenPair['access_token'] ?? null)
             ?? session('keycloak_access_token');
 
         $refreshToken = $refreshToken
             ?? $this->runtimeRefreshToken
-            ?? ($cachedTokenPair['refresh_token'] ?? null)
             ?? session('keycloak_refresh_token');
         if (!$token) {
             throw new \Exception('لا يوجد صلاحية للوصول إلى بيانات الجامعة. يرجى تسجيل الدخول عبر بوابة الجامعة.');
@@ -42,10 +37,6 @@ class PpuApiService
 
         $this->runtimeAccessToken = $token;
         $this->runtimeRefreshToken = $refreshToken;
-
-        if ($this->isTokenExpired($token)) {
-            $token = $this->refreshAccessToken($refreshToken, $userId);
-        }
 
         return $token;
     }
@@ -216,18 +207,6 @@ class PpuApiService
         int $retries,
     ): Response {
         $token = $this->getAccessToken($token, $refreshToken, $userId);
-        $refreshToken = $refreshToken ?? $this->getRefreshToken($userId);
-
-        $response = $this->newUniversityPendingRequest($token, $connectTimeout, $timeout, $retries)
-            ->send($method, $url, $options);
-
-        if ($response->status() !== 401 || !$refreshToken) {
-            return $response;
-        }
-
-        $token = $this->refreshAccessToken($refreshToken, $userId);
-        $refreshToken = $this->getRefreshToken($userId) ?? $refreshToken;
-
         return $this->newUniversityPendingRequest($token, $connectTimeout, $timeout, $retries)
             ->send($method, $url, $options);
     }

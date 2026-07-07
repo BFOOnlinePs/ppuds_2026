@@ -16,6 +16,7 @@ class FieldVisitUpdate extends FormRequest
             'visit_time'         => ['sometimes', 'date_format:H:i:s'],
             'visit_duration'     => ['sometimes', 'integer', 'min:1'],
             'notes'              => ['sometimes', 'nullable', 'string'],
+            'attachment'         => ['sometimes', 'nullable', 'file', 'mimes:jpg,jpeg,png,pdf,doc,docx', 'max:2048'],
             'attachments'        => ['sometimes', 'nullable', 'array'],
             'attachments.*'      => ['file', 'mimes:jpg,jpeg,png,pdf,doc,docx', 'max:2048'],
         ];

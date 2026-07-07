@@ -137,6 +137,7 @@ class FieldVisitController extends Controller
      * @OA\Property(property="visit_time", type="string", format="time", example="09:00:00"),
      * @OA\Property(property="visit_duration", type="integer", example=60),
      * @OA\Property(property="notes", type="string", example="Everything went well"),
+     * @OA\Property(property="attachment", type="string", format="binary", description="Optional single attachment"),
      * @OA\Property(
      * property="attachments",
      * type="array",
@@ -153,8 +154,8 @@ class FieldVisitController extends Controller
     public function store(FieldVisitRequest $request)
     {
         $data = $request->validated();
-        $attachments = Arr::wrap($request->file('attachments', []));
-        unset($data['attachments']);
+        $attachments = $this->attachmentFilesFromRequest($request);
+        unset($data['attachment'], $data['attachments']);
 
         if (! $this->canAccessStudentCompanyRecord((int) $data['student_company_id'])) {
             return $this->errorResponse(__('You are not authorized to access this student company.'), 403);
@@ -371,6 +372,7 @@ class FieldVisitController extends Controller
      * @OA\Property(property="visiting_place", type="string", example="Branch Office"),
      * @OA\Property(property="notes", type="string", example="Updated notes"),
      * @OA\Property(property="visit_duration", type="integer", example=90),
+     * @OA\Property(property="attachment", type="string", format="binary", description="Optional single new attachment"),
      * @OA\Property(
      * property="attachments",
      * type="array",
@@ -387,8 +389,8 @@ class FieldVisitController extends Controller
     public function update(FieldVisitUpdate $request, FieldVisit $fieldVisit)
     {
         $data = $request->validated();
-        $attachments = Arr::wrap($request->file('attachments', []));
-        unset($data['attachments']);
+        $attachments = $this->attachmentFilesFromRequest($request);
+        unset($data['attachment'], $data['attachments']);
 
         if (! $this->canAccessStudentCompanyRecord($fieldVisit->student_company_id)) {
             return $this->errorResponse(__('You are not authorized to access this student company.'), 403);
@@ -462,5 +464,13 @@ class FieldVisitController extends Controller
         foreach (array_filter($attachments) as $attachment) {
             $fieldVisit->addAttachment($attachment);
         }
+    }
+
+    private function attachmentFilesFromRequest(FieldVisitRequest|FieldVisitUpdate $request): array
+    {
+        return [
+            ...Arr::wrap($request->file('attachment')),
+            ...Arr::wrap($request->file('attachments', [])),
+        ];
     }
 }

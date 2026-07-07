@@ -216,6 +216,10 @@ class Index extends Component implements HasForms, HasTable
                 ->label(__('Supervisor'))
                 ->options(fn (): array => $this->supervisorOptions())
                 ->searchable(),
+
+            Filter::make('without_supervisor')
+                ->label(__('Without Supervisor'))
+                ->query(fn (Builder $query): Builder => $query->whereNull('supervisor_id')),
         ];
     }
 
