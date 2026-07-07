@@ -5,7 +5,9 @@ namespace Modules\PPUDS\Transformers\V1;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\DB;
 use Modules\Branch\Transformers\V1\BranchResource;
+use Modules\Core\Entities\User;
 use Modules\Core\Transformers\V1\UserResource;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
@@ -14,6 +16,8 @@ class StudentCompanyResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $companySupervisor = $this->companySupervisor();
+
         return [
             'id' => $this->id,
             'registration_id' => $this->registration_id,
@@ -25,6 +29,9 @@ class StudentCompanyResource extends JsonResource
             'attendance_days' => (int) ($this->attendance_days ?? 0),
             'created_by' => $this->created_by,
             'created_at' => $this->created_at,
+            'company_supervisor_id' => $companySupervisor?->id,
+            'company_supervisor_name' => $companySupervisor?->name,
+            'company_supervisor' => $companySupervisor ? UserResource::make($companySupervisor) : null,
 
             'registration' => RegistrationResource::make($this->whenLoaded('registration')),
             'student' => UserResource::make($this->whenLoaded('student')),
@@ -168,7 +175,6 @@ class StudentCompanyResource extends JsonResource
             'student',
             'student.user',
             'company',
-            'company.user',
             'branch',
             'department',
             'payments',
@@ -178,7 +184,59 @@ class StudentCompanyResource extends JsonResource
             'branch.workingHours',
             'branch.departments.user',
             'branch.departments.supervisors',
+            'branch.supervisors',
+            'department.supervisors',
         ];
+    }
+
+    private function companySupervisor(): ?User
+    {
+        $supervisorId = $this->companySupervisorId();
+
+        if (! $supervisorId) {
+            return null;
+        }
+
+        if ($this->relationLoaded('department') && $this->department?->relationLoaded('supervisors')) {
+            $supervisor = $this->department->supervisors->firstWhere('id', $supervisorId);
+
+            if ($supervisor) {
+                return $supervisor;
+            }
+        }
+
+        if ($this->relationLoaded('branch') && $this->branch?->relationLoaded('supervisors')) {
+            $supervisor = $this->branch->supervisors->firstWhere('id', $supervisorId);
+
+            if ($supervisor) {
+                return $supervisor;
+            }
+        }
+
+        return User::find($supervisorId);
+    }
+
+    private function companySupervisorId(): ?int
+    {
+        if (! $this->branch_id || ! $this->department_id) {
+            return null;
+        }
+
+        if ($this->relationLoaded('branch') && $this->branch?->relationLoaded('departments')) {
+            $department = $this->branch->departments->firstWhere('id', $this->department_id);
+            $supervisorId = $department?->pivot?->user_id;
+
+            if ($supervisorId) {
+                return (int) $supervisorId;
+            }
+        }
+
+        $supervisorId = DB::table(config('ppuds.table_prefix').'branch_department')
+            ->where('branch_id', $this->branch_id)
+            ->where('company_department_id', $this->department_id)
+            ->value('user_id');
+
+        return $supervisorId ? (int) $supervisorId : null;
     }
 
     private static function whereHasFieldVisitInDateRange(Builder $query, mixed $from, mixed $to): void

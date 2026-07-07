@@ -84,7 +84,13 @@ class StudentCompanyController extends Controller
             ->allowedSorts(StudentCompanyResource::allowedSorts())
             ->allowedIncludes(StudentCompanyResource::allowedIncludes())
             ->withAttendanceDays()
-            ->with(['media', 'branch.workingHours'])
+            ->with([
+                'media',
+                'branch.workingHours',
+                'branch.departments.supervisors',
+                'branch.supervisors',
+                'department.supervisors',
+            ])
             ->paginate($perPage)
             ->appends(request()->query());
 

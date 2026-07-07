@@ -223,7 +223,10 @@ class FieldVisitController extends Controller
                 'registration.supervisor',
                 'company',
                 'branch.workingHours',
+                'branch.departments.supervisors',
+                'branch.supervisors',
                 'department',
+                'department.supervisors',
             ])
             ->orderBy('student_id')
             ->paginate($perPage)
