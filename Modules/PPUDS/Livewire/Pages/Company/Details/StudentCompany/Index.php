@@ -41,12 +41,14 @@ use Modules\PPUDS\Enums\SemesterType;
 use Modules\PPUDS\Enums\TrainingStatus;
 use Modules\PPUDS\Settings\GeneralSettings;
 use Modules\PPUDS\Support\HasSupervisorFilter;
+use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
 class Index extends Component implements HasForms, HasTable
 {
     use InteractsWithForms;
     use InteractsWithTable;
     use HasSupervisorFilter;
+    use ScopesStudentCompanyVisibility;
 
     public ?int $companyId = null;
 
@@ -58,7 +60,9 @@ class Index extends Component implements HasForms, HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn() => StudentCompany::query()->where('company_id', $this->companyId)->with(['student.media', 'registration.student', 'registration.course', 'company', 'branch']))
+            ->query(fn () => $this->studentCompaniesQuery()
+                ->with(['student.media', 'registration.student', 'registration.course', 'company', 'branch'])
+            )
             ->columns([
                 //                TextColumn::make('registration.student.name')
                 //                    ->label(__('Student'))
@@ -239,6 +243,13 @@ class Index extends Component implements HasForms, HasTable
                     ->visible(fn() => auth()->user()->can('StudentCompany Create')),
             ])
             ->bulkActions($this->getTableBulkAction());
+    }
+
+    protected function studentCompaniesQuery(): Builder
+    {
+        return StudentCompany::query()
+            ->where('company_id', $this->companyId)
+            ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query));
     }
 
     protected function studentDisplayColumnState(StudentCompany $record): HtmlString|string

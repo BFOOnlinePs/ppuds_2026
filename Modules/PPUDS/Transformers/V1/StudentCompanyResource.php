@@ -164,6 +164,7 @@ class StudentCompanyResource extends JsonResource
         return [
             'registration',
             'registration.course',
+            'registration.supervisor',
             'student',
             'student.user',
             'company',

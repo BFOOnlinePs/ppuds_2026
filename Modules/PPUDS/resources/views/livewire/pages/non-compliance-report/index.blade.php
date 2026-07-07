@@ -120,8 +120,11 @@
             @endforeach
         </div>
 
-        <div>
-            {{ $records->links() }}
+        <div class="rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+            <x-filament::pagination
+                :paginator="$records"
+                extreme-links
+            />
         </div>
     @else
         <div class="rounded-lg border border-gray-200 bg-white px-5 py-8 text-center text-sm text-gray-500 shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">
