@@ -165,6 +165,14 @@ return [
             'throw' => false,
         ],
 
+        'field_visits' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public/ppuds/field_visits'),
+            'url' => env('APP_URL') . '/storage/ppuds/field_visits',
+            'visibility' => 'public',
+            'throw' => false,
+        ],
+
         'ppuds_notes' => [
             'driver' => 'local',
             'root' => storage_path('app/public/ppuds/ppuds_notes'),

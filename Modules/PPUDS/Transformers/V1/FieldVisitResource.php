@@ -23,6 +23,22 @@ use Spatie\QueryBuilder\AllowedSort;
  * @OA\Property(property="visit_time", type="string", format="time", example="09:00:00"),
  * @OA\Property(property="visit_duration", type="integer", example=60),
  * @OA\Property(property="notes", type="string", example="Everything went well"),
+ * @OA\Property(property="attachments", type="array", @OA\Items(type="string", example="/storage/ppuds/field_visits/1/file.pdf")),
+ * @OA\Property(
+ * property="attachment_items",
+ * type="array",
+ * @OA\Items(
+ * type="object",
+ * @OA\Property(property="id", type="integer", example=10),
+ * @OA\Property(property="url", type="string", example="/storage/ppuds/field_visits/1/file.pdf"),
+ * @OA\Property(property="name", type="string", example="visit-report"),
+ * @OA\Property(property="file_name", type="string", example="visit-report.pdf"),
+ * @OA\Property(property="mime_type", type="string", example="application/pdf"),
+ * @OA\Property(property="size", type="integer", example=204800),
+ * @OA\Property(property="human_readable_size", type="string", example="200 KB"),
+ * @OA\Property(property="is_image", type="boolean", example=false)
+ * )
+ * ),
  * @OA\Property(property="created_by", type="integer", example=123),
  * @OA\Property(property="created_at", type="string", format="date-time")
  * )
@@ -41,6 +57,8 @@ class FieldVisitResource extends JsonResource
             'visit_time'         => $this->visit_time,
             'visit_duration'     => $this->visit_duration,
             'notes'              => $this->notes,
+            'attachments'        => $this->getAttachmentUrls(),
+            'attachment_items'   => $this->getAttachmentItems(),
             'created_at'         => $this->created_at,
             'updated_at'         => $this->updated_at,
             'student_company'    => $this->whenLoaded('studentCompany'),
@@ -145,6 +163,7 @@ class FieldVisitResource extends JsonResource
             'studentCompany.company',
             'supervisor',
             'studentCompany.registration',
+            'media',
         ];
     }
 }

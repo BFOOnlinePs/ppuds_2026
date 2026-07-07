@@ -269,10 +269,6 @@ class PpuApiService
         $logs = cache()->get($key, []);
         $logs[] = ['message' => $message, 'time' => now()->format('H:i:s')];
 
-        if (count($logs) > 100) {
-            $logs = array_slice($logs, -100);
-        }
-
         cache()->forever($key, $logs);
     }
 

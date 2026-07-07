@@ -148,7 +148,12 @@ class Index extends Component implements HasForms, HasTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters($this->getTableFilters(), layout: FiltersLayout::AboveContent)
-            ->filtersFormColumns(6)
+            ->filtersFormColumns([
+                'default' => 1,
+                'md' => 2,
+                'xl' => 6,
+                '2xl' => 12,
+            ])
             ->actions(
                 $this->getTableActions()
             )
@@ -327,7 +332,16 @@ class Index extends Component implements HasForms, HasTable
                         ->displayFormat('Y-m-d')
                         ->native(false),
                 ])
-                ->columns(2)
+                ->columns([
+                    'default' => 1,
+                    'md' => 2,
+                ])
+                ->columnSpan([
+                    'default' => 'full',
+                    'md' => 2,
+                    'xl' => 2,
+                    '2xl' => 4,
+                ])
                 ->query(function (Builder $query, array $data): Builder {
                     if ($this->todayAbsentStudentsFilterIsActive() || $this->todayPresentStudentsFilterIsActive()) {
                         return $query;
@@ -364,10 +378,22 @@ class Index extends Component implements HasForms, HasTable
                 }),
 
             Filter::make('today_absent_students')
-                ->label(__('Today Absentees')),
+                ->label(__('Today Absentees'))
+                ->columnSpan([
+                    'default' => 'full',
+                    'md' => 1,
+                    'xl' => 2,
+                    '2xl' => 2,
+                ]),
 
             Filter::make('today_present_students')
                 ->label(__('Today Present Students'))
+                ->columnSpan([
+                    'default' => 'full',
+                    'md' => 1,
+                    'xl' => 2,
+                    '2xl' => 2,
+                ])
                 ->query(function (Builder $query, array $data): Builder {
                     if (empty($data['isActive']) || $this->todayAbsentStudentsFilterIsActive()) {
                         return $query;
@@ -384,6 +410,12 @@ class Index extends Component implements HasForms, HasTable
                     TextInput::make('search')
                         ->label(__('Number / Name'))
                         ->live(debounce: 500),
+                ])
+                ->columnSpan([
+                    'default' => 'full',
+                    'md' => 2,
+                    'xl' => 2,
+                    '2xl' => 3,
                 ])
                 ->query(function (Builder $query, array $data): Builder {
                     if (empty($data['search'])) {
@@ -408,6 +440,13 @@ class Index extends Component implements HasForms, HasTable
                     ->toArray())
                 ->searchable()
                 ->preload()
+                ->native(false)
+                ->columnSpan([
+                    'default' => 'full',
+                    'md' => 1,
+                    'xl' => 2,
+                    '2xl' => 3,
+                ])
                 ->query(function (Builder $query, array $data): Builder {
                     if (empty($data['value'])) {
                         return $query;
@@ -428,6 +467,13 @@ class Index extends Component implements HasForms, HasTable
                 ->options(fn (): array => $this->supervisorFilterOptions())
                 ->searchable()
                 ->preload()
+                ->native(false)
+                ->columnSpan([
+                    'default' => 'full',
+                    'md' => 1,
+                    'xl' => 2,
+                    '2xl' => 3,
+                ])
                 ->query(function (Builder $query, array $data): Builder {
                     return $this->applySupervisorFilter(
                         $query,
@@ -442,6 +488,12 @@ class Index extends Component implements HasForms, HasTable
                 ->label(__('Status'))
                 ->options(AttendanceStatus::options())
                 ->native(false)
+                ->columnSpan([
+                    'default' => 'full',
+                    'md' => 1,
+                    'xl' => 2,
+                    '2xl' => 2,
+                ])
                 ->query(function (Builder $query, array $data): Builder {
                     if (empty($data['value']) || $this->todayAbsentStudentsFilterIsActive()) {
                         return $query;
@@ -460,6 +512,12 @@ class Index extends Component implements HasForms, HasTable
                             'pending' => __('Pending Check Out'),
                         ])
                         ->native(false),
+                ])
+                ->columnSpan([
+                    'default' => 'full',
+                    'md' => 1,
+                    'xl' => 2,
+                    '2xl' => 2,
                 ])
                 ->query(function (Builder $query, array $data): Builder {
                     if ($this->todayAbsentStudentsFilterIsActive()) {
@@ -494,7 +552,11 @@ class Index extends Component implements HasForms, HasTable
                         ->default('check_in')
                         ->native(false),
                 ])
-                ->columns(3)
+                ->columns([
+                    'default' => 1,
+                    'md' => 3,
+                ])
+                ->columnSpanFull()
                 ->query(function (Builder $query, array $data): Builder {
                     if (empty($data['isActive']) || $this->todayAbsentStudentsFilterIsActive()) {
                         return $query;

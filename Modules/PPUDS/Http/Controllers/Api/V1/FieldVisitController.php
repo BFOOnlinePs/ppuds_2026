@@ -4,6 +4,7 @@ namespace Modules\PPUDS\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\FieldVisit;
@@ -124,10 +125,10 @@ class FieldVisitController extends Controller
      * required=true,
      *
      * @OA\MediaType(
-     * mediaType="application/json",
+     * mediaType="multipart/form-data",
      *
      * @OA\Schema(
-     * required={"student_company_id", "supervisor_id", "visit_date", "visit_time", "visit_duration"},
+     * required={"student_company_id", "supervisor_id", "visiting_place", "visit_date", "visit_time", "visit_duration"},
      *
      * @OA\Property(property="student_company_id", type="integer", example=1),
      * @OA\Property(property="supervisor_id", type="integer", example=3),
@@ -135,7 +136,13 @@ class FieldVisitController extends Controller
      * @OA\Property(property="visit_date", type="string", format="date", example="2024-05-20"),
      * @OA\Property(property="visit_time", type="string", format="time", example="09:00:00"),
      * @OA\Property(property="visit_duration", type="integer", example=60),
-     * @OA\Property(property="notes", type="string", example="Everything went well")
+     * @OA\Property(property="notes", type="string", example="Everything went well"),
+     * @OA\Property(
+     * property="attachments",
+     * type="array",
+     * @OA\Items(type="string", format="binary"),
+     * description="Optional attachments. In Postman send as attachments[] for multiple files."
+     * )
      * )
      * )
      * ),
@@ -146,6 +153,8 @@ class FieldVisitController extends Controller
     public function store(FieldVisitRequest $request)
     {
         $data = $request->validated();
+        $attachments = Arr::wrap($request->file('attachments', []));
+        unset($data['attachments']);
 
         if (! $this->canAccessStudentCompanyRecord((int) $data['student_company_id'])) {
             return $this->errorResponse(__('You are not authorized to access this student company.'), 403);
@@ -163,14 +172,10 @@ class FieldVisitController extends Controller
 
         $fieldVisit = FieldVisit::create($data);
 
-        if (isset($data['attachments']) && is_array($data['attachments'])) {
-            foreach ($data['attachments'] as $attachment) {
-                $fieldVisit->addMedia($attachment)->toMediaCollection('attachments');
-            }
-        }
+        $this->addAttachments($fieldVisit, $attachments);
 
         return $this->successResponse(
-            new FieldVisitResource($fieldVisit),
+            new FieldVisitResource($fieldVisit->loadMissing('media')),
             __('Field Visit created successfully'),
             201
         );
@@ -349,7 +354,7 @@ class FieldVisitController extends Controller
      * @OA\Post(
      * path="/api/v1/ppuds/field-visits/{fieldVisit}",
      * summary="Update field visit",
-     * description="Update field visit details. Use _method=PUT for multipart support.",
+     * description="Update field visit details. Use _method=PATCH for multipart support.",
      * tags={"Field Visits"},
      * security={{"sanctum": {}}},
      *
@@ -358,14 +363,20 @@ class FieldVisitController extends Controller
      * @OA\RequestBody(
      *
      * @OA\MediaType(
-     * mediaType="application/json",
+     * mediaType="multipart/form-data",
      *
      * @OA\Schema(
      *
-     * @OA\Property(property="_method", type="string", example="PUT"),
+     * @OA\Property(property="_method", type="string", example="PATCH"),
      * @OA\Property(property="visiting_place", type="string", example="Branch Office"),
      * @OA\Property(property="notes", type="string", example="Updated notes"),
-     * @OA\Property(property="visit_duration", type="integer", example=90)
+     * @OA\Property(property="visit_duration", type="integer", example=90),
+     * @OA\Property(
+     * property="attachments",
+     * type="array",
+     * @OA\Items(type="string", format="binary"),
+     * description="Optional new attachments. In Postman send as attachments[] for multiple files."
+     * )
      * )
      * )
      * ),
@@ -376,6 +387,8 @@ class FieldVisitController extends Controller
     public function update(FieldVisitUpdate $request, FieldVisit $fieldVisit)
     {
         $data = $request->validated();
+        $attachments = Arr::wrap($request->file('attachments', []));
+        unset($data['attachments']);
 
         if (! $this->canAccessStudentCompanyRecord($fieldVisit->student_company_id)) {
             return $this->errorResponse(__('You are not authorized to access this student company.'), 403);
@@ -403,9 +416,10 @@ class FieldVisitController extends Controller
         }
 
         $fieldVisit->update($data);
+        $this->addAttachments($fieldVisit, $attachments);
 
         return $this->successResponse(
-            new FieldVisitResource($fieldVisit->refresh()),
+            new FieldVisitResource($fieldVisit->refresh()->loadMissing('media')),
             __('Field Visit updated successfully')
         );
     }
@@ -413,6 +427,7 @@ class FieldVisitController extends Controller
     private function visibleFieldVisitsQuery(): Builder
     {
         return FieldVisit::query()
+            ->with('media')
             ->whereHas('studentCompany', function (Builder $query): void {
                 $this->applyStudentCompanyVisibilityScope($query);
             });
@@ -440,5 +455,12 @@ class FieldVisitController extends Controller
                 $query->where('supervisor_id', $supervisorId);
             })
             ->exists();
+    }
+
+    private function addAttachments(FieldVisit $fieldVisit, array $attachments): void
+    {
+        foreach (array_filter($attachments) as $attachment) {
+            $fieldVisit->addAttachment($attachment);
+        }
     }
 }
