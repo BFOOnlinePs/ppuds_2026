@@ -1,5 +1,5 @@
 <div>
-    @php($canSyncCompanySupervisors = auth()->user()?->can('Sync Company Supervisors Sync') ?? false)
+    @php($canSyncCompanySupervisors = auth()->user()?->can('Sync System Data Sync') ?? false)
 
     <div class="mb-4 grid gap-4 md:grid-cols-3">
         <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
@@ -13,7 +13,7 @@
         </div>
 
         <div class="flex items-end rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
-            @can('Sync Company Supervisors Sync')
+            @can('Sync System Data Sync')
                 <button wire:click="startSync" wire:loading.attr="disabled" @disabled($syncing || ! $canSyncCompanySupervisors)
                         class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 disabled:cursor-not-allowed disabled:opacity-50">
                     <svg wire:loading.remove wire:target="startSync" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

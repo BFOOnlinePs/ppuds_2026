@@ -27,7 +27,7 @@ class Index extends Component
 
     public function startSync(PpuApiService $apiService): void
     {
-        $this->authorize('Sync Company Supervisors Sync');
+        $this->authorize('Sync System Data Sync');
 
         $this->refreshSyncingState();
 

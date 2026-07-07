@@ -238,7 +238,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     'as' => 'sync-company-supervisors.',
                     'namespace' => 'Modules\PPUDS\Livewire\Pages\SyncCompanySupervisors',
                 ], function () {
-                    Route::get('/', Index::class)->name('index')->can('Sync Company Supervisors View');
+                    Route::get('/', Index::class)->name('index')->can('Sync System Data View');
                 });
 
                 Route::group([

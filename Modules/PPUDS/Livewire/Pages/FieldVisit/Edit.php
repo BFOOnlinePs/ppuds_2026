@@ -133,6 +133,58 @@ class Edit extends Component implements HasForms, HasActions
             ->statePath('data');
     }
 
+    protected function shouldLockSupervisorSelection(): bool
+    {
+        return $this->shouldScopeUniversitySupervisorStudentCompanies();
+    }
+
+    protected function lockedSupervisorId(): ?int
+    {
+        return $this->shouldLockSupervisorSelection()
+            ? (int) auth()->id()
+            : null;
+    }
+
+    protected function effectiveSupervisorId(mixed $supervisorId): mixed
+    {
+        return $this->lockedSupervisorId() ?? $supervisorId;
+    }
+
+    protected function supervisorOptions(): array
+    {
+        if ($this->shouldLockSupervisorSelection()) {
+            return User::query()
+                ->whereKey(auth()->id())
+                ->pluck('name', 'id')
+                ->toArray();
+        }
+
+        return User::query()
+            ->orderBy('name')
+            ->pluck('name', 'id')
+            ->toArray();
+    }
+
+    protected function syncLockedSupervisorState(): void
+    {
+        if (! $this->shouldLockSupervisorSelection()) {
+            return;
+        }
+
+        $this->data['supervisor_id'] = $this->lockedSupervisorId();
+    }
+
+    protected function lockedSupervisorData(array $data): array
+    {
+        if (! $this->shouldLockSupervisorSelection()) {
+            return $data;
+        }
+
+        $data['supervisor_id'] = $this->lockedSupervisorId();
+
+        return $data;
+    }
+
     protected function studentCompanyOptions(mixed $supervisorId): array
     {
         $supervisorId = $this->effectiveSupervisorId($supervisorId);
