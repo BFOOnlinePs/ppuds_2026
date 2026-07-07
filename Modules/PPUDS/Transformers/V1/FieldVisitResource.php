@@ -105,8 +105,8 @@ class FieldVisitResource extends JsonResource
     private static function whereHasUniversitySupervisor(Builder $query, mixed $value): void
     {
         $supervisorIds = collect(Arr::wrap($value))
-            ->filter(fn (mixed $supervisorId): bool => filled($supervisorId))
-            ->map(fn (mixed $supervisorId): int => (int) $supervisorId)
+            ->filter(fn(mixed $supervisorId): bool => filled($supervisorId))
+            ->map(fn(mixed $supervisorId): int => (int) $supervisorId)
             ->values();
 
         if ($supervisorIds->isEmpty()) {
