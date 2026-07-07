@@ -15,6 +15,8 @@ class FieldVisitRequest extends FormRequest
             'visit_date'         => ['required', 'date'],
             'visit_time'         => ['required', 'date_format:H:i:s'],
             'visit_duration'     => ['required', 'integer', 'min:1'],
+            'attachments'         => ['nullable', 'array'],
+            'attachments.*'       => ['file', 'mimes:jpg,jpeg,png,pdf,doc,docx', 'max:2048'],
             'notes'              => ['nullable', 'string'],
         ];
     }

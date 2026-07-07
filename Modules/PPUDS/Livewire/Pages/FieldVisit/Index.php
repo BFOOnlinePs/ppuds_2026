@@ -25,7 +25,9 @@ use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
+use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\FieldVisit;
+use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\SemesterType;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
@@ -105,14 +107,27 @@ class Index extends Component implements HasForms, HasTable
         return [
             \Filament\Tables\Filters\SelectFilter::make('student_id')
                 ->label(__('Student'))
-                ->relationship('studentCompany.student', 'name')
+                ->options(fn (): array => $this->studentOptions())
+                ->query(function (Builder $query, array $data): Builder {
+                    return $query->when(
+                        $data['value'] ?? null,
+                        fn (Builder $fieldVisitQuery, $studentId): Builder => $fieldVisitQuery->whereHas(
+                            'studentCompany',
+                            fn (Builder $studentCompanyQuery): Builder => $studentCompanyQuery->where('student_id', (int) $studentId)
+                        )
+                    );
+                })
                 ->searchable()
                 ->preload(),
 
             \Filament\Tables\Filters\SelectFilter::make('supervisor_id')
                 ->label(__('Supervisor'))
-                ->options(fn (): array => User::query()->pluck('name', 'id')->toArray())
+                ->options(fn (): array => $this->supervisorOptions())
                 ->query(function (Builder $query, array $data): Builder {
+                    if ($this->shouldLockSupervisorFilter()) {
+                        return $query;
+                    }
+
                     return $query->when(
                         $data['value'] ?? null,
                         fn (Builder $fieldVisitQuery, $supervisorId): Builder => $fieldVisitQuery->whereHas(
@@ -122,11 +137,12 @@ class Index extends Component implements HasForms, HasTable
                     );
                 })
                 ->searchable()
-                ->preload(),
+                ->preload()
+                ->visible(fn (): bool => ! $this->shouldLockSupervisorFilter()),
 
             \Filament\Tables\Filters\SelectFilter::make('company')
                 ->label(__('Company'))
-                ->options(\Modules\PPUDS\Entities\Company::get()->pluck('name', 'id'))
+                ->options(fn (): array => $this->companyOptions())
                 ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data) {
                     return $query->when($data['value'], function ($q, $companyId) {
                         $q->whereHas('studentCompany', fn ($scQ) => $scQ->where('company_id', $companyId));
@@ -166,6 +182,52 @@ class Index extends Component implements HasForms, HasTable
                     );
                 }),
         ];
+    }
+
+    protected function shouldLockSupervisorFilter(): bool
+    {
+        return $this->shouldScopeUniversitySupervisorStudentCompanies();
+    }
+
+    protected function supervisorOptions(): array
+    {
+        if ($this->shouldLockSupervisorFilter()) {
+            return User::query()
+                ->whereKey(auth()->id())
+                ->orderBy('name')
+                ->pluck('name', 'id')
+                ->toArray();
+        }
+
+        return User::query()
+            ->orderBy('name')
+            ->pluck('name', 'id')
+            ->toArray();
+    }
+
+    protected function studentOptions(): array
+    {
+        return StudentCompany::query()
+            ->with('student:id,name')
+            ->tap(fn (Builder $query): Builder => $this->applyStudentCompanyVisibilityScope($query))
+            ->whereHas('student')
+            ->get()
+            ->mapWithKeys(fn (StudentCompany $studentCompany): array => [
+                $studentCompany->student_id => $studentCompany->student?->name,
+            ])
+            ->filter()
+            ->sort()
+            ->toArray();
+    }
+
+    protected function companyOptions(): array
+    {
+        return Company::query()
+            ->tap(fn (Builder $query): Builder => $this->applyCompanyVisibilityScope($query))
+            ->get()
+            ->pluck('name', 'id')
+            ->sort()
+            ->toArray();
     }
 
     protected function getTableActions(): array

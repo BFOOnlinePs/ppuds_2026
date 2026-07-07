@@ -163,6 +163,12 @@ class FieldVisitController extends Controller
 
         $fieldVisit = FieldVisit::create($data);
 
+        if (isset($data['attachments']) && is_array($data['attachments'])) {
+            foreach ($data['attachments'] as $attachment) {
+                $fieldVisit->addMedia($attachment)->toMediaCollection('attachments');
+            }
+        }
+
         return $this->successResponse(
             new FieldVisitResource($fieldVisit),
             __('Field Visit created successfully'),

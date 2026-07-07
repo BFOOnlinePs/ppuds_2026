@@ -36,7 +36,14 @@ class Add extends Component implements HasForms, HasActions
 
     public function mount()
     {
-        $this->form->fill();
+        $this->form->fill($this->defaultFormData());
+    }
+
+    protected function defaultFormData(): array
+    {
+        return $this->shouldLockSupervisorSelection()
+            ? ['supervisor_id' => $this->lockedSupervisorId()]
+            : [];
     }
 
     public function form(Form $form): Form
@@ -58,7 +65,10 @@ class Add extends Component implements HasForms, HasActions
                                         ->searchable()
                                         ->preload()
                                         ->prefixIcon('solar-user-id-bold-duotone')
-                                        ->options(User::pluck('name', 'id'))
+                                        ->options(fn (): array => $this->supervisorOptions())
+                                        ->default(fn (): ?int => $this->lockedSupervisorId())
+                                        ->disabled(fn (): bool => $this->shouldLockSupervisorSelection())
+                                        ->dehydrated()
                                         ->live()
                                         ->afterStateUpdated(fn (Set $set): mixed => $set('student_company_id', null)),
 
@@ -69,7 +79,7 @@ class Add extends Component implements HasForms, HasActions
                                         ->preload()
                                         ->prefixIcon('solar-user-id-linear')
                                         ->options(fn (Get $get): array => $this->studentCompanyOptions($get('supervisor_id')))
-                                        ->disabled(fn (Get $get): bool => blank($get('supervisor_id'))),
+                                        ->disabled(fn (Get $get): bool => blank($this->effectiveSupervisorId($get('supervisor_id')))),
 
                                     TextInput::make('visiting_place')
                                         ->label(__('Visiting Place'))
@@ -116,8 +126,62 @@ class Add extends Component implements HasForms, HasActions
             ->statePath('data');
     }
 
+    protected function shouldLockSupervisorSelection(): bool
+    {
+        return $this->shouldScopeUniversitySupervisorStudentCompanies();
+    }
+
+    protected function lockedSupervisorId(): ?int
+    {
+        return $this->shouldLockSupervisorSelection()
+            ? (int) auth()->id()
+            : null;
+    }
+
+    protected function effectiveSupervisorId(mixed $supervisorId): mixed
+    {
+        return $this->lockedSupervisorId() ?? $supervisorId;
+    }
+
+    protected function supervisorOptions(): array
+    {
+        if ($this->shouldLockSupervisorSelection()) {
+            return User::query()
+                ->whereKey(auth()->id())
+                ->pluck('name', 'id')
+                ->toArray();
+        }
+
+        return User::query()
+            ->orderBy('name')
+            ->pluck('name', 'id')
+            ->toArray();
+    }
+
+    protected function syncLockedSupervisorState(): void
+    {
+        if (! $this->shouldLockSupervisorSelection()) {
+            return;
+        }
+
+        $this->data['supervisor_id'] = $this->lockedSupervisorId();
+    }
+
+    protected function lockedSupervisorData(array $data): array
+    {
+        if (! $this->shouldLockSupervisorSelection()) {
+            return $data;
+        }
+
+        $data['supervisor_id'] = $this->lockedSupervisorId();
+
+        return $data;
+    }
+
     protected function studentCompanyOptions(mixed $supervisorId): array
     {
+        $supervisorId = $this->effectiveSupervisorId($supervisorId);
+
         return StudentCompany::query()
             ->with(['registration.student', 'company'])
             ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query))
@@ -140,6 +204,7 @@ class Add extends Component implements HasForms, HasActions
     {
         return StudentCompany::query()
             ->whereKey($studentCompanyId)
+            ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query))
             ->whereHas('registration', function (Builder $registrationQuery) use ($supervisorId): void {
                 $registrationQuery->where('supervisor_id', $supervisorId);
             })
@@ -161,9 +226,17 @@ class Add extends Component implements HasForms, HasActions
     {
         $this->authorize("FieldVisit Create");
 
+        $this->syncLockedSupervisorState();
+
         $this->validate();
 
-        $data = $this->data;
+        $data = $this->lockedSupervisorData($this->data);
+
+        if (! $this->canAccessStudentCompanyRecord((int) $data['student_company_id'])) {
+            $this->addError('data.student_company_id', __('You are not authorized to access this student company.'));
+
+            return;
+        }
 
         if (! $this->studentCompanyBelongsToSupervisor((int) $data['student_company_id'], (int) $data['supervisor_id'])) {
             $this->addError('data.student_company_id', __('The selected student does not belong to the selected supervisor.'));
