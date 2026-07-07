@@ -10,6 +10,7 @@ use Modules\PPUDS\Http\Controllers\Api\V1\CompanyDepartmentController;
 use Modules\PPUDS\Http\Controllers\Api\V1\FieldVisitController;
 use Modules\PPUDS\Http\Controllers\Api\V1\LeaveRequestController;
 use Modules\PPUDS\Http\Controllers\Api\V1\NoteController;
+use Modules\PPUDS\Http\Controllers\Api\V1\NonComplianceReportController;
 use Modules\PPUDS\Http\Controllers\Api\V1\PaymentController;
 use Modules\PPUDS\Http\Controllers\Api\V1\ProfileController;
 use Modules\PPUDS\Http\Controllers\Api\V1\RegistrationController;
@@ -223,6 +224,13 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
                 ->group(function () {
                     Route::get('/', 'index')->name('index');
                     Route::get('/{report}', 'show')->name('show');
+                });
+
+            Route::controller(NonComplianceReportController::class)
+                ->prefix('non-compliance-reports')
+                ->as('non-compliance-reports.')
+                ->group(function () {
+                    Route::get('/', 'index')->name('index');
                 });
 
             Route::controller(WorkExperienceController::class)
