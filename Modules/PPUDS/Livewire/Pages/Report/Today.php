@@ -31,6 +31,7 @@ use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\StudentReport;
 use Modules\PPUDS\Livewire\Concerns\SearchesStudentAttendanceRelationships;
+use Modules\PPUDS\Support\HasSupervisorFilter;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
 class Today extends Component implements HasForms, HasTable
@@ -38,6 +39,7 @@ class Today extends Component implements HasForms, HasTable
     use InteractsWithForms;
     use InteractsWithTable;
     use SearchesStudentAttendanceRelationships;
+    use HasSupervisorFilter;
     use ScopesStudentCompanyVisibility;
 
     public function table(Table $table): Table
@@ -210,6 +212,8 @@ class Today extends Component implements HasForms, HasTable
                         fn (Builder $studentCompanyQuery): Builder => $studentCompanyQuery->where('company_id', $data['value'])
                     )
                     : $query),
+
+            $this->supervisorSelectFilter('studentAttendance.studentCompany.registration'),
 
             Filter::make('feedback_status')
                 ->label(__('Report Status'))

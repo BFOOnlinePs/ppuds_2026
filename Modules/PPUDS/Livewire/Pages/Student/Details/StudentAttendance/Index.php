@@ -38,6 +38,7 @@ use Modules\PPUDS\Enums\SemesterType;
 use Modules\PPUDS\Livewire\Concerns\SearchesStudentAttendanceRelationships;
 use Modules\PPUDS\Services\PpudsNotificationService;
 use Modules\PPUDS\Settings\GeneralSettings;
+use Modules\PPUDS\Support\HasSupervisorFilter;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
 class Index extends Component implements HasForms, HasTable
@@ -45,6 +46,7 @@ class Index extends Component implements HasForms, HasTable
     use InteractsWithForms;
     use InteractsWithTable;
     use SearchesStudentAttendanceRelationships;
+    use HasSupervisorFilter;
     use ScopesStudentCompanyVisibility;
 
     public ?int $studentId = null;
@@ -246,6 +248,8 @@ class Index extends Component implements HasForms, HasTable
                         $query->where('company_id', $data['value']);
                     });
                 }),
+
+            $this->supervisorSelectFilter('studentCompany.registration'),
         ];
     }
 

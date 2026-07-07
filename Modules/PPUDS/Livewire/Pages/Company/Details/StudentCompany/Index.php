@@ -40,11 +40,13 @@ use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\SemesterType;
 use Modules\PPUDS\Enums\TrainingStatus;
 use Modules\PPUDS\Settings\GeneralSettings;
+use Modules\PPUDS\Support\HasSupervisorFilter;
 
 class Index extends Component implements HasForms, HasTable
 {
     use InteractsWithForms;
     use InteractsWithTable;
+    use HasSupervisorFilter;
 
     public ?int $companyId = null;
 
@@ -279,6 +281,8 @@ class Index extends Component implements HasForms, HasTable
                     });
                 })
                 ->searchable(),
+
+            $this->supervisorSelectFilter('registration'),
 
             Filter::make('year')
                 ->form([

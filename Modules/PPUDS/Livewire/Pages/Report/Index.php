@@ -30,12 +30,14 @@ use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\SemesterType;
 use Modules\PPUDS\Enums\StudentGender;
 use Modules\PPUDS\Settings\GeneralSettings;
+use Modules\PPUDS\Support\HasSupervisorFilter;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
 class Index extends Component implements HasForms, HasTable
 {
     use InteractsWithForms;
     use InteractsWithTable;
+    use HasSupervisorFilter;
     use ScopesStudentCompanyVisibility;
 
     public function table(Table $table)
@@ -181,6 +183,8 @@ class Index extends Component implements HasForms, HasTable
                         ->when($from !== null, fn (Builder $q) => $q->whereAttendanceDays('>=', $from))
                         ->when($to !== null, fn (Builder $q) => $q->whereAttendanceDays('<=', $to));
                 }),
+
+            $this->supervisorSelectFilter('registration'),
 
             Filter::make('year')
                 ->form([

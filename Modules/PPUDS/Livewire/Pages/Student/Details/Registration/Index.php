@@ -58,7 +58,7 @@ class Index extends Component implements HasTable, HasForms
                 TextColumn::make('semester')
                     ->label(__('Term'))
                     ->formatStateUsing(function ($state, $record) {
-                        return $this->semesterLabel($state).' - '.$record->year;
+                        return $this->semesterLabel($state) . ' - ' . $record->year;
                     })
                     ->icon('solar-calendar-date-linear'),
 
@@ -129,8 +129,8 @@ class Index extends Component implements HasTable, HasForms
         return Registration::query()
             ->when(
                 $this->studentId,
-                fn (Builder $query) => $query->where('student_id', $this->studentId),
-                fn (Builder $query) => $query->whereRaw('1 = 0')
+                fn(Builder $query) => $query->where('student_id', $this->studentId),
+                fn(Builder $query) => $query->whereRaw('1 = 0')
             );
     }
 

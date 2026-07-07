@@ -688,6 +688,18 @@ class PermissionSeeder extends Seeder
                 'guard_name' => 'web',
                 'module_name' => 'Sync System Data',
             ],
+
+            // TODO Sync Company Supervisors
+            [
+                'name' => 'Sync Company Supervisors View',
+                'guard_name' => 'web',
+                'module_name' => 'Sync Company Supervisors',
+            ],
+            [
+                'name' => 'Sync Company Supervisors Sync',
+                'guard_name' => 'web',
+                'module_name' => 'Sync Company Supervisors',
+            ],
         ];
 
         foreach ($permissions as $perm) {

@@ -234,6 +234,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 });
 
                 Route::group([
+                    'prefix' => 'sync-company-supervisors',
+                    'as' => 'sync-company-supervisors.',
+                    'namespace' => 'Modules\PPUDS\Livewire\Pages\SyncCompanySupervisors',
+                ], function () {
+                    Route::get('/', Index::class)->name('index')->can('Sync Company Supervisors View');
+                });
+
+                Route::group([
                     'prefix' => 'sync-system-data',
                     'as' => 'sync-system-data.',
                     'namespace' => 'Modules\PPUDS\Livewire\Pages\SyncSystemData',

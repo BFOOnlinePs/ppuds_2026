@@ -35,6 +35,7 @@ class SidebarServiceProvider extends ServiceProvider
             (new SidebarGroup('Settings', 'solar-settings-bold-duotone' , [] , 140))
             ->add(new SidebarItem('System Settings', 'solar-settings-bold-duotone', ['Setting View'] , 'settings' ))
             ->add(new SidebarItem('Sync System Data', 'solar-server-square-update-bold-duotone', ['Sync System Data View'] , 'sync-system-data.index' ))
+            ->add(new SidebarItem('Sync Companies With University API', 'solar-buildings-bold-duotone', ['Sync Company Supervisors View'] , 'sync-company-supervisors.index' ))
             ->add(new SidebarItem('Roles And Permissions', 'solar-shield-keyhole-bold-duotone', ['Roles And Permissions View'] , 'roles.index' ))
             ->add(new SidebarItem('Currencies', 'solar-wallet-money-bold-duotone', ['Currency View List'] ,  'currencies.index' ))
             ->add(new SidebarItem('Countries', 'solar-global-bold-duotone', ['Country View List'] , 'countries.index' ))

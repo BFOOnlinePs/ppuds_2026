@@ -38,6 +38,7 @@ use Modules\PPUDS\Exports\StudentsExport;
 use Modules\PPUDS\Exports\StudentsWithCompaniesExport;
 use Modules\PPUDS\Services\PpuApiService;
 use Modules\PPUDS\Settings\GeneralSettings;
+use Modules\PPUDS\Support\HasSupervisorFilter;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 use Throwable;
 
@@ -45,6 +46,7 @@ class Index extends Component implements HasForms, HasTable
 {
     use InteractsWithForms;
     use InteractsWithTable;
+    use HasSupervisorFilter;
     use ScopesStudentCompanyVisibility;
 
     public function table(Table $table)
@@ -338,6 +340,8 @@ class Index extends Component implements HasForms, HasTable
                         $q->where('name', 'like', '%'.$data['name'].'%');
                     });
                 }),
+
+            $this->supervisorSelectFilter('user.studentCompanies.registration'),
         ];
     }
 

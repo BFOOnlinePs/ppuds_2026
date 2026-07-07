@@ -447,6 +447,99 @@ class PpuApiService
         ];
     }
 
+    public function syncCompanySupervisorsToUniversity(
+        ?string $token = null,
+        ?int $userId = null,
+        ?string $password = null,
+        int $chunkSize = 100,
+    ): array {
+        $userId = $userId ?? auth()->id();
+        $token = $token ?? $this->getAccessToken();
+        $chunkSize = max(1, $chunkSize);
+
+        $stats = [
+            'companies' => 0,
+            'checked' => 0,
+            'already_registered' => 0,
+            'registered_now' => 0,
+            'missing_contact' => 0,
+            'failed' => 0,
+        ];
+
+        self::logToTerminal('جارٍ بدء مزامنة مشرفي الشركات مع API الجامعة...', $userId);
+
+        $query = Company::query()
+            ->with(['branches.supervisors', 'translations'])
+            ->whereHas('branches.supervisors');
+
+        $totalCompanies = (clone $query)->count();
+
+        self::logToTerminal("تم العثور على {$totalCompanies} شركة لديها مشرفون.", $userId);
+
+        if ($totalCompanies === 0) {
+            self::logToTerminal('لا توجد شركات لديها مشرفون للمزامنة.', $userId);
+
+            return $stats + ['success' => true];
+        }
+
+        try {
+            $query->chunkById($chunkSize, function ($companies) use (&$stats, $token, $userId, $password): void {
+                foreach ($companies as $company) {
+                    $stats['companies']++;
+
+                    foreach ($company->companySupervisors() as $supervisor) {
+                        $stats['checked']++;
+
+                        if (! $this->companySupervisorHasRequiredContact($company, $supervisor)) {
+                            $stats['missing_contact']++;
+                            self::logToTerminal("⚠ تم تخطي {$supervisor->name} في شركة {$company->name} بسبب نقص البريد الإلكتروني أو رقم الهاتف.", $userId);
+
+                            continue;
+                        }
+
+                        $freshCompany = $company->fresh(['branches.supervisors', 'translations']) ?? $company;
+                        $result = $this->addCompanyToUniversity(
+                            $freshCompany,
+                            $password,
+                            $supervisor->id,
+                            $token,
+                            $userId,
+                            sendEvenIfCompanyExists: true,
+                        );
+
+                        if (($result['operation'] ?? null) === 'already_exists') {
+                            $stats['already_registered']++;
+                            self::logToTerminal("✓ {$supervisor->name} / {$company->name}: موجود مسبقًا في نظام الجامعة.", $userId);
+
+                            continue;
+                        }
+
+                        if (($result['success'] ?? false) === true) {
+                            $stats['registered_now']++;
+                            self::logToTerminal("✓ {$supervisor->name} / {$company->name}: تمت إضافته إلى نظام الجامعة.", $userId);
+
+                            continue;
+                        }
+
+                        $stats['failed']++;
+                        self::logToTerminal("✗ {$supervisor->name} / {$company->name}: فشلت الإضافة. ".$this->companySupervisorSyncFailureMessage($result), $userId);
+                    }
+                }
+            });
+        } catch (\Exception $e) {
+            $stats['failed']++;
+            self::logToTerminal('✗ خطأ في مزامنة مشرفي الشركات: '.$e->getMessage(), $userId);
+            Log::error('PPU Company Supervisors Sync Error: '.$e->getMessage());
+        }
+
+        self::logToTerminal("تمت معالجة {$stats['checked']} مشرف شركة.", $userId);
+        self::logToTerminal("النتيجة: {$stats['registered_now']} إضافة جديدة / {$stats['already_registered']} موجود مسبقًا / {$stats['missing_contact']} بيانات ناقصة / {$stats['failed']} فشل.", $userId);
+
+        return $stats + [
+            'success' => $stats['failed'] === 0 && $stats['missing_contact'] === 0,
+        ];
+    }
+
     public function syncStudents($academicYear, $semesterNo)
     {
         $userId = auth()->id();
@@ -699,6 +792,30 @@ class PpuApiService
         $courseCode = $courseData['courseNo'] ?? $courseData['courseCode'] ?? $courseData['course_code'] ?? null;
 
         return $courseCode === null ? null : (string) $courseCode;
+    }
+
+    private function companySupervisorHasRequiredContact(Company $company, User $supervisor): bool
+    {
+        $branch = $company->branches->first();
+        $email = filled($supervisor->email) ? strtolower(trim((string) $supervisor->email)) : $branch?->email;
+        $mobile = $this->normalizeUniversityCompanyPhone($supervisor->phone ?: $branch?->phone);
+
+        return filled($email) && filled($mobile);
+    }
+
+    private function companySupervisorSyncFailureMessage(?array $result): string
+    {
+        if ($result === null) {
+            return 'تعذر الاتصال أو لم يرجع API الجامعة نتيجة صالحة.';
+        }
+
+        $message = data_get($result, 'response.message')
+            ?? data_get($result, 'response.msg')
+            ?? data_get($result, 'response.error');
+
+        return is_string($message) && $message !== ''
+            ? $message
+            : 'رفض API الجامعة الطلب.';
     }
 
     private function universityCompanyPayload(Company $company, ?string $password = null, ?int $supervisorId = null): ?array

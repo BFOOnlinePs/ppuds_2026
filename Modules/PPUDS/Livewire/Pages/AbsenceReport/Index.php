@@ -21,12 +21,14 @@ use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\SemesterType;
 use Modules\PPUDS\Services\AbsenceReportService;
 use Modules\PPUDS\Settings\GeneralSettings;
+use Modules\PPUDS\Support\HasSupervisorFilter;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
 class Index extends Component implements HasForms, HasTable
 {
     use InteractsWithForms;
     use InteractsWithTable;
+    use HasSupervisorFilter;
     use ScopesStudentCompanyVisibility;
 
     private ?array $absentStudentCompanyIds = null;
@@ -157,6 +159,8 @@ class Index extends Component implements HasForms, HasTable
                     ->toArray())
                 ->searchable()
                 ->preload(),
+
+            $this->supervisorSelectFilter('registration'),
 
             Filter::make('year')
                 ->form([

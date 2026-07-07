@@ -390,6 +390,7 @@ class Index extends Component implements HasTable, HasForms
             'StudentAttendance' => 'الحضور والمغادرة',
             'StudentCompany' => 'تدريب الطلاب في الشركات',
             'StudentReport' => 'التقارير اليومية',
+            'Sync Company Supervisors' => 'مزامنة مشرفي الشركات',
             'Sync System Data' => 'مزامنة بيانات النظام',
             'Subscription' => 'الاشتراكات',
             'Survey' => 'الاستبيانات',

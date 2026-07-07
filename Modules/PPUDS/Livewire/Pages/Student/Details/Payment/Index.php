@@ -39,12 +39,14 @@ use Modules\PPUDS\Enums\SemesterType;
 use Modules\PPUDS\Enums\TrainingStatus;
 use Modules\PPUDS\Services\PpudsNotificationService;
 use Modules\PPUDS\Settings\GeneralSettings;
+use Modules\PPUDS\Support\HasSupervisorFilter;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
 class Index extends Component implements HasForms, HasTable
 {
     use InteractsWithForms;
     use InteractsWithTable;
+    use HasSupervisorFilter;
     use ScopesStudentCompanyVisibility;
 
     public ?int $studentId = null;
@@ -211,6 +213,8 @@ class Index extends Component implements HasForms, HasTable
                     });
                 })
                 ->searchable(),
+
+            $this->supervisorSelectFilter(null),
 
             Filter::make('year')
                 ->form([

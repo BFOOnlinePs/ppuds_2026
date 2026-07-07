@@ -33,11 +33,13 @@ use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\CompanyCategory;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\CompanyStatus;
+use Modules\PPUDS\Support\HasSupervisorFilter;
 
 class Index extends Component implements HasForms, HasTable
 {
     use InteractsWithForms;
     use InteractsWithTable;
+    use HasSupervisorFilter;
 
     public function mount(): void
     {
@@ -138,6 +140,22 @@ class Index extends Component implements HasForms, HasTable
                 ->label(__('Company Status'))
                 ->options(CompanyStatus::options())
                 ->searchable(),
+
+            SelectFilter::make('company_supervisor_id')
+                ->label(__('Company Supervisor'))
+                ->options(fn (): array => $this->companySupervisorFilterOptions())
+                ->query(function (Builder $query, array $data): Builder {
+                    if (blank($data['value'] ?? null)) {
+                        return $query;
+                    }
+
+                    return $query->whereHas(
+                        'branches.supervisors',
+                        fn (Builder $supervisorQuery): Builder => $supervisorQuery->whereKey((int) $data['value'])
+                    );
+                })
+                ->searchable()
+                ->preload(),
         ];
     }
 

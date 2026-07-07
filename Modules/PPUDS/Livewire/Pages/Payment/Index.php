@@ -24,12 +24,14 @@ use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\Payment;
 use Modules\PPUDS\Entities\StudentCompany;
+use Modules\PPUDS\Support\HasSupervisorFilter;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
 class Index extends Component implements HasForms, HasTable
 {
     use InteractsWithForms;
     use InteractsWithTable;
+    use HasSupervisorFilter;
     use ScopesStudentCompanyVisibility;
 
     public array $filters = [];
@@ -93,7 +95,7 @@ class Index extends Component implements HasForms, HasTable
     protected function getTableFilters(): array
     {
         return [
-
+            $this->supervisorSelectFilter(null),
         ];
     }
 

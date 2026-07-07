@@ -39,12 +39,14 @@ use Modules\PPUDS\Enums\TrainingStatus;
 use Modules\PPUDS\Exports\RegisteredStudentsWithoutCompanyExport;
 use Modules\PPUDS\Exports\StudentCompaniesExport;
 use Modules\PPUDS\Settings\GeneralSettings;
+use Modules\PPUDS\Support\HasSupervisorFilter;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
 class Index extends Component implements HasForms, HasTable
 {
     use InteractsWithForms;
     use InteractsWithTable;
+    use HasSupervisorFilter;
     use ScopesStudentCompanyVisibility;
 
     public function table(Table $table): Table
@@ -221,6 +223,8 @@ class Index extends Component implements HasForms, HasTable
                     });
                 })
                 ->searchable(),
+
+            $this->supervisorSelectFilter('registration'),
 
             Filter::make('year')
                 ->form([

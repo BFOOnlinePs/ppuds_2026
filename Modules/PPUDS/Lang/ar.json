@@ -550,6 +550,12 @@
     "Today Reports": "تقارير اليوم",
     "Absence Report": "تقرير الغياب",
     "Sync System Data": "مزامنة بيانات النظام",
+    "Sync Companies With University API": "مزامنة الشركات مع API الجامعة",
+    "Sync Company Supervisors": "مزامنة مشرفي الشركات",
+    "Company Supervisor Pairs": "مشرفو الشركات",
+    "Start Companies Sync": "بدء مزامنة الشركات",
+    "Syncing...": "جاري المزامنة...",
+    "No logs yet. Click \"Start Sync\" to begin.": "لا توجد سجلات بعد. اضغط بدء المزامنة للبدء.",
 
     "Student Name": "اسم الطالب",
     "Attendance Days": "أيام الحضور",

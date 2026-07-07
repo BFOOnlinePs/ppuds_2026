@@ -31,12 +31,14 @@ use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\StudentReport;
+use Modules\PPUDS\Support\HasSupervisorFilter;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
 class Index extends Component implements HasForms, HasTable
 {
     use InteractsWithForms;
     use InteractsWithTable;
+    use HasSupervisorFilter;
     use ScopesStudentCompanyVisibility;
 
     public array $filters = [];
@@ -213,6 +215,8 @@ class Index extends Component implements HasForms, HasTable
                         fn (Builder $studentCompanyQuery): Builder => $studentCompanyQuery->where('company_id', $data['value'])
                     )
                     : $query),
+
+            $this->supervisorSelectFilter('studentAttendance.studentCompany.registration'),
 
             Filter::make('feedback_status')
                 ->label(__('Report Status'))

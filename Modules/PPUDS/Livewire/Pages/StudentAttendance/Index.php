@@ -48,6 +48,7 @@ use Modules\PPUDS\Exports\TodayAbsentStudentsExport;
 use Modules\PPUDS\Livewire\Concerns\SearchesStudentAttendanceRelationships;
 use Modules\PPUDS\Services\PpudsNotificationService;
 use Modules\PPUDS\Settings\GeneralSettings;
+use Modules\PPUDS\Support\HasSupervisorFilter;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
 class Index extends Component implements HasForms, HasTable
@@ -55,6 +56,7 @@ class Index extends Component implements HasForms, HasTable
     use InteractsWithForms;
     use InteractsWithTable;
     use SearchesStudentAttendanceRelationships;
+    use HasSupervisorFilter;
     use ScopesStudentCompanyVisibility;
 
     public function table(Table $table)
@@ -395,6 +397,21 @@ class Index extends Component implements HasForms, HasTable
                     );
                 }),
 
+            SelectFilter::make('supervisor_id')
+                ->label(__('Supervisor'))
+                ->options(fn (): array => $this->supervisorFilterOptions())
+                ->searchable()
+                ->preload()
+                ->query(function (Builder $query, array $data): Builder {
+                    return $this->applySupervisorFilter(
+                        $query,
+                        $data,
+                        $this->todayAbsentStudentsFilterIsActive()
+                            ? 'registration'
+                            : 'studentCompany.registration'
+                    );
+                }),
+
             SelectFilter::make('status')
                 ->label(__('Status'))
                 ->options(AttendanceStatus::options())
@@ -700,6 +717,7 @@ class Index extends Component implements HasForms, HasTable
         $settings = app(GeneralSettings::class);
         $today = now()->toDateString();
         $companyId = data_get($this->getTableFilterState('company_id'), 'value');
+        $supervisorId = data_get($this->getTableFilterState('supervisor_id'), 'value');
         $studentSearch = data_get($this->getTableFilterState('student'), 'search');
 
         return StudentCompany::query()
@@ -723,6 +741,13 @@ class Index extends Component implements HasForms, HasTable
             ->when(
                 filled($companyId),
                 fn (Builder $query): Builder => $query->where('company_id', $companyId)
+            )
+            ->when(
+                filled($supervisorId),
+                fn (Builder $query): Builder => $query->whereHas(
+                    'registration',
+                    fn (Builder $registrationQuery): Builder => $registrationQuery->where('supervisor_id', (int) $supervisorId)
+                )
             )
             ->when(
                 filled($studentSearch),

@@ -22,8 +22,8 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\HtmlString;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
@@ -37,12 +37,14 @@ use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\LeaveRequestStatus;
 use Modules\PPUDS\Enums\LeaveRequestType;
 use Modules\PPUDS\Services\PpudsNotificationService;
+use Modules\PPUDS\Support\HasSupervisorFilter;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
 class Index extends Component implements HasTable, HasForms
 {
     use InteractsWithTable;
     use InteractsWithForms;
+    use HasSupervisorFilter;
     use ScopesStudentCompanyVisibility;
 
     public ?array $filters = [];
@@ -148,6 +150,15 @@ class Index extends Component implements HasTable, HasForms
             SelectFilter::make('type')
                 ->label(__('Type'))
                 ->options(LeaveRequestType::class),
+
+            $this->supervisorSelectFilter('studentCompany.registration')
+                ->label(__('Academic Supervisor')),
+
+            SelectFilter::make('company_supervisor_id')
+                ->label(__('Company Supervisor'))
+                ->options(fn (): array => $this->companySupervisorFilterOptions())
+                ->searchable()
+                ->preload(),
         ];
     }
 
