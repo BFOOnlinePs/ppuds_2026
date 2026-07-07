@@ -20,6 +20,8 @@ class StudentAttendanceIndexRequest extends FormRequest
             'filter.attendance_date' => ['nullable', 'date_format:Y-m-d'],
             'filter.attendance_date_from' => ['nullable', 'date_format:Y-m-d'],
             'filter.attendance_date_to' => ['nullable', 'date_format:Y-m-d'],
+            'filter.today_present_students' => ['nullable', 'boolean'],
+            'filter.today_absent_students' => ['nullable', 'boolean'],
             'filter.semester' => ['nullable', 'string', 'max:20'],
             'filter.year' => ['nullable', 'string', 'max:20'],
             'sort' => ['nullable', 'string', 'max:255'],
@@ -38,6 +40,13 @@ class StudentAttendanceIndexRequest extends FormRequest
                 $validator->errors()->add(
                     'filter.attendance_date_to',
                     __('The attendance date to must be after or equal to attendance date from.')
+                );
+            }
+
+            if ($this->boolean('filter.today_present_students') && $this->boolean('filter.today_absent_students')) {
+                $validator->errors()->add(
+                    'filter.today_absent_students',
+                    __('Choose either present students today or absent students today, not both.')
                 );
             }
         });

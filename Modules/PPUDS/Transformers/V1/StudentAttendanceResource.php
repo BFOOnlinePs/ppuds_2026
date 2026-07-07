@@ -83,6 +83,21 @@ class StudentAttendanceResource extends JsonResource
                 self::whereAttendanceDateInRange($query, null, $value);
             }),
 
+            AllowedFilter::callback('today_present_students', function (Builder $query, $value) {
+                if (! self::truthyFilterValue($value)) {
+                    return;
+                }
+
+                $query
+                    ->whereDate('attendance_date', self::todayFilterDate())
+                    ->whereNotNull('check_in');
+            }),
+
+            AllowedFilter::callback('today_absent_students', function (Builder $query): Builder {
+                // Handled by StudentAttendanceController because absent students do not have attendance rows.
+                return $query;
+            }),
+
             AllowedFilter::callback('student_id', function (Builder $query, $value) {
                 $query->whereHas('studentCompany.registration', function ($query) use ($value) {
                     $query->where('student_id', $value);
@@ -142,5 +157,15 @@ class StudentAttendanceResource extends JsonResource
     private static function filterValue(mixed $value): mixed
     {
         return is_array($value) ? reset($value) : $value;
+    }
+
+    private static function truthyFilterValue(mixed $value): bool
+    {
+        return filter_var(self::filterValue($value), FILTER_VALIDATE_BOOLEAN);
+    }
+
+    private static function todayFilterDate(): string
+    {
+        return request()->input('filter.attendance_date') ?: now()->toDateString();
     }
 }

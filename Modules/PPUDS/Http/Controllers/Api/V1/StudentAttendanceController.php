@@ -8,14 +8,18 @@ use Illuminate\Support\Carbon;
 use Modules\Core\Enums\UserRole;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\StudentAttendance;
+use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\AttendanceStatus;
 use Modules\PPUDS\Http\Controllers\Api\V1\Concerns\EnsuresCurrentRegistration;
 use Modules\PPUDS\Http\Requests\StudentAttendanceIndexRequest;
 use Modules\PPUDS\Http\Requests\StudentAttendanceRequest;
 use Modules\PPUDS\Http\Requests\StudentAttendanceRequestUpdate;
 use Modules\PPUDS\Services\PpudsNotificationService;
+use Modules\PPUDS\Settings\GeneralSettings;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 use Modules\PPUDS\Transformers\V1\StudentAttendanceResource;
+use Modules\PPUDS\Transformers\V1\StudentCompanyResource;
+use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 
 /**
@@ -75,6 +79,24 @@ class StudentAttendanceController extends Controller
      * required=false,
      *
      * @OA\Schema(type="string", format="date", example="2026-07-31")
+     * ),
+     *
+     * @OA\Parameter(
+     * name="filter[today_present_students]",
+     * in="query",
+     * description="When true, return students who checked in today. If filter[attendance_date] is sent, that date is used instead of today.",
+     * required=false,
+     *
+     * @OA\Schema(type="boolean", example=true)
+     * ),
+     *
+     * @OA\Parameter(
+     * name="filter[today_absent_students]",
+     * in="query",
+     * description="When true, return current semester students who did not check in today. If filter[attendance_date] is sent, that date is used instead of today.",
+     * required=false,
+     *
+     * @OA\Schema(type="boolean", example=true)
      * ),
      *
      * @OA\Parameter(
@@ -155,6 +177,10 @@ class StudentAttendanceController extends Controller
      */
     public function index(StudentAttendanceIndexRequest $request)
     {
+        if ($request->boolean('filter.today_absent_students')) {
+            return $this->todayAbsentStudentsResponse($request);
+        }
+
         $perPage = min((int) $request->input('per_page', 15), config('core.pagination.max_per_page', 100));
 
         $attendances = QueryBuilder::for(StudentAttendance::query()
@@ -172,6 +198,59 @@ class StudentAttendanceController extends Controller
         return $this->successResponse(
             StudentAttendanceResource::collection($attendances),
             __('Attendances retrieved successfully')
+        );
+    }
+
+    private function todayAbsentStudentsResponse(StudentAttendanceIndexRequest $request)
+    {
+        $perPage = min((int) $request->input('per_page', 15), config('core.pagination.max_per_page', 100));
+        $date = $this->attendancePresenceFilterDate($request);
+        $settings = app(GeneralSettings::class);
+        $semester = $request->input('filter.semester', $settings->semester_type?->value);
+        $year = $request->input('filter.year', $settings->year);
+
+        $studentCompaniesQuery = StudentCompany::query()
+            ->withAttendanceDays()
+            ->with([
+                'registration.course',
+                'registration.supervisor',
+                'student.media',
+                'student.studentProfile.major',
+                'company',
+                'branch.workingHours',
+                'department',
+            ])
+            ->whereHas('registration', function (Builder $query) use ($semester, $year): void {
+                $query
+                    ->when(filled($semester), fn (Builder $query): Builder => $query->where('semester', $semester))
+                    ->when(filled($year), fn (Builder $query): Builder => $query->where('year', $year));
+            })
+            ->whereDoesntHave('attendances', function (Builder $query) use ($date): void {
+                $query
+                    ->whereDate('attendance_date', $date)
+                    ->whereNotNull('check_in');
+            })
+            ->tap(fn (Builder $query): Builder => $this->applyStudentCompanyVisibilityScope($query));
+
+        $students = QueryBuilder::for($studentCompaniesQuery)
+            ->allowedFilters([
+                ...StudentCompanyResource::allowedFilters(),
+                AllowedFilter::exact('student_company_id', 'id'),
+                AllowedFilter::callback('today_absent_students', fn (Builder $query): Builder => $query),
+                AllowedFilter::callback('today_present_students', fn (Builder $query): Builder => $query),
+                AllowedFilter::callback('attendance_date', fn (Builder $query): Builder => $query),
+                AllowedFilter::callback('attendance_date_from', fn (Builder $query): Builder => $query),
+                AllowedFilter::callback('attendance_date_to', fn (Builder $query): Builder => $query),
+            ])
+            ->allowedSorts(StudentCompanyResource::allowedSorts())
+            ->allowedIncludes(StudentCompanyResource::allowedIncludes())
+            ->defaultSort('id')
+            ->paginate($perPage)
+            ->appends($request->query());
+
+        return $this->successResponse(
+            StudentCompanyResource::collection($students),
+            __('Absent students retrieved successfully')
         );
     }
 
@@ -468,5 +547,12 @@ class StudentAttendanceController extends Controller
         return $request->filled('attendance_date')
             ? Carbon::parse($request->input('attendance_date'))->toDateString()
             : $timestamp->toDateString();
+    }
+
+    private function attendancePresenceFilterDate(StudentAttendanceIndexRequest $request): string
+    {
+        return $request->filled('filter.attendance_date')
+            ? Carbon::parse($request->input('filter.attendance_date'))->toDateString()
+            : now()->toDateString();
     }
 }

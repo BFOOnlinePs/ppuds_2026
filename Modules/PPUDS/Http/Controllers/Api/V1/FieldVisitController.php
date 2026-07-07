@@ -4,7 +4,6 @@ namespace Modules\PPUDS\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\FieldVisit;
@@ -138,11 +137,18 @@ class FieldVisitController extends Controller
      * @OA\Property(property="visit_duration", type="integer", example=60),
      * @OA\Property(property="notes", type="string", example="Everything went well"),
      * @OA\Property(property="attachment", type="string", format="binary", description="Optional single attachment"),
+     * @OA\Property(property="image", type="string", format="binary", description="Optional single image attachment"),
      * @OA\Property(
      * property="attachments",
      * type="array",
      * @OA\Items(type="string", format="binary"),
      * description="Optional attachments. In Postman send as attachments[] for multiple files."
+     * ),
+     * @OA\Property(
+     * property="images",
+     * type="array",
+     * @OA\Items(type="string", format="binary"),
+     * description="Optional image attachments. In Postman send as images[] for multiple files."
      * )
      * )
      * )
@@ -154,8 +160,8 @@ class FieldVisitController extends Controller
     public function store(FieldVisitRequest $request)
     {
         $data = $request->validated();
-        $attachments = $this->attachmentFilesFromRequest($request);
-        unset($data['attachment'], $data['attachments']);
+        $attachments = $request->attachmentFiles();
+        unset($data['attachment'], $data['image'], $data['attachments'], $data['images']);
 
         if (! $this->canAccessStudentCompanyRecord((int) $data['student_company_id'])) {
             return $this->errorResponse(__('You are not authorized to access this student company.'), 403);
@@ -373,11 +379,18 @@ class FieldVisitController extends Controller
      * @OA\Property(property="notes", type="string", example="Updated notes"),
      * @OA\Property(property="visit_duration", type="integer", example=90),
      * @OA\Property(property="attachment", type="string", format="binary", description="Optional single new attachment"),
+     * @OA\Property(property="image", type="string", format="binary", description="Optional single new image attachment"),
      * @OA\Property(
      * property="attachments",
      * type="array",
      * @OA\Items(type="string", format="binary"),
      * description="Optional new attachments. In Postman send as attachments[] for multiple files."
+     * ),
+     * @OA\Property(
+     * property="images",
+     * type="array",
+     * @OA\Items(type="string", format="binary"),
+     * description="Optional new image attachments. In Postman send as images[] for multiple files."
      * )
      * )
      * )
@@ -389,8 +402,8 @@ class FieldVisitController extends Controller
     public function update(FieldVisitUpdate $request, FieldVisit $fieldVisit)
     {
         $data = $request->validated();
-        $attachments = $this->attachmentFilesFromRequest($request);
-        unset($data['attachment'], $data['attachments']);
+        $attachments = $request->attachmentFiles();
+        unset($data['attachment'], $data['image'], $data['attachments'], $data['images']);
 
         if (! $this->canAccessStudentCompanyRecord($fieldVisit->student_company_id)) {
             return $this->errorResponse(__('You are not authorized to access this student company.'), 403);
@@ -466,11 +479,4 @@ class FieldVisitController extends Controller
         }
     }
 
-    private function attachmentFilesFromRequest(FieldVisitRequest|FieldVisitUpdate $request): array
-    {
-        return [
-            ...Arr::wrap($request->file('attachment')),
-            ...Arr::wrap($request->file('attachments', [])),
-        ];
-    }
 }

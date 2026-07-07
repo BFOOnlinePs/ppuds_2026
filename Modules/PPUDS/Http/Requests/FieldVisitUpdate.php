@@ -3,11 +3,20 @@
 namespace Modules\PPUDS\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\UploadedFile;
 
 class FieldVisitUpdate extends FormRequest
 {
+    public const ALLOWED_ATTACHMENT_MIMES = FieldVisitRequest::ALLOWED_ATTACHMENT_MIMES;
+    public const MAX_ATTACHMENT_SIZE = FieldVisitRequest::MAX_ATTACHMENT_SIZE;
+
     public function rules(): array
     {
+        $fileRules = $this->attachmentRules();
+        $optionalFileRules = ['sometimes', 'nullable', ...$fileRules];
+        $attachments = $this->file('attachments');
+        $images = $this->file('images');
+
         return [
             'student_company_id' => ['sometimes', 'exists:' . config('ppuds.table_prefix') . 'students_companies,id'],
             'supervisor_id'      => ['sometimes', 'exists:users,id'],
@@ -16,14 +25,46 @@ class FieldVisitUpdate extends FormRequest
             'visit_time'         => ['sometimes', 'date_format:H:i:s'],
             'visit_duration'     => ['sometimes', 'integer', 'min:1'],
             'notes'              => ['sometimes', 'nullable', 'string'],
-            'attachment'         => ['sometimes', 'nullable', 'file', 'mimes:jpg,jpeg,png,pdf,doc,docx', 'max:2048'],
-            'attachments'        => ['sometimes', 'nullable', 'array'],
-            'attachments.*'      => ['file', 'mimes:jpg,jpeg,png,pdf,doc,docx', 'max:2048'],
+            'attachment'         => $optionalFileRules,
+            'image'              => $optionalFileRules,
+            'attachments'        => is_array($attachments) ? ['sometimes', 'nullable', 'array', 'max:10'] : $optionalFileRules,
+            'attachments.*'      => $fileRules,
+            'images'             => is_array($images) ? ['sometimes', 'nullable', 'array', 'max:10'] : $optionalFileRules,
+            'images.*'           => $fileRules,
         ];
+    }
+
+    public function attachmentFiles(): array
+    {
+        $files = [
+            $this->file('attachment'),
+            $this->file('image'),
+            ...$this->normalizeFiles($this->file('attachments', [])),
+            ...$this->normalizeFiles($this->file('images', [])),
+        ];
+
+        return array_values(array_filter(
+            $files,
+            fn ($file): bool => $file instanceof UploadedFile
+        ));
     }
 
     public function authorize(): bool
     {
         return true;
+    }
+
+    protected function attachmentRules(): array
+    {
+        return [
+            'file',
+            'mimes:' . implode(',', self::ALLOWED_ATTACHMENT_MIMES),
+            'max:' . self::MAX_ATTACHMENT_SIZE,
+        ];
+    }
+
+    private function normalizeFiles(mixed $files): array
+    {
+        return is_array($files) ? $files : [$files];
     }
 }
