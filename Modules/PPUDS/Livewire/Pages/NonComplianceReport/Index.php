@@ -43,7 +43,7 @@ class Index extends Component implements HasForms
             'company_id' => null,
             'supervisor_id' => null,
             'minimum_late_hours' => null,
-            'date' => null,
+            'date' => now()->toDateString(),
             'date_from' => null,
             'date_to' => null,
             'year' => $settings->year,
