@@ -43,6 +43,17 @@ class HomeActionsWidget extends Widget
                 ],
             ],
             [
+                'label' => 'Generate Company With AI',
+                'route' => 'companies.add',
+                'permission' => 'Company Create',
+                'icon' => 'heroicon-o-sparkles',
+                'hidden_roles' => [
+                    UserRole::COMPANY_SUPERVISOR->value,
+                    'Company Manager',
+                    'مدير الشركة',
+                ],
+            ],
+            [
                 'label' => 'Attendance And Departure Log',
                 'route' => 'student-attendances.index',
                 'permission' => 'StudentAttendance View List',
