@@ -426,6 +426,15 @@ class CompanyController extends Controller
         );
     }
 
+    public function updateBranchLocationMethodNotAllowed(string $company, string $branch)
+    {
+        $message = str_contains($company, '{') || str_contains($branch, '{')
+            ? __('Replace the company and branch placeholders with real IDs, then send the request using PATCH.')
+            : __('This endpoint only accepts PATCH requests. Disable automatic redirects if your client resends the request as GET.');
+
+        return $this->errorResponse($message, 405);
+    }
+
     private function normalizeBranchCoordinates(array $branchAttributes): array
     {
         foreach (['latitude', 'longitude'] as $coordinate) {

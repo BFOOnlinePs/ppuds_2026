@@ -57,6 +57,8 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
                 ->group(function () {
                     Route::get('/', 'index')->name('index');
                     Route::post('/', 'store')->name('store');
+                    Route::get('/{company}/branches/{branch}/location', 'updateBranchLocationMethodNotAllowed')
+                        ->name('branches.location.method-not-allowed');
                     Route::patch('/{company}/branches/{branch}/location', 'updateBranchLocation')
                         ->name('branches.location.update');
                     Route::get('/{company}', 'show')->name('show');
