@@ -7090,8 +7090,6 @@
                                                 "name",
                                                 "country_id",
                                                 "city_id",
-                                                "latitude",
-                                                "longitude",
                                                 "opening_time",
                                                 "closing_time"
                                             ],
@@ -7119,11 +7117,13 @@
                                                 },
                                                 "latitude": {
                                                     "type": "number",
-                                                    "example": 31.9
+                                                    "example": 31.9,
+                                                    "nullable": true
                                                 },
                                                 "longitude": {
                                                     "type": "number",
-                                                    "example": 35.2
+                                                    "example": 35.2,
+                                                    "nullable": true
                                                 },
                                                 "opening_time": {
                                                     "type": "string",
@@ -7379,11 +7379,13 @@
                                                 },
                                                 "latitude": {
                                                     "type": "number",
-                                                    "example": 31.9
+                                                    "example": 31.9,
+                                                    "nullable": true
                                                 },
                                                 "longitude": {
                                                     "type": "number",
-                                                    "example": 35.2
+                                                    "example": 35.2,
+                                                    "nullable": true
                                                 }
                                             },
                                             "type": "object"
@@ -7401,6 +7403,78 @@
                     },
                     "404": {
                         "description": "Company not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/companies/{company}/branches/{branch}/location": {
+            "patch": {
+                "tags": [
+                    "Companies"
+                ],
+                "summary": "Update company branch location",
+                "description": "Allows a company supervisor assigned to the branch to set the branch coordinates from the current device location.",
+                "operationId": "a1e8ac89dafd729c6664f850a903342e",
+                "parameters": [
+                    {
+                        "name": "company",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "branch",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "latitude",
+                                    "longitude"
+                                ],
+                                "properties": {
+                                    "latitude": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 31.5326
+                                    },
+                                    "longitude": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 35.0998
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Company location updated successfully"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Branch does not belong to company or validation error"
                     }
                 },
                 "security": [
@@ -7718,7 +7792,23 @@
                     {
                         "name": "filter[supervisor_id]",
                         "in": "query",
-                        "description": "Filter by Supervisor ID",
+                        "description": "Filter by the student's university supervisor ID",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "filter[supervisor_id]",
+                        "in": "query",
+                        "description": "Alias for filter[supervisor_id]",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "filter[field_visit_supervisor_id]",
+                        "in": "query",
+                        "description": "Filter by the supervisor assigned on the field visit record",
                         "schema": {
                             "type": "integer"
                         }
@@ -7773,11 +7863,12 @@
                 "requestBody": {
                     "required": true,
                     "content": {
-                        "application/json": {
+                        "multipart/form-data": {
                             "schema": {
                                 "required": [
                                     "student_company_id",
                                     "supervisor_id",
+                                    "visiting_place",
                                     "visit_date",
                                     "visit_time",
                                     "visit_duration"
@@ -7812,6 +7903,32 @@
                                     "notes": {
                                         "type": "string",
                                         "example": "Everything went well"
+                                    },
+                                    "attachment": {
+                                        "description": "Optional single attachment",
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "image": {
+                                        "description": "Optional single image attachment",
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "attachments": {
+                                        "description": "Optional attachments. In Postman send as attachments[] for multiple files.",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "binary"
+                                        }
+                                    },
+                                    "images": {
+                                        "description": "Optional image attachments. In Postman send as images[] for multiple files.",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "binary"
+                                        }
                                     }
                                 },
                                 "type": "object"
@@ -7822,6 +7939,188 @@
                 "responses": {
                     "201": {
                         "description": "Created successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/field-visits/company-students": {
+            "get": {
+                "tags": [
+                    "Field Visits"
+                ],
+                "summary": "Get company students for bulk field visits",
+                "description": "Choose a company and return current semester students available for bulk field visit creation.",
+                "operationId": "470220d9c3edce5624e584341c305b10",
+                "parameters": [
+                    {
+                        "name": "filter[company_id]",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "filter[supervisor_id]",
+                        "in": "query",
+                        "description": "Alias for filter[supervisor_id]",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 3
+                        }
+                    },
+                    {
+                        "name": "filter[search]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "Ahmad"
+                        }
+                    },
+                    {
+                        "name": "filter[visit_date]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-07-01"
+                        }
+                    },
+                    {
+                        "name": "filter[without_visit_date]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-07-01"
+                        }
+                    },
+                    {
+                        "name": "filter[visit_date_from]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-07-01"
+                        }
+                    },
+                    {
+                        "name": "filter[visit_date_to]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-07-31"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 25
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Company students retrieved successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/field-visits/bulk": {
+            "post": {
+                "tags": [
+                    "Field Visits"
+                ],
+                "summary": "Create field visits for selected students",
+                "description": "Create the same field visit for selected student company records from one company.",
+                "operationId": "244b6897cf4f655ddacd2a48bf656527",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "company_id",
+                                    "student_company_ids",
+                                    "supervisor_id",
+                                    "visiting_place",
+                                    "visit_date",
+                                    "visit_time",
+                                    "visit_duration"
+                                ],
+                                "properties": {
+                                    "company_id": {
+                                        "type": "integer",
+                                        "example": 1
+                                    },
+                                    "student_company_ids": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        },
+                                        "example": [
+                                            10,
+                                            11,
+                                            12
+                                        ]
+                                    },
+                                    "supervisor_id": {
+                                        "type": "integer",
+                                        "example": 3
+                                    },
+                                    "visiting_place": {
+                                        "type": "string",
+                                        "example": "Main Office"
+                                    },
+                                    "visit_date": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "example": "2026-07-01"
+                                    },
+                                    "visit_time": {
+                                        "type": "string",
+                                        "format": "time",
+                                        "example": "09:00:00"
+                                    },
+                                    "visit_duration": {
+                                        "type": "integer",
+                                        "example": 60
+                                    },
+                                    "notes": {
+                                        "type": "string",
+                                        "example": "Bulk field visit",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Field visits created successfully"
                     }
                 },
                 "security": [
@@ -7864,7 +8163,7 @@
                     "Field Visits"
                 ],
                 "summary": "Update field visit",
-                "description": "Update field visit details. Use _method=PUT for multipart support.",
+                "description": "Update field visit details. Use _method=PATCH for multipart support.",
                 "operationId": "d9418a4b65db72b87f017c3755b0e3a1",
                 "parameters": [
                     {
@@ -7878,12 +8177,12 @@
                 ],
                 "requestBody": {
                     "content": {
-                        "application/json": {
+                        "multipart/form-data": {
                             "schema": {
                                 "properties": {
                                     "_method": {
                                         "type": "string",
-                                        "example": "PUT"
+                                        "example": "PATCH"
                                     },
                                     "visiting_place": {
                                         "type": "string",
@@ -7896,6 +8195,32 @@
                                     "visit_duration": {
                                         "type": "integer",
                                         "example": 90
+                                    },
+                                    "attachment": {
+                                        "description": "Optional single new attachment",
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "image": {
+                                        "description": "Optional single new image attachment",
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "attachments": {
+                                        "description": "Optional new attachments. In Postman send as attachments[] for multiple files.",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "binary"
+                                        }
+                                    },
+                                    "images": {
+                                        "description": "Optional new image attachments. In Postman send as images[] for multiple files.",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "binary"
+                                        }
                                     }
                                 },
                                 "type": "object"
@@ -7930,6 +8255,15 @@
                         "description": "Filter by Student Company ID",
                         "schema": {
                             "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "filter[supervisor_id]",
+                        "in": "query",
+                        "description": "Filter by university supervisor ID from the student's registration",
+                        "schema": {
+                            "type": "integer",
+                            "example": 3
                         }
                     },
                     {
@@ -8018,12 +8352,12 @@
                                         "example": "Medical appointment"
                                     },
                                     "attachment_file": {
-                                        "description": "Optional supporting document (e.g., medical certificate)",
+                                        "description": "Optional supporting PDF, Word, or image",
                                         "type": "string",
                                         "format": "binary"
                                     },
                                     "attachment": {
-                                        "description": "Optional supporting document",
+                                        "description": "Optional supporting PDF, Word, or image",
                                         "type": "string",
                                         "format": "binary"
                                     }
@@ -8102,7 +8436,13 @@
                                     "reason": {
                                         "type": "string"
                                     },
+                                    "attachment_file": {
+                                        "description": "Optional supporting PDF, Word, or image",
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
                                     "attachment": {
+                                        "description": "Optional supporting PDF, Word, or image",
                                         "type": "string",
                                         "format": "binary"
                                     }
@@ -8115,6 +8455,118 @@
                 "responses": {
                     "200": {
                         "description": "Updated successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/non-compliance-reports": {
+            "get": {
+                "tags": [
+                    "Reports"
+                ],
+                "summary": "Get non-compliance report cards",
+                "operationId": "13cdf2e5968c2fb41fdf7d5f03c02470",
+                "parameters": [
+                    {
+                        "name": "filter[search]",
+                        "in": "query",
+                        "description": "Student name or number",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filter[student_number]",
+                        "in": "query",
+                        "description": "Student name or number alias",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filter[company_id]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "filter[supervisor_id]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "filter[year]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "filter[semester_type]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filter[minimum_late_hours]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "number",
+                            "format": "float",
+                            "example": 2
+                        }
+                    },
+                    {
+                        "name": "filter[date]",
+                        "in": "query",
+                        "description": "Specific day. Defaults to today when no date filter is provided.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-07-07"
+                        }
+                    },
+                    {
+                        "name": "filter[date_from]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-07-01"
+                        }
+                    },
+                    {
+                        "name": "filter[date_to]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-07-31"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Non compliance reports retrieved successfully"
                     }
                 },
                 "security": [
@@ -9110,6 +9562,60 @@
                         "schema": {
                             "type": "integer"
                         }
+                    },
+                    {
+                        "name": "filter[non_compliance]",
+                        "in": "query",
+                        "description": "When true, return students with absence or late attendance in the current semester period",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "example": true
+                        }
+                    },
+                    {
+                        "name": "filter[minimum_late_hours]",
+                        "in": "query",
+                        "description": "Return students with at least one check-in late by this many hours from branch start time",
+                        "required": false,
+                        "schema": {
+                            "type": "number",
+                            "format": "float",
+                            "example": 2
+                        }
+                    },
+                    {
+                        "name": "filter[date]",
+                        "in": "query",
+                        "description": "Limit non-compliance calculations to one specific day. Overrides date_from/date_to.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-01-05"
+                        }
+                    },
+                    {
+                        "name": "filter[date_from]",
+                        "in": "query",
+                        "description": "Limit non-compliance calculations from this date",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-01-01"
+                        }
+                    },
+                    {
+                        "name": "filter[date_to]",
+                        "in": "query",
+                        "description": "Limit non-compliance calculations until this date",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-01-31"
+                        }
                     }
                 ],
                 "responses": {
@@ -9367,13 +9873,55 @@
                         }
                     },
                     {
-                        "name": "filter[status]",
+                        "name": "filter[attendance_date_from]",
                         "in": "query",
-                        "description": "Filter by status (present, absent, late, excused)",
+                        "description": "Filter by attendance date from (YYYY-MM-DD)",
                         "required": false,
                         "schema": {
                             "type": "string",
-                            "example": "present"
+                            "format": "date",
+                            "example": "2026-07-01"
+                        }
+                    },
+                    {
+                        "name": "filter[attendance_date_to]",
+                        "in": "query",
+                        "description": "Filter by attendance date to (YYYY-MM-DD)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-07-31"
+                        }
+                    },
+                    {
+                        "name": "filter[today_present_students]",
+                        "in": "query",
+                        "description": "When true, return students who checked in today. If filter[attendance_date] is sent, that date is used instead of today.",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "example": true
+                        }
+                    },
+                    {
+                        "name": "filter[today_absent_students]",
+                        "in": "query",
+                        "description": "When true, return current semester students who did not check in today. If filter[attendance_date] is sent, that date is used instead of today.",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "example": true
+                        }
+                    },
+                    {
+                        "name": "filter[status]",
+                        "in": "query",
+                        "description": "Filter by attendance status enum value",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
                         }
                     },
                     {
@@ -9877,7 +10425,7 @@
                                         "example": 35.2034
                                     },
                                     "file_report": {
-                                        "description": "Optional image/file attachment for the report",
+                                        "description": "Optional PDF, Word, or image attachment for the report. For multiple files, send file_report[]",
                                         "type": "string",
                                         "format": "binary"
                                     }
@@ -10272,6 +10820,129 @@
                     },
                     "404": {
                         "description": "Company not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Student Companies"
+                ],
+                "summary": "Unlink a student from a company",
+                "description": "Soft deletes the student-company assignment and marks it as deleted.",
+                "operationId": "f30a06d645157ffe5594376f5ac33e85",
+                "parameters": [
+                    {
+                        "name": "studentCompany",
+                        "in": "path",
+                        "description": "Student Company ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Student unlinked from company successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Student unlinked from company successfully"
+                                        },
+                                        "data": {
+                                            "type": "null",
+                                            "example": null,
+                                            "nullable": true
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Student Company not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/supervisors/statistics": {
+            "get": {
+                "tags": [
+                    "Supervisor Statistics"
+                ],
+                "summary": "Get supervisor statistics",
+                "operationId": "d051f7536958d745ce2c0d59ac0aaee8",
+                "parameters": [
+                    {
+                        "name": "filter[supervisor_id]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 3
+                        }
+                    },
+                    {
+                        "name": "filter[semester]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "filter[year]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 2026
+                        }
+                    },
+                    {
+                        "name": "filter[date_from]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-07-01"
+                        }
+                    },
+                    {
+                        "name": "filter[date_to]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-07-31"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Supervisor statistics retrieved successfully"
                     }
                 },
                 "security": [
@@ -11821,6 +12492,53 @@
                         "type": "string",
                         "example": "Everything went well"
                     },
+                    "attachments": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "example": "/storage/ppuds/field_visits/1/file.pdf"
+                        }
+                    },
+                    "attachment_items": {
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "id": {
+                                    "type": "integer",
+                                    "example": 10
+                                },
+                                "url": {
+                                    "type": "string",
+                                    "example": "/storage/ppuds/field_visits/1/file.pdf"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "example": "visit-report"
+                                },
+                                "file_name": {
+                                    "type": "string",
+                                    "example": "visit-report.pdf"
+                                },
+                                "mime_type": {
+                                    "type": "string",
+                                    "example": "application/pdf"
+                                },
+                                "size": {
+                                    "type": "integer",
+                                    "example": 204800
+                                },
+                                "human_readable_size": {
+                                    "type": "string",
+                                    "example": "200 KB"
+                                },
+                                "is_image": {
+                                    "type": "boolean",
+                                    "example": false
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
                     "created_by": {
                         "type": "integer",
                         "example": 123
@@ -11846,6 +12564,10 @@
                     "student_company_id": {
                         "type": "integer",
                         "example": 5
+                    },
+                    "supervisor_id": {
+                        "type": "integer",
+                        "example": 3
                     },
                     "type": {
                         "type": "string",
@@ -11880,6 +12602,14 @@
                     "attachment_file": {
                         "type": "string",
                         "example": "/uploads/attachment_1.jpg"
+                    },
+                    "attachment_file_name": {
+                        "type": "string",
+                        "example": "medical-report.pdf"
+                    },
+                    "attachment_file_mime_type": {
+                        "type": "string",
+                        "example": "application/pdf"
                     },
                     "created_by": {
                         "type": "integer",
@@ -12032,6 +12762,47 @@
                         "format": "float",
                         "example": 120.5
                     },
+                    "non_compliance": {
+                        "properties": {
+                            "total_days": {
+                                "type": "integer",
+                                "example": 3
+                            },
+                            "absence_days": {
+                                "type": "integer",
+                                "example": 1
+                            },
+                            "unexcused_absence_days": {
+                                "type": "integer",
+                                "example": 1
+                            },
+                            "late_days": {
+                                "type": "integer",
+                                "example": 2
+                            },
+                            "total_late_hours": {
+                                "type": "number",
+                                "format": "float",
+                                "example": 3.5
+                            },
+                            "max_late_hours": {
+                                "type": "number",
+                                "format": "float",
+                                "example": 2
+                            },
+                            "last_late_date": {
+                                "type": "string",
+                                "example": "2026-07-07",
+                                "nullable": true
+                            },
+                            "last_late_duration": {
+                                "type": "string",
+                                "example": "2 Hours",
+                                "nullable": true
+                            }
+                        },
+                        "type": "object"
+                    },
                     "total_payment_amount": {
                         "type": "number",
                         "format": "float",
@@ -12119,8 +12890,35 @@
                         "example": 35.2034
                     },
                     "file_report": {
-                        "type": "string",
-                        "example": "/uploads/report_1.jpg"
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "example": "/uploads/report_1.jpg"
+                        }
+                    },
+                    "file_report_items": {
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "url": {
+                                    "type": "string",
+                                    "example": "/uploads/report_1.jpg"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "example": "daily-report.pdf"
+                                },
+                                "mime_type": {
+                                    "type": "string",
+                                    "example": "application/pdf"
+                                },
+                                "is_image": {
+                                    "type": "boolean",
+                                    "example": false
+                                }
+                            },
+                            "type": "object"
+                        }
                     },
                     "created_by": {
                         "type": "integer",
@@ -12240,6 +13038,10 @@
             "description": "API Endpoints for managing student daily reports"
         },
         {
+            "name": "Supervisor Statistics",
+            "description": "API Endpoints for supervisor statistics"
+        },
+        {
             "name": "Branch",
             "description": "Branch"
         },
@@ -12320,16 +13122,16 @@
             "description": "Company Departments"
         },
         {
+            "name": "Reports",
+            "description": "Reports"
+        },
+        {
             "name": "Payments",
             "description": "Payments"
         },
         {
             "name": "PPUDS - Profile",
             "description": "PPUDS - Profile"
-        },
-        {
-            "name": "Reports",
-            "description": "Reports"
         },
         {
             "name": "Settings",

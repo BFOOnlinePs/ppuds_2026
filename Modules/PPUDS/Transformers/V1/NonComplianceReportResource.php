@@ -11,7 +11,10 @@ class NonComplianceReportResource extends JsonResource
     public function toArray(Request $request): array
     {
         $summary = app(NonComplianceReportService::class)
-            ->summary($this->resource, ...self::dateFilters($request));
+            ->summary($this->resource, ...[
+                ...self::dateFilters($request),
+                self::outsideWorkRangeDistanceMeters($request),
+            ]);
 
         return [
             'id' => $this->id,
@@ -41,6 +44,9 @@ class NonComplianceReportResource extends JsonResource
                 'last_late_duration' => $summary['last_late_duration'] ?? null,
                 'absence_dates' => $summary['absence_dates'] ?? [],
                 'late_attendances' => $summary['late_attendances'] ?? [],
+                'outside_work_range_days' => (int) ($summary['outside_work_range_days'] ?? 0),
+                'outside_work_range_distance_meters' => (int) ($summary['outside_work_range_distance_meters'] ?? 200),
+                'outside_work_range_attendances' => $summary['outside_work_range_attendances'] ?? [],
                 'problems' => $this->problems($summary),
             ],
         ];
@@ -80,11 +86,33 @@ class NonComplianceReportResource extends JsonResource
                 'late_duration' => $lateAttendance['late_duration'] ?? null,
             ]);
 
+        $outsideWorkRangeProblems = collect($summary['outside_work_range_attendances'] ?? [])
+            ->map(fn (array $attendance): array => [
+                'type' => 'outside_work_range',
+                'date' => $attendance['date'] ?? null,
+                'check_in' => $attendance['check_in'] ?? null,
+                'distance_meters' => (int) ($attendance['distance_meters'] ?? 0),
+                'distance_label' => $attendance['distance_label'] ?? null,
+                'attendance_latitude' => $attendance['attendance_latitude'] ?? null,
+                'attendance_longitude' => $attendance['attendance_longitude'] ?? null,
+                'branch_latitude' => $attendance['branch_latitude'] ?? null,
+                'branch_longitude' => $attendance['branch_longitude'] ?? null,
+            ]);
+
         return $absenceProblems
             ->merge($lateProblems)
+            ->merge($outsideWorkRangeProblems)
             ->sortBy('date')
             ->values()
             ->all();
+    }
+
+    private static function outsideWorkRangeDistanceMeters(?Request $request = null): int
+    {
+        $request ??= request();
+        $distance = (int) self::stringFilterValue($request->input('filter.outside_work_range_distance_meters'));
+
+        return $distance > 0 ? $distance : 200;
     }
 
     private static function stringFilterValue(mixed $value): ?string

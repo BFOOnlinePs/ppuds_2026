@@ -42,7 +42,9 @@ class Index extends Component implements HasForms
             'search' => null,
             'company_id' => null,
             'supervisor_id' => null,
+            'non_compliance_types' => [],
             'minimum_late_hours' => null,
+            'outside_work_range_distance_meters' => 200,
             'date' => now()->toDateString(),
             'date_from' => null,
             'date_to' => null,
@@ -77,11 +79,25 @@ class Index extends Component implements HasForms
                                     ->preload()
                                     ->live(),
 
+                                Select::make('non_compliance_types')
+                                    ->label(__('Non Compliance Type'))
+                                    ->options($this->nonComplianceTypeOptions())
+                                    ->multiple()
+                                    ->native(false)
+                                    ->live(),
+
                                 TextInput::make('minimum_late_hours')
                                     ->label(__('Minimum Late Hours'))
                                     ->numeric()
                                     ->minValue(0)
                                     ->step('0.25')
+                                    ->live(debounce: 500),
+
+                                TextInput::make('outside_work_range_distance_meters')
+                                    ->label(__('Allowed Range (meters)'))
+                                    ->numeric()
+                                    ->minValue(1)
+                                    ->default(200)
                                     ->live(debounce: 500),
 
                                 DatePicker::make('date')
@@ -130,7 +146,14 @@ class Index extends Component implements HasForms
     {
         $query = $this->filteredBaseQuery();
         $nonCompliantIds = app(NonComplianceReportService::class)
-            ->nonCompliantStudentCompanyIds(clone $query, ...$this->dateFilters());
+            ->nonCompliantStudentCompanyIds(
+                clone $query,
+                ...[
+                    ...$this->dateFilters(),
+                    $this->selectedNonComplianceTypes(),
+                    $this->outsideWorkRangeDistanceMeters(),
+                ]
+            );
 
         return $query
             ->whereKey($nonCompliantIds)
@@ -141,7 +164,13 @@ class Index extends Component implements HasForms
     public function summary(StudentCompany $studentCompany): array
     {
         return $this->nonComplianceSummaries[$studentCompany->id]
-            ??= app(NonComplianceReportService::class)->summary($studentCompany, ...$this->dateFilters());
+            ??= app(NonComplianceReportService::class)->summary(
+                $studentCompany,
+                ...[
+                    ...$this->dateFilters(),
+                    $this->outsideWorkRangeDistanceMeters(),
+                ]
+            );
     }
 
     private function filteredBaseQuery(): Builder
@@ -229,6 +258,32 @@ class Index extends Component implements HasForms
             ->pluck('name', 'id')
             ->sort()
             ->toArray();
+    }
+
+    private function nonComplianceTypeOptions(): array
+    {
+        return [
+            NonComplianceReportService::ISSUE_OUTSIDE_WORK_RANGE => __('Outside Work Range'),
+            NonComplianceReportService::ISSUE_LATE_ATTENDANCE => __('Late Attendance'),
+            NonComplianceReportService::ISSUE_ABSENCE => __('Non Attendance'),
+        ];
+    }
+
+    private function selectedNonComplianceTypes(): array
+    {
+        $types = $this->filters['non_compliance_types'] ?? [];
+
+        return collect(is_array($types) ? $types : [$types])
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    private function outsideWorkRangeDistanceMeters(): int
+    {
+        $distance = (int) ($this->filters['outside_work_range_distance_meters'] ?? 200);
+
+        return $distance > 0 ? $distance : 200;
     }
 
     public function render()

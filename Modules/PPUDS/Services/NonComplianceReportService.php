@@ -15,6 +15,10 @@ use Modules\PPUDS\Settings\GeneralSettings;
 
 class NonComplianceReportService
 {
+    public const ISSUE_ABSENCE = 'absence';
+    public const ISSUE_LATE_ATTENDANCE = 'late_attendance';
+    public const ISSUE_OUTSIDE_WORK_RANGE = 'outside_work_range';
+
     public function applyMinimumLateHoursFilter(
         Builder $query,
         int|float|string $hours,
@@ -91,9 +95,13 @@ class NonComplianceReportService
         Builder $query,
         ?string $date = null,
         ?string $dateFrom = null,
-        ?string $dateTo = null
+        ?string $dateTo = null,
+        array $issueTypes = [],
+        int $outsideWorkRangeDistanceMeters = 200
     ): array
     {
+        $issueTypes = $this->normalizeIssueTypes($issueTypes);
+
         return $query
             ->with([
                 'attendances',
@@ -102,11 +110,16 @@ class NonComplianceReportService
                 'registration',
             ])
             ->get()
-            ->filter(function (StudentCompany $studentCompany) use ($date, $dateFrom, $dateTo): bool {
-                $summary = $this->summary($studentCompany, $date, $dateFrom, $dateTo);
+            ->filter(function (StudentCompany $studentCompany) use (
+                $date,
+                $dateFrom,
+                $dateTo,
+                $issueTypes,
+                $outsideWorkRangeDistanceMeters
+            ): bool {
+                $summary = $this->summary($studentCompany, $date, $dateFrom, $dateTo, $outsideWorkRangeDistanceMeters);
 
-                return ($summary['total_absence_days'] ?? 0) > 0
-                    || ($summary['late_days'] ?? 0) > 0;
+                return $this->summaryMatchesIssueTypes($summary, $issueTypes);
             })
             ->pluck('id')
             ->values()
@@ -117,7 +130,8 @@ class NonComplianceReportService
         StudentCompany $studentCompany,
         ?string $date = null,
         ?string $dateFrom = null,
-        ?string $dateTo = null
+        ?string $dateTo = null,
+        int $outsideWorkRangeDistanceMeters = 200
     ): array
     {
         $studentCompany->loadMissing([
@@ -133,11 +147,21 @@ class NonComplianceReportService
         $lateAttendances = $period === null
             ? collect()
             : $this->lateAttendances($studentCompany, ...$period);
+        $outsideWorkRangeAttendances = $period === null
+            ? collect()
+            : $this->outsideWorkRangeAttendances($studentCompany, $period[0], $period[1], $outsideWorkRangeDistanceMeters);
         $lateMinutes = $lateAttendances->sum('late_minutes');
         $maxLateMinutes = (int) $lateAttendances->max('late_minutes');
         $lastLateAttendance = $lateAttendances
             ->sortByDesc(fn (array $lateAttendance): string => $lateAttendance['date'])
             ->first();
+        $nonComplianceDates = collect($absenceDetails['absence_dates'] ?? [])
+            ->pluck('date')
+            ->merge($lateAttendances->pluck('date'))
+            ->merge($outsideWorkRangeAttendances->pluck('date'))
+            ->filter()
+            ->unique()
+            ->values();
 
         return array_merge($absenceDetails, [
             'absence_dates' => $absenceDetails['absence_dates'],
@@ -153,7 +177,10 @@ class NonComplianceReportService
             'last_late_duration' => $lastLateAttendance
                 ? $this->formatMinutes($lastLateAttendance['late_minutes'])
                 : null,
-            'total_non_compliance_days' => (int) ($absenceDetails['total_absence_days'] ?? 0) + $lateAttendances->count(),
+            'outside_work_range_days' => $outsideWorkRangeAttendances->count(),
+            'outside_work_range_distance_meters' => $outsideWorkRangeDistanceMeters,
+            'outside_work_range_attendances' => $outsideWorkRangeAttendances->values()->all(),
+            'total_non_compliance_days' => $nonComplianceDates->count(),
         ]);
     }
 
@@ -191,6 +218,54 @@ class NonComplianceReportService
                     'check_in' => $attendance->check_in->format('H:i'),
                     'late_minutes' => $lateMinutes,
                     'late_duration' => $this->formatMinutes($lateMinutes),
+                ];
+            })
+            ->filter()
+            ->values();
+    }
+
+    private function outsideWorkRangeAttendances(
+        StudentCompany $studentCompany,
+        Carbon $periodStart,
+        Carbon $periodEnd,
+        int $distanceMeters
+    ): Collection {
+        $branch = $studentCompany->branch;
+
+        if (
+            blank($branch?->latitude)
+            || blank($branch?->longitude)
+            || $studentCompany->attendances->isEmpty()
+        ) {
+            return collect();
+        }
+
+        return $studentCompany->attendances
+            ->toBase()
+            ->filter(fn (StudentAttendance $attendance): bool => $attendance->attendance_date && $attendance->check_in)
+            ->filter(fn (StudentAttendance $attendance): bool => $attendance->attendance_date->betweenIncluded($periodStart, $periodEnd))
+            ->filter(fn (StudentAttendance $attendance): bool => ! blank($attendance->check_in_latitude) && ! blank($attendance->check_in_longitude))
+            ->map(function (StudentAttendance $attendance) use ($branch, $distanceMeters): ?array {
+                $distance = $this->distanceInMeters(
+                    (float) $attendance->check_in_latitude,
+                    (float) $attendance->check_in_longitude,
+                    (float) $branch->latitude,
+                    (float) $branch->longitude,
+                );
+
+                if ($distance <= $distanceMeters) {
+                    return null;
+                }
+
+                return [
+                    'date' => $attendance->attendance_date->toDateString(),
+                    'check_in' => $attendance->check_in->format('H:i'),
+                    'attendance_latitude' => (float) $attendance->check_in_latitude,
+                    'attendance_longitude' => (float) $attendance->check_in_longitude,
+                    'branch_latitude' => (float) $branch->latitude,
+                    'branch_longitude' => (float) $branch->longitude,
+                    'distance_meters' => $distance,
+                    'distance_label' => number_format($distance).' '.__('meters'),
                 ];
             })
             ->filter()
@@ -409,6 +484,49 @@ class NonComplianceReportService
     private function lateMinutes(StudentAttendance $attendance, Carbon $scheduledCheckIn): int
     {
         return max(0, (int) floor(($attendance->check_in->getTimestamp() - $scheduledCheckIn->getTimestamp()) / 60));
+    }
+
+    private function distanceInMeters(float $latitudeA, float $longitudeA, float $latitudeB, float $longitudeB): int
+    {
+        $earthRadius = 6371000;
+        $latitudeDelta = deg2rad($latitudeB - $latitudeA);
+        $longitudeDelta = deg2rad($longitudeB - $longitudeA);
+
+        $a = sin($latitudeDelta / 2) ** 2
+            + cos(deg2rad($latitudeA)) * cos(deg2rad($latitudeB))
+            * sin($longitudeDelta / 2) ** 2;
+
+        return (int) round($earthRadius * 2 * atan2(sqrt($a), sqrt(1 - $a)));
+    }
+
+    private function normalizeIssueTypes(array $issueTypes): array
+    {
+        $allowedTypes = [
+            self::ISSUE_ABSENCE,
+            self::ISSUE_LATE_ATTENDANCE,
+            self::ISSUE_OUTSIDE_WORK_RANGE,
+        ];
+
+        $types = collect($issueTypes)
+            ->map(fn (mixed $type): string => (string) $type)
+            ->filter(fn (string $type): bool => in_array($type, $allowedTypes, true))
+            ->unique()
+            ->values()
+            ->all();
+
+        return $types === [] ? $allowedTypes : $types;
+    }
+
+    private function summaryMatchesIssueTypes(array $summary, array $issueTypes): bool
+    {
+        return collect($issueTypes)->contains(function (string $issueType) use ($summary): bool {
+            return match ($issueType) {
+                self::ISSUE_ABSENCE => (int) ($summary['total_absence_days'] ?? 0) > 0,
+                self::ISSUE_LATE_ATTENDANCE => (int) ($summary['late_days'] ?? 0) > 0,
+                self::ISSUE_OUTSIDE_WORK_RANGE => (int) ($summary['outside_work_range_days'] ?? 0) > 0,
+                default => false,
+            };
+        });
     }
 
     private function weekDayValue(Carbon $date): int

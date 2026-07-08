@@ -29,7 +29,9 @@ class NonComplianceReportController extends Controller
      * @OA\Parameter(name="filter[supervisor_id]", in="query", required=false, @OA\Schema(type="integer")),
      * @OA\Parameter(name="filter[year]", in="query", required=false, @OA\Schema(type="integer")),
      * @OA\Parameter(name="filter[semester_type]", in="query", required=false, @OA\Schema(type="string")),
+     * @OA\Parameter(name="filter[non_compliance_types]", in="query", required=false, description="Comma separated values: outside_work_range, late_attendance, absence", @OA\Schema(type="string")),
      * @OA\Parameter(name="filter[minimum_late_hours]", in="query", required=false, @OA\Schema(type="number", format="float", example=2)),
+     * @OA\Parameter(name="filter[outside_work_range_distance_meters]", in="query", required=false, @OA\Schema(type="integer", example=200)),
      * @OA\Parameter(name="filter[date]", in="query", required=false, description="Specific day. Defaults to today when no date filter is provided.", @OA\Schema(type="string", format="date", example="2026-07-07")),
      * @OA\Parameter(name="filter[date_from]", in="query", required=false, @OA\Schema(type="string", format="date", example="2026-07-01")),
      * @OA\Parameter(name="filter[date_to]", in="query", required=false, @OA\Schema(type="string", format="date", example="2026-07-31")),
@@ -49,7 +51,14 @@ class NonComplianceReportController extends Controller
             $service->applyMinimumLateHoursFilter($query, $minimumLateHours, ...$dateFilters);
         }
 
-        $nonCompliantIds = $service->nonCompliantStudentCompanyIds(clone $query, ...$dateFilters);
+        $nonCompliantIds = $service->nonCompliantStudentCompanyIds(
+            clone $query,
+            ...[
+                ...$dateFilters,
+                $this->nonComplianceTypes($request),
+                $this->outsideWorkRangeDistanceMeters($request),
+            ]
+        );
 
         $defaultPerPage = config('core.pagination.per_page', 10);
         $maxPerPage = config('core.pagination.max_per_page', 100);
@@ -136,5 +145,26 @@ class NonComplianceReportController extends Controller
         $value = $request->input("filter.{$key}");
 
         return is_array($value) ? reset($value) : $value;
+    }
+
+    private function nonComplianceTypes(Request $request): array
+    {
+        $value = $request->input('filter.non_compliance_types', []);
+        $items = is_array($value)
+            ? $value
+            : explode(',', (string) $value);
+
+        return collect($items)
+            ->map(fn (mixed $item): string => trim((string) $item))
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    private function outsideWorkRangeDistanceMeters(Request $request): int
+    {
+        $distance = (int) $this->filterValue($request, 'outside_work_range_distance_meters');
+
+        return $distance > 0 ? $distance : 200;
     }
 }
