@@ -136,19 +136,11 @@ class FieldVisitController extends Controller
      * @OA\Property(property="visit_time", type="string", format="time", example="09:00:00"),
      * @OA\Property(property="visit_duration", type="integer", example=60),
      * @OA\Property(property="notes", type="string", example="Everything went well"),
-     * @OA\Property(property="attachment", type="string", format="binary", description="Optional single attachment"),
-     * @OA\Property(property="image", type="string", format="binary", description="Optional single image attachment"),
      * @OA\Property(
      * property="attachments",
      * type="array",
      * @OA\Items(type="string", format="binary"),
-     * description="Optional attachments. In Postman send as attachments[] for multiple files."
-     * ),
-     * @OA\Property(
-     * property="images",
-     * type="array",
-     * @OA\Items(type="string", format="binary"),
-     * description="Optional image attachments. In Postman send as images[] for multiple files."
+     * description="Optional images or document files. In Postman send every file as attachments[]."
      * )
      * )
      * )
@@ -161,7 +153,7 @@ class FieldVisitController extends Controller
     {
         $data = $request->validated();
         $attachments = $request->attachmentFiles();
-        unset($data['attachment'], $data['image'], $data['attachments'], $data['images']);
+        unset($data['attachment'], $data['image'], $data['attachments'], $data['attachemnts'], $data['images']);
 
         if (! $this->canAccessStudentCompanyRecord((int) $data['student_company_id'])) {
             return $this->errorResponse(__('You are not authorized to access this student company.'), 403);
@@ -263,19 +255,11 @@ class FieldVisitController extends Controller
      * @OA\Property(property="visit_time", type="string", format="time", example="09:00:00"),
      * @OA\Property(property="visit_duration", type="integer", example=60),
      * @OA\Property(property="notes", type="string", nullable=true, example="Bulk field visit"),
-     * @OA\Property(property="attachment", type="string", format="binary", description="Optional single attachment copied to every created field visit"),
-     * @OA\Property(property="image", type="string", format="binary", description="Optional single image copied to every created field visit"),
      * @OA\Property(
      * property="attachments",
      * type="array",
      * @OA\Items(type="string", format="binary"),
-     * description="Optional attachments copied to every created field visit. In Postman send as attachments[] for multiple files."
-     * ),
-     * @OA\Property(
-     * property="images",
-     * type="array",
-     * @OA\Items(type="string", format="binary"),
-     * description="Optional image attachments copied to every created field visit. In Postman send as images[] for multiple files."
+     * description="Optional images or document files copied to every created field visit. In Postman send every file as attachments[]."
      * )
      * )
      * )
@@ -398,19 +382,11 @@ class FieldVisitController extends Controller
      * @OA\Property(property="visiting_place", type="string", example="Branch Office"),
      * @OA\Property(property="notes", type="string", example="Updated notes"),
      * @OA\Property(property="visit_duration", type="integer", example=90),
-     * @OA\Property(property="attachment", type="string", format="binary", description="Optional single new attachment"),
-     * @OA\Property(property="image", type="string", format="binary", description="Optional single new image attachment"),
      * @OA\Property(
      * property="attachments",
      * type="array",
      * @OA\Items(type="string", format="binary"),
-     * description="Optional new attachments. In Postman send as attachments[] for multiple files."
-     * ),
-     * @OA\Property(
-     * property="images",
-     * type="array",
-     * @OA\Items(type="string", format="binary"),
-     * description="Optional new image attachments. In Postman send as images[] for multiple files."
+     * description="Optional new images or document files. In Postman send every file as attachments[]."
      * )
      * )
      * )
@@ -423,7 +399,7 @@ class FieldVisitController extends Controller
     {
         $data = $request->validated();
         $attachments = $request->attachmentFiles();
-        unset($data['attachment'], $data['image'], $data['attachments'], $data['images']);
+        unset($data['attachment'], $data['image'], $data['attachments'], $data['attachemnts'], $data['images']);
 
         if (! $this->canAccessStudentCompanyRecord($fieldVisit->student_company_id)) {
             return $this->errorResponse(__('You are not authorized to access this student company.'), 403);

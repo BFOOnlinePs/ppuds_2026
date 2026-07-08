@@ -15,6 +15,7 @@ class FieldVisitUpdate extends FormRequest
         $fileRules = $this->attachmentRules();
         $optionalFileRules = ['sometimes', 'nullable', ...$fileRules];
         $attachments = $this->file('attachments');
+        $misspelledAttachments = $this->file('attachemnts');
         $images = $this->file('images');
 
         return [
@@ -29,6 +30,8 @@ class FieldVisitUpdate extends FormRequest
             'image'              => $optionalFileRules,
             'attachments'        => is_array($attachments) ? ['sometimes', 'nullable', 'array', 'max:10'] : $optionalFileRules,
             'attachments.*'      => $fileRules,
+            'attachemnts'        => is_array($misspelledAttachments) ? ['sometimes', 'nullable', 'array', 'max:10'] : $optionalFileRules,
+            'attachemnts.*'      => $fileRules,
             'images'             => is_array($images) ? ['sometimes', 'nullable', 'array', 'max:10'] : $optionalFileRules,
             'images.*'           => $fileRules,
         ];
@@ -38,8 +41,9 @@ class FieldVisitUpdate extends FormRequest
     {
         $files = [
             $this->file('attachment'),
-            $this->file('image'),
             ...$this->normalizeFiles($this->file('attachments', [])),
+            ...$this->normalizeFiles($this->file('attachemnts', [])),
+            $this->file('image'),
             ...$this->normalizeFiles($this->file('images', [])),
         ];
 

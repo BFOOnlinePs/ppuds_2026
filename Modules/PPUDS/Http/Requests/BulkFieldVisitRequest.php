@@ -14,6 +14,7 @@ class BulkFieldVisitRequest extends FormRequest
     {
         $fileRules = $this->attachmentRules();
         $attachments = $this->file('attachments');
+        $misspelledAttachments = $this->file('attachemnts');
         $images = $this->file('images');
 
         return [
@@ -35,6 +36,8 @@ class BulkFieldVisitRequest extends FormRequest
             'image' => ['nullable', ...$fileRules],
             'attachments' => is_array($attachments) ? ['nullable', 'array', 'max:10'] : ['nullable', ...$fileRules],
             'attachments.*' => $fileRules,
+            'attachemnts' => is_array($misspelledAttachments) ? ['nullable', 'array', 'max:10'] : ['nullable', ...$fileRules],
+            'attachemnts.*' => $fileRules,
             'images' => is_array($images) ? ['nullable', 'array', 'max:10'] : ['nullable', ...$fileRules],
             'images.*' => $fileRules,
         ];
@@ -58,8 +61,9 @@ class BulkFieldVisitRequest extends FormRequest
     {
         $files = [
             $this->file('attachment'),
-            $this->file('image'),
             ...$this->normalizeFiles($this->file('attachments', [])),
+            ...$this->normalizeFiles($this->file('attachemnts', [])),
+            $this->file('image'),
             ...$this->normalizeFiles($this->file('images', [])),
         ];
 
