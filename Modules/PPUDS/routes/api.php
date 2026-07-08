@@ -59,6 +59,8 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
                     Route::post('/', 'store')->name('store');
                     Route::get('/{company}/branches/{branch}/location', 'showBranchLocation')
                         ->name('branches.location.show');
+                    Route::post('/{company}/branches/{branch}/location', 'updateBranchLocation')
+                        ->name('branches.location.update.post');
                     Route::patch('/{company}/branches/{branch}/location', 'updateBranchLocation')
                         ->name('branches.location.update');
                     Route::get('/{company}', 'show')->name('show');
