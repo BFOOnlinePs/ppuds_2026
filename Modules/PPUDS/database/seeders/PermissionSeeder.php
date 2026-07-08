@@ -3,6 +3,7 @@
 namespace Modules\PPUDS\database\seeders;
 
 use Illuminate\Database\Seeder;
+use Modules\Core\Enums\UserRole;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -709,9 +710,11 @@ class PermissionSeeder extends Seeder
             );
             $this->command->info("Permission created: {$perm['name']}");
 
-            $role = Role::firstOrCreate(['name' => 'Super Admin', 'guard_name' => 'web']);
-            $role->givePermissionTo($perm['name']);
-            $this->command->info("Permission {$perm['name']} assigned to role Super Admin");
+            foreach ([UserRole::SUPER_ADMIN->value, UserRole::ADMIN->value] as $roleName) {
+                $role = Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'web']);
+                $role->givePermissionTo($perm['name']);
+                $this->command?->info("Permission {$perm['name']} assigned to role {$roleName}");
+            }
         }
     }
 }
