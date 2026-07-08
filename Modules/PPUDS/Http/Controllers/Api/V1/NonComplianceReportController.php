@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Services\NonComplianceReportService;
+use Modules\PPUDS\Settings\GeneralSettings;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 use Modules\PPUDS\Transformers\V1\NonComplianceReportResource;
 
@@ -27,9 +28,10 @@ class NonComplianceReportController extends Controller
      * @OA\Parameter(name="filter[student_number]", in="query", required=false, description="Student name or number alias", @OA\Schema(type="string")),
      * @OA\Parameter(name="filter[company_id]", in="query", required=false, @OA\Schema(type="integer")),
      * @OA\Parameter(name="filter[supervisor_id]", in="query", required=false, @OA\Schema(type="integer")),
-     * @OA\Parameter(name="filter[year]", in="query", required=false, @OA\Schema(type="integer")),
-     * @OA\Parameter(name="filter[semester_type]", in="query", required=false, @OA\Schema(type="string")),
+     * @OA\Parameter(name="filter[year]", in="query", required=false, description="Academic year. Defaults to the configured dashboard year.", @OA\Schema(type="integer")),
+     * @OA\Parameter(name="filter[semester_type]", in="query", required=false, description="Semester type. Defaults to the configured dashboard semester.", @OA\Schema(type="string")),
      * @OA\Parameter(name="filter[non_compliance_types]", in="query", required=false, description="Comma separated values: outside_work_range, late_attendance, absence", @OA\Schema(type="string")),
+     * @OA\Parameter(name="filter[non_compliance_type]", in="query", required=false, description="Single value alias for filter[non_compliance_types]", @OA\Schema(type="string")),
      * @OA\Parameter(name="filter[minimum_late_hours]", in="query", required=false, @OA\Schema(type="number", format="float", example=2)),
      * @OA\Parameter(name="filter[outside_work_range_distance_meters]", in="query", required=false, @OA\Schema(type="integer", example=200)),
      * @OA\Parameter(name="filter[date]", in="query", required=false, description="Specific day. Defaults to today when no date filter is provided.", @OA\Schema(type="string", format="date", example="2026-07-07")),
@@ -42,10 +44,11 @@ class NonComplianceReportController extends Controller
     public function index(Request $request)
     {
         $service = app(NonComplianceReportService::class);
-        $dateFilters = NonComplianceReportResource::dateFilters($request);
-        $query = $this->filteredBaseQuery($request);
+        $filters = $this->resolvedFilters($request);
+        $dateFilters = [$filters['date'], $filters['date_from'], $filters['date_to']];
+        $query = $this->filteredBaseQuery($filters);
 
-        $minimumLateHours = $this->filterValue($request, 'minimum_late_hours');
+        $minimumLateHours = $filters['minimum_late_hours'];
 
         if (is_numeric($minimumLateHours)) {
             $service->applyMinimumLateHoursFilter($query, $minimumLateHours, ...$dateFilters);
@@ -55,8 +58,8 @@ class NonComplianceReportController extends Controller
             clone $query,
             ...[
                 ...$dateFilters,
-                $this->nonComplianceTypes($request),
-                $this->outsideWorkRangeDistanceMeters($request),
+                $filters['non_compliance_types'],
+                $filters['outside_work_range_distance_meters'],
             ]
         );
 
@@ -75,9 +78,17 @@ class NonComplianceReportController extends Controller
                 ->additional([
                     'meta' => [
                         'filters' => [
+                            'search' => $filters['search'],
+                            'company_id' => $filters['company_id'],
+                            'supervisor_id' => $filters['supervisor_id'],
+                            'non_compliance_types' => $filters['non_compliance_types'],
+                            'minimum_late_hours' => $filters['minimum_late_hours'],
+                            'outside_work_range_distance_meters' => $filters['outside_work_range_distance_meters'],
                             'date' => $dateFilters[0],
                             'date_from' => $dateFilters[1],
                             'date_to' => $dateFilters[2],
+                            'year' => $filters['year'],
+                            'semester_type' => $filters['semester_type'],
                         ],
                     ],
                 ]),
@@ -85,7 +96,7 @@ class NonComplianceReportController extends Controller
         );
     }
 
-    private function filteredBaseQuery(Request $request): Builder
+    private function filteredBaseQuery(array $filters): Builder
     {
         $query = StudentCompany::query()
             ->with([
@@ -98,7 +109,7 @@ class NonComplianceReportController extends Controller
             ])
             ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query));
 
-        $search = trim((string) ($this->filterValue($request, 'search') ?? $this->filterValue($request, 'student_number') ?? ''));
+        $search = trim((string) ($filters['search'] ?? ''));
 
         if ($search !== '') {
             $query->where(function (Builder $query) use ($search): void {
@@ -114,30 +125,51 @@ class NonComplianceReportController extends Controller
 
         return $query
             ->when(
-                filled($this->filterValue($request, 'company_id')),
-                fn (Builder $query): Builder => $query->where('company_id', (int) $this->filterValue($request, 'company_id'))
+                filled($filters['company_id']),
+                fn (Builder $query): Builder => $query->where('company_id', (int) $filters['company_id'])
             )
             ->when(
-                filled($this->filterValue($request, 'supervisor_id')),
+                filled($filters['supervisor_id']),
                 fn (Builder $query): Builder => $query->whereHas(
                     'registration',
-                    fn (Builder $registrationQuery): Builder => $registrationQuery->where('supervisor_id', (int) $this->filterValue($request, 'supervisor_id'))
+                    fn (Builder $registrationQuery): Builder => $registrationQuery->where('supervisor_id', (int) $filters['supervisor_id'])
                 )
             )
             ->when(
-                filled($this->filterValue($request, 'year')),
+                filled($filters['year']),
                 fn (Builder $query): Builder => $query->whereHas(
                     'registration',
-                    fn (Builder $registrationQuery): Builder => $registrationQuery->where('year', $this->filterValue($request, 'year'))
+                    fn (Builder $registrationQuery): Builder => $registrationQuery->where('year', $filters['year'])
                 )
             )
             ->when(
-                filled($this->filterValue($request, 'semester_type')),
+                filled($filters['semester_type']),
                 fn (Builder $query): Builder => $query->whereHas(
                     'registration',
-                    fn (Builder $registrationQuery): Builder => $registrationQuery->where('semester', $this->filterValue($request, 'semester_type'))
+                    fn (Builder $registrationQuery): Builder => $registrationQuery->where('semester', $filters['semester_type'])
                 )
             );
+    }
+
+    private function resolvedFilters(Request $request): array
+    {
+        $settings = app(GeneralSettings::class);
+        [$date, $dateFrom, $dateTo] = NonComplianceReportResource::dateFilters($request);
+
+        return [
+            'search' => $this->stringFilter($request, 'search')
+                ?? $this->stringFilter($request, 'student_number'),
+            'company_id' => $this->filterValue($request, 'company_id'),
+            'supervisor_id' => $this->filterValue($request, 'supervisor_id'),
+            'non_compliance_types' => $this->nonComplianceTypes($request),
+            'minimum_late_hours' => $this->filterValue($request, 'minimum_late_hours'),
+            'outside_work_range_distance_meters' => $this->outsideWorkRangeDistanceMeters($request),
+            'date' => $date,
+            'date_from' => $dateFrom,
+            'date_to' => $dateTo,
+            'year' => $this->filledFilterValue($request, 'year') ?? $settings->year,
+            'semester_type' => $this->filledFilterValue($request, 'semester_type') ?? $settings->semester_type?->value,
+        ];
     }
 
     private function filterValue(Request $request, string $key): mixed
@@ -147,9 +179,23 @@ class NonComplianceReportController extends Controller
         return is_array($value) ? reset($value) : $value;
     }
 
+    private function stringFilter(Request $request, string $key): ?string
+    {
+        $value = $this->filledFilterValue($request, $key);
+
+        return filled($value) ? trim((string) $value) : null;
+    }
+
+    private function filledFilterValue(Request $request, string $key): mixed
+    {
+        $value = $this->filterValue($request, $key);
+
+        return filled($value) ? $value : null;
+    }
+
     private function nonComplianceTypes(Request $request): array
     {
-        $value = $request->input('filter.non_compliance_types', []);
+        $value = $request->input('filter.non_compliance_types', $request->input('filter.non_compliance_type', []));
         $items = is_array($value)
             ? $value
             : explode(',', (string) $value);
