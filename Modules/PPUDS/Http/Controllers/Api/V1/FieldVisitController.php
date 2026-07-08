@@ -174,7 +174,7 @@ class FieldVisitController extends Controller
         $this->addAttachments($fieldVisit, $attachments);
 
         return $this->successResponse(
-            new FieldVisitResource($fieldVisit->loadMissing('media')),
+            new FieldVisitResource($fieldVisit->load('media')),
             __('Field Visit created successfully'),
             201
         );
@@ -430,7 +430,7 @@ class FieldVisitController extends Controller
         $this->addAttachments($fieldVisit, $attachments);
 
         return $this->successResponse(
-            new FieldVisitResource($fieldVisit->refresh()->loadMissing('media')),
+            new FieldVisitResource($fieldVisit->refresh()->load('media')),
             __('Field Visit updated successfully')
         );
     }

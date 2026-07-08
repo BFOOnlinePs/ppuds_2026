@@ -79,6 +79,16 @@ class FieldVisitRequest extends FormRequest
 
     private function normalizeFiles(mixed $files): array
     {
-        return is_array($files) ? $files : [$files];
+        if (! is_array($files)) {
+            return [$files];
+        }
+
+        $normalized = [];
+
+        foreach ($files as $file) {
+            array_push($normalized, ...$this->normalizeFiles($file));
+        }
+
+        return $normalized;
     }
 }

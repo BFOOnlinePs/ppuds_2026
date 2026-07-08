@@ -45,6 +45,20 @@ class BulkFieldVisitRequestTest extends TestCase
         );
     }
 
+    public function test_bulk_field_visit_request_flattens_nested_attachment_arrays(): void
+    {
+        $firstFile = UploadedFile::fake()->create('first.pdf', 20, 'application/pdf');
+        $secondFile = UploadedFile::fake()->image('second.jpg');
+
+        $request = BulkFieldVisitRequest::create('/api/v1/ppuds/field-visits/bulk', 'POST');
+        $request->files->set('attachments', [[$firstFile], [$secondFile]]);
+
+        $this->assertSame(
+            [$firstFile, $secondFile],
+            $request->attachmentFiles()
+        );
+    }
+
     public function test_bulk_field_visit_request_accepts_file_validation_keys(): void
     {
         $rules = (new BulkFieldVisitRequest())->rules();
