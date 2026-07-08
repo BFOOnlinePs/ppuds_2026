@@ -250,7 +250,7 @@ class FieldVisitController extends Controller
      * required=true,
      *
      * @OA\MediaType(
-     * mediaType="application/json",
+     * mediaType="multipart/form-data",
      *
      * @OA\Schema(
      * required={"company_id", "student_company_ids", "supervisor_id", "visiting_place", "visit_date", "visit_time", "visit_duration"},
@@ -262,7 +262,21 @@ class FieldVisitController extends Controller
      * @OA\Property(property="visit_date", type="string", format="date", example="2026-07-01"),
      * @OA\Property(property="visit_time", type="string", format="time", example="09:00:00"),
      * @OA\Property(property="visit_duration", type="integer", example=60),
-     * @OA\Property(property="notes", type="string", nullable=true, example="Bulk field visit")
+     * @OA\Property(property="notes", type="string", nullable=true, example="Bulk field visit"),
+     * @OA\Property(property="attachment", type="string", format="binary", description="Optional single attachment copied to every created field visit"),
+     * @OA\Property(property="image", type="string", format="binary", description="Optional single image copied to every created field visit"),
+     * @OA\Property(
+     * property="attachments",
+     * type="array",
+     * @OA\Items(type="string", format="binary"),
+     * description="Optional attachments copied to every created field visit. In Postman send as attachments[] for multiple files."
+     * ),
+     * @OA\Property(
+     * property="images",
+     * type="array",
+     * @OA\Items(type="string", format="binary"),
+     * description="Optional image attachments copied to every created field visit. In Postman send as images[] for multiple files."
+     * )
      * )
      * )
      * ),
@@ -273,6 +287,7 @@ class FieldVisitController extends Controller
     public function bulkStore(BulkFieldVisitRequest $request)
     {
         $data = $request->validated();
+        $attachments = $request->attachmentFiles();
         $studentCompanyIds = $request->studentCompanyIds();
 
         $studentCompanies = $this->currentSemesterStudentCompanyQuery()
@@ -299,14 +314,16 @@ class FieldVisitController extends Controller
             'notes' => $data['notes'] ?? null,
         ];
 
-        $fieldVisitIds = DB::transaction(function () use ($studentCompanies, $visitData): array {
+        $fieldVisitIds = DB::transaction(function () use ($studentCompanies, $visitData, $attachments): array {
             return $studentCompanies
-                ->map(function (StudentCompany $studentCompany) use ($visitData): int {
+                ->map(function (StudentCompany $studentCompany) use ($visitData, $attachments): int {
                     $fieldVisit = FieldVisit::create([
                         ...$visitData,
                         'student_company_id' => $studentCompany->id,
                         'created_by' => auth()->id(),
                     ]);
+
+                    $this->addAttachments($fieldVisit, $attachments);
 
                     return $fieldVisit->id;
                 })
@@ -323,6 +340,7 @@ class FieldVisitController extends Controller
                 'studentCompany.department',
                 'supervisor',
                 'createdBy',
+                'media',
             ])
             ->get();
 

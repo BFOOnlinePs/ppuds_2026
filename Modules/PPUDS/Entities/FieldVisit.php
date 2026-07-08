@@ -89,7 +89,7 @@ class FieldVisit extends Model implements HasMedia
             $mediaName = blank($name) ? pathinfo($originalName, PATHINFO_FILENAME) : $name;
 
             return $this
-                ->addMedia($file)
+                ->copyMedia($file)
                 ->usingName($mediaName)
                 ->usingFileName($fileName)
                 ->toMediaCollection(self::ATTACHMENTS_COLLECTION, self::ATTACHMENTS_DISK);
