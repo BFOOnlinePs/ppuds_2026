@@ -85,25 +85,7 @@ return Application::configure(basePath: dirname(__DIR__))
                     ], 404, [], $options);
                 }
 
-                // 5. أخطاء abort() العامة مثل 403 و 405
-                if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {
-                    $statusCode = $e->getStatusCode();
-                    $message = $e->getMessage() ?: match ($statusCode) {
-                        403 => 'This action is unauthorized.',
-                        404 => 'Resource not found.',
-                        405 => 'Method not allowed.',
-                        429 => 'Too many requests.',
-                        default => \Symfony\Component\HttpFoundation\Response::$statusTexts[$statusCode] ?? 'HTTP Error.',
-                    };
-
-                    return response()->json([
-                        'status'  => false,
-                        'message' => $message,
-                        'data'    => null
-                    ], $statusCode, [], $options);
-                }
-
-                // 6. أي أخطاء أخرى بالسيرفر (Server Error - 500)
+                // 5. أي أخطاء أخرى بالسيرفر (Server Error - 500)
                 // في بيئة التطوير (local) نعرض تفاصيل الخطأ الحقيقي، وفي الإنتاج (production) نعرض رسالة عامة
                 return response()->json([
                     'status'  => false,

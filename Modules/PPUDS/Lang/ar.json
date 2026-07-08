@@ -674,8 +674,6 @@
     "Company location updated successfully": "تم تحديث موقع الشركة بنجاح",
     "The selected branch does not belong to this company.": "الفرع المحدد لا يتبع لهذه الشركة.",
     "You are not allowed to update this branch location.": "لا تملك صلاحية تحديث موقع هذا الفرع.",
-    "Replace the company and branch placeholders with real IDs, then send the request using PATCH.": "استبدل company و branch بأرقام حقيقية، ثم أرسل الطلب باستخدام PATCH.",
-    "This endpoint only accepts PATCH requests. Disable automatic redirects if your client resends the request as GET.": "هذا الرابط يقبل طلبات PATCH فقط. عطّل التحويل التلقائي إذا كان العميل يعيد إرسال الطلب كـ GET.",
     "Student Check In Location": "مكان بصمة الطالب",
     "Check In Location": "موقع الحضور",
     "Check Out Location": "موقع المغادرة",
