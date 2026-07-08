@@ -409,7 +409,9 @@ class CompanyController extends Controller
             return $this->errorResponse(__('The selected branch does not belong to this company.'), 422);
         }
 
-        abort_unless($this->canUpdateBranchLocation($branch), 403);
+        if (! $this->canUpdateBranchLocation($branch)) {
+            return $this->errorResponse(__('You are not allowed to update this branch location.'), 403);
+        }
 
         $branch->forceFill([
             'latitude' => $this->formatCoordinate($request->latitude),
