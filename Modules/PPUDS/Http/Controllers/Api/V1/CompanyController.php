@@ -5,11 +5,14 @@ namespace Modules\PPUDS\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
 use Modules\Branch\Entities\Branch;
+use Modules\Branch\Transformers\V1\BranchResource;
+use Modules\Core\Enums\UserRole;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\CompanyDepartment; // تأكد من استدعاء هذا الكلاس
 use Modules\PPUDS\Http\Requests\CompanyRequest;
 use Modules\PPUDS\Http\Requests\CompanyUpdateRequest;
+use Modules\PPUDS\Http\Requests\UpdateCompanyBranchLocationRequest;
 use Modules\PPUDS\Services\PpuApiService;
 use Modules\PPUDS\Transformers\V1\CompanyResource;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -375,6 +378,52 @@ class CompanyController extends Controller
         );
     }
 
+    /**
+     * @OA\Patch(
+     * path="/api/v1/ppuds/companies/{company}/branches/{branch}/location",
+     * summary="Update company branch location",
+     * description="Allows a company supervisor assigned to the branch to set the branch coordinates from the current device location.",
+     * tags={"Companies"},
+     * security={{"sanctum": {}}},
+     * @OA\Parameter(name="company", in="path", required=true, @OA\Schema(type="integer", example=1)),
+     * @OA\Parameter(name="branch", in="path", required=true, @OA\Schema(type="integer", example=10)),
+     * @OA\RequestBody(
+     * required=true,
+     * @OA\JsonContent(
+     * required={"latitude", "longitude"},
+     * @OA\Property(property="latitude", type="number", format="float", example=31.5326),
+     * @OA\Property(property="longitude", type="number", format="float", example=35.0998)
+     * )
+     * ),
+     * @OA\Response(response=200, description="Company location updated successfully"),
+     * @OA\Response(response=403, description="Forbidden"),
+     * @OA\Response(response=422, description="Branch does not belong to company or validation error")
+     * )
+     */
+    public function updateBranchLocation(
+        UpdateCompanyBranchLocationRequest $request,
+        Company $company,
+        Branch $branch
+    ) {
+        if (! $this->branchBelongsToCompany($company, $branch)) {
+            return $this->errorResponse(__('The selected branch does not belong to this company.'), 422);
+        }
+
+        abort_unless($this->canUpdateBranchLocation($branch), 403);
+
+        $branch->forceFill([
+            'latitude' => $this->formatCoordinate($request->latitude),
+            'longitude' => $this->formatCoordinate($request->longitude),
+        ])->save();
+
+        $branch->load(['translations', 'workingHours', 'departments.translations']);
+
+        return $this->successResponse(
+            new BranchResource($branch),
+            __('Company location updated successfully')
+        );
+    }
+
     private function normalizeBranchCoordinates(array $branchAttributes): array
     {
         foreach (['latitude', 'longitude'] as $coordinate) {
@@ -393,6 +442,43 @@ class CompanyController extends Controller
         }
 
         return $branchAttributes;
+    }
+
+    private function branchBelongsToCompany(Company $company, Branch $branch): bool
+    {
+        return $company->branches()
+            ->whereKey($branch->getKey())
+            ->exists();
+    }
+
+    private function canUpdateBranchLocation(Branch $branch): bool
+    {
+        $user = auth()->user();
+
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->hasAnyRole([
+            UserRole::SUPER_ADMIN->value,
+            UserRole::ADMIN->value,
+        ])) {
+            return true;
+        }
+
+        if (! $user->hasRole(UserRole::COMPANY_SUPERVISOR->value)) {
+            return false;
+        }
+
+        return DB::table(config('ppuds.table_prefix').'branch_department')
+            ->where('branch_id', $branch->getKey())
+            ->where('user_id', $user->id)
+            ->exists();
+    }
+
+    private function formatCoordinate(mixed $coordinate): string
+    {
+        return number_format((float) $coordinate, 8, '.', '');
     }
 
     /**

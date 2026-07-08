@@ -63,49 +63,50 @@ class Index extends Component implements HasForms, HasTable
     public function table(Table $table)
     {
         return $table
-            ->query(fn () => $this->studentAttendanceTableQuery())
+            ->query(fn() => $this->studentAttendanceTableQuery())
+            ->defaultSort('created_at', 'desc')
             ->columns([
                 TextColumn::make('student_number')
                     ->label(__('Student Number'))
-                    ->getStateUsing(fn (Model $record): ?string => $this->studentNumberColumnState($record))
-                    ->searchable(query: fn (Builder $query, string $search): Builder => $this->todayAbsentStudentsFilterIsActive()
+                    ->getStateUsing(fn(Model $record): ?string => $this->studentNumberColumnState($record))
+                    ->searchable(query: fn(Builder $query, string $search): Builder => $this->todayAbsentStudentsFilterIsActive()
                         ? $this->applyStudentSearchToStudentCompanyQuery($query, $search)
                         : $this->applyStudentSearchToAttendanceQuery($query, $search))
                     ->placeholder('---'),
 
                 TextColumn::make('student_name')
                     ->label(__('Student Name'))
-                    ->getStateUsing(fn (Model $record): HtmlString|string => $this->studentDisplayColumnState($record))
+                    ->getStateUsing(fn(Model $record): HtmlString|string => $this->studentDisplayColumnState($record))
                     ->html()
-                    ->url(fn (Model $record): ?string => $this->studentDetailsUrl($record))
-                    ->searchable(query: fn (Builder $query, string $search): Builder => $this->todayAbsentStudentsFilterIsActive()
+                    ->url(fn(Model $record): ?string => $this->studentDetailsUrl($record))
+                    ->searchable(query: fn(Builder $query, string $search): Builder => $this->todayAbsentStudentsFilterIsActive()
                         ? $this->applyStudentSearchToStudentCompanyQuery($query, $search)
                         : $this->applyStudentSearchToAttendanceQuery($query, $search)),
 
                 TextColumn::make('student_phone')
                     ->label(__('Phone'))
-                    ->getStateUsing(fn (Model $record): ?string => $this->studentPhoneColumnState($record))
-                    ->searchable(query: fn (Builder $query, string $search): Builder => $this->todayAbsentStudentsFilterIsActive()
+                    ->getStateUsing(fn(Model $record): ?string => $this->studentPhoneColumnState($record))
+                    ->searchable(query: fn(Builder $query, string $search): Builder => $this->todayAbsentStudentsFilterIsActive()
                         ? $this->applyStudentSearchToStudentCompanyQuery($query, $search)
                         : $this->applyStudentSearchToAttendanceQuery($query, $search))
                     ->placeholder('---'),
 
                 TextColumn::make('company_name')
                     ->label(__('Company Name'))
-                    ->getStateUsing(fn (Model $record): ?string => $record instanceof StudentCompany
+                    ->getStateUsing(fn(Model $record): ?string => $record instanceof StudentCompany
                         ? $record->company?->name
                         : $record->studentCompany?->company?->name)
-                    ->searchable(query: fn (Builder $query, string $search): Builder => $this->todayAbsentStudentsFilterIsActive()
+                    ->searchable(query: fn(Builder $query, string $search): Builder => $this->todayAbsentStudentsFilterIsActive()
                         ? $this->applyCompanySearchToStudentCompanyQuery($query, $search)
                         : $this->applyCompanySearchToAttendanceQuery($query, $search)),
 
                 TextColumn::make('attendance_date')
                     ->label(__('Date'))
-                    ->getStateUsing(fn (Model $record) => $record instanceof StudentCompany
+                    ->getStateUsing(fn(Model $record) => $record instanceof StudentCompany
                         ? now()->toDateString()
                         : $record->attendance_date)
                     ->date()
-                    ->sortable(query: fn (Builder $query, string $direction): Builder => $this->todayAbsentStudentsFilterIsActive()
+                    ->sortable(query: fn(Builder $query, string $direction): Builder => $this->todayAbsentStudentsFilterIsActive()
                         ? $query->orderBy('student_id', $direction)
                         : $query->orderBy('attendance_date', $direction)),
 
@@ -121,24 +122,24 @@ class Index extends Component implements HasForms, HasTable
 
                 TextColumn::make('attendance_status')
                     ->label(__('Status'))
-                    ->getStateUsing(fn (Model $record): mixed => $record instanceof StudentCompany ? __('Absent') : $record->status)
+                    ->getStateUsing(fn(Model $record): mixed => $record instanceof StudentCompany ? __('Absent') : $record->status)
                     ->badge()
-                    ->formatStateUsing(fn (mixed $state): string => $state instanceof AttendanceStatus ? $state->getLabel() : (string) ($state ?: '---'))
-                    ->color(fn (mixed $state): string => $state instanceof AttendanceStatus ? $state->getColor() : 'danger'),
+                    ->formatStateUsing(fn(mixed $state): string => $state instanceof AttendanceStatus ? $state->getLabel() : (string) ($state ?: '---'))
+                    ->color(fn(mixed $state): string => $state instanceof AttendanceStatus ? $state->getColor() : 'danger'),
 
                 TextColumn::make('check_in_latitude')
                     ->label(__('Location'))
                     ->icon('heroicon-m-map-pin')
                     ->color('primary')
-                    ->formatStateUsing(fn ($state) => filled($state) ? __('View Map') : '---')
-                    ->url(fn ($record) => filled($record->check_in_latitude) && filled($record->check_in_longitude)
+                    ->formatStateUsing(fn($state) => filled($state) ? __('View Map') : '---')
+                    ->url(fn($record) => filled($record->check_in_latitude) && filled($record->check_in_longitude)
                         ? "https://www.google.com/maps?q={$record->check_in_latitude},{$record->check_in_longitude}"
                         : null)
                     ->openUrlInNewTab(),
 
                 TextColumn::make('work_range_distance')
                     ->label(__('Distance From Work'))
-                    ->getStateUsing(fn (Model $record): ?string => $this->workRangeDistanceColumnState($record))
+                    ->getStateUsing(fn(Model $record): ?string => $this->workRangeDistanceColumnState($record))
                     ->placeholder('---')
                     ->toggleable(isToggledHiddenByDefault: true),
 
@@ -162,19 +163,19 @@ class Index extends Component implements HasForms, HasTable
                     ->label(__('Today Present Students'))
                     ->icon('heroicon-o-user-group')
                     ->color('primary')
-                    ->action(fn () => $this->showTodayPresentStudents())
-                    ->visible(fn () => auth()->user()->can('StudentAttendance View List')),
+                    ->action(fn() => $this->showTodayPresentStudents())
+                    ->visible(fn() => auth()->user()->can('StudentAttendance View List')),
 
                 Action::make('export_today_absent_students')
                     ->label(__('Export Today Absentees'))
                     ->icon('heroicon-m-arrow-down-tray')
                     ->color('success')
-                    ->action(fn () => app(ExcelServiceInterface::class)->download(
+                    ->action(fn() => app(ExcelServiceInterface::class)->download(
                         new TodayAbsentStudentsExport($this->todayAbsentStudentsQuery(), now()->toDateString()),
                         $this->todayAbsentStudentsExportFilename(),
                         WriterType::XLSX
                     ))
-                    ->visible(fn () => auth()->user()->can('StudentAttendance View List')),
+                    ->visible(fn() => auth()->user()->can('StudentAttendance View List')),
 
                 Action::make('check_in')
                     ->label(__('Check In'))
@@ -199,7 +200,7 @@ class Index extends Component implements HasForms, HasTable
                         Select::make('student_company_id')
                             ->label(__('Student Company'))
                             ->options(StudentCompany::with(['company', 'branch', 'registration', 'student', 'student.studentProfile'])
-                                ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query))
+                                ->tap(fn(Builder $query) => $this->applyStudentCompanyVisibilityScope($query))
                                 ->get()
                                 ->mapWithKeys(function ($item) {
                                     $number = $item->student->studentProfile?->student_number ?? __('No Number');
@@ -243,9 +244,8 @@ class Index extends Component implements HasForms, HasTable
                         }
 
                         Toaster::success('Checked In Successfully');
-
                     })
-                    ->visible(fn () => auth()->user()->can('StudentAttendance Create')),
+                    ->visible(fn() => auth()->user()->can('StudentAttendance Create')),
 
                 //                CreateAction::make('create')
                 //                    ->label(__('Add Major'))
@@ -350,11 +350,11 @@ class Index extends Component implements HasForms, HasTable
                     return $query
                         ->when(
                             $data['from'] ?? null,
-                            fn (Builder $query, $date): Builder => $query->whereDate('attendance_date', '>=', Carbon::parse($date)->toDateString())
+                            fn(Builder $query, $date): Builder => $query->whereDate('attendance_date', '>=', Carbon::parse($date)->toDateString())
                         )
                         ->when(
                             $data['until'] ?? null,
-                            fn (Builder $query, $date): Builder => $query->whereDate('attendance_date', '<=', Carbon::parse($date)->toDateString())
+                            fn(Builder $query, $date): Builder => $query->whereDate('attendance_date', '<=', Carbon::parse($date)->toDateString())
                         );
                 })
                 ->indicateUsing(function (array $data): array {
@@ -365,12 +365,12 @@ class Index extends Component implements HasForms, HasTable
                     $indicators = [];
 
                     if (! empty($data['from'])) {
-                        $indicators[] = Indicator::make(__('From Date').': '.Carbon::parse($data['from'])->toDateString())
+                        $indicators[] = Indicator::make(__('From Date') . ': ' . Carbon::parse($data['from'])->toDateString())
                             ->removeField('from');
                     }
 
                     if (! empty($data['until'])) {
-                        $indicators[] = Indicator::make(__('Until Date').': '.Carbon::parse($data['until'])->toDateString())
+                        $indicators[] = Indicator::make(__('Until Date') . ': ' . Carbon::parse($data['until'])->toDateString())
                             ->removeField('until');
                     }
 
@@ -433,8 +433,8 @@ class Index extends Component implements HasForms, HasTable
 
             SelectFilter::make('company_id')
                 ->label(__('Company'))
-                ->options(fn (): array => Company::query()
-                    ->tap(fn (Builder $query) => $this->applyCompanyVisibilityScope($query))
+                ->options(fn(): array => Company::query()
+                    ->tap(fn(Builder $query) => $this->applyCompanyVisibilityScope($query))
                     ->get()
                     ->pluck('name', 'id')
                     ->toArray())
@@ -458,13 +458,13 @@ class Index extends Component implements HasForms, HasTable
 
                     return $query->whereHas(
                         'studentCompany',
-                        fn (Builder $studentCompanyQuery): Builder => $studentCompanyQuery->where('company_id', $data['value'])
+                        fn(Builder $studentCompanyQuery): Builder => $studentCompanyQuery->where('company_id', $data['value'])
                     );
                 }),
 
             SelectFilter::make('supervisor_id')
                 ->label(__('Supervisor'))
-                ->options(fn (): array => $this->supervisorFilterOptions())
+                ->options(fn(): array => $this->supervisorFilterOptions())
                 ->searchable()
                 ->preload()
                 ->native(false)
@@ -574,7 +574,7 @@ class Index extends Component implements HasForms, HasTable
                     }
 
                     return [
-                        Indicator::make(__('Outside Work Range').': '.$this->outsideWorkRangeDistanceMeters($data['distance_meters'] ?? null).' '.__('meters')),
+                        Indicator::make(__('Outside Work Range') . ': ' . $this->outsideWorkRangeDistanceMeters($data['distance_meters'] ?? null) . ' ' . __('meters')),
                     ];
                 }),
         ];
@@ -587,8 +587,8 @@ class Index extends Component implements HasForms, HasTable
                 BulkAction::make('delete')
                     ->label(__('Delete'))
                     ->requiresConfirmation()
-                    ->visible(fn () => auth()->user()->can('StudentAttendance Delete') && ! $this->todayAbsentStudentsFilterIsActive())
-                    ->action(fn (Collection $records) => $records->each->delete()),
+                    ->visible(fn() => auth()->user()->can('StudentAttendance Delete') && ! $this->todayAbsentStudentsFilterIsActive())
+                    ->action(fn(Collection $records) => $records->each->delete()),
             ]),
         ];
     }
@@ -626,23 +626,24 @@ class Index extends Component implements HasForms, HasTable
 
                     Toaster::success('Checked Out Successfully');
                 })
-                ->visible(fn (Model $record) => ! $this->isTodayAbsentStudentRecord($record) && $record instanceof StudentAttendance && $record->check_out === null && (
+                ->visible(fn(Model $record) => ! $this->isTodayAbsentStudentRecord($record) && $record instanceof StudentAttendance && $record->check_out === null && (
                     auth()->user()->can('StudentAttendance Create')
                     || auth()->user()->can('StudentAttendance Update')
                 )),
             Action::make('report')
-                    // Removed ->model() as it was causing confusion
+                // Removed ->model() as it was causing confusion
                 ->button()
                 ->label(__('Report'))
-                ->url(fn (Model $record): ?string => $record instanceof StudentAttendance ? route('student-attendances.report', $record) : null)
-                ->visible(fn (Model $record) => ! $this->isTodayAbsentStudentRecord($record)
-                    && $record instanceof StudentAttendance
-                    && ($record->check_out !== null && $record->studentReport === null)
-                    && (auth()->user()->can('StudentAttendance Report List'))
+                ->url(fn(Model $record): ?string => $record instanceof StudentAttendance ? route('student-attendances.report', $record) : null)
+                ->visible(
+                    fn(Model $record) => ! $this->isTodayAbsentStudentRecord($record)
+                        && $record instanceof StudentAttendance
+                        && ($record->check_out !== null && $record->studentReport === null)
+                        && (auth()->user()->can('StudentAttendance Report List'))
                 ),
             InfoAction::make('info')
                 ->label('')
-                ->visible(fn (Model $record) => ! $this->isTodayAbsentStudentRecord($record) && auth()->user()->can('StudentAttendance Info')),
+                ->visible(fn(Model $record) => ! $this->isTodayAbsentStudentRecord($record) && auth()->user()->can('StudentAttendance Info')),
             ViewAction::make('view')
                 ->modalHeading(__('Attendance Details'))
                 ->modalWidth(MaxWidth::FourExtraLarge)
@@ -734,7 +735,7 @@ class Index extends Component implements HasForms, HasTable
 
                                 Forms\Components\Placeholder::make('report_attachments_view')
                                     ->label(__('Report Attachments'))
-                                    ->content(fn (): HtmlString => $this->reportAttachmentsHtml($report))
+                                    ->content(fn(): HtmlString => $this->reportAttachmentsHtml($report))
                                     ->columnSpanFull(),
                             ] : [
                                 Forms\Components\Placeholder::make('missing_report')
@@ -744,7 +745,7 @@ class Index extends Component implements HasForms, HasTable
                     ]);
                 })
                 ->modalSubmitAction(false)
-                ->visible(fn (Model $record) => ! $this->isTodayAbsentStudentRecord($record) && auth()->user()->can('StudentAttendance View')),
+                ->visible(fn(Model $record) => ! $this->isTodayAbsentStudentRecord($record) && auth()->user()->can('StudentAttendance View')),
             EditAction::make('edit')
                 ->form(function (Major $record) {
                     return [
@@ -770,7 +771,7 @@ class Index extends Component implements HasForms, HasTable
                     $record->update($data);
                     Toaster::success(__('Major updated successfully'));
                 })
-                ->visible(fn (Model $record) => ! $this->isTodayAbsentStudentRecord($record) && auth()->user()->can('StudentAttendance Update')),
+                ->visible(fn(Model $record) => ! $this->isTodayAbsentStudentRecord($record) && auth()->user()->can('StudentAttendance Update')),
 
             DeleteAction::make('delete')
                 ->action(function ($record) {
@@ -778,7 +779,7 @@ class Index extends Component implements HasForms, HasTable
                     $record->delete();
                     Toaster::success(__('Attendance deleted successfully'));
                 })
-                ->visible(fn (Model $record) => ! $this->isTodayAbsentStudentRecord($record) && auth()->user()->can('StudentAttendance Delete')),
+                ->visible(fn(Model $record) => ! $this->isTodayAbsentStudentRecord($record) && auth()->user()->can('StudentAttendance Delete')),
         ];
     }
 
@@ -811,7 +812,7 @@ class Index extends Component implements HasForms, HasTable
             })
             ->implode('');
 
-        return new HtmlString('<div class="grid gap-2 sm:grid-cols-2">'.$items.'</div>');
+        return new HtmlString('<div class="grid gap-2 sm:grid-cols-2">' . $items . '</div>');
     }
 
     public function render()
@@ -839,7 +840,7 @@ class Index extends Component implements HasForms, HasTable
         ])
             ->whereHas(
                 'studentCompany',
-                fn (Builder $studentCompanyQuery): Builder => $this->applyStudentCompanyVisibilityScope($studentCompanyQuery)
+                fn(Builder $studentCompanyQuery): Builder => $this->applyStudentCompanyVisibilityScope($studentCompanyQuery)
             );
     }
 
@@ -862,27 +863,27 @@ class Index extends Component implements HasForms, HasTable
                 'student.studentProfile.major.translations',
             ])
             ->whereNotNull('company_id')
-            ->whereHas('registration', fn (Builder $query): Builder => $query
+            ->whereHas('registration', fn(Builder $query): Builder => $query
                 ->where('year', $settings->year)
                 ->where('semester', $settings->semester_type->value))
-            ->whereDoesntHave('attendances', fn (Builder $query): Builder => $query
+            ->whereDoesntHave('attendances', fn(Builder $query): Builder => $query
                 ->whereDate('attendance_date', $today)
                 ->whereNotNull('check_in'))
-            ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query))
+            ->tap(fn(Builder $query) => $this->applyStudentCompanyVisibilityScope($query))
             ->when(
                 filled($companyId),
-                fn (Builder $query): Builder => $query->where('company_id', $companyId)
+                fn(Builder $query): Builder => $query->where('company_id', $companyId)
             )
             ->when(
                 filled($supervisorId),
-                fn (Builder $query): Builder => $query->whereHas(
+                fn(Builder $query): Builder => $query->whereHas(
                     'registration',
-                    fn (Builder $registrationQuery): Builder => $registrationQuery->where('supervisor_id', (int) $supervisorId)
+                    fn(Builder $registrationQuery): Builder => $registrationQuery->where('supervisor_id', (int) $supervisorId)
                 )
             )
             ->when(
                 filled($studentSearch),
-                fn (Builder $query): Builder => $this->applyStudentSearchToStudentCompanyQuery($query, $studentSearch)
+                fn(Builder $query): Builder => $this->applyStudentSearchToStudentCompanyQuery($query, $studentSearch)
             )
             ->orderBy('student_id');
     }
@@ -912,7 +913,7 @@ class Index extends Component implements HasForms, HasTable
                     ->whereNotNull("{$branchTable}.latitude")
                     ->whereNotNull("{$branchTable}.longitude")
                     ->whereRaw(
-                        $this->distanceFromBranchSql($attendanceTable, $branchTable, $latitudeColumn, $longitudeColumn).' > ?',
+                        $this->distanceFromBranchSql($attendanceTable, $branchTable, $latitudeColumn, $longitudeColumn) . ' > ?',
                         [$distanceMeters]
                     );
             });
@@ -1013,7 +1014,7 @@ class Index extends Component implements HasForms, HasTable
             (float) $branch->longitude,
         );
 
-        return number_format($distance).' '.__('meters');
+        return number_format($distance) . ' ' . __('meters');
     }
 
     protected function distanceInMeters(float $latitudeA, float $longitudeA, float $latitudeB, float $longitudeB): int
@@ -1055,6 +1056,6 @@ class Index extends Component implements HasForms, HasTable
 
     protected function todayAbsentStudentsExportFilename(): string
     {
-        return 'today-absent-students-'.now()->format('Y-m-d-His').'.xlsx';
+        return 'today-absent-students-' . now()->format('Y-m-d-His') . '.xlsx';
     }
 }
