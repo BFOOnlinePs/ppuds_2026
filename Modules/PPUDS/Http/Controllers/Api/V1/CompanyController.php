@@ -379,6 +379,35 @@ class CompanyController extends Controller
     }
 
     /**
+     * @OA\Get(
+     * path="/api/v1/ppuds/companies/{company}/branches/{branch}/location",
+     * summary="Get company branch location",
+     * description="Retrieve the current location data for a company branch.",
+     * tags={"Companies"},
+     * security={{"sanctum": {}}},
+     * @OA\Parameter(name="company", in="path", required=true, @OA\Schema(type="integer", example=1)),
+     * @OA\Parameter(name="branch", in="path", required=true, @OA\Schema(type="integer", example=10)),
+     * @OA\Response(response=200, description="Company branch location retrieved successfully"),
+     * @OA\Response(response=422, description="Branch does not belong to company")
+     * )
+     */
+    public function showBranchLocation(
+        Company $company,
+        Branch $branch
+    ) {
+        if (! $this->branchBelongsToCompany($company, $branch)) {
+            return $this->errorResponse(__('The selected branch does not belong to this company.'), 422);
+        }
+
+        $branch->load(['translations', 'workingHours', 'departments.translations']);
+
+        return $this->successResponse(
+            new BranchResource($branch),
+            __('Company branch location retrieved successfully')
+        );
+    }
+
+    /**
      * @OA\Patch(
      * path="/api/v1/ppuds/companies/{company}/branches/{branch}/location",
      * summary="Update company branch location",
