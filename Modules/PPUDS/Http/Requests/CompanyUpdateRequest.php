@@ -58,10 +58,12 @@ class CompanyUpdateRequest extends FormRequest
                 }
             ],
             'branches.*.phone'        => ['nullable', 'string', 'max:50'],
-            'branches.*.country_id'   => ['required_with:branches', 'integer', 'exists:geolocation_countries,id'],
-            'branches.*.city_id'      => ['required_with:branches', 'integer', 'exists:geolocation_cities,id'],
-            'branches.*.latitude'     => ['nullable', 'numeric'],
-            'branches.*.longitude'    => ['nullable', 'numeric'],
+            'branches.*.name'         => 'required_without:branches.*.id|string|max:255',
+            'branches.*.country_id'   => 'required_without:branches.*.id|integer',
+            'branches.*.city_id'      => 'required_without:branches.*.id|integer',
+
+            'branches.*.latitude'     => 'sometimes|numeric',
+            'branches.*.longitude'    => 'sometimes|numeric',
 
             // الأقسام
             'branches.*.departments'           => ['nullable', 'array'],
