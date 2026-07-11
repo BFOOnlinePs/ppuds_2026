@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Laravel\Socialite\Facades\Socialite;
+use Modules\Core\Actions\StoreDeviceTokenAction;
 use Modules\PPUDS\Actions\AuthenticateViaKeycloakAction;
 use Modules\PPUDS\Enums\LoginMethod;
 use Modules\PPUDS\Services\PpuApiService;
@@ -15,24 +16,35 @@ use Modules\PPUDS\Settings\GeneralSettings;
 
 class KeycloakAuthController extends Controller
 {
-    public function redirect()
+    public function redirect(Request $request)
     {
         if (! $this->usesKeycloakLogin()) {
             return redirect()->route('login');
         }
 
+        $this->rememberDeviceTokenForCallback($request);
+
         return Socialite::driver('keycloak')->redirect();
     }
 
-    public function callback(AuthenticateViaKeycloakAction $authAction)
-    {
+    public function callback(
+        Request $request,
+        AuthenticateViaKeycloakAction $authAction,
+        StoreDeviceTokenAction $storeDeviceToken
+    ) {
         if (! $this->usesKeycloakLogin()) {
             return redirect()->route('login');
         }
 
         try {
             $keycloakUser = Socialite::driver('keycloak')->user();
-            $authAction->execute($keycloakUser);
+            $user = $authAction->execute($keycloakUser);
+
+            $storeDeviceToken->execute(
+                $user,
+                $request->session()->pull('keycloak_fcm_token'),
+                $request->session()->pull('keycloak_device_name'),
+            );
 
             return redirect()->intended(route('home'));
         } catch (ValidationException $e) {
@@ -72,6 +84,25 @@ class KeycloakAuthController extends Controller
         }
 
         return redirect($this->keycloakLogoutUrl());
+    }
+
+    protected function rememberDeviceTokenForCallback(Request $request): void
+    {
+        $fcmToken = $request->query('fcm_token');
+
+        if (! is_string($fcmToken) || trim($fcmToken) === '') {
+            $request->session()->forget(['keycloak_fcm_token', 'keycloak_device_name']);
+
+            return;
+        }
+
+        $deviceName = $request->query('device_name');
+        $deviceName = is_string($deviceName) && trim($deviceName) !== ''
+            ? trim($deviceName)
+            : ($request->userAgent() ?: 'Unknown Device');
+
+        $request->session()->put('keycloak_fcm_token', trim($fcmToken));
+        $request->session()->put('keycloak_device_name', $deviceName);
     }
 
     protected function logoutFromLaravel(Request $request): void

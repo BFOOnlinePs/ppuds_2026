@@ -5,6 +5,7 @@ use Modules\Core\Http\Controllers\Api\V1\ActivityLogController;
 use Modules\Core\Http\Controllers\Api\V1\Auth\LoginController;
 use Modules\Core\Http\Controllers\Api\V1\Auth\RegisterController;
 use Modules\Core\Http\Controllers\Api\V1\CurrencyController;
+use Modules\Core\Http\Controllers\Api\V1\DeviceTokenController;
 use Modules\Core\Http\Controllers\Api\V1\SyncController;
 use Modules\Core\Http\Controllers\Api\V1\UserController;
 use Modules\Core\Http\Controllers\Api\V1\ConfigController;
@@ -24,6 +25,11 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
 
         Route::prefix('auth')->as('auth.')->group(function () {
             Route::post('logout', [LoginController::class, 'logout'])->name('logout');
+        });
+
+        Route::controller(DeviceTokenController::class)->prefix('device-tokens')->as('device-tokens.')->group(function () {
+            Route::post('/', 'store')->name('store');
+            Route::delete('/', 'destroy')->name('destroy');
         });
 
         Route::controller(UserController::class)->prefix('users')->as('user.')->group(function () {
