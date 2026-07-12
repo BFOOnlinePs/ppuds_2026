@@ -45,6 +45,39 @@ class StudentAttendanceReportRequest extends FormRequest
         ];
     }
 
+    public function messages(): array
+    {
+        $maxSizeMb = (int) (self::MAX_REPORT_FILE_SIZE / 1024);
+        $typeMessage = __('The attached file must be a PDF, Word document (doc, docx), or image (jpg, jpeg, png, webp, gif).');
+        $sizeMessage = __('The attached file may not be larger than :size.', ['size' => $maxSizeMb.'MB']);
+        $invalidMessage = __('One of the attached files is invalid.');
+
+        // "file_report" is validated as a single file's own rules when one file is sent,
+        // but as an array-count rule when multiple files are sent (see rules()) — the
+        // same key needs different wording depending on which case is active.
+        $fileReportKeyMessages = is_array($this->file('file_report'))
+            ? ['file_report.max' => __('You can attach a maximum of 5 files.')]
+            : [
+                'file_report.file'  => $invalidMessage,
+                'file_report.mimes' => $typeMessage,
+                'file_report.max'   => $sizeMessage,
+            ];
+
+        return $fileReportKeyMessages + [
+            'file_report.*.file'  => $invalidMessage,
+            'file_report.*.mimes' => $typeMessage,
+            'file_report.*.max'   => $sizeMessage,
+        ];
+    }
+
+    public function attributes(): array
+    {
+        return [
+            'file_report'   => __('attached file'),
+            'file_report.*' => __('attached file'),
+        ];
+    }
+
     public function reportFiles(): array
     {
         $files = $this->file('file_report', []);

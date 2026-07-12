@@ -749,5 +749,10 @@
     "Student [:student] was not found.": "الطالب رقم [:student] غير موجود في النظام.",
     "No registration found for student [:student] in :year/:semester.": "لا يوجد تسجيل للطالب رقم [:student] في السنة :year / الفصل :semester.",
     "The file was read successfully, but student links require matching student profiles and registrations for the selected year and semester.": "تمت قراءة الملف بنجاح، لكن ربط الطلاب يحتاج وجود ملفات الطلاب وتسجيلاتهم للسنة والفصل المحددين.",
-    "The file was read successfully, but student links and supervisors require matching records for the selected year and semester.": "تمت قراءة الملف بنجاح، لكن ربط الطلاب والمشرفين يحتاج وجود السجلات المطابقة للسنة والفصل المحددين."
+    "The file was read successfully, but student links and supervisors require matching records for the selected year and semester.": "تمت قراءة الملف بنجاح، لكن ربط الطلاب والمشرفين يحتاج وجود السجلات المطابقة للسنة والفصل المحددين.",
+    "The attached file must be a PDF, Word document (doc, docx), or image (jpg, jpeg, png, webp, gif).": "يجب أن يكون الملف المرفق من نوع PDF أو مستند Word (doc, docx) أو صورة (jpg, jpeg, png, webp, gif).",
+    "The attached file may not be larger than :size.": "يجب ألا يتجاوز حجم الملف المرفق :size.",
+    "One of the attached files is invalid.": "أحد الملفات المرفقة غير صالح.",
+    "You can attach a maximum of 5 files.": "يمكنك إرفاق 5 ملفات كحد أقصى.",
+    "attached file": "الملف المرفق"
 }

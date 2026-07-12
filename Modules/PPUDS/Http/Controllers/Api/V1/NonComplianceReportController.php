@@ -33,7 +33,7 @@ class NonComplianceReportController extends Controller
      * @OA\Parameter(name="filter[non_compliance_types]", in="query", required=false, description="Comma separated values: outside_work_range, late_attendance, absence", @OA\Schema(type="string")),
      * @OA\Parameter(name="filter[non_compliance_type]", in="query", required=false, description="Single value alias for filter[non_compliance_types]", @OA\Schema(type="string")),
      * @OA\Parameter(name="filter[minimum_late_hours]", in="query", required=false, @OA\Schema(type="number", format="float", example=2)),
-     * @OA\Parameter(name="filter[outside_work_range_distance_meters]", in="query", required=false, @OA\Schema(type="integer", example=200)),
+     * @OA\Parameter(name="filter[outside_work_range_distance_meters]", in="query", required=false, description="Allowed distance from branch in meters. If filter[non_compliance_types] is not also provided, the type filter is automatically narrowed to outside_work_range so this filter actually affects the result set.", @OA\Schema(type="integer", example=200)),
      * @OA\Parameter(name="filter[date]", in="query", required=false, description="Specific day. Defaults to today when no date filter is provided.", @OA\Schema(type="string", format="date", example="2026-07-07")),
      * @OA\Parameter(name="filter[date_from]", in="query", required=false, @OA\Schema(type="string", format="date", example="2026-07-01")),
      * @OA\Parameter(name="filter[date_to]", in="query", required=false, @OA\Schema(type="string", format="date", example="2026-07-31")),
@@ -156,12 +156,18 @@ class NonComplianceReportController extends Controller
         $settings = app(GeneralSettings::class);
         [$date, $dateFrom, $dateTo] = NonComplianceReportResource::dateFilters($request);
 
+        $nonComplianceTypes = $this->nonComplianceTypes($request);
+
+        if ($nonComplianceTypes === [] && $this->filledFilterValue($request, 'outside_work_range_distance_meters') !== null) {
+            $nonComplianceTypes = [NonComplianceReportService::ISSUE_OUTSIDE_WORK_RANGE];
+        }
+
         return [
             'search' => $this->stringFilter($request, 'search')
                 ?? $this->stringFilter($request, 'student_number'),
             'company_id' => $this->filterValue($request, 'company_id'),
             'supervisor_id' => $this->filterValue($request, 'supervisor_id'),
-            'non_compliance_types' => $this->nonComplianceTypes($request),
+            'non_compliance_types' => $nonComplianceTypes,
             'minimum_late_hours' => $this->filterValue($request, 'minimum_late_hours'),
             'outside_work_range_distance_meters' => $this->outsideWorkRangeDistanceMeters($request),
             'date' => $date,
