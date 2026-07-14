@@ -189,7 +189,7 @@ class ChatController extends Controller
             ->allowedIncludes([
                 'sendable',
                 'attachment',
-                ...AllowedInclude::relationship('attachments', 'attachment')->all(),
+                AllowedInclude::relationship('attachments', 'attachment'),
             ])
             ->defaultSort('-created_at')
             ->paginate(request('per_page', 25));

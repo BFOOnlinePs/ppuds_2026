@@ -2,12 +2,19 @@
 
 namespace Modules\PPUDS\Transformers\V1;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Modules\PPUDS\Services\NonComplianceReportService;
+use Spatie\QueryBuilder\AllowedFilter;
 
 class NonComplianceReportResource extends JsonResource
 {
+    /**
+     * Transform the resource into an array.
+     *
+     * @return array<string, mixed>
+     */
     public function toArray(Request $request): array
     {
         $summary = app(NonComplianceReportService::class)
@@ -17,39 +24,85 @@ class NonComplianceReportResource extends JsonResource
             ]);
 
         return [
-            'id' => $this->id,
+            'id'                 => $this->id,
             'student_company_id' => $this->id,
-            'student_id' => $this->student_id,
-            'student_number' => $this->student?->studentProfile?->student_number,
-            'student_name' => $this->student?->name,
-            'company_id' => $this->company_id,
-            'company_name' => $this->company?->name,
-            'branch_id' => $this->branch_id,
-            'branch_name' => $this->branch?->name,
-            'supervisor_id' => $this->registration?->supervisor_id,
-            'year' => $this->registration?->year,
-            'semester' => $this->registration?->semester?->value,
-            'semester_label' => $this->registration?->semester?->getLabel(),
-            'non_compliance' => [
-                'total_days' => (int) ($summary['total_non_compliance_days'] ?? 0),
-                'absence_days' => (int) ($summary['total_absence_days'] ?? 0),
-                'excused_absence_days' => (int) ($summary['excused_absence_days'] ?? 0),
-                'unexcused_absence_days' => (int) ($summary['unexcused_absence_days'] ?? 0),
-                'late_days' => (int) ($summary['late_days'] ?? 0),
-                'total_late_minutes' => (int) ($summary['total_late_minutes'] ?? 0),
-                'total_late_hours' => (float) ($summary['total_late_hours'] ?? 0),
-                'max_late_minutes' => (int) ($summary['max_late_minutes'] ?? 0),
-                'max_late_hours' => (float) ($summary['max_late_hours'] ?? 0),
-                'last_late_date' => $summary['last_late_date'] ?? null,
-                'last_late_duration' => $summary['last_late_duration'] ?? null,
-                'absence_dates' => $summary['absence_dates'] ?? [],
-                'late_attendances' => $summary['late_attendances'] ?? [],
-                'outside_work_range_days' => (int) ($summary['outside_work_range_days'] ?? 0),
-                'outside_work_range_distance_meters' => (int) ($summary['outside_work_range_distance_meters'] ?? 200),
-                'outside_work_range_attendances' => $summary['outside_work_range_attendances'] ?? [],
-                'problems' => $this->problems($summary),
+            'student_id'         => $this->student_id,
+            'student_number'     => $this->student?->studentProfile?->student_number,
+            'student_name'       => $this->student?->name,
+            'company_id'         => $this->company_id,
+            'company_name'       => $this->company?->name,
+            'branch_id'          => $this->branch_id,
+            'branch_name'        => $this->branch?->name,
+            'supervisor_id'      => $this->registration?->supervisor_id,
+            'year'               => $this->registration?->year,
+            'semester'           => $this->registration?->semester?->value,
+            'semester_label'     => $this->registration?->semester?->getLabel(),
+            'non_compliance'     => [
+                'total_days'                          => (int) ($summary['total_non_compliance_days'] ?? 0),
+                'absence_days'                        => (int) ($summary['total_absence_days'] ?? 0),
+                'excused_absence_days'                => (int) ($summary['excused_absence_days'] ?? 0),
+                'unexcused_absence_days'              => (int) ($summary['unexcused_absence_days'] ?? 0),
+                'late_days'                           => (int) ($summary['late_days'] ?? 0),
+                'total_late_minutes'                  => (int) ($summary['total_late_minutes'] ?? 0),
+                'total_late_hours'                    => (float) ($summary['total_late_hours'] ?? 0),
+                'max_late_minutes'                    => (int) ($summary['max_late_minutes'] ?? 0),
+                'max_late_hours'                      => (float) ($summary['max_late_hours'] ?? 0),
+                'last_late_date'                      => $summary['last_late_date'] ?? null,
+                'last_late_duration'                  => $summary['last_late_duration'] ?? null,
+                'absence_dates'                       => $summary['absence_dates'] ?? [],
+                'late_attendances'                    => $summary['late_attendances'] ?? [],
+                'outside_work_range_days'             => (int) ($summary['outside_work_range_days'] ?? 0),
+                'outside_work_range_distance_meters'  => (int) ($summary['outside_work_range_distance_meters'] ?? 200),
+                'outside_work_range_attendances'      => $summary['outside_work_range_attendances'] ?? [],
+                'problems'                            => $this->problems($summary),
             ],
         ];
+    }
+
+    public static function allowedFilters(): array
+    {
+        return [
+            AllowedFilter::exact('company_id'),
+
+            // بحث بالاسم أو الرقم الجامعي
+            AllowedFilter::callback('search', function (Builder $query, $value) {
+                self::applySearch($query, $value);
+            }),
+
+            // نفس البحث، اسم بديل
+            AllowedFilter::callback('student_number', function (Builder $query, $value) {
+                self::applySearch($query, $value);
+            }),
+
+            // فلتر عن طريق المشرف (من خلال جدول registration)
+            AllowedFilter::callback('supervisor_id', function (Builder $query, $value) {
+                $query->whereHas('registration', function (Builder $q) use ($value) {
+                    $q->where('supervisor_id', $value);
+                });
+            }),
+
+            // فلتر عن طريق السنة (من خلال جدول registration)
+            AllowedFilter::callback('year', function (Builder $query, $value) {
+                $query->whereHas('registration', function (Builder $q) use ($value) {
+                    $q->where('year', $value);
+                });
+            }),
+
+            // فلتر عن طريق الفصل الدراسي (من خلال جدول registration)
+            AllowedFilter::callback('semester_type', function (Builder $query, $value) {
+                $query->whereHas('registration', function (Builder $q) use ($value) {
+                    $q->where('semester', $value);
+                });
+            }),
+        ];
+    }
+
+    private static function applySearch(Builder $query, string $value): void
+    {
+        $query->where(function (Builder $q) use ($value) {
+            $q->whereHas('student.studentProfile', fn (Builder $sq) => $sq->where('student_number', 'like', "%{$value}%"))
+                ->orWhereHas('student', fn (Builder $sq) => $sq->where('name', 'like', "%{$value}%"));
+        });
     }
 
     public static function dateFilters(?Request $request = null): array
