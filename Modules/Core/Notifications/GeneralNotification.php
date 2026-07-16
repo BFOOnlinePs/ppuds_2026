@@ -80,7 +80,14 @@ class GeneralNotification extends Notification implements ShouldBroadcastNow
             body: $this->message,
             image: $this->image
         )))
-            ->data(['data1' => 'value', 'data2' => 'value2'])
+            ->data([
+                'title' => $this->title,
+                'message' => $this->message,
+                'url' => $this->url,
+                'icon' => $this->icon,
+                'color' => $this->color,
+                'image' => (string) $this->image,
+            ])
             ->custom([
                 'android' => [
                     'notification' => [

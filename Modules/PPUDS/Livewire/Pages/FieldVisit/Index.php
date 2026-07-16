@@ -10,6 +10,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Columns\TextColumn;
@@ -19,16 +20,19 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Component;
+use Maatwebsite\Excel\Excel as WriterType;
 use Masmerise\Toaster\Toaster;
 use Modules\Core\Entities\User;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
+use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\FieldVisit;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\SemesterType;
+use Modules\PPUDS\Exports\FieldVisitsExport;
 use Modules\PPUDS\Support\HasSupervisorFilter;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
@@ -96,6 +100,17 @@ class Index extends Component implements HasForms, HasTable
             ->filtersFormColumns(5)
             ->actions($this->getTableActions())
             ->headerActions([
+                Action::make('export_field_visits')
+                    ->label(__('Export Field Visits'))
+                    ->icon('heroicon-m-arrow-down-tray')
+                    ->color('success')
+                    ->action(fn () => app(ExcelServiceInterface::class)->download(
+                        new FieldVisitsExport($this->getTableQueryForExport()),
+                        $this->exportFilename(),
+                        WriterType::XLSX
+                    ))
+                    ->visible(fn () => auth()->user()->can('FieldVisit View List')),
+
                 \Modules\Core\Filament\Forms\Components\CreateAction::make('create')
                     ->label(__('Add Field Visit'))
                     ->url(route('field-visits.add'))
@@ -184,6 +199,11 @@ class Index extends Component implements HasForms, HasTable
                     );
                 }),
         ];
+    }
+
+    protected function exportFilename(): string
+    {
+        return 'field-visits-'.now()->format('Y-m-d-His').'.xlsx';
     }
 
     protected function shouldLockSupervisorFilter(): bool
