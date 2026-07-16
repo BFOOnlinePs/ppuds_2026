@@ -29,12 +29,14 @@ use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\FieldVisit;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\SemesterType;
+use Modules\PPUDS\Support\HasSupervisorFilter;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
 class Index extends Component implements HasForms, HasTable
 {
     use InteractsWithForms;
     use InteractsWithTable;
+    use HasSupervisorFilter;
     use ScopesStudentCompanyVisibility;
 
     public function table(Table $table): Table
@@ -199,10 +201,7 @@ class Index extends Component implements HasForms, HasTable
                 ->toArray();
         }
 
-        return User::query()
-            ->orderBy('name')
-            ->pluck('name', 'id')
-            ->toArray();
+        return $this->supervisorFilterOptions();
     }
 
     protected function studentOptions(): array

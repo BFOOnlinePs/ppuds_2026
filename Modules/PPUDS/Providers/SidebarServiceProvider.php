@@ -84,6 +84,12 @@ class SidebarServiceProvider extends ServiceProvider
         );
 
         $sidebar->add(
+            (new SidebarGroup('Alumni', 'solar-square-academic-cap-bold-duotone', [], 105))
+                ->add(new SidebarItem('Alumni Report', 'solar-chart-2-bold-duotone', ['Alumni Report View List'], 'alumni-report.index'))
+                ->add(new SidebarItem('Alumni Announcements', 'solar-notification-unread-lines-bold-duotone', ['Alumni Announcement View List'], 'alumni-announcements.index'))
+        );
+
+        $sidebar->add(
             (new SidebarGroup('Surveys', 'solar-checklist-bold-duotone', [], 110))
                 ->add(new SidebarItem('Surveys List', 'solar-checklist-minimalistic-bold-duotone', ['Survey View List'], 'surveys.index'))
                 ->add(new SidebarItem('Add Survey', 'solar-document-add-bold-duotone', ['Survey Create'], 'surveys.add'))

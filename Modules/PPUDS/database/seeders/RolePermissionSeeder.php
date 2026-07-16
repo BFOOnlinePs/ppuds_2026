@@ -66,6 +66,7 @@ class RolePermissionSeeder extends Seeder
                 'Survey Submit',
                 ...$this->read('Announcement'),
                 'Announcement Details',
+                ...$this->read('Alumni Announcement'),
                 ...$this->manage('Note'),
                 'WorkExperience View List',
                 'WorkExperience Create',
@@ -101,6 +102,8 @@ class RolePermissionSeeder extends Seeder
                 ...$this->read('Announcement'),
                 'Announcement Details',
                 ...$this->read('Report'),
+                ...$this->read('Alumni Announcement'),
+                'Alumni Report View List',
                 ...$this->branchRead(),
             ],
 
@@ -129,6 +132,8 @@ class RolePermissionSeeder extends Seeder
                 ...$this->read('Survey'),
                 ...$this->manage('Note'),
                 ...$this->read('Report'),
+                ...$this->read('Alumni Announcement'),
+                'Alumni Report View List',
                 ...$this->branchRead(),
             ],
 
@@ -152,6 +157,8 @@ class RolePermissionSeeder extends Seeder
                 ...$this->read('Announcement'),
                 'Announcement Details',
                 ...$this->read('Report'),
+                ...$this->read('Alumni Announcement'),
+                'Alumni Report View List',
                 ...$this->branchRead(),
             ],
 
@@ -177,6 +184,8 @@ class RolePermissionSeeder extends Seeder
                 'Announcement Details',
                 ...$this->read('Survey'),
                 ...$this->read('Report'),
+                ...$this->read('Alumni Announcement'),
+                'Alumni Report View List',
                 ...$this->branchRead(),
             ],
 
@@ -206,6 +215,8 @@ class RolePermissionSeeder extends Seeder
                 'Announcement Details',
                 ...$this->manage('Note'),
                 ...$this->read('Report'),
+                ...$this->read('Alumni Announcement'),
+                'Alumni Report View List',
                 ...$this->branchRead(),
             ],
 
@@ -229,6 +240,8 @@ class RolePermissionSeeder extends Seeder
                 ...$this->read('Announcement'),
                 'Announcement Details',
                 ...$this->manage('Note'),
+                ...$this->read('Alumni Announcement'),
+                'Alumni Report View List',
                 ...$this->branchRead(),
             ],
 

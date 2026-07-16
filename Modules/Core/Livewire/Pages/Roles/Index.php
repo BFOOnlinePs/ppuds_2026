@@ -331,6 +331,8 @@ class Index extends Component implements HasTable, HasForms
 
         return [
             'Addon' => 'الإضافات',
+            'Alumni Announcement' => 'إعلانات الخريجين',
+            'Alumni Report' => 'تقرير الخريجين',
             'Announcement' => 'الإعلانات',
             'Appointment' => 'المواعيد',
             'Attribute' => 'الخصائص',

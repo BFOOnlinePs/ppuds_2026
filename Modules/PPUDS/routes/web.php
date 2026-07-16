@@ -160,6 +160,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 });
 
                 Route::group([
+                    'prefix' => 'alumni-report',
+                    'as' => 'alumni-report.',
+                    'namespace' => 'Modules\PPUDS\Livewire\Pages\AlumniReport',
+                ], function () {
+                    Route::get('/', Index::class)->name('index')->can('Alumni Report View List');
+                });
+
+                Route::group([
+                    'prefix' => 'alumni-announcements',
+                    'as' => 'alumni-announcements.',
+                    'namespace' => 'Modules\PPUDS\Livewire\Pages\AlumniAnnouncement',
+                ], function () {
+                    Route::get('/', Index::class)->name('index')->can('Alumni Announcement View List');
+                });
+
+                Route::group([
                     'prefix' => 'leave-requests',
                     'as' => 'leave-requests.',
                     'namespace' => 'Modules\PPUDS\Livewire\Pages\LeaveRequest',

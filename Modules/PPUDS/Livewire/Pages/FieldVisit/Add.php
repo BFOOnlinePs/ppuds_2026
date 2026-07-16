@@ -25,12 +25,14 @@ use Modules\Core\Entities\User;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\FieldVisit;
 use Modules\PPUDS\Entities\StudentCompany;
+use Modules\PPUDS\Support\HasSupervisorFilter;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
 class Add extends Component implements HasForms, HasActions
 {
     use InteractsWithForms;
     use InteractsWithActions;
+    use HasSupervisorFilter;
     use ScopesStudentCompanyVisibility;
 
     public ?array $data = [];
@@ -167,10 +169,7 @@ class Add extends Component implements HasForms, HasActions
                 ->toArray();
         }
 
-        return User::query()
-            ->orderBy('name')
-            ->pluck('name', 'id')
-            ->toArray();
+        return $this->supervisorFilterOptions();
     }
 
     protected function syncLockedSupervisorState(): void

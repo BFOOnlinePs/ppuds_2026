@@ -470,6 +470,45 @@ class PermissionSeeder extends Seeder
                 'module_name' => 'Announcement Category',
             ],
 
+            // TODO Alumni Report
+            [
+                'name' => 'Alumni Report View List',
+                'guard_name' => 'web',
+                'module_name' => 'Alumni Report',
+            ],
+
+            // TODO Alumni Announcement
+            [
+                'name' => 'Alumni Announcement View List',
+                'guard_name' => 'web',
+                'module_name' => 'Alumni Announcement',
+            ],
+            [
+                'name' => 'Alumni Announcement Create',
+                'guard_name' => 'web',
+                'module_name' => 'Alumni Announcement',
+            ],
+            [
+                'name' => 'Alumni Announcement Update',
+                'guard_name' => 'web',
+                'module_name' => 'Alumni Announcement',
+            ],
+            [
+                'name' => 'Alumni Announcement Delete',
+                'guard_name' => 'web',
+                'module_name' => 'Alumni Announcement',
+            ],
+            [
+                'name' => 'Alumni Announcement View',
+                'guard_name' => 'web',
+                'module_name' => 'Alumni Announcement',
+            ],
+            [
+                'name' => 'Alumni Announcement Info',
+                'guard_name' => 'web',
+                'module_name' => 'Alumni Announcement',
+            ],
+
 
             // TODO LeaveRequest
             [
