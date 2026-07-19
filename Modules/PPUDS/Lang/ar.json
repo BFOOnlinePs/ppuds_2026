@@ -164,6 +164,8 @@
     "Add New Department": "إضافة قسم جديد",
     "Add Department": "إضافة قسم",
     "Supervisor": "المشرف",
+    "Edit Supervisor": "تعديل المشرف",
+    "Supervisor updated successfully": "تم تحديث المشرف بنجاح",
     "No Supervisor": "بدون مشرف",
     "Without Supervisor": "بدون مشرف",
     "Supervisors": "المشرفين",
