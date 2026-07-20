@@ -61,7 +61,7 @@ class Index extends Component implements HasForms, HasTable
     {
         return $table
             ->query(fn () => $this->studentCompaniesQuery()
-                ->with(['student.media', 'registration.student', 'registration.course', 'company', 'branch'])
+                ->with(['student.media', 'registration.student', 'registration.course', 'company', 'branch', 'department'])
             )
             ->columns([
                 //                TextColumn::make('registration.student.name')
@@ -85,6 +85,11 @@ class Index extends Component implements HasForms, HasTable
 
                 TextColumn::make('branch.name')
                     ->label(__('Branch'))
+                    ->toggleable()
+                    ->placeholder('—'),
+
+                TextColumn::make('department.name')
+                    ->label(__('Department'))
                     ->toggleable()
                     ->placeholder('—'),
 

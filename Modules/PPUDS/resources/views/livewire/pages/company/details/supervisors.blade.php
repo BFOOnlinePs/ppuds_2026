@@ -101,9 +101,20 @@
                             <td class="px-4 py-4">
                                 <div class="space-y-2">
                                     @foreach ($row['departments'] as $department)
-                                        <div class="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                                            <div class="text-sm font-medium text-gray-900">{{ $department['department'] }}</div>
-                                            <div class="text-xs text-gray-500">{{ $department['branch'] }}</div>
+                                        <div class="flex items-center justify-between gap-3 rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                                            <div class="min-w-0">
+                                                <div class="text-sm font-medium text-gray-900">{{ $department['department'] }}</div>
+                                                <div class="text-xs text-gray-500">{{ $department['branch'] }}</div>
+                                            </div>
+                                            @can('Company Update')
+                                                <button
+                                                    type="button"
+                                                    wire:click="mountAction('editDepartmentSupervisor', { branchId: {{ $department['branch_id'] }}, departmentId: {{ $department['department_id'] }}, userId: {{ $user->id }} })"
+                                                    class="shrink-0 inline-flex items-center rounded-md bg-white px-2.5 py-1 text-xs font-semibold text-primary-600 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+                                                >
+                                                    {{ __('Edit') }}
+                                                </button>
+                                            @endcan
                                         </div>
                                     @endforeach
                                 </div>
@@ -166,9 +177,20 @@
 
                     <div class="mt-4 space-y-2">
                         @foreach ($row['departments'] as $department)
-                            <div class="rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
-                                <div class="text-sm font-medium text-gray-900">{{ $department['department'] }}</div>
-                                <div class="text-xs text-gray-500">{{ $department['branch'] }}</div>
+                            <div class="flex items-center justify-between gap-3 rounded-md border border-gray-200 bg-gray-50 px-3 py-2">
+                                <div class="min-w-0">
+                                    <div class="text-sm font-medium text-gray-900">{{ $department['department'] }}</div>
+                                    <div class="text-xs text-gray-500">{{ $department['branch'] }}</div>
+                                </div>
+                                @can('Company Update')
+                                    <button
+                                        type="button"
+                                        wire:click="mountAction('editDepartmentSupervisor', { branchId: {{ $department['branch_id'] }}, departmentId: {{ $department['department_id'] }}, userId: {{ $user->id }} })"
+                                        class="shrink-0 inline-flex items-center rounded-md bg-white px-2.5 py-1 text-xs font-semibold text-primary-600 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+                                    >
+                                        {{ __('Edit') }}
+                                    </button>
+                                @endcan
                             </div>
                         @endforeach
                     </div>

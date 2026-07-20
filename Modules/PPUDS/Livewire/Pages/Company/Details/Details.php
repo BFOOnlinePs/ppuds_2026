@@ -3,6 +3,9 @@
 namespace Modules\PPUDS\Livewire\Pages\Company\Details;
 
 use App\View\Components\AppLayout;
+use Filament\Actions\Action;
+use Filament\Actions\Concerns\InteractsWithActions;
+use Filament\Actions\Contracts\HasActions;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Group;
@@ -44,10 +47,11 @@ use Modules\PPUDS\Entities\CompanyDepartment;
 use Modules\PPUDS\Services\PpuApiService;
 use Spatie\MediaLibrary\MediaCollections\Models\Media as SpatieMedia;
 
-class Details extends Component implements HasForms, HasInfolists
+class Details extends Component implements HasForms, HasInfolists, HasActions
 {
     use InteractsWithForms;
     use InteractsWithInfolists;
+    use InteractsWithActions;
 
     public ?array $data = [];
 
@@ -554,7 +558,9 @@ class Details extends Component implements HasForms, HasInfolists
 
                     return [
                         'user_id' => (int) $userId,
+                        'branch_id' => $branch->id,
                         'branch' => $branch->name,
+                        'department_id' => $department->id,
                         'department' => $department->name,
                     ];
                 });
@@ -591,6 +597,39 @@ class Details extends Component implements HasForms, HasInfolists
             })
             ->filter()
             ->values();
+    }
+
+    public function editDepartmentSupervisorAction(): Action
+    {
+        return Action::make('editDepartmentSupervisor')
+            ->label(__('Edit Supervisor'))
+            ->modalHeading(__('Edit Supervisor'))
+            ->icon('heroicon-o-pencil-square')
+            ->form([
+                Select::make('user_id')
+                    ->label(__('Supervisor'))
+                    ->required()
+                    ->searchable()
+                    ->preload()
+                    ->options(fn () => User::role('Company Supervisor')->pluck('name', 'id')),
+            ])
+            ->fillForm(fn (array $arguments): array => [
+                'user_id' => $arguments['userId'] ?? null,
+            ])
+            ->action(function (array $data, array $arguments): void {
+                abort_unless(auth()->user()?->can('Company Update'), 403);
+
+                $branch = $this->company->branches()->whereKey($arguments['branchId'] ?? null)->first();
+
+                abort_unless($branch, 404);
+
+                $branch->departments()->updateExistingPivot($arguments['departmentId'] ?? null, [
+                    'user_id' => $data['user_id'],
+                ]);
+
+                Toaster::success(__('Supervisor updated successfully'));
+            })
+            ->visible(fn () => auth()->user()?->can('Company Update'));
     }
 
     public function downloadAttachment(int $mediaId)
