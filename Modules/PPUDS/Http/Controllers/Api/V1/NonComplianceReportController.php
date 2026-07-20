@@ -30,7 +30,7 @@ class NonComplianceReportController extends Controller
      * @OA\Parameter(name="filter[company_id]", in="query", required=false, @OA\Schema(type="integer")),
      * @OA\Parameter(name="filter[supervisor_id]", in="query", required=false, @OA\Schema(type="integer")),
      * @OA\Parameter(name="filter[year]", in="query", required=false, description="Academic year. Defaults to the configured dashboard year.", @OA\Schema(type="integer")),
-     * @OA\Parameter(name="filter[semester_type]", in="query", required=false, description="Semester type. Defaults to the configured dashboard semester.", @OA\Schema(type="string")),
+     * @OA\Parameter(name="filter[semester]", in="query", required=false, description="Semester type. Defaults to the configured dashboard semester.", @OA\Schema(type="string")),
      * @OA\Parameter(name="filter[non_compliance_types]", in="query", required=false, description="Comma separated values: outside_work_range, late_attendance, absence", @OA\Schema(type="string")),
      * @OA\Parameter(name="filter[non_compliance_type]", in="query", required=false, description="Single value alias for filter[non_compliance_types]", @OA\Schema(type="string")),
      * @OA\Parameter(name="filter[minimum_late_hours]", in="query", required=false, @OA\Schema(type="number", format="float", example=2)),
@@ -52,7 +52,7 @@ class NonComplianceReportController extends Controller
             'filter' => array_merge(
                 [
                     'year' => $settings->year,
-                    'semester_type' => $settings->semester_type?->value,
+                    'semester' => $settings->semester_type?->value,
                 ],
                 $request->input('filter', [])
             ),
@@ -62,7 +62,7 @@ class NonComplianceReportController extends Controller
 
         $nonComplianceTypesInput = $request->input('filter.non_compliance_types', $request->input('filter.non_compliance_type', []));
         $nonComplianceTypes = collect(is_array($nonComplianceTypesInput) ? $nonComplianceTypesInput : explode(',', (string) $nonComplianceTypesInput))
-            ->map(fn (mixed $type): string => trim((string) $type))
+            ->map(fn(mixed $type): string => trim((string) $type))
             ->filter()
             ->values()
             ->all();
@@ -84,7 +84,7 @@ class NonComplianceReportController extends Controller
                 'registration',
                 'student.studentProfile',
             ])
-            ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query))
+            ->tap(fn(Builder $query) => $this->applyStudentCompanyVisibilityScope($query))
             ->allowedFilters(NonComplianceReportResource::allowedFilters())
             ->getEloquentBuilder();
 
@@ -128,7 +128,7 @@ class NonComplianceReportController extends Controller
                             'date_from' => $dateFrom,
                             'date_to' => $dateTo,
                             'year' => $request->input('filter.year'),
-                            'semester_type' => $request->input('filter.semester_type'),
+                            'semester' => $request->input('filter.semester'),
                         ],
                     ],
                 ]),
