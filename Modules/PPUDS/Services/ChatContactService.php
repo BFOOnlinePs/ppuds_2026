@@ -2,7 +2,6 @@
 
 namespace Modules\PPUDS\Services;
 
-use BackedEnum;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -10,7 +9,7 @@ use Modules\Core\Entities\User;
 use Modules\Core\Enums\UserRole;
 use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Entities\StudentCompany;
-use Modules\PPUDS\Settings\GeneralSettings;
+use Modules\PPUDS\Enums\TrainingStatus;
 
 class ChatContactService
 {
@@ -139,7 +138,7 @@ class ChatContactService
         }
 
         $studentCompanies = StudentCompany::query()
-            ->whereHas('registration', fn (Builder $query) => $this->applyCurrentPeriod($query))
+            ->where('status', TrainingStatus::AVAILABLE)
             ->where(function (Builder $query) use ($assignments): void {
                 $assignments->each(function ($assignment) use ($query): void {
                     $query->orWhere(function (Builder $query) use ($assignment): void {
@@ -210,19 +209,8 @@ class ChatContactService
 
     private function currentRegistrationsQuery(): Builder
     {
-        return $this->applyCurrentPeriod(Registration::query());
-    }
-
-    private function applyCurrentPeriod(Builder $query): Builder
-    {
-        $settings = app(GeneralSettings::class);
-        $semester = $settings->semester_type instanceof BackedEnum
-            ? $settings->semester_type->value
-            : $settings->semester_type;
-
-        return $query
-            ->when($semester, fn (Builder $query, string $semester): Builder => $query->where('semester', $semester))
-            ->when($settings->year, fn (Builder $query, int|string $year): Builder => $query->where('year', $year));
+        return Registration::query()
+            ->whereHas('studentCompany', fn (Builder $query) => $query->where('status', TrainingStatus::AVAILABLE));
     }
 
     private function addContactType(array &$contactTypes, mixed $userId, string $type): void

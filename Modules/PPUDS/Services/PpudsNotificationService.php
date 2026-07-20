@@ -129,7 +129,7 @@ class PpudsNotificationService
             title: __('Payment Approved By Student'),
             message: __(':student approved payment :reference.', [
                 'student' => $this->studentName($payment->studentCompany),
-                'reference' => $payment->reference_id ?: '#'.$payment->id,
+                'reference' => $payment->reference_id ?: '#' . $payment->id,
             ]),
             url: $this->studentCompanyUrl($payment->studentCompany),
             icon: 'heroicon-o-check-badge',
@@ -152,7 +152,7 @@ class PpudsNotificationService
         );
 
         $this->targetSurveyUsers($survey)
-            ->chunkById(100, fn (Collection $users) => $this->notifyUsers($users, $notification));
+            ->chunkById(100, fn(Collection $users) => $this->notifyUsers($users, $notification));
     }
 
     public function announcementCreated(Announcement $announcement): void
@@ -167,7 +167,7 @@ class PpudsNotificationService
         );
 
         $this->targetAnnouncementUsers($announcement)
-            ->chunkById(100, fn (Collection $users) => $this->notifyUsers($users, $notification));
+            ->chunkById(100, fn(Collection $users) => $this->notifyUsers($users, $notification));
     }
 
     public function chatMessageCreated(Message $message): void
@@ -180,17 +180,14 @@ class PpudsNotificationService
 
         $users = $message->conversation?->participants
             ?->pluck('participantable')
-            ->filter(fn ($participant) => $participant instanceof User)
-            ->reject(fn (User $participant) => $participant->getKey() == $message->sendable_id
+            ->filter(fn($participant) => $participant instanceof User)
+            ->reject(fn(User $participant) => $participant->getKey() == $message->sendable_id
                 && $participant->getMorphClass() === $message->sendable_type)
             ->values() ?? collect();
 
         $this->notifyUsers($users, new GeneralNotification(
-            title: __('New Chat Message'),
-            message: __(':sender: :message', [
-                'sender' => $senderName,
-                'message' => Str::limit($body, 120),
-            ]),
+            title: $senderName,
+            message: Str::limit($body, 120),
             url: $this->routeUrl('chat-messages.show', [$message->conversation_id]),
             icon: 'heroicon-o-chat-bubble-left-right',
             color: 'text-primary',
@@ -232,8 +229,8 @@ class PpudsNotificationService
     private function targetSurveyUsers(Survey $survey): Builder
     {
         return User::query()
-            ->when($survey->serve_group, fn (Builder $query, string $role) => $query->role($role))
-            ->when($survey->major_id, fn (Builder $query, int $majorId) => $query->whereHas('studentProfile', fn (Builder $profileQuery) => $profileQuery->where('major_id', $majorId)));
+            ->when($survey->serve_group, fn(Builder $query, string $role) => $query->role($role))
+            ->when($survey->major_id, fn(Builder $query, int $majorId) => $query->whereHas('studentProfile', fn(Builder $profileQuery) => $profileQuery->where('major_id', $majorId)));
     }
 
     private function targetAnnouncementUsers(Announcement $announcement): Builder
@@ -252,7 +249,7 @@ class PpudsNotificationService
                         $query->role($role);
 
                         if ($role === UserRole::STUDENT->value && $studentMajorId) {
-                            $query->whereHas('studentProfile', fn (Builder $profileQuery) => $profileQuery->where('major_id', $studentMajorId));
+                            $query->whereHas('studentProfile', fn(Builder $profileQuery) => $profileQuery->where('major_id', $studentMajorId));
                         }
                     });
                 }
@@ -262,7 +259,7 @@ class PpudsNotificationService
     private function notifyUsers(Collection $users, GeneralNotification $notification): void
     {
         $users = $users
-            ->filter(fn ($user) => $user instanceof User)
+            ->filter(fn($user) => $user instanceof User)
             ->unique('id')
             ->values();
 

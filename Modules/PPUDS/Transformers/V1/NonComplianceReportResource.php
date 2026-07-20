@@ -89,7 +89,7 @@ class NonComplianceReportResource extends JsonResource
             }),
 
             // فلتر عن طريق الفصل الدراسي (من خلال جدول registration)
-            AllowedFilter::callback('semester_type', function (Builder $query, $value) {
+            AllowedFilter::callback('semester', function (Builder $query, $value) {
                 $query->whereHas('registration', function (Builder $q) use ($value) {
                     $q->where('semester', $value);
                 });
@@ -97,21 +97,21 @@ class NonComplianceReportResource extends JsonResource
 
             // الفلاتر التالية تُقرأ وتُطبَّق يدوياً بالكونترولر (تاريخ/نوع المخالفة/ساعات التأخير/المسافة)
             // مسجّلة هون فقط حتى يقبلها QueryBuilder، دون تعديل مباشر على الاستعلام
-            AllowedFilter::callback('date', fn () => null),
-            AllowedFilter::callback('date_from', fn () => null),
-            AllowedFilter::callback('date_to', fn () => null),
-            AllowedFilter::callback('non_compliance_types', fn () => null),
-            AllowedFilter::callback('non_compliance_type', fn () => null),
-            AllowedFilter::callback('minimum_late_hours', fn () => null),
-            AllowedFilter::callback('outside_work_range_distance_meters', fn () => null),
+            AllowedFilter::callback('date', fn() => null),
+            AllowedFilter::callback('date_from', fn() => null),
+            AllowedFilter::callback('date_to', fn() => null),
+            AllowedFilter::callback('non_compliance_types', fn() => null),
+            AllowedFilter::callback('non_compliance_type', fn() => null),
+            AllowedFilter::callback('minimum_late_hours', fn() => null),
+            AllowedFilter::callback('outside_work_range_distance_meter', fn() => null),
         ];
     }
 
     private static function applySearch(Builder $query, string $value): void
     {
         $query->where(function (Builder $q) use ($value) {
-            $q->whereHas('student.studentProfile', fn (Builder $sq) => $sq->where('student_number', 'like', "%{$value}%"))
-                ->orWhereHas('student', fn (Builder $sq) => $sq->where('name', 'like', "%{$value}%"));
+            $q->whereHas('student.studentProfile', fn(Builder $sq) => $sq->where('student_number', 'like', "%{$value}%"))
+                ->orWhereHas('student', fn(Builder $sq) => $sq->where('name', 'like', "%{$value}%"));
         });
     }
 
@@ -132,7 +132,7 @@ class NonComplianceReportResource extends JsonResource
     private function problems(array $summary): array
     {
         $absenceProblems = collect($summary['absence_dates'] ?? [])
-            ->map(fn (array $absence): array => [
+            ->map(fn(array $absence): array => [
                 'type' => 'absence',
                 'date' => $absence['date'] ?? null,
                 'label' => $absence['label'] ?? null,
@@ -140,7 +140,7 @@ class NonComplianceReportResource extends JsonResource
             ]);
 
         $lateProblems = collect($summary['late_attendances'] ?? [])
-            ->map(fn (array $lateAttendance): array => [
+            ->map(fn(array $lateAttendance): array => [
                 'type' => 'late_attendance',
                 'date' => $lateAttendance['date'] ?? null,
                 'expected_check_in' => $lateAttendance['expected_check_in'] ?? null,
@@ -150,7 +150,7 @@ class NonComplianceReportResource extends JsonResource
             ]);
 
         $outsideWorkRangeProblems = collect($summary['outside_work_range_attendances'] ?? [])
-            ->map(fn (array $attendance): array => [
+            ->map(fn(array $attendance): array => [
                 'type' => 'outside_work_range',
                 'date' => $attendance['date'] ?? null,
                 'check_in' => $attendance['check_in'] ?? null,
