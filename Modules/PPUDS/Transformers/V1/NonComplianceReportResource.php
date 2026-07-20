@@ -94,6 +94,16 @@ class NonComplianceReportResource extends JsonResource
                     $q->where('semester', $value);
                 });
             }),
+
+            // الفلاتر التالية تُقرأ وتُطبَّق يدوياً بالكونترولر (تاريخ/نوع المخالفة/ساعات التأخير/المسافة)
+            // مسجّلة هون فقط حتى يقبلها QueryBuilder، دون تعديل مباشر على الاستعلام
+            AllowedFilter::callback('date', fn () => null),
+            AllowedFilter::callback('date_from', fn () => null),
+            AllowedFilter::callback('date_to', fn () => null),
+            AllowedFilter::callback('non_compliance_types', fn () => null),
+            AllowedFilter::callback('non_compliance_type', fn () => null),
+            AllowedFilter::callback('minimum_late_hours', fn () => null),
+            AllowedFilter::callback('outside_work_range_distance_meters', fn () => null),
         ];
     }
 
