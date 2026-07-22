@@ -46,6 +46,13 @@ class Add extends Component implements HasForms
                                             ->label(__('Code'))
                                             ->options(Governorate::get()->pluck('code', 'code')->toArray())
                                             ->searchable()
+                                            ->createOptionForm([
+                                                TextInput::make('code')
+                                                    ->label(__('Code'))
+                                                    ->required(),
+                                            ])
+                                            ->createOptionUsing(fn (array $data) => $data['code'])
+                                            ->getOptionLabelUsing(fn ($value) => $value)
                                             ->unique(table: config('geolocation.table_prefix') . 'governorates', column: 'code')
                                             ->required(),
                                         Select::make('country_id')
