@@ -30,6 +30,7 @@ class Add extends Component implements HasForms
     public function form(Form $form): Form
     {
         return $form
+            ->model(Governorate::class)
             ->schema([
                 Grid::make(2)
                     ->schema([
