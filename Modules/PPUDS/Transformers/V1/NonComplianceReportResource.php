@@ -95,15 +95,26 @@ class NonComplianceReportResource extends JsonResource
                 });
             }),
 
-            // الفلاتر التالية تُقرأ وتُطبَّق يدوياً بالكونترولر (تاريخ/نوع المخالفة/ساعات التأخير/المسافة)
-            // مسجّلة هون فقط حتى يقبلها QueryBuilder، دون تعديل مباشر على الاستعلام
+            // يوم محدد، تُقرأ عبر dateFilters() وتُطبَّق ضمن تحليل الحضور بالـ service
             AllowedFilter::callback('date', fn() => null),
+
+            // بداية مدى التاريخ، نفس آلية الفلتر أعلاه
             AllowedFilter::callback('date_from', fn() => null),
+
+            // نهاية مدى التاريخ، نفس آلية الفلتر أعلاه
             AllowedFilter::callback('date_to', fn() => null),
+
+            // أنواع المخالفة (absence, late_attendance, outside_work_range)، تُقرأ بالكونترولر وتُمرَّر لـ nonCompliantStudentCompanyIds()
             AllowedFilter::callback('non_compliance_types', fn() => null),
+
+            // اسم بديل لفلتر non_compliance_types بقيمة واحدة
             AllowedFilter::callback('non_compliance_type', fn() => null),
+
+            // الحد الأدنى لساعات التأخير، يُطبَّق عبر service->applyMinimumLateHoursFilter()
             AllowedFilter::callback('minimum_late_hours', fn() => null),
-            AllowedFilter::callback('outside_work_range_distance_meter', fn() => null),
+
+            // أقصى مسافة مسموحة عن الفرع بالمتر، تُقرأ عبر outsideWorkRangeDistanceMeters()
+            AllowedFilter::callback('outside_work_range_distance_meters', fn() => null),
         ];
     }
 

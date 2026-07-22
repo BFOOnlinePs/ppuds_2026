@@ -13,12 +13,8 @@ use Filament\Forms\Form;
 use Filament\Forms\Set;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
-use Modules\Core\Entities\Currency;
-use Modules\GeoLocation\Entities\City;
 use Modules\GeoLocation\Entities\Country;
 use Modules\GeoLocation\Entities\Governorate;
-use Modules\Items\Entities\Category;
-use Svg\Tag\Text;
 
 class Add extends Component implements HasForms
 {
@@ -92,7 +88,7 @@ class Add extends Component implements HasForms
         $locale = $this->data['locale'] = app()->getLocale();
         $this->data['created_by'] = auth()->user()->id;
 
-        $governorate = Currency::create($this->data);
+        $governorate = Governorate::create($this->data);
 
         $this->redirectRoute('governorates.index');
     }
