@@ -118,7 +118,7 @@ class Index extends Component implements HasForms, HasTable
                         $this->studentsWithCompaniesExportFilename(),
                         WriterType::XLSX
                     ))
-                    ->visible(fn () => auth()->user()->can('Student View List')),
+                    ->visible(fn () => auth()->user()->can('Student Export Companies')),
 
                 Action::make('sync_student')
                     ->label(__('Sync Student'))

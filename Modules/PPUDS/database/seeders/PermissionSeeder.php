@@ -63,6 +63,11 @@ class PermissionSeeder extends Seeder
                 'guard_name' => 'web',
                 'module_name' => 'Student',
             ],
+            [
+                'name' => 'Student Export Companies',
+                'guard_name' => 'web',
+                'module_name' => 'Student',
+            ],
 
             [
                 'name' => 'Supervisor View List',

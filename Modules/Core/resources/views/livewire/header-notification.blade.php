@@ -28,8 +28,11 @@
 
                     <div class="flex flex-auto ltr:pl-3 rtl:pr-3">
                         <div class="ltr:pr-3 rtl:pl-3">
-                            {{-- عرض الرسالة --}}
-                            <h6 class="font-semibold">{{ $notification->data['message'] ?? '' }}</h6>
+                            {{-- اسم المرسل --}}
+                            <h6 class="font-semibold">{{ $notification->data['title'] ?? '' }}</h6>
+
+                            {{-- نص الرسالة --}}
+                            <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ $notification->data['message'] ?? '' }}</p>
 
                             {{-- عرض الوقت --}}
                             <span class="block text-xs font-normal dark:text-gray-500">
