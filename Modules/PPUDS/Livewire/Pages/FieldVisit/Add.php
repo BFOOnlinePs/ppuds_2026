@@ -19,6 +19,7 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Forms\Set;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Core\Entities\User;
@@ -75,7 +76,7 @@ class Add extends Component implements HasForms, HasActions
                                         ->live()
                                         ->afterStateUpdated(function (Set $set): void {
                                             $set('company_id', null);
-                                            $set('student_company_id', null);
+                                            $set('student_company_ids', null);
                                         }),
 
                                     Select::make('company_id')
@@ -87,14 +88,15 @@ class Add extends Component implements HasForms, HasActions
                                         ->options(fn (Get $get): array => $this->companyOptions($get('supervisor_id')))
                                         ->disabled(fn (Get $get): bool => blank($this->effectiveSupervisorId($get('supervisor_id'))))
                                         ->live()
-                                        ->afterStateUpdated(fn (Set $set): mixed => $set('student_company_id', null)),
+                                        ->afterStateUpdated(fn (Set $set): mixed => $set('student_company_ids', null)),
 
-                                    Select::make('student_company_id')
-                                        ->label(__('Student'))
+                                    Select::make('student_company_ids')
+                                        ->label(__('Students'))
                                         ->required()
+                                        ->multiple()
                                         ->searchable()
                                         ->preload()
-                                        ->prefixIcon('solar-user-id-linear')
+                                        ->prefixIcon('solar-users-group-rounded-linear')
                                         ->options(fn (Get $get): array => $this->studentCompanyOptions($get('supervisor_id'), $get('company_id')))
                                         ->disabled(fn (Get $get): bool => blank($this->effectiveSupervisorId($get('supervisor_id'))) || blank($get('company_id'))),
 
@@ -252,7 +254,7 @@ class Add extends Component implements HasForms, HasActions
     {
         return [
             'data.company_id.required' => __('Please select a company.'),
-            'data.student_company_id.required' => __('Please select a student company.'),
+            'data.student_company_ids.required' => __('Please select at least one student.'),
             'data.supervisor_id.required' => __('Please select a supervisor.'),
             'data.visit_date.required' => __('The visit date is required.'),
             'data.visit_time.required' => __('The visit time is required.'),
@@ -270,25 +272,42 @@ class Add extends Component implements HasForms, HasActions
 
         $data = $this->lockedSupervisorData($this->data);
 
-        if (! $this->canAccessStudentCompanyRecord((int) $data['student_company_id'])) {
-            $this->addError('data.student_company_id', __('You are not authorized to access this student company.'));
+        $studentCompanyIds = collect($data['student_company_ids'] ?? [])
+            ->map(fn (mixed $id): int => (int) $id)
+            ->unique()
+            ->values();
+
+        if ($studentCompanyIds->isEmpty()) {
+            $this->addError('data.student_company_ids', __('Please select at least one student.'));
 
             return;
         }
 
-        if (! $this->studentCompanyMatchesSelection((int) $data['student_company_id'], (int) $data['supervisor_id'], (int) $data['company_id'])) {
-            $this->addError('data.student_company_id', __('The selected student does not belong to the selected company and supervisor.'));
+        foreach ($studentCompanyIds as $studentCompanyId) {
+            if (! $this->canAccessStudentCompanyRecord($studentCompanyId)) {
+                $this->addError('data.student_company_ids', __('You are not authorized to access this student company.'));
 
-            return;
+                return;
+            }
+
+            if (! $this->studentCompanyMatchesSelection($studentCompanyId, (int) $data['supervisor_id'], (int) $data['company_id'])) {
+                $this->addError('data.student_company_ids', __('The selected student does not belong to the selected company and supervisor.'));
+
+                return;
+            }
         }
 
-        unset($data['company_id']);
+        unset($data['company_id'], $data['student_company_ids']);
 
         $data['created_by'] = auth()->id();
 
-        FieldVisit::create($data);
+        DB::transaction(function () use ($studentCompanyIds, $data): void {
+            foreach ($studentCompanyIds as $studentCompanyId) {
+                FieldVisit::create([...$data, 'student_company_id' => $studentCompanyId]);
+            }
+        });
 
-        Toaster::success(__('Field visit record created successfully'));
+        Toaster::success(__('Field visit records created successfully'));
 
         $this->redirect(route('field-visits.index'));
     }
