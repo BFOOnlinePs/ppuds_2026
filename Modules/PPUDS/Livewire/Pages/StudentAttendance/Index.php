@@ -39,13 +39,13 @@ use Modules\Core\Filament\Forms\Components\MapPicker;
 use Modules\Core\Filament\Forms\Components\Textarea;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\Core\Interfaces\ExcelServiceInterface;
-use Modules\Core\Services\PdfService;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\Major;
 use Modules\PPUDS\Entities\StudentAttendance;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Entities\StudentReport;
 use Modules\PPUDS\Enums\AttendanceStatus;
+use Modules\PPUDS\Exports\StudentAttendanceReportExport;
 use Modules\PPUDS\Exports\TodayAbsentStudentsExport;
 use Modules\PPUDS\Livewire\Concerns\SearchesStudentAttendanceRelationships;
 use Modules\PPUDS\Services\PpudsNotificationService;
@@ -1067,56 +1067,17 @@ class Index extends Component implements HasForms, HasTable
         return 'today-absent-students-' . now()->format('Y-m-d-His') . '.xlsx';
     }
 
-    protected const PRINT_MAX_ROWS = 2000;
-
     protected function printAttendanceReport()
     {
-        $query = $this->getTableQueryForExport()->without(['studentCompany.student.media', 'student.media', 'studentReport']);
-
-        $recordsCount = (clone $query)->count();
-
-        if ($recordsCount > self::PRINT_MAX_ROWS) {
-            Toaster::error(__('The filtered results (:count) exceed the print limit of :max records. Please narrow your filter and try again.', [
-                'count' => $recordsCount,
-                'max' => self::PRINT_MAX_ROWS,
-            ]));
-
-            return;
-        }
-
-        $filters = $this->tableFilters ?? [];
-
-        return app(PdfService::class)->streamPdf(
-            'ppuds::pdf.student-attendance.report',
-            [
-                'rows' => $this->printAttendanceReportRows($query),
-                'from' => data_get($filters, 'attendance_date.from'),
-                'until' => data_get($filters, 'attendance_date.until'),
-            ],
-            'student-attendance-report-' . now()->format('Y-m-d-His') . '.pdf'
+        return app(ExcelServiceInterface::class)->download(
+            new StudentAttendanceReportExport($this->getTableQueryForExport()),
+            $this->printAttendanceReportFilename(),
+            WriterType::XLSX
         );
     }
 
-    protected function printAttendanceReportRows(Builder $query): \Illuminate\Support\Collection
+    protected function printAttendanceReportFilename(): string
     {
-        return $query->get()->map(function (Model $record): array {
-            $isAbsentRecord = $this->isTodayAbsentStudentRecord($record);
-            $student = $this->studentFromRecord($record);
-            $studentCompany = $isAbsentRecord ? $record : $record->studentCompany;
-
-            return [
-                'student_number' => $student?->studentProfile?->student_number ?? '---',
-                'student_name' => $student?->name ?? '---',
-                'company_name' => $studentCompany?->company?->name ?? '---',
-                'branch_name' => $studentCompany?->branch?->name ?? '---',
-                'attendance_date' => $isAbsentRecord ? now()->toDateString() : $record->attendance_date?->toDateString(),
-                'check_in' => $isAbsentRecord ? null : $record->check_in?->format('H:i'),
-                'check_out' => $isAbsentRecord ? null : $record->check_out?->format('H:i'),
-                'status_label' => $isAbsentRecord
-                    ? __('Absent')
-                    : ($record->status instanceof AttendanceStatus ? $record->status->getLabel() : (string) ($record->status ?: '---')),
-                'description' => $isAbsentRecord ? null : $record->description,
-            ];
-        });
+        return 'student-attendance-report-' . now()->format('Y-m-d-His') . '.xlsx';
     }
 }
