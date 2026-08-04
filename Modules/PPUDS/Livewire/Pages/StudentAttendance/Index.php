@@ -1082,7 +1082,7 @@ class Index extends Component implements HasForms, HasTable
         );
     }
 
-    protected function printAttendanceReportRows(): Collection
+    protected function printAttendanceReportRows(): \Illuminate\Support\Collection
     {
         return $this->getTableQueryForExport()->get()->map(function (Model $record): array {
             $isAbsentRecord = $this->isTodayAbsentStudentRecord($record);

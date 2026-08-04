@@ -423,7 +423,7 @@ class Index extends Component implements HasForms, HasTable
         );
     }
 
-    protected function printStudentCompaniesReportRows(): Collection
+    protected function printStudentCompaniesReportRows(): \Illuminate\Support\Collection
     {
         return $this->getTableQueryForExport()->get()->map(function (StudentCompany $record): array {
             $student = $record->student ?? $record->registration?->student;
