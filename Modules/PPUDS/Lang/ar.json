@@ -768,5 +768,6 @@
     "No records found.": "لا توجد سجلات",
     "Supervisor Visit Days": "أيام زيارات المشرف",
     "Visit Days From": "من عدد أيام الزيارة",
-    "Visit Days To": "إلى عدد أيام الزيارة"
+    "Visit Days To": "إلى عدد أيام الزيارة",
+    "The filtered results (:count) exceed the print limit of :max records. Please narrow your filter and try again.": "عدد السجلات المفلترة (:count) يتجاوز الحد الأقصى للطباعة وهو :max سجل. الرجاء تضييق نطاق الفلتر والمحاولة مرة أخرى."
 }

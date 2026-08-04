@@ -414,18 +414,33 @@ class Index extends Component implements HasForms, HasTable
         return 'student-companies-'.now()->format('Y-m-d-His').'.xlsx';
     }
 
+    protected const PRINT_MAX_ROWS = 2000;
+
     protected function printStudentCompaniesReport()
     {
+        $query = $this->getTableQueryForExport()->without(['student.media']);
+
+        $recordsCount = (clone $query)->count();
+
+        if ($recordsCount > self::PRINT_MAX_ROWS) {
+            Toaster::error(__('The filtered results (:count) exceed the print limit of :max records. Please narrow your filter and try again.', [
+                'count' => $recordsCount,
+                'max' => self::PRINT_MAX_ROWS,
+            ]));
+
+            return;
+        }
+
         return app(PdfService::class)->streamPdf(
             'ppuds::pdf.student-company.report',
-            ['rows' => $this->printStudentCompaniesReportRows()],
+            ['rows' => $this->printStudentCompaniesReportRows($query)],
             'student-companies-report-'.now()->format('Y-m-d-His').'.pdf'
         );
     }
 
-    protected function printStudentCompaniesReportRows(): \Illuminate\Support\Collection
+    protected function printStudentCompaniesReportRows(Builder $query): \Illuminate\Support\Collection
     {
-        return $this->getTableQueryForExport()->get()->map(function (StudentCompany $record): array {
+        return $query->get()->map(function (StudentCompany $record): array {
             $student = $record->student ?? $record->registration?->student;
 
             return [

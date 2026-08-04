@@ -1067,14 +1067,29 @@ class Index extends Component implements HasForms, HasTable
         return 'today-absent-students-' . now()->format('Y-m-d-His') . '.xlsx';
     }
 
+    protected const PRINT_MAX_ROWS = 2000;
+
     protected function printAttendanceReport()
     {
+        $query = $this->getTableQueryForExport()->without(['studentCompany.student.media', 'student.media', 'studentReport']);
+
+        $recordsCount = (clone $query)->count();
+
+        if ($recordsCount > self::PRINT_MAX_ROWS) {
+            Toaster::error(__('The filtered results (:count) exceed the print limit of :max records. Please narrow your filter and try again.', [
+                'count' => $recordsCount,
+                'max' => self::PRINT_MAX_ROWS,
+            ]));
+
+            return;
+        }
+
         $filters = $this->tableFilters ?? [];
 
         return app(PdfService::class)->streamPdf(
             'ppuds::pdf.student-attendance.report',
             [
-                'rows' => $this->printAttendanceReportRows(),
+                'rows' => $this->printAttendanceReportRows($query),
                 'from' => data_get($filters, 'attendance_date.from'),
                 'until' => data_get($filters, 'attendance_date.until'),
             ],
@@ -1082,9 +1097,9 @@ class Index extends Component implements HasForms, HasTable
         );
     }
 
-    protected function printAttendanceReportRows(): \Illuminate\Support\Collection
+    protected function printAttendanceReportRows(Builder $query): \Illuminate\Support\Collection
     {
-        return $this->getTableQueryForExport()->get()->map(function (Model $record): array {
+        return $query->get()->map(function (Model $record): array {
             $isAbsentRecord = $this->isTodayAbsentStudentRecord($record);
             $student = $this->studentFromRecord($record);
             $studentCompany = $isAbsentRecord ? $record : $record->studentCompany;
