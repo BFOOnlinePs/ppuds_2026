@@ -39,6 +39,7 @@ use Modules\Core\Filament\Forms\Components\MapPicker;
 use Modules\Core\Filament\Forms\Components\Textarea;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\Core\Interfaces\ExcelServiceInterface;
+use Modules\Core\Services\PdfService;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\Major;
 use Modules\PPUDS\Entities\StudentAttendance;
@@ -175,6 +176,13 @@ class Index extends Component implements HasForms, HasTable
                         $this->todayAbsentStudentsExportFilename(),
                         WriterType::XLSX
                     ))
+                    ->visible(fn() => auth()->user()->can('StudentAttendance View List')),
+
+                Action::make('print')
+                    ->label(__('Print'))
+                    ->icon('heroicon-m-printer')
+                    ->color('info')
+                    ->action(fn() => $this->printAttendanceReport())
                     ->visible(fn() => auth()->user()->can('StudentAttendance View List')),
 
                 Action::make('check_in')
@@ -1057,5 +1065,43 @@ class Index extends Component implements HasForms, HasTable
     protected function todayAbsentStudentsExportFilename(): string
     {
         return 'today-absent-students-' . now()->format('Y-m-d-His') . '.xlsx';
+    }
+
+    protected function printAttendanceReport()
+    {
+        $filters = $this->tableFilters ?? [];
+
+        return app(PdfService::class)->streamPdf(
+            'ppuds::pdf.student-attendance.report',
+            [
+                'rows' => $this->printAttendanceReportRows(),
+                'from' => data_get($filters, 'attendance_date.from'),
+                'until' => data_get($filters, 'attendance_date.until'),
+            ],
+            'student-attendance-report-' . now()->format('Y-m-d-His') . '.pdf'
+        );
+    }
+
+    protected function printAttendanceReportRows(): Collection
+    {
+        return $this->getTableQueryForExport()->get()->map(function (Model $record): array {
+            $isAbsentRecord = $this->isTodayAbsentStudentRecord($record);
+            $student = $this->studentFromRecord($record);
+            $studentCompany = $isAbsentRecord ? $record : $record->studentCompany;
+
+            return [
+                'student_number' => $student?->studentProfile?->student_number ?? '---',
+                'student_name' => $student?->name ?? '---',
+                'company_name' => $studentCompany?->company?->name ?? '---',
+                'branch_name' => $studentCompany?->branch?->name ?? '---',
+                'attendance_date' => $isAbsentRecord ? now()->toDateString() : $record->attendance_date?->toDateString(),
+                'check_in' => $isAbsentRecord ? null : $record->check_in?->format('H:i'),
+                'check_out' => $isAbsentRecord ? null : $record->check_out?->format('H:i'),
+                'status_label' => $isAbsentRecord
+                    ? __('Absent')
+                    : ($record->status instanceof AttendanceStatus ? $record->status->getLabel() : (string) ($record->status ?: '---')),
+                'description' => $isAbsentRecord ? null : $record->description,
+            ];
+        });
     }
 }
