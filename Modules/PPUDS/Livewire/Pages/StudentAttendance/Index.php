@@ -180,7 +180,7 @@ class Index extends Component implements HasForms, HasTable
 
                 Action::make('print')
                     ->label(__('Print'))
-                    ->icon('heroicon-m-printer')
+                    ->icon('solar-printer-bold')
                     ->color('info')
                     ->action(fn() => $this->printAttendanceReport())
                     ->visible(fn() => auth()->user()->can('StudentAttendance View List')),

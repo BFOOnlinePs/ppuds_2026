@@ -199,5 +199,8 @@
     "Social Links": "الروابط الاجتماعية",
     "LinkedIn": "لينكدإن",
     "Behance": "بيهانس",
-    "GitHub": "جيت هب"
+    "GitHub": "جيت هب",
+    "The provided credentials do not match our records.": "بيانات الدخول غير متطابقة مع سجلاتنا.",
+    "User logged in successfully": "تم تسجيل الدخول بنجاح",
+    "User logged out successfully": "تم تسجيل الخروج بنجاح"
 }

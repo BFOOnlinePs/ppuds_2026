@@ -759,5 +759,14 @@
     "The attached file may not be larger than :size.": "يجب ألا يتجاوز حجم الملف المرفق :size.",
     "One of the attached files is invalid.": "أحد الملفات المرفقة غير صالح.",
     "You can attach a maximum of 5 files.": "يمكنك إرفاق 5 ملفات كحد أقصى.",
-    "attached file": "الملف المرفق"
+    "attached file": "الملف المرفق",
+    "Print": "طباعة",
+    "Student Attendance Report": "تقرير حضور وغياب الطلاب",
+    "Period": "الفترة",
+    "Printed At": "تاريخ الطباعة",
+    "Total Records": "إجمالي السجلات",
+    "No records found.": "لا توجد سجلات",
+    "Supervisor Visit Days": "أيام زيارات المشرف",
+    "Visit Days From": "من عدد أيام الزيارة",
+    "Visit Days To": "إلى عدد أيام الزيارة"
 }

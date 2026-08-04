@@ -30,6 +30,7 @@ use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\Core\Interfaces\ExcelServiceInterface;
+use Modules\Core\Services\PdfService;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\Course;
 use Modules\PPUDS\Entities\Registration;
@@ -54,6 +55,7 @@ class Index extends Component implements HasForms, HasTable
         return $table
             ->query(fn () => StudentCompany::query()
                 ->with(['student.media', 'student.studentProfile', 'registration.student.studentProfile', 'registration', 'registration.course', 'company', 'branch'])
+                ->withFieldVisitDays()
                 ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query)))
             ->columns([
                 TextColumn::make('registration.student.studentProfile.student_number')
@@ -121,6 +123,12 @@ class Index extends Component implements HasForms, HasTable
                     ->dateTime('Y-m-d')
                     ->icon('solar-clock-circle-bold-duotone')
                     ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('field_visit_days')
+                    ->label(__('Supervisor Visit Days'))
+                    ->badge()
+                    ->color('gray')
+                    ->sortable(),
             ])
             ->filters($this->getTableFilters(), layout: FiltersLayout::AboveContent)
             ->filtersFormColumns(6)
@@ -147,6 +155,13 @@ class Index extends Component implements HasForms, HasTable
                         WriterType::XLSX
                     ))
                     ->visible(fn () => auth()->user()->can('StudentCompany View List') && ! $this->shouldScopeCompanySupervisorStudentCompanies()),
+
+                Action::make('print')
+                    ->label(__('Print'))
+                    ->icon('solar-printer-bold')
+                    ->color('info')
+                    ->action(fn () => $this->printStudentCompaniesReport())
+                    ->visible(fn () => auth()->user()->can('StudentCompany View List')),
 
                 Action::make('importPlacements')
                     ->label(__('Import Placements'))
@@ -225,6 +240,28 @@ class Index extends Component implements HasForms, HasTable
                 ->searchable(),
 
             $this->supervisorSelectFilter('registration'),
+
+            Filter::make('field_visit_days')
+                ->label(__('Supervisor Visit Days'))
+                ->form([
+                    TextInput::make('from_days')
+                        ->label(__('Visit Days From'))
+                        ->numeric()
+                        ->live(debounce: 500),
+                    TextInput::make('to_days')
+                        ->label(__('Visit Days To'))
+                        ->numeric()
+                        ->live(debounce: 500),
+                ])
+                ->columns(2)
+                ->query(function (Builder $query, array $data): Builder {
+                    $from = is_numeric($data['from_days'] ?? null) ? (int) $data['from_days'] : null;
+                    $to = is_numeric($data['to_days'] ?? null) ? (int) $data['to_days'] : null;
+
+                    return $query
+                        ->when($from !== null, fn (Builder $q) => $q->whereFieldVisitDays('>=', $from))
+                        ->when($to !== null, fn (Builder $q) => $q->whereFieldVisitDays('<=', $to));
+                }),
 
             Filter::make('year')
                 ->form([
@@ -375,6 +412,34 @@ class Index extends Component implements HasForms, HasTable
     protected function exportFilename(): string
     {
         return 'student-companies-'.now()->format('Y-m-d-His').'.xlsx';
+    }
+
+    protected function printStudentCompaniesReport()
+    {
+        return app(PdfService::class)->streamPdf(
+            'ppuds::pdf.student-company.report',
+            ['rows' => $this->printStudentCompaniesReportRows()],
+            'student-companies-report-'.now()->format('Y-m-d-His').'.pdf'
+        );
+    }
+
+    protected function printStudentCompaniesReportRows(): Collection
+    {
+        return $this->getTableQueryForExport()->get()->map(function (StudentCompany $record): array {
+            $student = $record->student ?? $record->registration?->student;
+
+            return [
+                'student_number' => $student?->studentProfile?->student_number ?? '---',
+                'student_name' => $student?->name ?? '---',
+                'company_name' => $record->company?->name ?? '---',
+                'branch_name' => $record->branch?->name ?? '---',
+                'status_label' => $record->status?->getLabel() ?? '---',
+                'course_name' => $record->registration?->course?->name ?? '---',
+                'year' => $record->registration?->year ?? '---',
+                'semester' => $record->registration?->semester ?? '---',
+                'field_visit_days' => (int) ($record->field_visit_days ?? 0),
+            ];
+        });
     }
 
     public function render()

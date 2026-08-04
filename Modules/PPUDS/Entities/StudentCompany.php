@@ -201,6 +201,41 @@ class StudentCompany extends Model implements HasMedia
         );
     }
 
+    public function scopeWithFieldVisitDays($query)
+    {
+        $table = $this->getTable();
+
+        return $query->addSelect([
+            'field_visit_days' => FieldVisit::query()
+                ->selectRaw('COUNT(DISTINCT visit_date)')
+                ->whereColumn('student_company_id', "{$table}.id")
+                ->whereNotNull('visit_date'),
+        ]);
+    }
+
+    public function scopeWhereFieldVisitDays(Builder $query, string $operator, int $days): Builder
+    {
+        $allowedOperators = ['>=', '<=', '=', '>', '<'];
+
+        if (! in_array($operator, $allowedOperators, true)) {
+            $operator = '=';
+        }
+
+        $table = $this->getTable();
+        $fieldVisitTable = (new FieldVisit())->getTable();
+
+        return $query->whereRaw(
+            "(
+                SELECT COUNT(DISTINCT {$fieldVisitTable}.visit_date)
+                FROM {$fieldVisitTable}
+                WHERE {$fieldVisitTable}.student_company_id = {$table}.id
+                    AND {$fieldVisitTable}.visit_date IS NOT NULL
+                    AND {$fieldVisitTable}.deleted_at IS NULL
+            ) {$operator} ?",
+            [$days]
+        );
+    }
+
     public function scopeWithActualWorkingHours($query)
     {
         $table = $this->getTable();
