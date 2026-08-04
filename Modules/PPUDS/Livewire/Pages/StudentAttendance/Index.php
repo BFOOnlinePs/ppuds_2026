@@ -40,11 +40,13 @@ use Modules\Core\Filament\Forms\Components\Textarea;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\PPUDS\Entities\Company;
+use Modules\PPUDS\Entities\LeaveRequest;
 use Modules\PPUDS\Entities\Major;
 use Modules\PPUDS\Entities\StudentAttendance;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Entities\StudentReport;
 use Modules\PPUDS\Enums\AttendanceStatus;
+use Modules\PPUDS\Enums\LeaveRequestStatus;
 use Modules\PPUDS\Exports\StudentAttendanceReportExport;
 use Modules\PPUDS\Exports\TodayAbsentStudentsExport;
 use Modules\PPUDS\Livewire\Concerns\SearchesStudentAttendanceRelationships;
@@ -127,6 +129,13 @@ class Index extends Component implements HasForms, HasTable
                     ->badge()
                     ->formatStateUsing(fn(mixed $state): string => $state instanceof AttendanceStatus ? $state->getLabel() : (string) ($state ?: '---'))
                     ->color(fn(mixed $state): string => $state instanceof AttendanceStatus ? $state->getColor() : 'danger'),
+
+                TextColumn::make('leave_status')
+                    ->label(__('Leave Status'))
+                    ->getStateUsing(fn(Model $record): string => $this->leaveRequestStatusForToday($record)['label'] ?? '---')
+                    ->badge()
+                    ->color(fn(Model $record): string => $this->leaveRequestStatusForToday($record)['color'] ?? 'gray')
+                    ->visible(fn() => $this->todayAbsentStudentsFilterIsActive()),
 
                 TextColumn::make('check_in_latitude')
                     ->label(__('Location'))
@@ -865,6 +874,7 @@ class Index extends Component implements HasForms, HasTable
                 'branch.translations',
                 'company.translations',
                 'department.translations',
+                'leaveRequests',
                 'registration.course.translations',
                 'registration.supervisor',
                 'student.media',
@@ -904,6 +914,44 @@ class Index extends Component implements HasForms, HasTable
     protected function todayPresentStudentsFilterIsActive(): bool
     {
         return (bool) data_get($this->getTableFilterState('today_present_students'), 'isActive', false);
+    }
+
+    protected function leaveRequestStatusForToday(Model $record): ?array
+    {
+        if (! $record instanceof StudentCompany) {
+            return null;
+        }
+
+        $today = now()->toDateString();
+
+        $leaveRequest = $record->leaveRequests
+            ->first(fn(LeaveRequest $leaveRequest): bool => $this->leaveRequestCoversDate($leaveRequest, $today));
+
+        if (! $leaveRequest) {
+            return ['label' => __('Unexcused'), 'color' => 'danger'];
+        }
+
+        $companyApproved = $leaveRequest->company_approval === LeaveRequestStatus::APPROVED;
+        $universityApproved = $leaveRequest->university_approval === LeaveRequestStatus::APPROVED;
+
+        return match (true) {
+            $companyApproved && $universityApproved => ['label' => __('Leave (Company & Supervisor Approved)'), 'color' => 'success'],
+            $companyApproved => ['label' => __('Leave (Company Approved)'), 'color' => 'warning'],
+            $universityApproved => ['label' => __('Leave (Supervisor Approved)'), 'color' => 'warning'],
+            default => ['label' => __('Unexcused'), 'color' => 'danger'],
+        };
+    }
+
+    protected function leaveRequestCoversDate(LeaveRequest $leaveRequest, string $date): bool
+    {
+        $start = $leaveRequest->start_at?->toDateString();
+        $end = $leaveRequest->end_at?->toDateString();
+
+        if (! $start || ! $end) {
+            return false;
+        }
+
+        return $date >= $start && $date <= $end;
     }
 
     protected function applyOutsideWorkRangeFilter(Builder $query, int $distanceMeters, string $locationType): Builder
