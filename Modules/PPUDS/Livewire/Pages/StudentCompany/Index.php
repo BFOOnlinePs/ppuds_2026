@@ -218,6 +218,7 @@ class Index extends Component implements HasForms, HasTable
             SelectFilter::make('status')
                 ->label(__('Training Status'))
                 ->options(TrainingStatus::class)
+                ->default(fn () => $this->shouldScopeCompanySupervisorStudentCompanies() ? TrainingStatus::AVAILABLE->value : null)
                 ->native(false),
 
             SelectFilter::make('company_id')
