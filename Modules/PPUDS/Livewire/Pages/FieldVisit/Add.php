@@ -26,6 +26,7 @@ use Modules\Core\Entities\User;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\FieldVisit;
 use Modules\PPUDS\Entities\StudentCompany;
+use Modules\PPUDS\Enums\TrainingStatus;
 use Modules\PPUDS\Support\HasSupervisorFilter;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
@@ -225,6 +226,7 @@ class Add extends Component implements HasForms, HasActions
             ->with(['registration.student'])
             ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query))
             ->where('company_id', (int) $companyId)
+            ->where('status', TrainingStatus::AVAILABLE)
             ->whereHas('registration', function (Builder $registrationQuery) use ($supervisorId): void {
                 $registrationQuery->where('supervisor_id', (int) $supervisorId);
             })
@@ -244,6 +246,7 @@ class Add extends Component implements HasForms, HasActions
             ->whereKey($studentCompanyId)
             ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query))
             ->where('company_id', $companyId)
+            ->where('status', TrainingStatus::AVAILABLE)
             ->whereHas('registration', function (Builder $registrationQuery) use ($supervisorId): void {
                 $registrationQuery->where('supervisor_id', $supervisorId);
             })

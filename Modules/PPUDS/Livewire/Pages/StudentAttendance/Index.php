@@ -47,6 +47,7 @@ use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Entities\StudentReport;
 use Modules\PPUDS\Enums\AttendanceStatus;
 use Modules\PPUDS\Enums\LeaveRequestStatus;
+use Modules\PPUDS\Enums\TrainingStatus;
 use Modules\PPUDS\Exports\StudentAttendanceReportExport;
 use Modules\PPUDS\Exports\TodayAbsentStudentsExport;
 use Modules\PPUDS\Livewire\Concerns\SearchesStudentAttendanceRelationships;
@@ -217,6 +218,7 @@ class Index extends Component implements HasForms, HasTable
                         Select::make('student_company_id')
                             ->label(__('Student Company'))
                             ->options(StudentCompany::with(['company', 'branch', 'registration', 'student', 'student.studentProfile'])
+                                ->where('status', TrainingStatus::AVAILABLE)
                                 ->tap(fn(Builder $query) => $this->applyStudentCompanyVisibilityScope($query))
                                 ->get()
                                 ->mapWithKeys(function ($item) {
@@ -881,6 +883,7 @@ class Index extends Component implements HasForms, HasTable
                 'student.studentProfile.major.translations',
             ])
             ->whereNotNull('company_id')
+            ->where('status', TrainingStatus::AVAILABLE)
             ->whereHas('registration', fn(Builder $query): Builder => $query
                 ->where('year', $settings->year)
                 ->where('semester', $settings->semester_type->value))

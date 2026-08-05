@@ -14,6 +14,7 @@ use Modules\Core\Enums\ImageQuality;
 use Modules\Core\Enums\ImageSize;
 use Modules\Core\Services\ImageService;
 use Modules\PPUDS\Enums\SemesterType;
+use Modules\PPUDS\Enums\TrainingStatus;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Image\Enums\Fit;
@@ -137,6 +138,8 @@ class Registration extends Model implements HasMedia
 
     public function studentCompany(): HasOne
     {
-        return $this->hasOne(StudentCompany::class, 'registration_id');
+        return $this->hasOne(StudentCompany::class, 'registration_id')
+            ->orderByRaw('(status = ?) desc', [TrainingStatus::AVAILABLE->value])
+            ->orderByDesc('id');
     }
 }

@@ -231,6 +231,30 @@ class Add extends Component implements HasActions, HasForms
                 'data.department_id' => __('The selected department does not belong to the selected branch.'),
             ]);
         }
+
+        $this->guardAgainstDuplicateActivePlacement($data);
+    }
+
+    protected function guardAgainstDuplicateActivePlacement(array $data): void
+    {
+        $status = $data['status'] instanceof TrainingStatus
+            ? $data['status']
+            : TrainingStatus::tryFrom((int) ($data['status'] ?? TrainingStatus::AVAILABLE->value));
+
+        if ($status !== TrainingStatus::AVAILABLE) {
+            return;
+        }
+
+        $hasActivePlacement = StudentCompany::query()
+            ->where('registration_id', $data['registration_id'] ?? null)
+            ->where('status', TrainingStatus::AVAILABLE)
+            ->exists();
+
+        if ($hasActivePlacement) {
+            throw ValidationException::withMessages([
+                'data.registration_id' => __('This student already has an active training placement. Please end the current training before adding a new one.'),
+            ]);
+        }
     }
 
     public function render()

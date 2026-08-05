@@ -36,6 +36,7 @@ use Modules\PPUDS\Entities\LeaveRequest;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\LeaveRequestStatus;
 use Modules\PPUDS\Enums\LeaveRequestType;
+use Modules\PPUDS\Enums\TrainingStatus;
 use Modules\PPUDS\Services\PpudsNotificationService;
 use Modules\PPUDS\Support\HasSupervisorFilter;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
@@ -250,7 +251,7 @@ class Index extends Component implements HasTable, HasForms
 
             ViewAction::make('view')
                 ->form(function (Forms\Form $form, $record) {
-                    return $form->schema($this->getFormSchema(isView: true));
+                    return $form->schema($this->getFormSchema(isView: true, includeStudentCompanyId: $record->student_company_id));
                 })
                 ->mountUsing(fn (Forms\ComponentContainer $form, LeaveRequest $record) => $this->fillViewForm($form, $record))
                 ->modalSubmitAction(false)
@@ -258,7 +259,7 @@ class Index extends Component implements HasTable, HasForms
 
             EditAction::make('edit')
                 ->form(function (LeaveRequest $record) {
-                    return $this->getFormSchema(isEdit: true);
+                    return $this->getFormSchema(isEdit: true, includeStudentCompanyId: $record->student_company_id);
                 })
                 ->mountUsing(function (Forms\ComponentContainer $form, LeaveRequest $record) {
                     $form->fill($record->toArray());
@@ -289,7 +290,7 @@ class Index extends Component implements HasTable, HasForms
         ];
     }
 
-    protected function getFormSchema(bool $isCreate = false, bool $isEdit = false, bool $isView = false): array
+    protected function getFormSchema(bool $isCreate = false, bool $isEdit = false, bool $isView = false, ?int $includeStudentCompanyId = null): array
     {
         return [
             Section::make(__('Request Details'))
@@ -299,6 +300,13 @@ class Index extends Component implements HasTable, HasForms
                             ->label(__('Student Training'))
                             ->options(StudentCompany::with('student', 'company')
                                 ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query))
+                                ->where(function (Builder $query) use ($includeStudentCompanyId) {
+                                    $query->where('status', TrainingStatus::AVAILABLE);
+
+                                    if ($includeStudentCompanyId) {
+                                        $query->orWhere('id', $includeStudentCompanyId);
+                                    }
+                                })
                                 ->get()
                                 ->mapWithKeys(function ($item) {
                                     return [$item->id => ($item->student?->name ?? __('Unknown Student')) . ' - ' . ($item->company?->name ?? __('No Company'))];

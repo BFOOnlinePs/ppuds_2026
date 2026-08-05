@@ -334,6 +334,20 @@ class Index extends Component implements HasForms, HasTable
                 ->modalSubmitAction(false)
                 ->visible(fn () => auth()->user()->can('StudentCompany View')), // تأكد من اسم الصلاحية
 
+            Action::make('end_training')
+                ->label('')
+                ->tooltip(__('End Training'))
+                ->icon('solar-flag-2-bold-duotone')
+                ->color('warning')
+                ->requiresConfirmation()
+                ->modalHeading(__('End Training'))
+                ->modalDescription(__('This will mark the training as finished. The student will no longer appear as actively training at this company, and this record will be kept as history.'))
+                ->action(function (StudentCompany $record) {
+                    $record->update(['status' => TrainingStatus::FINISHED]);
+                    Toaster::success(__('Training marked as finished'));
+                })
+                ->visible(fn (StudentCompany $record) => $record->status !== TrainingStatus::FINISHED && auth()->user()->can('StudentCompany Update')),
+
             EditAction::make('edit')
                 ->label('')
                 ->tooltip(__('Edit'))

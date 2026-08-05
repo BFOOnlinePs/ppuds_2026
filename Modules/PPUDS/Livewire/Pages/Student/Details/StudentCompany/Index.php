@@ -8,6 +8,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Columns\TextColumn;
@@ -21,12 +22,14 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
+use Modules\Core\Filament\Forms\Components\CreateAction;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\Course;
+use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\SemesterType;
 use Modules\PPUDS\Enums\TrainingStatus;
@@ -46,6 +49,17 @@ class Index extends Component implements HasForms, HasTable
     public function mount(?int $studentId = null)
     {
         $this->studentId = $studentId;
+    }
+
+    protected function currentRegistrationId(): ?int
+    {
+        $settings = app(GeneralSettings::class);
+
+        return Registration::query()
+            ->where('student_id', $this->studentId)
+            ->where('year', $settings->year)
+            ->where('semester', $settings->semester_type->value)
+            ->value('id');
     }
 
     public function table(Table $table): Table
@@ -106,13 +120,15 @@ class Index extends Component implements HasForms, HasTable
             ])
             ->filters($this->getTableFilters(), layout: FiltersLayout::AboveContent)
             ->filtersFormColumns(5)
-            //            ->actions($this->getTableActions())
-            //            ->headerActions([
-            //                \Modules\Core\Filament\Forms\Components\CreateAction::make('create')
-            //                    ->label(__('Add Student Company'))
-            //                    ->url(route('student-companies.add'))
-            //                    ->visible(fn () => auth()->user()->can('StudentCompany Create')),
-            //            ])
+            ->actions($this->getTableActions())
+            ->headerActions([
+                CreateAction::make('create')
+                    ->label(__('Add New Placement'))
+                    ->url(fn () => route('student-companies.add', array_filter([
+                        'registration_id' => $this->currentRegistrationId(),
+                    ])))
+                    ->visible(fn () => auth()->user()->can('StudentCompany Create')),
+            ])
             ->bulkActions($this->getTableBulkAction());
     }
 
@@ -216,6 +232,20 @@ class Index extends Component implements HasForms, HasTable
                 ])
                 ->modalSubmitAction(false)
                 ->visible(fn () => auth()->user()->can('StudentCompany View')), // تأكد من اسم الصلاحية
+
+            Action::make('end_training')
+                ->label('')
+                ->tooltip(__('End Training'))
+                ->icon('solar-flag-2-bold-duotone')
+                ->color('warning')
+                ->requiresConfirmation()
+                ->modalHeading(__('End Training'))
+                ->modalDescription(__('This will mark the training as finished. The student will no longer appear as actively training at this company, and this record will be kept as history.'))
+                ->action(function (StudentCompany $record) {
+                    $record->update(['status' => TrainingStatus::FINISHED]);
+                    Toaster::success(__('Training marked as finished'));
+                })
+                ->visible(fn (StudentCompany $record) => $record->status !== TrainingStatus::FINISHED && auth()->user()->can('StudentCompany Update')),
 
             EditAction::make('edit')
                 ->label('')

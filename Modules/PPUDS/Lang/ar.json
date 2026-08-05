@@ -769,5 +769,14 @@
     "Supervisor Visit Days": "أيام زيارات المشرف",
     "Visit Days From": "من عدد أيام الزيارة",
     "Visit Days To": "إلى عدد أيام الزيارة",
-    "The filtered results (:count) exceed the print limit of :max records. Please narrow your filter and try again.": "عدد السجلات المفلترة (:count) يتجاوز الحد الأقصى للطباعة وهو :max سجل. الرجاء تضييق نطاق الفلتر والمحاولة مرة أخرى."
+    "The filtered results (:count) exceed the print limit of :max records. Please narrow your filter and try again.": "عدد السجلات المفلترة (:count) يتجاوز الحد الأقصى للطباعة وهو :max سجل. الرجاء تضييق نطاق الفلتر والمحاولة مرة أخرى.",
+    "Leave Status": "حالة الإجازة",
+    "Leave (Company & Supervisor Approved)": "إجازة (موافقة الشركة والمشرف)",
+    "Leave (Company Approved)": "إجازة (موافقة الشركة فقط)",
+    "Leave (Supervisor Approved)": "إجازة (موافقة المشرف فقط)",
+    "End Training": "إنهاء التدريب",
+    "This will mark the training as finished. The student will no longer appear as actively training at this company, and this record will be kept as history.": "هذا الإجراء سيضع حالة التدريب \"منتهي\". لن يظهر الطالب بعدها كمتدرب حالياً عند هذه الشركة، وسيبقى هذا السجل محفوظاً كتاريخ تدريب سابق.",
+    "Training marked as finished": "تم تحديد التدريب كمنتهي",
+    "Add New Placement": "إضافة تدريب جديد",
+    "This student already has an active training placement. Please end the current training before adding a new one.": "يوجد للطالب بالفعل تدريب نشط حالياً. الرجاء إنهاء التدريب الحالي أولاً قبل إضافة تدريب جديد."
 }
