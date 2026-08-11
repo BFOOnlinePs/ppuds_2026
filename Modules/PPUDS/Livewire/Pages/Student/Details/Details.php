@@ -106,6 +106,10 @@ class Details extends Component implements HasForms, HasInfolists
                                                             ->unique(ignoreRecord: true, ignorable: $this->userRecord) // استخدم الدالة المحسوبة هنا
                                                             ->required(),
 
+                                                        TextInput::make('phone')
+                                                            ->label(__('Phone'))
+                                                            ->disabled(),
+
                                                         // TextInput::make('password')
                                                         //     ->label(__('Password'))
                                                         //     ->password()
