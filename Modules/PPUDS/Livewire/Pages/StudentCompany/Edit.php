@@ -75,7 +75,10 @@ class Edit extends Component implements HasActions, HasForms
                                                 return Registration::with(['student', 'course'])
                                                     ->get()
                                                     ->mapWithKeys(function ($reg) {
-                                                        return [$reg->id => "{$reg->student->name} - {$reg->course->name}"];
+                                                        $studentName = $reg->student?->name ?? __('Unknown Student');
+                                                        $courseName = $reg->course?->name ?? __('No Course');
+
+                                                        return [$reg->id => "{$studentName} - {$courseName}"];
                                                     });
                                             }),
                                     ]),
