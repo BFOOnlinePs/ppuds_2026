@@ -778,5 +778,17 @@
     "This will mark the training as finished. The student will no longer appear as actively training at this company, and this record will be kept as history.": "هذا الإجراء سيضع حالة التدريب \"منتهي\". لن يظهر الطالب بعدها كمتدرب حالياً عند هذه الشركة، وسيبقى هذا السجل محفوظاً كتاريخ تدريب سابق.",
     "Training marked as finished": "تم تحديد التدريب كمنتهي",
     "Add New Placement": "إضافة تدريب جديد",
-    "This student already has an active training placement. Please end the current training before adding a new one.": "يوجد للطالب بالفعل تدريب نشط حالياً. الرجاء إنهاء التدريب الحالي أولاً قبل إضافة تدريب جديد."
+    "This student already has an active training placement. Please end the current training before adding a new one.": "يوجد للطالب بالفعل تدريب نشط حالياً. الرجاء إنهاء التدريب الحالي أولاً قبل إضافة تدريب جديد.",
+    "Approve": "قبول",
+    "Reject": "رفض",
+    "Approve Attendance": "قبول اليوم التدريبي",
+    "Reject Attendance": "رفض اليوم التدريبي",
+    "Are you sure you want to approve this training day?": "هل أنت متأكد أنك تريد قبول هذا اليوم التدريبي؟",
+    "Rejection Reason": "سبب الرفض",
+    "Attendance approved successfully": "تم قبول اليوم التدريبي بنجاح",
+    "Attendance rejected successfully": "تم رفض اليوم التدريبي بنجاح",
+    "Violator": "مخالف",
+    "Academic feedback saved successfully": "تم حفظ ملاحظات المشرف بنجاح",
+    "Absence Date": "تاريخ الغياب",
+    "Absence Type": "نوع الغياب"
 }

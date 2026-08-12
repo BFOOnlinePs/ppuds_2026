@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\PPUDS\Livewire\Pages\LeaveRequest;
+namespace Modules\PPUDS\Livewire\Pages\Student\Details\LeaveRequest;
 
 use App\View\Components\AppLayout;
 use Filament\Forms;
@@ -14,49 +14,48 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Tables\Actions\Action; // تم إضافة هذا الكلاس
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
-use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\HtmlString;
 use Livewire\Component;
-use Maatwebsite\Excel\Excel as WriterType;
 use Masmerise\Toaster\Toaster;
 use Modules\Core\Filament\Forms\Components\CreateAction;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
-use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\PPUDS\Entities\LeaveRequest;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\LeaveRequestStatus;
 use Modules\PPUDS\Enums\LeaveRequestType;
 use Modules\PPUDS\Enums\TrainingStatus;
-use Modules\PPUDS\Exports\LeaveRequestsExport;
 use Modules\PPUDS\Services\PpudsNotificationService;
-use Modules\PPUDS\Support\HasSupervisorFilter;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
 class Index extends Component implements HasTable, HasForms
 {
     use InteractsWithTable;
     use InteractsWithForms;
-    use HasSupervisorFilter;
     use ScopesStudentCompanyVisibility;
 
-    public ?array $filters = [];
+    public ?int $studentId = null;
+
+    public function mount(?int $studentId = null)
+    {
+        $this->studentId = $studentId;
+    }
 
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn() => LeaveRequest::query()
+            ->query(fn () => LeaveRequest::query()
                 ->with([
                     'studentCompany.student',
                     'studentCompany.company',
@@ -64,21 +63,14 @@ class Index extends Component implements HasTable, HasForms
                     'companySupervisor',
                     'universitySupervisor',
                 ])
-                ->where($this->filters)
                 ->whereHas(
                     'studentCompany',
-                    fn (Builder $studentCompanyQuery): Builder => $this->applyStudentCompanyVisibilityScope($studentCompanyQuery)
+                    fn (Builder $query): Builder => $this->applyStudentCompanyVisibilityScope(
+                        $query->where('student_id', $this->studentId)
+                    )
                 )
                 ->latest())
             ->columns([
-                TextColumn::make('studentCompany.student.name')
-                    ->label(__('Student'))
-                    ->searchable()
-                    ->action(fn (LeaveRequest $record) => $this->mountTableAction('view', (string) $record->getKey()))
-                    ->disabledClick(fn (): bool => ! auth()->user()?->can('LeaveRequest View'))
-                    ->color(fn (): ?string => auth()->user()?->can('LeaveRequest View') ? 'primary' : null)
-                    ->sortable(),
-
                 TextColumn::make('type')
                     ->label(__('Type'))
                     ->badge()
@@ -94,7 +86,6 @@ class Index extends Component implements HasTable, HasForms
                     ->dateTime('Y-m-d H:i')
                     ->sortable(),
 
-                // يمكنك إضافة أعمدة لحالة الطلب هنا إذا أردت
                 TextColumn::make('attachment_file')
                     ->label(__('Attachment'))
                     ->formatStateUsing(fn (?string $state): string => filled($state) ? __('Download') : '-')
@@ -112,7 +103,6 @@ class Index extends Component implements HasTable, HasForms
                     ->badge()
                     ->sortable(),
             ])
-            ->filters($this->getTableFilters())
             ->actions(
                 $this->getTableActions()
             )
@@ -143,38 +133,9 @@ class Index extends Component implements HasTable, HasForms
 
                         Toaster::success(__('Leave Request created successfully'));
                     })
-                    ->visible(fn() => auth()->user()->can('LeaveRequest Create')),
-
-                Action::make('export')
-                    ->label(__('Export'))
-                    ->icon('heroicon-m-arrow-down-tray')
-                    ->color('success')
-                    ->action(fn () => app(ExcelServiceInterface::class)->download(
-                        new LeaveRequestsExport($this->getTableQueryForExport()),
-                        $this->exportFilename(),
-                        WriterType::XLSX
-                    ))
-                    ->visible(fn() => auth()->user()->can('LeaveRequest View List')),
+                    ->visible(fn () => auth()->user()->can('LeaveRequest Create')),
             ])
             ->bulkActions($this->getTableBulkAction());
-    }
-
-    protected function getTableFilters(): array
-    {
-        return [
-            SelectFilter::make('type')
-                ->label(__('Type'))
-                ->options(LeaveRequestType::class),
-
-            $this->supervisorSelectFilter('studentCompany.registration')
-                ->label(__('Academic Supervisor')),
-
-            SelectFilter::make('company_supervisor_id')
-                ->label(__('Company Supervisor'))
-                ->options(fn (): array => $this->companySupervisorFilterOptions())
-                ->searchable()
-                ->preload(),
-        ];
     }
 
     public function getTableBulkAction(): array
@@ -184,16 +145,15 @@ class Index extends Component implements HasTable, HasForms
                 BulkAction::make('delete')
                     ->label(__('Delete'))
                     ->requiresConfirmation()
-                    ->visible(fn() => auth()->user()->can('LeaveRequest Delete'))
-                    ->action(fn(Collection $records) => $records->each->delete()),
-            ])
+                    ->visible(fn () => auth()->user()->can('LeaveRequest Delete'))
+                    ->action(fn (Collection $records) => $records->each->delete()),
+            ]),
         ];
     }
 
     protected function getTableActions(): array
     {
         return [
-            // --- أكشن قرار الشركة ---
             Action::make('company_decision')
                 ->label(__('Company Decision'))
                 ->icon('heroicon-o-building-office')
@@ -214,7 +174,7 @@ class Index extends Component implements HasTable, HasForms
                     $record->update([
                         'company_approval' => $data['company_approval'],
                         'company_supervisor_comment' => $data['company_supervisor_comment'],
-                        'company_supervisor_id' => auth()->id(), // توثيق تلقائي للشخص
+                        'company_supervisor_id' => auth()->id(),
                     ]);
 
                     if ($record->wasChanged('company_approval')) {
@@ -223,10 +183,8 @@ class Index extends Component implements HasTable, HasForms
 
                     Toaster::success(__('Company decision recorded successfully'));
                 })
-                // يظهر فقط إذا كان المستخدم يملك هذه الصلاحية
-                ->visible(fn() => auth()->user()->can('LeaveRequest CompanyApprove')),
+                ->visible(fn () => auth()->user()->can('LeaveRequest CompanyApprove')),
 
-            // --- أكشن قرار الجامعة ---
             Action::make('university_decision')
                 ->label(__('University Decision'))
                 ->icon('heroicon-o-academic-cap')
@@ -247,7 +205,7 @@ class Index extends Component implements HasTable, HasForms
                     $record->update([
                         'university_approval' => $data['university_approval'],
                         'university_supervisor_comment' => $data['university_supervisor_comment'],
-                        'university_supervisor_id' => auth()->id(), // توثيق تلقائي للشخص
+                        'university_supervisor_id' => auth()->id(),
                     ]);
 
                     if ($record->wasChanged('university_approval')) {
@@ -256,12 +214,11 @@ class Index extends Component implements HasTable, HasForms
 
                     Toaster::success(__('University decision recorded successfully'));
                 })
-                // يظهر فقط إذا كان المستخدم يملك هذه الصلاحية
-                ->visible(fn() => auth()->user()->can('LeaveRequest UniversityApprove')),
+                ->visible(fn () => auth()->user()->can('LeaveRequest UniversityApprove')),
 
             InfoAction::make('info')
                 ->label('')
-                ->visible(fn() => auth()->user()->can('LeaveRequest Info')),
+                ->visible(fn () => auth()->user()->can('LeaveRequest Info')),
 
             ViewAction::make('view')
                 ->form(function (Forms\Form $form, $record) {
@@ -269,7 +226,7 @@ class Index extends Component implements HasTable, HasForms
                 })
                 ->mountUsing(fn (Forms\ComponentContainer $form, LeaveRequest $record) => $this->fillViewForm($form, $record))
                 ->modalSubmitAction(false)
-                ->visible(fn() => auth()->user()->can('LeaveRequest View')),
+                ->visible(fn () => auth()->user()->can('LeaveRequest View')),
 
             EditAction::make('edit')
                 ->form(function (LeaveRequest $record) {
@@ -291,7 +248,7 @@ class Index extends Component implements HasTable, HasForms
 
                     Toaster::success(__('Leave Request updated successfully'));
                 })
-                ->visible(fn() => auth()->user()->can('LeaveRequest Update')),
+                ->visible(fn () => auth()->user()->can('LeaveRequest Update')),
 
             DeleteAction::make('delete')
                 ->action(function ($record) {
@@ -300,7 +257,7 @@ class Index extends Component implements HasTable, HasForms
                     $record->delete();
                     Toaster::success(__('Leave Request deleted successfully'));
                 })
-                ->visible(fn() => auth()->user()->can('LeaveRequest Delete'))
+                ->visible(fn () => auth()->user()->can('LeaveRequest Delete')),
         ];
     }
 
@@ -313,6 +270,7 @@ class Index extends Component implements HasTable, HasForms
                         Select::make('student_company_id')
                             ->label(__('Student Training'))
                             ->options(StudentCompany::with('student', 'company')
+                                ->where('student_id', $this->studentId)
                                 ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query))
                                 ->where(function (Builder $query) use ($includeStudentCompanyId) {
                                     $query->where('status', TrainingStatus::AVAILABLE);
@@ -323,7 +281,7 @@ class Index extends Component implements HasTable, HasForms
                                 })
                                 ->get()
                                 ->mapWithKeys(function ($item) {
-                                    return [$item->id => ($item->student?->name ?? __('Unknown Student')) . ' - ' . ($item->company?->name ?? __('No Company'))];
+                                    return [$item->id => ($item->student?->name ?? __('Unknown Student')).' - '.($item->company?->name ?? __('No Company'))];
                                 }))
                             ->searchable()
                             ->required()
@@ -382,25 +340,22 @@ class Index extends Component implements HasTable, HasForms
                     ]),
                 ]),
 
-            // قسم التوثيق والموافقات (للقراءة فقط لتأكيد الرسمية)
             Section::make(__('Approvals & Documentation'))
-                ->visible(!$isCreate) // لا يظهر عند إنشاء طلب جديد
+                ->visible(! $isCreate)
                 ->schema([
                     Grid::make(2)->schema([
-
-                        // --- توثيق الشركة ---
                         Fieldset::make(__('Company Documentation'))
                             ->columnSpan(1)
                             ->schema([
                                 Select::make('company_approval')
                                     ->label(__('Status'))
                                     ->options(LeaveRequestStatus::class)
-                                    ->disabled() // معطل لأنه يعتمد على زر القرار فقط
+                                    ->disabled()
                                     ->columnSpanFull(),
 
                                 Select::make('company_supervisor_id')
                                     ->label(__('Authorized By'))
-                                    ->relationship('companySupervisor', 'name') // استدعاء اسم المستخدم من العلاقة
+                                    ->relationship('companySupervisor', 'name')
                                     ->disabled()
                                     ->columnSpanFull(),
 
@@ -410,19 +365,18 @@ class Index extends Component implements HasTable, HasForms
                                     ->columnSpanFull(),
                             ]),
 
-                        // --- توثيق الجامعة ---
                         Fieldset::make(__('University Documentation'))
                             ->columnSpan(1)
                             ->schema([
                                 Select::make('university_approval')
                                     ->label(__('Status'))
                                     ->options(LeaveRequestStatus::class)
-                                    ->disabled() // معطل لأنه يعتمد على زر القرار فقط
+                                    ->disabled()
                                     ->columnSpanFull(),
 
                                 Select::make('university_supervisor_id')
                                     ->label(__('Authorized By'))
-                                    ->relationship('universitySupervisor', 'name') // استدعاء اسم المستخدم من العلاقة
+                                    ->relationship('universitySupervisor', 'name')
                                     ->disabled()
                                     ->columnSpanFull(),
 
@@ -434,11 +388,6 @@ class Index extends Component implements HasTable, HasForms
                     ]),
                 ]),
         ];
-    }
-
-    protected function exportFilename(): string
-    {
-        return 'leave-requests-'.now()->format('Y-m-d-His').'.xlsx';
     }
 
     protected function fillViewForm(Forms\ComponentContainer $form, LeaveRequest $record): void
@@ -475,11 +424,11 @@ class Index extends Component implements HasTable, HasForms
 
     public function render()
     {
-        return view('ppuds::livewire.pages.leave-request.index')->layout(AppLayout::class, [
+        return view('ppuds::livewire.pages.student.details.leave-request.index')->layout(AppLayout::class, [
             'breadcrumbs' => [
                 ['title' => __('Home'), 'url' => route('home')],
                 ['title' => __('Leave Requests'), 'url' => route('leave-requests.index')],
-            ]
+            ],
         ]);
     }
 }

@@ -615,6 +615,37 @@ class Index extends Component implements HasForms, HasTable
     protected function getTableActions(): array
     {
         return [
+            Action::make('approve')
+                ->button()
+                ->label(__('Approve'))
+                ->icon('heroicon-o-check-circle')
+                ->color('success')
+                ->requiresConfirmation()
+                ->modalHeading(__('Approve Attendance'))
+                ->modalDescription(__('Are you sure you want to approve this training day?'))
+                ->action(fn(StudentAttendance $record) => $this->decideAttendanceStatus($record, AttendanceStatus::APPROVED))
+                ->visible(fn(Model $record) => ! $this->isTodayAbsentStudentRecord($record)
+                    && $record instanceof StudentAttendance
+                    && $record->status !== AttendanceStatus::APPROVED
+                    && auth()->user()->can('StudentAttendance Update')),
+
+            Action::make('reject')
+                ->button()
+                ->label(__('Reject'))
+                ->icon('heroicon-o-x-circle')
+                ->color('danger')
+                ->requiresConfirmation()
+                ->modalHeading(__('Reject Attendance'))
+                ->form([
+                    Textarea::make('reason')
+                        ->label(__('Rejection Reason')),
+                ])
+                ->action(fn(StudentAttendance $record, array $data) => $this->decideAttendanceStatus($record, AttendanceStatus::DISCREPANCY, $data['reason'] ?? null))
+                ->visible(fn(Model $record) => ! $this->isTodayAbsentStudentRecord($record)
+                    && $record instanceof StudentAttendance
+                    && $record->status !== AttendanceStatus::DISCREPANCY
+                    && auth()->user()->can('StudentAttendance Update')),
+
             Action::make('check_out')
                 ->button()
                 ->label(__('Check Out'))
@@ -800,6 +831,30 @@ class Index extends Component implements HasForms, HasTable
                 })
                 ->visible(fn(Model $record) => ! $this->isTodayAbsentStudentRecord($record) && auth()->user()->can('StudentAttendance Delete')),
         ];
+    }
+
+    protected function decideAttendanceStatus(StudentAttendance $record, AttendanceStatus $status, ?string $reason = null): void
+    {
+        abort_unless($this->canAccessStudentCompanyRecord($record->studentCompany), 403);
+
+        $description = $record->description;
+
+        if (filled($reason)) {
+            $description = trim(($description ? $description . "\n" : '') . '[' . __('Rejected') . '] ' . $reason);
+        }
+
+        $record->update([
+            'status' => $status,
+            'description' => $description,
+        ]);
+
+        if ($record->wasChanged('status') && ! auth()->user()?->hasRole(UserRole::STUDENT->value)) {
+            app(PpudsNotificationService::class)->attendanceStatusUpdated($record->refresh());
+        }
+
+        Toaster::success($status === AttendanceStatus::APPROVED
+            ? __('Attendance approved successfully')
+            : __('Attendance rejected successfully'));
     }
 
     protected function reportAttachmentsHtml(StudentReport $report): HtmlString
@@ -1036,7 +1091,51 @@ class Index extends Component implements HasForms, HasTable
 
     protected function studentDisplayColumnState(Model $record): HtmlString|string
     {
-        return $this->studentFromRecord($record)?->getUserDisplayHtmlAttribute() ?? '---';
+        $studentHtml = $this->studentFromRecord($record)?->getUserDisplayHtmlAttribute();
+
+        if ($studentHtml === null) {
+            return '---';
+        }
+
+        if ($record instanceof StudentAttendance && $this->isAttendanceOutsideWorkRange($record)) {
+            $studentHtml = new HtmlString((string) $studentHtml . $this->violatorBadgeHtml());
+        }
+
+        return $studentHtml;
+    }
+
+    protected function isAttendanceOutsideWorkRange(StudentAttendance $record): bool
+    {
+        $branch = $record->studentCompany?->branch;
+
+        if (
+            blank($record->check_in_latitude)
+            || blank($record->check_in_longitude)
+            || blank($branch?->latitude)
+            || blank($branch?->longitude)
+        ) {
+            return false;
+        }
+
+        $distance = $this->distanceInMeters(
+            (float) $record->check_in_latitude,
+            (float) $record->check_in_longitude,
+            (float) $branch->latitude,
+            (float) $branch->longitude,
+        );
+
+        return $distance > $this->outsideWorkRangeDistanceMeters(null);
+    }
+
+    protected function violatorBadgeHtml(): string
+    {
+        $label = e(__('Violator'));
+
+        return <<<HTML
+            <span class="ml-2 inline-flex items-center rounded-full bg-danger-100 px-2 py-0.5 text-xs font-medium text-danger-700 dark:bg-danger-500/10 dark:text-danger-400">
+                {$label}
+            </span>
+            HTML;
     }
 
     protected function studentNumberColumnState(Model $record): ?string

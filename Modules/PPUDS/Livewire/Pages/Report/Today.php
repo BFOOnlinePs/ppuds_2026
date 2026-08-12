@@ -27,6 +27,7 @@ use Illuminate\Support\HtmlString;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
+use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\StudentReport;
@@ -291,6 +292,21 @@ class Today extends Component implements HasForms, HasTable
                 ->visible(fn (): bool => auth()->user()->can('StudentReport View')
                     || auth()->user()->can('Report View')
                     || auth()->user()->can('Report View List')),
+
+            EditAction::make('academic_feedback')
+                ->tooltip(__('Academic Feedback'))
+                ->modalHeading(__('Academic Feedback'))
+                ->form(fn (StudentReport $record): array => [
+                    RichEditor::make('academic_feedback')
+                        ->label(__('Academic Feedback'))
+                        ->default($record->academic_feedback)
+                        ->toolbarButtons(['bold', 'italic', 'bulletList', 'orderedList', 'link', 'redo', 'undo']),
+                ])
+                ->action(function (StudentReport $record, array $data): void {
+                    $record->update(['academic_feedback' => $data['academic_feedback']]);
+                    Toaster::success(__('Academic feedback saved successfully'));
+                })
+                ->visible(fn (): bool => auth()->user()->can('Report Update')),
 
             DeleteAction::make('delete')
                 ->label('')

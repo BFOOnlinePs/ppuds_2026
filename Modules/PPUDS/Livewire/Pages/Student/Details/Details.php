@@ -361,6 +361,23 @@ class Details extends Component implements HasForms, HasInfolists
                                             ]),
                                     ]),
 
+                                Tabs\Tab::make('leave-requests')
+                                    ->label(__('Leave Requests'))
+                                    ->icon('heroicon-o-calendar-days')
+                                    ->schema([
+                                        Grid::make(2)
+                                            ->schema([
+                                                Livewire::make(
+                                                    \Modules\PPUDS\Livewire\Pages\Student\Details\LeaveRequest\Index::class,
+                                                    [
+                                                        'studentId' => $this->userId,
+                                                    ]
+                                                )
+                                                    ->columnSpanFull()
+                                                    ->lazy(),
+                                            ]),
+                                    ]),
+
                                 Tabs\Tab::make('attendance-reports')
                                     ->label(__('Daily Reports'))
                                     ->icon('heroicon-o-document-text')

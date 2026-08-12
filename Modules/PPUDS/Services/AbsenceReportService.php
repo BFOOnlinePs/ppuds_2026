@@ -14,10 +14,19 @@ class AbsenceReportService
 {
     public function summary(StudentCompany $studentCompany): array
     {
+        $detailed = $this->detailedSummary($studentCompany);
+
+        unset($detailed['excused_absence_dates'], $detailed['unexcused_absence_dates'], $detailed['actual_absence_dates']);
+
+        return $detailed;
+    }
+
+    public function detailedSummary(StudentCompany $studentCompany): array
+    {
         $period = $this->trainingPeriod();
 
         if ($period === null) {
-            return $this->emptySummary();
+            return $this->emptyDetailedSummary();
         }
 
         [$start, $end] = $period;
@@ -50,6 +59,9 @@ class AbsenceReportService
             'unexcused_absence_days' => $unexcusedAbsenceDates->count(),
             'actual_absence_days' => $actualAbsenceDates->count(),
             'leave_request_days' => $leaveRequestDates->count(),
+            'excused_absence_dates' => $excusedAbsenceDates->all(),
+            'unexcused_absence_dates' => $unexcusedAbsenceDates->all(),
+            'actual_absence_dates' => $actualAbsenceDates->sort()->values()->all(),
         ];
     }
 
@@ -159,7 +171,7 @@ class AbsenceReportService
         return (($date->dayOfWeek + 1) % 7) + 1;
     }
 
-    private function emptySummary(): array
+    private function emptyDetailedSummary(): array
     {
         return [
             'training_start' => null,
@@ -172,6 +184,9 @@ class AbsenceReportService
             'unexcused_absence_days' => 0,
             'actual_absence_days' => 0,
             'leave_request_days' => 0,
+            'excused_absence_dates' => [],
+            'unexcused_absence_dates' => [],
+            'actual_absence_dates' => [],
         ];
     }
 }

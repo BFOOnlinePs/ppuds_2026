@@ -21,6 +21,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Component;
+use Maatwebsite\Excel\Excel as WriterType;
 use Masmerise\Toaster\Toaster;
 use Modules\Core\Enums\UserRole;
 use Modules\Core\Filament\Forms\Components\CreateAction;
@@ -29,10 +30,12 @@ use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\Textarea;
 use Modules\Core\Filament\Forms\Components\ViewAction;
+use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\CompanyCategory;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\CompanyStatus;
+use Modules\PPUDS\Exports\CompaniesExport;
 use Modules\PPUDS\Support\HasSupervisorFilter;
 
 class Index extends Component implements HasForms, HasTable
@@ -124,6 +127,17 @@ class Index extends Component implements HasForms, HasTable
                     ->label(__('Add Company'))
                     ->url(route('companies.add'))
                     ->visible(fn () => auth()->user()->can('Company Create')),
+
+                Action::make('export')
+                    ->label(__('Export'))
+                    ->icon('heroicon-m-arrow-down-tray')
+                    ->color('success')
+                    ->action(fn () => app(ExcelServiceInterface::class)->download(
+                        new CompaniesExport($this->getTableQueryForExport()),
+                        $this->exportFilename(),
+                        WriterType::XLSX
+                    ))
+                    ->visible(fn () => auth()->user()->can('Company View List')),
             ])
             ->bulkActions([]);
     }
@@ -260,6 +274,11 @@ class Index extends Component implements HasForms, HasTable
                         : null,
                 ];
             });
+    }
+
+    protected function exportFilename(): string
+    {
+        return 'companies-'.now()->format('Y-m-d-His').'.xlsx';
     }
 
     private function isCompanyRole(): bool

@@ -7,6 +7,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
@@ -16,9 +17,13 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Component;
+use Maatwebsite\Excel\Excel as WriterType;
+use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\SemesterType;
+use Modules\PPUDS\Exports\AbsenceDatesExport;
+use Modules\PPUDS\Exports\AbsenceReportExport;
 use Modules\PPUDS\Services\AbsenceReportService;
 use Modules\PPUDS\Settings\GeneralSettings;
 use Modules\PPUDS\Support\HasSupervisorFilter;
@@ -49,6 +54,7 @@ class Index extends Component implements HasForms, HasTable
                     'registration',
                     'student.studentProfile',
                 ])
+                ->withActualWorkingHours()
                 ->whereIn("{$studentCompanyTable}.id", $this->absentStudentCompanyIds()))
             ->columns([
                 TextColumn::make('student.studentProfile.student_number')
@@ -59,7 +65,9 @@ class Index extends Component implements HasForms, HasTable
                 TextColumn::make('student.name')
                     ->label(__('Student Name'))
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->url(fn (StudentCompany $record): ?string => $this->studentDetailsUrl($record))
+                    ->color(fn (StudentCompany $record): ?string => $this->studentDetailsUrl($record) ? 'primary' : null),
 
                 TextColumn::make('company.name')
                     ->label(__('Company'))
@@ -80,6 +88,10 @@ class Index extends Component implements HasForms, HasTable
                 TextColumn::make('attendance_days')
                     ->label(__('Attendance Days'))
                     ->getStateUsing(fn (StudentCompany $record) => $this->summaryValue($record, 'attendance_days')),
+
+                TextColumn::make('actual_working_hours')
+                    ->label(__('Actual Working Hours'))
+                    ->wrapHeader(),
 
                 TextColumn::make('total_absence_days')
                     ->label(__('Total Absence Days'))
@@ -123,7 +135,42 @@ class Index extends Component implements HasForms, HasTable
             ])
             ->filters($this->getTableFilters(), layout: FiltersLayout::AboveContent)
             ->filtersFormColumns(4)
-            ->actions([])
+            ->headerActions([
+                Action::make('export')
+                    ->label(__('Export'))
+                    ->icon('heroicon-m-arrow-down-tray')
+                    ->color('success')
+                    ->action(fn () => app(ExcelServiceInterface::class)->download(
+                        new AbsenceReportExport($this->getTableQueryForExport()),
+                        $this->exportFilename(),
+                        WriterType::XLSX
+                    ))
+                    ->visible(fn () => auth()->user()->can('Report View List')),
+
+                Action::make('print_all_absence_dates')
+                    ->label(__('Print'))
+                    ->icon('solar-printer-bold')
+                    ->color('info')
+                    ->action(fn () => app(ExcelServiceInterface::class)->download(
+                        new AbsenceDatesExport($this->getTableQueryForExport()),
+                        $this->absenceDatesFilename(),
+                        WriterType::XLSX
+                    ))
+                    ->visible(fn () => auth()->user()->can('Report View List')),
+            ])
+            ->actions([
+                Action::make('print_absence_dates')
+                    ->button()
+                    ->label(__('Print'))
+                    ->icon('solar-printer-bold')
+                    ->color('info')
+                    ->action(fn (StudentCompany $record) => app(ExcelServiceInterface::class)->download(
+                        new AbsenceDatesExport(StudentCompany::query()->whereKey($record->id)),
+                        $this->absenceDatesFilename($record),
+                        WriterType::XLSX
+                    ))
+                    ->visible(fn () => auth()->user()->can('Report View List')),
+            ])
             ->bulkActions([]);
     }
 
@@ -229,6 +276,29 @@ class Index extends Component implements HasForms, HasTable
     private function summary(StudentCompany $studentCompany): array
     {
         return $this->absenceSummaries[$studentCompany->id] ??= app(AbsenceReportService::class)->summary($studentCompany);
+    }
+
+    protected function studentDetailsUrl(StudentCompany $record): ?string
+    {
+        $student = $record->student;
+
+        if (! $student || ! auth()->user()?->can('Student Details List')) {
+            return null;
+        }
+
+        return route('students.details', $student->id);
+    }
+
+    protected function exportFilename(): string
+    {
+        return 'absence-report-'.now()->format('Y-m-d-His').'.xlsx';
+    }
+
+    protected function absenceDatesFilename(?StudentCompany $studentCompany = null): string
+    {
+        $studentNumber = $studentCompany?->student?->studentProfile?->student_number;
+
+        return ($studentNumber ? "absence-dates-{$studentNumber}-" : 'absence-dates-').now()->format('Y-m-d-His').'.xlsx';
     }
 
     public function render()

@@ -69,6 +69,10 @@ class Index extends Component implements HasForms, HasTable
                     ->label(__('Attendance Days'))
                     ->summarize(Sum::make('attendance_days')),
 
+                TextColumn::make('actual_working_hours')
+                    ->label(__('Actual Working Hours'))
+                    ->summarize(Sum::make('actual_working_hours')),
+
                 TextColumn::make('branch.required_training_days')
                     ->label(__('Required Training Days (Until Training End)'))
                     ->wrapHeader()
@@ -77,11 +81,6 @@ class Index extends Component implements HasForms, HasTable
                 TextColumn::make('branch.attended_training_days')
                     ->label(__('Attended Days (Until Today)'))
                     ->wrapHeader()
-                    ->toggleable(isToggledHiddenByDefault: true),
-
-                TextColumn::make('actual_working_hours')
-                    ->label(__('Actual Working Hours'))
-                    ->summarize(Sum::make('actual_working_hours'))
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('registration.semester')

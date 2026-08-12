@@ -247,7 +247,8 @@ class StudentCompany extends Model implements HasMedia
             )
                 ->whereColumn('student_company_id', "{$table}.id")
                 ->whereNotNull('check_in')
-                ->whereNotNull('check_out'),
+                ->whereNotNull('check_out')
+                ->where('status', '!=', AttendanceStatus::DISCREPANCY->value),
         ]);
     }
 
