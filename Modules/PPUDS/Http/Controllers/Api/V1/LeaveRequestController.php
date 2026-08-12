@@ -53,6 +53,14 @@ class LeaveRequestController extends Controller
      * ),
      *
      * @OA\Parameter(
+     * name="filter[student_id]",
+     * in="query",
+     * description="Filter by student user ID, across all of that student's training placements",
+     *
+     * @OA\Schema(type="integer", example=42)
+     * ),
+     *
+     * @OA\Parameter(
      * name="filter[type]",
      * in="query",
      * description="Filter by type (leave, absence)",

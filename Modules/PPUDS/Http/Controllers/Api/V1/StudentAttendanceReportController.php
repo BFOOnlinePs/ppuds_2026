@@ -9,6 +9,7 @@ use Modules\PPUDS\Entities\StudentAttendance;
 use Modules\PPUDS\Entities\StudentReport;
 use Modules\PPUDS\Http\Controllers\Api\V1\Concerns\EnsuresCurrentRegistration;
 use Modules\PPUDS\Http\Requests\StudentAttendanceReportRequest;
+use Modules\PPUDS\Http\Requests\StudentAttendanceReportRequestUpdate;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 use Modules\PPUDS\Transformers\V1\StudentAttendanceReportResource;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -204,6 +205,70 @@ class StudentAttendanceReportController extends Controller
         return $this->successResponse(
             new StudentAttendanceReportResource($report),
             __('Student Attendance Report retrieved successfully')
+        );
+    }
+
+    /**
+     * Update Student Report Feedback
+     *
+     * Update the company or academic supervisor feedback on an existing daily report.
+     *
+     * @OA\Patch(
+     * path="/api/v1/ppuds/attendances/reports/{report}",
+     * summary="Update report feedback",
+     * tags={"Student Reports"},
+     * security={{"sanctum": {}}},
+     *
+     * @OA\Parameter(
+     * name="report",
+     * in="path",
+     * required=true,
+     * description="The ID of the report",
+     *
+     * @OA\Schema(type="integer", example=1)
+     * ),
+     *
+     * @OA\RequestBody(
+     * required=true,
+     *
+     * @OA\JsonContent(
+     *
+     * @OA\Property(property="company_feedback", type="string", example="Excellent work", description="Feedback from the company mentor"),
+     * @OA\Property(property="academic_feedback", type="string", example="Keep it up", description="Feedback from the academic supervisor")
+     * )
+     * ),
+     *
+     * @OA\Response(
+     * response=200,
+     * description="Report updated successfully",
+     *
+     * @OA\JsonContent(
+     * type="object",
+     *
+     * @OA\Property(property="status", type="boolean", example=true),
+     * @OA\Property(property="message", type="string", example="Student Attendance Report updated successfully"),
+     * @OA\Property(
+     * property="data",
+     * ref="#/components/schemas/StudentAttendanceReportResource"
+     * )
+     * )
+     * ),
+     *
+     * @OA\Response(response=403, description="Forbidden"),
+     * @OA\Response(response=404, description="Report not found")
+     * )
+     */
+    public function update(StudentAttendanceReportRequestUpdate $request, StudentReport $report)
+    {
+        $report->loadMissing('studentAttendance.studentCompany');
+
+        abort_unless($this->canAccessStudentCompanyRecord($report->studentAttendance?->studentCompany), 403);
+
+        $report->update($request->validated());
+
+        return $this->successResponse(
+            new StudentAttendanceReportResource($report->refresh()->loadMissing('media')),
+            __('Student Attendance Report updated successfully')
         );
     }
 }

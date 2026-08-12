@@ -87,6 +87,12 @@ class LeaveRequestResource extends JsonResource
             AllowedFilter::exact('id'),
             AllowedFilter::exact('student_company_id'),
             AllowedFilter::partial('reason'),
+
+            AllowedFilter::callback('student_id', function (Builder $query, $value) {
+                $query->whereHas('studentCompany', function (Builder $q) use ($value) {
+                    $q->where('student_id', $value);
+                });
+            }),
             AllowedFilter::exact('company_approval'),
             AllowedFilter::exact('university_approval'),
             AllowedFilter::exact('created_by'),

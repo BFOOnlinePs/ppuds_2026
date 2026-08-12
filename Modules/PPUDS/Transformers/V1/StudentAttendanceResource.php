@@ -11,6 +11,8 @@ use Spatie\QueryBuilder\AllowedSort;
 
 class StudentAttendanceResource extends JsonResource
 {
+    private const OUTSIDE_WORK_RANGE_DISTANCE_METERS = 200;
+
     public function toArray(Request $request): array
     {
         return [
@@ -32,6 +34,8 @@ class StudentAttendanceResource extends JsonResource
 
             'status' => $this->status,
             'description' => $this->description,
+            'is_outside_work_range' => $this->isOutsideWorkRange(),
+            'distance_from_branch_meters' => $this->distanceFromBranchMeters(),
             'created_by' => $this->created_by,
             'created_at' => $this->created_at?->toIso8601String(),
 
@@ -137,7 +141,48 @@ class StudentAttendanceResource extends JsonResource
 
     public static function allowedIncludes(): array
     {
-        return ['studentCompany', 'studentCompany.student', 'createdBy', 'studentCompany.company', 'studentCompany.registration'];
+        return ['studentCompany', 'studentCompany.student', 'createdBy', 'studentCompany.company', 'studentCompany.registration', 'studentCompany.branch'];
+    }
+
+    private function distanceFromBranchMeters(): ?int
+    {
+        $branch = $this->studentCompany?->branch;
+
+        if (
+            blank($this->check_in_latitude)
+            || blank($this->check_in_longitude)
+            || blank($branch?->latitude)
+            || blank($branch?->longitude)
+        ) {
+            return null;
+        }
+
+        return self::haversineDistanceInMeters(
+            (float) $this->check_in_latitude,
+            (float) $this->check_in_longitude,
+            (float) $branch->latitude,
+            (float) $branch->longitude,
+        );
+    }
+
+    private function isOutsideWorkRange(): bool
+    {
+        $distance = $this->distanceFromBranchMeters();
+
+        return $distance !== null && $distance > self::OUTSIDE_WORK_RANGE_DISTANCE_METERS;
+    }
+
+    private static function haversineDistanceInMeters(float $latitudeA, float $longitudeA, float $latitudeB, float $longitudeB): int
+    {
+        $earthRadius = 6371000;
+        $latitudeDelta = deg2rad($latitudeB - $latitudeA);
+        $longitudeDelta = deg2rad($longitudeB - $longitudeA);
+
+        $a = sin($latitudeDelta / 2) ** 2
+            + cos(deg2rad($latitudeA)) * cos(deg2rad($latitudeB))
+            * sin($longitudeDelta / 2) ** 2;
+
+        return (int) round($earthRadius * 2 * atan2(sqrt($a), sqrt(1 - $a)));
     }
 
     private static function whereAttendanceDateInRange(Builder $query, mixed $from, mixed $to): void

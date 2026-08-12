@@ -1,6 +1,7 @@
     <?php
 
     use Illuminate\Support\Facades\Route;
+    use Modules\PPUDS\Http\Controllers\Api\V1\AbsenceReportController;
     use Modules\PPUDS\Http\Controllers\Api\V1\AnnouncementCategoryController;
     use Modules\PPUDS\Http\Controllers\Api\V1\AnnouncementController;
     use Modules\PPUDS\Http\Controllers\Api\V1\ChatController;
@@ -120,6 +121,7 @@
                                 Route::get('/', 'index')->name('index');
                                 Route::post('/', 'store')->name('store');
                                 Route::get('/{report}', 'show')->name('show');
+                                Route::patch('/{report}', 'update')->name('update');
                             });
                     });
 
@@ -233,6 +235,13 @@
                 Route::controller(NonComplianceReportController::class)
                     ->prefix('non-compliance-reports')
                     ->as('non-compliance-reports.')
+                    ->group(function () {
+                        Route::get('/', 'index')->name('index');
+                    });
+
+                Route::controller(AbsenceReportController::class)
+                    ->prefix('absence-reports')
+                    ->as('absence-reports.')
                     ->group(function () {
                         Route::get('/', 'index')->name('index');
                     });
