@@ -3,6 +3,7 @@
 namespace Modules\PPUDS\Livewire\Pages\AbsenceReport;
 
 use App\View\Components\AppLayout;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -13,9 +14,11 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\Indicator;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
 use Livewire\Component;
 use Maatwebsite\Excel\Excel as WriterType;
 use Modules\Core\Interfaces\ExcelServiceInterface;
@@ -141,7 +144,7 @@ class Index extends Component implements HasForms, HasTable
                     ->icon('heroicon-m-arrow-down-tray')
                     ->color('success')
                     ->action(fn () => app(ExcelServiceInterface::class)->download(
-                        new AbsenceReportExport($this->getTableQueryForExport()),
+                        new AbsenceReportExport($this->getTableQueryForExport(), $this->selectedDate()),
                         $this->exportFilename(),
                         WriterType::XLSX
                     ))
@@ -152,7 +155,7 @@ class Index extends Component implements HasForms, HasTable
                     ->icon('solar-printer-bold')
                     ->color('info')
                     ->action(fn () => app(ExcelServiceInterface::class)->download(
-                        new AbsenceDatesExport($this->getTableQueryForExport()),
+                        new AbsenceDatesExport($this->getTableQueryForExport(), $this->selectedDate()),
                         $this->absenceDatesFilename(),
                         WriterType::XLSX
                     ))
@@ -165,7 +168,7 @@ class Index extends Component implements HasForms, HasTable
                     ->icon('solar-printer-bold')
                     ->color('info')
                     ->action(fn (StudentCompany $record) => app(ExcelServiceInterface::class)->download(
-                        new AbsenceDatesExport(StudentCompany::query()->whereKey($record->id)),
+                        new AbsenceDatesExport(StudentCompany::query()->whereKey($record->id), $this->selectedDate()),
                         $this->absenceDatesFilename($record),
                         WriterType::XLSX
                     ))
@@ -177,6 +180,28 @@ class Index extends Component implements HasForms, HasTable
     protected function getTableFilters(): array
     {
         return [
+            Filter::make('date')
+                ->label(__('Date'))
+                ->form([
+                    DatePicker::make('date')
+                        ->label(__('Date'))
+                        ->native(false)
+                        ->displayFormat('Y-m-d')
+                        ->live(),
+                ])
+                ->indicateUsing(function (array $data): array {
+                    if (empty($data['date'])) {
+                        return [];
+                    }
+
+                    $date = Carbon::parse($data['date']);
+
+                    return [
+                        Indicator::make(__('Date').': '.$date->toDateString().' ('.$date->translatedFormat('l').')')
+                            ->removeField('date'),
+                    ];
+                }),
+
             Filter::make('student_number')
                 ->label(__('Student Number'))
                 ->form([
@@ -275,7 +300,17 @@ class Index extends Component implements HasForms, HasTable
 
     private function summary(StudentCompany $studentCompany): array
     {
-        return $this->absenceSummaries[$studentCompany->id] ??= app(AbsenceReportService::class)->summary($studentCompany);
+        $date = $this->selectedDate();
+        $cacheKey = $studentCompany->id.'|'.($date ?? 'all');
+
+        return $this->absenceSummaries[$cacheKey] ??= app(AbsenceReportService::class)->summary($studentCompany, $date);
+    }
+
+    private function selectedDate(): ?string
+    {
+        $date = data_get($this->getTableFilterState('date'), 'date');
+
+        return filled($date) ? Carbon::parse($date)->toDateString() : null;
     }
 
     protected function studentDetailsUrl(StudentCompany $record): ?string

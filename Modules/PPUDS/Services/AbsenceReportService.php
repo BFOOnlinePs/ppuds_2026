@@ -12,18 +12,18 @@ use Modules\PPUDS\Settings\GeneralSettings;
 
 class AbsenceReportService
 {
-    public function summary(StudentCompany $studentCompany): array
+    public function summary(StudentCompany $studentCompany, ?string $date = null): array
     {
-        $detailed = $this->detailedSummary($studentCompany);
+        $detailed = $this->detailedSummary($studentCompany, $date);
 
         unset($detailed['excused_absence_dates'], $detailed['unexcused_absence_dates'], $detailed['actual_absence_dates']);
 
         return $detailed;
     }
 
-    public function detailedSummary(StudentCompany $studentCompany): array
+    public function detailedSummary(StudentCompany $studentCompany, ?string $date = null): array
     {
-        $period = $this->trainingPeriod();
+        $period = $date !== null ? $this->periodForDate($date) : $this->trainingPeriod();
 
         if ($period === null) {
             return $this->emptyDetailedSummary();
@@ -87,6 +87,26 @@ class AbsenceReportService
         }
 
         return [$start, $end];
+    }
+
+    private function periodForDate(string $date): ?array
+    {
+        $settings = app(GeneralSettings::class);
+
+        $seasonStart = $settings->start_semester?->copy()->startOfDay();
+        $seasonEnd = $settings->end_semester?->copy()->startOfDay();
+
+        if (! $seasonStart || ! $seasonEnd) {
+            return null;
+        }
+
+        $day = Carbon::parse($date)->startOfDay();
+
+        if ($day->lt($seasonStart) || $day->gt($seasonEnd)) {
+            return null;
+        }
+
+        return [$day, $day->copy()];
     }
 
     private function workingDates(StudentCompany $studentCompany, Carbon $start, Carbon $end): Collection

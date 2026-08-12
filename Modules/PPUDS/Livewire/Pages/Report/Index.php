@@ -7,6 +7,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Columns\Summarizers\Count;
@@ -21,14 +22,17 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Component;
+use Maatwebsite\Excel\Excel as WriterType;
 use Masmerise\Toaster\Toaster;
 use Modules\Core\Filament\Forms\Components\CreateAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
+use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\Note;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\SemesterType;
 use Modules\PPUDS\Enums\StudentGender;
+use Modules\PPUDS\Exports\ReportExport;
 use Modules\PPUDS\Settings\GeneralSettings;
 use Modules\PPUDS\Support\HasSupervisorFilter;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
@@ -105,6 +109,17 @@ class Index extends Component implements HasForms, HasTable
                 //     ->label(__('Add Note'))
                 //     ->url(route('notes.add'))
                 //     ->visible(fn() => auth()->user()->can('Note Create'))
+
+                Action::make('export')
+                    ->label(__('Export'))
+                    ->icon('heroicon-m-arrow-down-tray')
+                    ->color('success')
+                    ->action(fn () => app(ExcelServiceInterface::class)->download(
+                        new ReportExport($this->getTableQueryForExport()),
+                        $this->exportFilename(),
+                        WriterType::XLSX
+                    ))
+                    ->visible(fn () => auth()->user()->can('Report View List')),
             ])
             ->bulkActions([]);
     }
@@ -241,6 +256,11 @@ class Index extends Component implements HasForms, HasTable
                 ->label('')
                 ->visible(fn () => auth()->user()->can('Registration Info')),
         ];
+    }
+
+    protected function exportFilename(): string
+    {
+        return 'reports-'.now()->format('Y-m-d-His').'.xlsx';
     }
 
     public function render()
