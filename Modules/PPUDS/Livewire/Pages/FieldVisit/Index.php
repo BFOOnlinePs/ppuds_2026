@@ -8,6 +8,7 @@ use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Tables\Actions\Action;
@@ -191,7 +192,7 @@ class Index extends Component implements HasForms, HasTable
 
     protected function isShowingUnvisitedStudents(): bool
     {
-        return (bool) data_get($this->getTableFilterState('not_visited'), 'isActive', false);
+        return (bool) data_get($this->getTableFilterState('not_visited'), 'not_visited_toggle', false);
     }
 
     protected function fieldVisitStudentDetailsUrl(FieldVisit $record): ?string
@@ -222,11 +223,15 @@ class Index extends Component implements HasForms, HasTable
 
         return [
             \Filament\Tables\Filters\Filter::make('not_visited')
-                ->label(__('Show Students Not Visited Yet'))
-                ->toggle()
+                ->label(__('Students Not Visited'))
+                ->form([
+                    Toggle::make('not_visited_toggle')
+                        ->label(__('Show Students Not Visited Yet'))
+                        ->live(),
+                ])
                 ->query(fn (Builder $query): Builder => $query)
-                ->indicateUsing(fn (array $data): array => filled($data['isActive'] ?? null) && $data['isActive']
-                    ? [\Filament\Tables\Filters\Indicator::make(__('Students Not Visited'))->removeField('isActive')]
+                ->indicateUsing(fn (array $data): array => filled($data['not_visited_toggle'] ?? null) && $data['not_visited_toggle']
+                    ? [\Filament\Tables\Filters\Indicator::make(__('Students Not Visited'))->removeField('not_visited_toggle')]
                     : []),
 
             \Filament\Tables\Filters\SelectFilter::make('student_id')
