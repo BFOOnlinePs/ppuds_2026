@@ -515,6 +515,33 @@ class PermissionSeeder extends Seeder
             ],
 
 
+            // TODO Banner
+            [
+                'name' => 'Banner View List',
+                'guard_name' => 'web',
+                'module_name' => 'Banner',
+            ],
+            [
+                'name' => 'Banner Create',
+                'guard_name' => 'web',
+                'module_name' => 'Banner',
+            ],
+            [
+                'name' => 'Banner Update',
+                'guard_name' => 'web',
+                'module_name' => 'Banner',
+            ],
+            [
+                'name' => 'Banner Delete',
+                'guard_name' => 'web',
+                'module_name' => 'Banner',
+            ],
+            [
+                'name' => 'Banner Info',
+                'guard_name' => 'web',
+                'module_name' => 'Banner',
+            ],
+
             // TODO LeaveRequest
             [
                 'name' => 'LeaveRequest View List',

@@ -157,6 +157,14 @@ return [
             'throw' => false,
         ],
 
+        'ppuds_banners' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public/ppuds/banners'),
+            'url' => env('APP_URL') . '/storage/ppuds/banners',
+            'visibility' => 'public',
+            'throw' => false,
+        ],
+
         'leave_requests' => [
             'driver' => 'local',
             'root' => storage_path('app/public/ppuds/leave_requests'),

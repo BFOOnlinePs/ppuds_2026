@@ -4,6 +4,7 @@
     use Modules\PPUDS\Http\Controllers\Api\V1\AbsenceReportController;
     use Modules\PPUDS\Http\Controllers\Api\V1\AnnouncementCategoryController;
     use Modules\PPUDS\Http\Controllers\Api\V1\AnnouncementController;
+    use Modules\PPUDS\Http\Controllers\Api\V1\BannerController;
     use Modules\PPUDS\Http\Controllers\Api\V1\ChatController;
     use Modules\PPUDS\Http\Controllers\Api\V1\CompanyCategoryController;
     use Modules\PPUDS\Http\Controllers\Api\V1\CompanyController;
@@ -151,6 +152,14 @@
                         Route::get('/', 'index')->name('index');
                         Route::post('/', 'store')->name('store');
                         Route::get('/{announcement}', 'show')->name('show');
+                    });
+
+                Route::controller(BannerController::class)
+                    ->prefix('banners')
+                    ->as('banners.')
+                    ->group(function () {
+                        Route::get('/', 'index')->name('index');
+                        Route::get('/{banner}', 'show')->name('show');
                     });
 
                 Route::controller(AnnouncementCategoryController::class)

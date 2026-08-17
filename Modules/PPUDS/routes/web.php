@@ -176,6 +176,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 });
 
                 Route::group([
+                    'prefix' => 'banners',
+                    'as' => 'banners.',
+                    'namespace' => 'Modules\PPUDS\Livewire\Pages\Banner',
+                ], function () {
+                    Route::get('/', Index::class)->name('index')->can('Banner View List');
+                });
+
+                Route::group([
                     'prefix' => 'leave-requests',
                     'as' => 'leave-requests.',
                     'namespace' => 'Modules\PPUDS\Livewire\Pages\LeaveRequest',
