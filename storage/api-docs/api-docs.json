@@ -1566,6 +1566,92 @@
                 ]
             }
         },
+        "/api/v1/device-tokens": {
+            "post": {
+                "tags": [
+                    "Device Tokens"
+                ],
+                "summary": "Register or refresh an FCM device token",
+                "description": "Stores the authenticated user's FCM token so they can receive push notifications.",
+                "operationId": "707422a2779f4fd1a40d09a6bacf7405",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "fcm_token"
+                                ],
+                                "properties": {
+                                    "fcm_token": {
+                                        "type": "string",
+                                        "example": "fGhI...token"
+                                    },
+                                    "device_name": {
+                                        "type": "string",
+                                        "example": "android"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Device token stored successfully"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Device Tokens"
+                ],
+                "summary": "Remove an FCM device token",
+                "description": "Deletes the given FCM token for the authenticated user (e.g. on logout).",
+                "operationId": "33cde421b0bde17061bc2a56b4effb79",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "fcm_token"
+                                ],
+                                "properties": {
+                                    "fcm_token": {
+                                        "type": "string",
+                                        "example": "fGhI...token"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Device token removed successfully"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/users": {
             "get": {
                 "tags": [
@@ -5951,6 +6037,128 @@
                 ]
             }
         },
+        "/api/v1/ppuds/absence-reports": {
+            "get": {
+                "tags": [
+                    "Absence Reports"
+                ],
+                "summary": "List student absence report",
+                "description": "List Absence Report\n\nRetrieve, per student training placement, the working days required vs. attended and\nthe specific absence dates within the current (or filtered) semester. Only placements\nwith at least one absence day are returned.",
+                "operationId": "bcdc3997535b6038d2f3e4833d81df23",
+                "parameters": [
+                    {
+                        "name": "filter[student_number]",
+                        "in": "query",
+                        "description": "Filter by student name or number",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filter[company_id]",
+                        "in": "query",
+                        "description": "Filter by company ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "filter[supervisor_id]",
+                        "in": "query",
+                        "description": "Filter by university supervisor ID from the student's registration",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "filter[year]",
+                        "in": "query",
+                        "description": "Filter by academic year",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "filter[semester_type]",
+                        "in": "query",
+                        "description": "Filter by semester type",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filter[date]",
+                        "in": "query",
+                        "description": "Limit the report to a single specific day instead of the whole semester",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-08-10"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 15
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Absence report retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Absence report retrieved successfully"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/AbsenceReportResource"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/ppuds/announcement-categories": {
             "get": {
                 "tags": [
@@ -7413,6 +7621,47 @@
             }
         },
         "/api/v1/ppuds/companies/{company}/branches/{branch}/location": {
+            "get": {
+                "tags": [
+                    "Companies"
+                ],
+                "summary": "Get company branch location",
+                "description": "Retrieve the current location data for a company branch.",
+                "operationId": "031085c966d49da758e40f0ce351b7d6",
+                "parameters": [
+                    {
+                        "name": "company",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "branch",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Company branch location retrieved successfully"
+                    },
+                    "422": {
+                        "description": "Branch does not belong to company"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
             "patch": {
                 "tags": [
                     "Companies"
@@ -7904,26 +8153,8 @@
                                         "type": "string",
                                         "example": "Everything went well"
                                     },
-                                    "attachment": {
-                                        "description": "Optional single attachment",
-                                        "type": "string",
-                                        "format": "binary"
-                                    },
-                                    "image": {
-                                        "description": "Optional single image attachment",
-                                        "type": "string",
-                                        "format": "binary"
-                                    },
                                     "attachments": {
-                                        "description": "Optional attachments. In Postman send as attachments[] for multiple files.",
-                                        "type": "array",
-                                        "items": {
-                                            "type": "string",
-                                            "format": "binary"
-                                        }
-                                    },
-                                    "images": {
-                                        "description": "Optional image attachments. In Postman send as images[] for multiple files.",
+                                        "description": "Optional images or document files. In Postman send every file as attachments[].",
                                         "type": "array",
                                         "items": {
                                             "type": "string",
@@ -8058,7 +8289,7 @@
                 "requestBody": {
                     "required": true,
                     "content": {
-                        "application/json": {
+                        "multipart/form-data": {
                             "schema": {
                                 "required": [
                                     "company_id",
@@ -8111,6 +8342,14 @@
                                         "type": "string",
                                         "example": "Bulk field visit",
                                         "nullable": true
+                                    },
+                                    "attachments": {
+                                        "description": "Optional images or document files copied to every created field visit. In Postman send every file as attachments[].",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "binary"
+                                        }
                                     }
                                 },
                                 "type": "object"
@@ -8196,26 +8435,8 @@
                                         "type": "integer",
                                         "example": 90
                                     },
-                                    "attachment": {
-                                        "description": "Optional single new attachment",
-                                        "type": "string",
-                                        "format": "binary"
-                                    },
-                                    "image": {
-                                        "description": "Optional single new image attachment",
-                                        "type": "string",
-                                        "format": "binary"
-                                    },
                                     "attachments": {
-                                        "description": "Optional new attachments. In Postman send as attachments[] for multiple files.",
-                                        "type": "array",
-                                        "items": {
-                                            "type": "string",
-                                            "format": "binary"
-                                        }
-                                    },
-                                    "images": {
-                                        "description": "Optional new image attachments. In Postman send as images[] for multiple files.",
+                                        "description": "Optional new images or document files. In Postman send every file as attachments[].",
                                         "type": "array",
                                         "items": {
                                             "type": "string",
@@ -8264,6 +8485,15 @@
                         "schema": {
                             "type": "integer",
                             "example": 3
+                        }
+                    },
+                    {
+                        "name": "filter[student_id]",
+                        "in": "query",
+                        "description": "Filter by student user ID, across all of that student's training placements",
+                        "schema": {
+                            "type": "integer",
+                            "example": 42
                         }
                     },
                     {
@@ -8509,14 +8739,34 @@
                     {
                         "name": "filter[year]",
                         "in": "query",
+                        "description": "Academic year. Defaults to the configured dashboard year.",
                         "required": false,
                         "schema": {
                             "type": "integer"
                         }
                     },
                     {
-                        "name": "filter[semester_type]",
+                        "name": "filter[semester]",
                         "in": "query",
+                        "description": "Semester type. Defaults to the configured dashboard semester.",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filter[non_compliance_types]",
+                        "in": "query",
+                        "description": "Comma separated values: outside_work_range, late_attendance, absence",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filter[non_compliance_type]",
+                        "in": "query",
+                        "description": "Single value alias for filter[non_compliance_types]",
                         "required": false,
                         "schema": {
                             "type": "string"
@@ -8530,6 +8780,16 @@
                             "type": "number",
                             "format": "float",
                             "example": 2
+                        }
+                    },
+                    {
+                        "name": "filter[outside_work_range_distance_meters]",
+                        "in": "query",
+                        "description": "Allowed distance from branch in meters. If filter[non_compliance_types] is not also provided, the type filter is automatically narrowed to outside_work_range so this filter actually affects the result set.",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 200
                         }
                     },
                     {
@@ -10552,6 +10812,84 @@
                         "sanctum": []
                     }
                 ]
+            },
+            "patch": {
+                "tags": [
+                    "Student Reports"
+                ],
+                "summary": "Update report feedback",
+                "description": "Update Student Report Feedback\n\nUpdate the company or academic supervisor feedback on an existing daily report.",
+                "operationId": "0442aeb7766fe601885d0df29175a4b5",
+                "parameters": [
+                    {
+                        "name": "report",
+                        "in": "path",
+                        "description": "The ID of the report",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "company_feedback": {
+                                        "description": "Feedback from the company mentor",
+                                        "type": "string",
+                                        "example": "Excellent work"
+                                    },
+                                    "academic_feedback": {
+                                        "description": "Feedback from the academic supervisor",
+                                        "type": "string",
+                                        "example": "Keep it up"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Report updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Student Attendance Report updated successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/StudentAttendanceReportResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Report not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
             }
         },
         "/api/v1/ppuds/student-companies": {
@@ -10875,6 +11213,216 @@
                     },
                     "404": {
                         "description": "Student Company not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/students/statistics": {
+            "get": {
+                "tags": [
+                    "Student Statistics"
+                ],
+                "summary": "Get aggregate students statistics",
+                "description": "Returns aggregate statistics for the students visible to the current user: all students for admins, own supervised students for supervisors, or the caller's own record for a student.",
+                "operationId": "3c8719e5600c6a36361f6e63b4ddbec0",
+                "parameters": [
+                    {
+                        "name": "filter[student_id]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 12
+                        }
+                    },
+                    {
+                        "name": "filter[semester]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "filter[year]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 2026
+                        }
+                    },
+                    {
+                        "name": "filter[date_from]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-07-01"
+                        }
+                    },
+                    {
+                        "name": "filter[date_to]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-07-31"
+                        }
+                    },
+                    {
+                        "name": "filter[gender]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 0
+                        }
+                    },
+                    {
+                        "name": "filter[major_id]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 3
+                        }
+                    },
+                    {
+                        "name": "filter[training_status]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "filter[company_id]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 5
+                        }
+                    },
+                    {
+                        "name": "filter[branch_id]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 2
+                        }
+                    },
+                    {
+                        "name": "filter[department_id]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 4
+                        }
+                    },
+                    {
+                        "name": "filter[search]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "Ahmad"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Students statistics retrieved successfully"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/students/{student}/statistics": {
+            "get": {
+                "tags": [
+                    "Student Statistics"
+                ],
+                "summary": "Get a single student's statistics",
+                "description": "Returns detailed statistics for one student: current training, attendance, field visits, leave requests, reports, payments and training history.",
+                "operationId": "0df227db3f6fbbb108e8129b58fc120d",
+                "parameters": [
+                    {
+                        "name": "student",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 12
+                        }
+                    },
+                    {
+                        "name": "filter[semester]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "filter[year]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 2026
+                        }
+                    },
+                    {
+                        "name": "filter[date_from]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-07-01"
+                        }
+                    },
+                    {
+                        "name": "filter[date_to]",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-07-31"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Student statistics retrieved successfully"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Student not found"
                     }
                 },
                 "security": [
@@ -12377,6 +12925,93 @@
                 },
                 "type": "object"
             },
+            "AbsenceReportResource": {
+                "title": "Absence Report Resource",
+                "description": "Per-student absence summary for a training placement, including the specific absence dates",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "student_number": {
+                        "type": "string",
+                        "example": "123456"
+                    },
+                    "student_name": {
+                        "type": "string",
+                        "example": "أحمد محمد"
+                    },
+                    "company_name": {
+                        "type": "string",
+                        "example": "شركة الأمل"
+                    },
+                    "branch_name": {
+                        "type": "string",
+                        "example": "الفرع الرئيسي"
+                    },
+                    "required_working_days": {
+                        "type": "integer",
+                        "example": 40
+                    },
+                    "attendance_days": {
+                        "type": "integer",
+                        "example": 35
+                    },
+                    "actual_working_hours": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 210.5
+                    },
+                    "total_absence_days": {
+                        "type": "integer",
+                        "example": 5
+                    },
+                    "excused_absence_days": {
+                        "type": "integer",
+                        "example": 2
+                    },
+                    "unexcused_absence_days": {
+                        "type": "integer",
+                        "example": 3
+                    },
+                    "actual_absence_days": {
+                        "type": "integer",
+                        "example": 5
+                    },
+                    "leave_request_days": {
+                        "type": "integer",
+                        "example": 2
+                    },
+                    "excused_absence_dates": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-07-12"
+                        }
+                    },
+                    "unexcused_absence_dates": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-07-15"
+                        }
+                    },
+                    "semester": {
+                        "type": "string",
+                        "example": "First Semester"
+                    },
+                    "year": {
+                        "type": "integer",
+                        "example": 2026
+                    }
+                },
+                "type": "object",
+                "xml": {
+                    "name": "AbsenceReportResource"
+                }
+            },
             "AnnouncementCategoryResource": {
                 "title": "Announcement Category Resource",
                 "description": "Announcement category details",
@@ -13014,6 +13649,10 @@
     },
     "tags": [
         {
+            "name": "Absence Reports",
+            "description": "API Endpoints for the student absence report"
+        },
+        {
             "name": "Field Visits",
             "description": "API Endpoints for managing student field visits"
         },
@@ -13036,6 +13675,10 @@
         {
             "name": "Student Reports",
             "description": "API Endpoints for managing student daily reports"
+        },
+        {
+            "name": "Student Statistics",
+            "description": "API Endpoints for student statistics"
         },
         {
             "name": "Supervisor Statistics",
@@ -13064,6 +13707,10 @@
         {
             "name": "Currencies",
             "description": "Currencies"
+        },
+        {
+            "name": "Device Tokens",
+            "description": "Device Tokens"
         },
         {
             "name": "Users",

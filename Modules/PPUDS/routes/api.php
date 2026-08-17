@@ -21,6 +21,7 @@
     use Modules\PPUDS\Http\Controllers\Api\V1\StudentAttendanceReportController;
     use Modules\PPUDS\Http\Controllers\Api\V1\StudentCompanyAssistantController;
     use Modules\PPUDS\Http\Controllers\Api\V1\StudentCompanyController;
+    use Modules\PPUDS\Http\Controllers\Api\V1\StudentStatisticsController;
     use Modules\PPUDS\Http\Controllers\Api\V1\SupervisorStatisticsController;
     use Modules\PPUDS\Http\Controllers\Api\V1\SurveyAnswerController;
     use Modules\PPUDS\Http\Controllers\Api\V1\SurveyController;
@@ -50,6 +51,14 @@
                     ->group(function () {
                         Route::get('/statistics', 'index')->name('statistics.index');
                         Route::get('/{supervisor}/statistics', 'show')->name('statistics.show');
+                    });
+
+                Route::controller(StudentStatisticsController::class)
+                    ->prefix('students')
+                    ->as('students.')
+                    ->group(function () {
+                        Route::get('/statistics', 'index')->name('statistics.index');
+                        Route::get('/{student}/statistics', 'show')->name('statistics.show');
                     });
 
                 Route::controller(CompanyController::class)
