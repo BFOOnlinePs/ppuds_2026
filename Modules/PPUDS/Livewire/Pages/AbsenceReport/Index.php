@@ -144,7 +144,7 @@ class Index extends Component implements HasForms, HasTable
                     ->icon('heroicon-m-arrow-down-tray')
                     ->color('success')
                     ->action(fn () => app(ExcelServiceInterface::class)->download(
-                        new AbsenceReportExport($this->getTableQueryForExport(), $this->selectedDate()),
+                        new AbsenceReportExport($this->getTableQueryForExport(), ...$this->selectedDateRange()),
                         $this->exportFilename(),
                         WriterType::XLSX
                     ))
@@ -155,7 +155,7 @@ class Index extends Component implements HasForms, HasTable
                     ->icon('solar-printer-bold')
                     ->color('info')
                     ->action(fn () => app(ExcelServiceInterface::class)->download(
-                        new AbsenceDatesExport($this->getTableQueryForExport(), $this->selectedDate()),
+                        new AbsenceDatesExport($this->getTableQueryForExport(), ...$this->selectedDateRange()),
                         $this->absenceDatesFilename(),
                         WriterType::XLSX
                     ))
@@ -168,7 +168,7 @@ class Index extends Component implements HasForms, HasTable
                     ->icon('solar-printer-bold')
                     ->color('info')
                     ->action(fn (StudentCompany $record) => app(ExcelServiceInterface::class)->download(
-                        new AbsenceDatesExport(StudentCompany::query()->whereKey($record->id), $this->selectedDate()),
+                        new AbsenceDatesExport(StudentCompany::query()->whereKey($record->id), ...$this->selectedDateRange()),
                         $this->absenceDatesFilename($record),
                         WriterType::XLSX
                     ))
@@ -180,26 +180,37 @@ class Index extends Component implements HasForms, HasTable
     protected function getTableFilters(): array
     {
         return [
-            Filter::make('date')
-                ->label(__('Date'))
+            Filter::make('date_range')
+                ->label(__('Date Range'))
                 ->form([
-                    DatePicker::make('date')
-                        ->label(__('Date'))
+                    DatePicker::make('date_from')
+                        ->label(__('From Date'))
                         ->native(false)
                         ->displayFormat('Y-m-d')
                         ->live(),
+
+                    DatePicker::make('date_to')
+                        ->label(__('To Date'))
+                        ->native(false)
+                        ->displayFormat('Y-m-d')
+                        ->afterOrEqual('date_from')
+                        ->live(),
                 ])
+                ->columns(2)
                 ->indicateUsing(function (array $data): array {
-                    if (empty($data['date'])) {
-                        return [];
+                    $indicators = [];
+
+                    if (! empty($data['date_from'])) {
+                        $indicators[] = Indicator::make(__('From Date').': '.Carbon::parse($data['date_from'])->toDateString())
+                            ->removeField('date_from');
                     }
 
-                    $date = Carbon::parse($data['date']);
+                    if (! empty($data['date_to'])) {
+                        $indicators[] = Indicator::make(__('To Date').': '.Carbon::parse($data['date_to'])->toDateString())
+                            ->removeField('date_to');
+                    }
 
-                    return [
-                        Indicator::make(__('Date').': '.$date->toDateString().' ('.$date->translatedFormat('l').')')
-                            ->removeField('date'),
-                    ];
+                    return $indicators;
                 }),
 
             Filter::make('student_number')
@@ -300,17 +311,23 @@ class Index extends Component implements HasForms, HasTable
 
     private function summary(StudentCompany $studentCompany): array
     {
-        $date = $this->selectedDate();
-        $cacheKey = $studentCompany->id.'|'.($date ?? 'all');
+        [$dateFrom, $dateTo] = $this->selectedDateRange();
+        $cacheKey = $studentCompany->id.'|'.($dateFrom ?? 'start').'|'.($dateTo ?? 'end');
 
-        return $this->absenceSummaries[$cacheKey] ??= app(AbsenceReportService::class)->summary($studentCompany, $date);
+        return $this->absenceSummaries[$cacheKey] ??= app(AbsenceReportService::class)->summary($studentCompany, $dateFrom, $dateTo);
     }
 
-    private function selectedDate(): ?string
+    private function selectedDateRange(): array
     {
-        $date = data_get($this->getTableFilterState('date'), 'date');
+        $state = $this->getTableFilterState('date_range') ?? [];
 
-        return filled($date) ? Carbon::parse($date)->toDateString() : null;
+        $dateFrom = data_get($state, 'date_from');
+        $dateTo = data_get($state, 'date_to');
+
+        return [
+            filled($dateFrom) ? Carbon::parse($dateFrom)->toDateString() : null,
+            filled($dateTo) ? Carbon::parse($dateTo)->toDateString() : null,
+        ];
     }
 
     protected function studentDetailsUrl(StudentCompany $record): ?string

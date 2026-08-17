@@ -285,6 +285,8 @@ class Index extends Component implements HasTable, HasForms
             'Branch Pricings',
             'CompanyApprove',
             'UniversityApprove',
+            'CompanyFeedback',
+            'AcademicFeedback',
             'Create',
             'Update',
             'Delete',
@@ -406,8 +408,10 @@ class Index extends Component implements HasTable, HasForms
     private function translatePermissionAction(string $action): string
     {
         return [
+            'AcademicFeedback' => 'ملاحظات المشرف الأكاديمي',
             'Branch Pricings' => 'تسعير الفروع',
             'CompanyApprove' => 'موافقة الشركة',
+            'CompanyFeedback' => 'ملاحظات الشركة',
             'Create' => 'إضافة',
             'Delete' => 'حذف',
             'Details' => 'تفاصيل',

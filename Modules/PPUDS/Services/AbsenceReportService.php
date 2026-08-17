@@ -12,18 +12,18 @@ use Modules\PPUDS\Settings\GeneralSettings;
 
 class AbsenceReportService
 {
-    public function summary(StudentCompany $studentCompany, ?string $date = null): array
+    public function summary(StudentCompany $studentCompany, ?string $dateFrom = null, ?string $dateTo = null): array
     {
-        $detailed = $this->detailedSummary($studentCompany, $date);
+        $detailed = $this->detailedSummary($studentCompany, $dateFrom, $dateTo);
 
         unset($detailed['excused_absence_dates'], $detailed['unexcused_absence_dates'], $detailed['actual_absence_dates']);
 
         return $detailed;
     }
 
-    public function detailedSummary(StudentCompany $studentCompany, ?string $date = null): array
+    public function detailedSummary(StudentCompany $studentCompany, ?string $dateFrom = null, ?string $dateTo = null): array
     {
-        $period = $date !== null ? $this->periodForDate($date) : $this->trainingPeriod();
+        $period = $this->resolvePeriod($dateFrom, $dateTo);
 
         if ($period === null) {
             return $this->emptyDetailedSummary();
@@ -65,31 +65,7 @@ class AbsenceReportService
         ];
     }
 
-    private function trainingPeriod(): ?array
-    {
-        $settings = app(GeneralSettings::class);
-
-        $start = $settings->start_semester?->copy()->startOfDay();
-        $end = $settings->end_semester?->copy()->startOfDay();
-
-        if (! $start || ! $end || now()->lt($start)) {
-            return null;
-        }
-
-        $today = now()->startOfDay();
-
-        if ($today->lt($end)) {
-            $end = $today;
-        }
-
-        if ($end->lt($start)) {
-            return null;
-        }
-
-        return [$start, $end];
-    }
-
-    private function periodForDate(string $date): ?array
+    private function resolvePeriod(?string $dateFrom, ?string $dateTo): ?array
     {
         $settings = app(GeneralSettings::class);
 
@@ -100,13 +76,28 @@ class AbsenceReportService
             return null;
         }
 
-        $day = Carbon::parse($date)->startOfDay();
+        $start = $dateFrom !== null ? Carbon::parse($dateFrom)->startOfDay() : $seasonStart;
+        $end = $dateTo !== null ? Carbon::parse($dateTo)->startOfDay() : $seasonEnd;
 
-        if ($day->lt($seasonStart) || $day->gt($seasonEnd)) {
+        if ($start->lt($seasonStart)) {
+            $start = $seasonStart->copy();
+        }
+
+        if ($end->gt($seasonEnd)) {
+            $end = $seasonEnd->copy();
+        }
+
+        $today = now()->startOfDay();
+
+        if ($end->gt($today)) {
+            $end = $today->copy();
+        }
+
+        if ($today->lt($start) || $end->lt($start)) {
             return null;
         }
 
-        return [$day, $day->copy()];
+        return [$start, $end];
     }
 
     private function workingDates(StudentCompany $studentCompany, Carbon $start, Carbon $end): Collection

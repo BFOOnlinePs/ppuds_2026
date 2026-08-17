@@ -293,6 +293,23 @@ class Today extends Component implements HasForms, HasTable
                     || auth()->user()->can('Report View')
                     || auth()->user()->can('Report View List')),
 
+            EditAction::make('company_feedback')
+                ->tooltip(__('Company Feedback'))
+                ->modalHeading(__('Company Feedback'))
+                ->form(fn (StudentReport $record): array => [
+                    RichEditor::make('company_feedback')
+                        ->label(__('Company Feedback'))
+                        ->default($record->company_feedback)
+                        ->toolbarButtons(['bold', 'italic', 'bulletList', 'orderedList', 'link', 'redo', 'undo']),
+                ])
+                ->action(function (StudentReport $record, array $data): void {
+                    abort_unless($this->canAccessStudentCompanyRecord($record->studentAttendance?->studentCompany), 403);
+
+                    $record->update(['company_feedback' => $data['company_feedback']]);
+                    Toaster::success(__('Company feedback saved successfully'));
+                })
+                ->visible(fn (): bool => auth()->user()->can('Report CompanyFeedback')),
+
             EditAction::make('academic_feedback')
                 ->tooltip(__('Academic Feedback'))
                 ->modalHeading(__('Academic Feedback'))
@@ -303,10 +320,12 @@ class Today extends Component implements HasForms, HasTable
                         ->toolbarButtons(['bold', 'italic', 'bulletList', 'orderedList', 'link', 'redo', 'undo']),
                 ])
                 ->action(function (StudentReport $record, array $data): void {
+                    abort_unless($this->canAccessStudentCompanyRecord($record->studentAttendance?->studentCompany), 403);
+
                     $record->update(['academic_feedback' => $data['academic_feedback']]);
                     Toaster::success(__('Academic feedback saved successfully'));
                 })
-                ->visible(fn (): bool => auth()->user()->can('Report Update')),
+                ->visible(fn (): bool => auth()->user()->can('Report AcademicFeedback')),
 
             DeleteAction::make('delete')
                 ->label('')

@@ -13,7 +13,7 @@ use Modules\PPUDS\Services\AbsenceReportService;
 
 class AbsenceReportExport implements FromGenerator, ShouldAutoSize, WithHeadings
 {
-    public function __construct(protected Builder $query, protected ?string $date = null) {}
+    public function __construct(protected Builder $query, protected ?string $dateFrom = null, protected ?string $dateTo = null) {}
 
     public function headings(): array
     {
@@ -52,7 +52,7 @@ class AbsenceReportExport implements FromGenerator, ShouldAutoSize, WithHeadings
         $service = app(AbsenceReportService::class);
 
         foreach ($query->lazy(500) as $studentCompany) {
-            yield $this->rowFor($studentCompany, $service->summary($studentCompany, $this->date));
+            yield $this->rowFor($studentCompany, $service->summary($studentCompany, $this->dateFrom, $this->dateTo));
         }
     }
 

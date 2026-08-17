@@ -42,7 +42,8 @@ class AbsenceReportController extends Controller
      * @OA\Parameter(name="filter[supervisor_id]", in="query", required=false, description="Filter by university supervisor ID from the student's registration", @OA\Schema(type="integer")),
      * @OA\Parameter(name="filter[year]", in="query", required=false, description="Filter by academic year", @OA\Schema(type="integer")),
      * @OA\Parameter(name="filter[semester_type]", in="query", required=false, description="Filter by semester type", @OA\Schema(type="string")),
-     * @OA\Parameter(name="filter[date]", in="query", required=false, description="Limit the report to a single specific day instead of the whole semester", @OA\Schema(type="string", format="date", example="2026-08-10")),
+     * @OA\Parameter(name="filter[date_from]", in="query", required=false, description="Limit the report to a date range instead of the whole semester", @OA\Schema(type="string", format="date", example="2026-08-01")),
+     * @OA\Parameter(name="filter[date_to]", in="query", required=false, description="Limit the report to a date range instead of the whole semester", @OA\Schema(type="string", format="date", example="2026-08-10")),
      * @OA\Parameter(name="per_page", in="query", required=false, @OA\Schema(type="integer", example=15)),
      * @OA\Parameter(name="page", in="query", required=false, @OA\Schema(type="integer", example=1)),
      *
@@ -66,14 +67,14 @@ class AbsenceReportController extends Controller
     {
         $perPage = min((int) request('per_page', config('core.pagination.per_page', 15)), config('core.pagination.max_per_page', 100));
         $page = max((int) request('page', 1), 1);
-        $date = $this->dateFilter();
+        [$dateFrom, $dateTo] = $this->dateRangeFilter();
 
         $service = app(AbsenceReportService::class);
 
         $rows = $this->baseQuery()
             ->get()
-            ->map(function (StudentCompany $studentCompany) use ($service, $date) {
-                $studentCompany->absence_summary = $service->detailedSummary($studentCompany, $date);
+            ->map(function (StudentCompany $studentCompany) use ($service, $dateFrom, $dateTo) {
+                $studentCompany->absence_summary = $service->detailedSummary($studentCompany, $dateFrom, $dateTo);
 
                 return $studentCompany;
             })
@@ -129,10 +130,14 @@ class AbsenceReportController extends Controller
             ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query));
     }
 
-    private function dateFilter(): ?string
+    private function dateRangeFilter(): array
     {
-        $date = request('filter.date');
+        $dateFrom = request('filter.date_from');
+        $dateTo = request('filter.date_to');
 
-        return filled($date) ? Carbon::parse($date)->toDateString() : null;
+        return [
+            filled($dateFrom) ? Carbon::parse($dateFrom)->toDateString() : null,
+            filled($dateTo) ? Carbon::parse($dateTo)->toDateString() : null,
+        ];
     }
 }

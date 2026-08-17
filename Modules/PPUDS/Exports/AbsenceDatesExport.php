@@ -12,7 +12,7 @@ use Modules\PPUDS\Services\AbsenceReportService;
 
 class AbsenceDatesExport implements FromGenerator, ShouldAutoSize, WithHeadings
 {
-    public function __construct(protected Builder $query, protected ?string $date = null) {}
+    public function __construct(protected Builder $query, protected ?string $dateFrom = null, protected ?string $dateTo = null) {}
 
     public function headings(): array
     {
@@ -21,8 +21,9 @@ class AbsenceDatesExport implements FromGenerator, ShouldAutoSize, WithHeadings
             __('Student Name'),
             __('Company'),
             __('Branch'),
-            __('Absence Date'),
-            __('Absence Type'),
+            __('Total Absence Days'),
+            __('Excused Absence Dates'),
+            __('Unexcused Absence Dates'),
         ];
     }
 
@@ -42,24 +43,13 @@ class AbsenceDatesExport implements FromGenerator, ShouldAutoSize, WithHeadings
         $service = app(AbsenceReportService::class);
 
         foreach ($query->lazy(500) as $studentCompany) {
-            $detail = $service->detailedSummary($studentCompany, $this->date);
+            $detail = $service->detailedSummary($studentCompany, $this->dateFrom, $this->dateTo);
 
-            $dates = collect($detail['excused_absence_dates'])
-                ->map(fn (string $date) => [$date, __('Excused')])
-                ->concat(
-                    collect($detail['unexcused_absence_dates'])
-                        ->map(fn (string $date) => [$date, __('Unexcused')])
-                )
-                ->sortBy(fn (array $pair) => $pair[0])
-                ->values();
-
-            foreach ($dates as [$date, $type]) {
-                yield $this->rowFor($studentCompany, $date, $type);
-            }
+            yield $this->rowFor($studentCompany, $detail);
         }
     }
 
-    protected function rowFor(StudentCompany $studentCompany, string $date, string $type): array
+    protected function rowFor(StudentCompany $studentCompany, array $detail): array
     {
         $student = $studentCompany->student;
 
@@ -68,8 +58,14 @@ class AbsenceDatesExport implements FromGenerator, ShouldAutoSize, WithHeadings
             (string) ($student?->name ?? '---'),
             (string) ($studentCompany->company?->name ?? '---'),
             (string) ($studentCompany->branch?->name ?? '---'),
-            $date,
-            $type,
+            (string) ($detail['total_absence_days'] ?? 0),
+            $this->datesList($detail['excused_absence_dates'] ?? []),
+            $this->datesList($detail['unexcused_absence_dates'] ?? []),
         ];
+    }
+
+    protected function datesList(array $dates): string
+    {
+        return implode(', ', $dates);
     }
 }

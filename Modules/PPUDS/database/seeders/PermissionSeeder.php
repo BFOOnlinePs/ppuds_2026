@@ -721,6 +721,16 @@ class PermissionSeeder extends Seeder
                 'guard_name' => 'web',
                 'module_name' => 'Report',
             ],
+            [
+                'name' => 'Report CompanyFeedback',
+                'guard_name' => 'web',
+                'module_name' => 'Report',
+            ],
+            [
+                'name' => 'Report AcademicFeedback',
+                'guard_name' => 'web',
+                'module_name' => 'Report',
+            ],
 
             // TODO Sync System Data
             [
