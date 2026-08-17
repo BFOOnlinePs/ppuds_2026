@@ -6092,9 +6092,20 @@
                         }
                     },
                     {
-                        "name": "filter[date]",
+                        "name": "filter[date_from]",
                         "in": "query",
-                        "description": "Limit the report to a single specific day instead of the whole semester",
+                        "description": "Limit the report to a date range instead of the whole semester",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2026-08-01"
+                        }
+                    },
+                    {
+                        "name": "filter[date_to]",
+                        "in": "query",
+                        "description": "Limit the report to a date range instead of the whole semester",
                         "required": false,
                         "schema": {
                             "type": "string",
