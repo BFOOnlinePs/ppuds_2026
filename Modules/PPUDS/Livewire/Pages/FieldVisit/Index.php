@@ -49,7 +49,6 @@ class Index extends Component implements HasForms, HasTable
         $showingUnvisited = $this->isShowingUnvisitedStudents();
 
         return $table
-            ->heading($showingUnvisited ? '[DEBUG] not-visited mode is ON' : '[DEBUG] not-visited mode is OFF')
             ->query(fn () => $showingUnvisited ? $this->unvisitedStudentsQuery() : $this->fieldVisitsQuery())
             ->columns($showingUnvisited ? $this->unvisitedStudentColumns() : $this->fieldVisitColumns())
             ->filters($this->getTableFilters($showingUnvisited), layout: \Filament\Tables\Enums\FiltersLayout::AboveContent)
