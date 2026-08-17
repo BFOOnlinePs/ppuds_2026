@@ -3,7 +3,6 @@
 namespace Modules\PPUDS\Livewire\Pages\FieldVisit;
 
 use App\View\Components\AppLayout;
-use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Textarea;
@@ -108,7 +107,7 @@ class Index extends Component implements HasForms, HasTable
                 ->weight('bold')
                 ->color('primary')
                 ->description(fn (FieldVisit $record) => $record->studentCompany?->registration?->student?->email)
-                ->url(fn (FieldVisit $record) => route('field-visits.edit', $record)),
+                ->url(fn (FieldVisit $record) => $this->fieldVisitStudentDetailsUrl($record)),
 
             TextColumn::make('supervisor.name')
                 ->label(__('Supervisor'))
@@ -160,7 +159,8 @@ class Index extends Component implements HasForms, HasTable
                 ->sortable()
                 ->weight('bold')
                 ->color('primary')
-                ->description(fn (StudentCompany $record) => $record->student?->email),
+                ->description(fn (StudentCompany $record) => $record->student?->email)
+                ->url(fn (StudentCompany $record) => $this->unvisitedStudentDetailsUrl($record)),
 
             TextColumn::make('company.name')
                 ->label(__('Company'))
@@ -191,7 +191,29 @@ class Index extends Component implements HasForms, HasTable
 
     protected function isShowingUnvisitedStudents(): bool
     {
-        return (bool) data_get($this->getTableFilterState('not_visited'), 'not_visited', false);
+        return (bool) data_get($this->getTableFilterState('not_visited'), 'isActive', false);
+    }
+
+    protected function fieldVisitStudentDetailsUrl(FieldVisit $record): ?string
+    {
+        $student = $record->studentCompany?->registration?->student;
+
+        if (! $student || ! auth()->user()?->can('Student Details List')) {
+            return null;
+        }
+
+        return route('students.details', $student->id);
+    }
+
+    protected function unvisitedStudentDetailsUrl(StudentCompany $record): ?string
+    {
+        $student = $record->student;
+
+        if (! $student || ! auth()->user()?->can('Student Details List')) {
+            return null;
+        }
+
+        return route('students.details', $student->id);
     }
 
     protected function getTableFilters(): array
@@ -200,14 +222,11 @@ class Index extends Component implements HasForms, HasTable
 
         return [
             \Filament\Tables\Filters\Filter::make('not_visited')
-                ->label(__('Students Not Visited'))
-                ->form([
-                    Checkbox::make('not_visited')
-                        ->label(__('Show Students Not Visited Yet')),
-                ])
+                ->label(__('Show Students Not Visited Yet'))
+                ->toggle()
                 ->query(fn (Builder $query): Builder => $query)
-                ->indicateUsing(fn (array $data): array => filled($data['not_visited'] ?? null) && $data['not_visited']
-                    ? [\Filament\Tables\Filters\Indicator::make(__('Students Not Visited'))->removeField('not_visited')]
+                ->indicateUsing(fn (array $data): array => filled($data['isActive'] ?? null) && $data['isActive']
+                    ? [\Filament\Tables\Filters\Indicator::make(__('Students Not Visited'))->removeField('isActive')]
                     : []),
 
             \Filament\Tables\Filters\SelectFilter::make('student_id')
