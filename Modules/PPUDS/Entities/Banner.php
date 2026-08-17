@@ -74,10 +74,11 @@ class Banner extends Model implements TranslatableContract, HasMedia
         });
     }
 
-    public function registerAllMediaConversions(): void
+    public function registerMediaCollections(): void
     {
         $this->addMediaCollection('banner_image')
             ->singleFile()
+            ->useDisk('ppuds_banners')
             ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
     }
 

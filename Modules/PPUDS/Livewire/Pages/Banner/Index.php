@@ -4,9 +4,9 @@ namespace Modules\PPUDS\Livewire\Pages\Banner;
 
 use App\View\Components\AppLayout;
 use Filament\Forms;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Placeholder;
-use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -194,11 +194,14 @@ class Index extends Component implements HasTable, HasForms
                         ->content(fn () => view('core::components.image', ['url' => $record->getImageAttribute()])),
                 ] : []),
 
-                SpatieMediaLibraryFileUpload::make('banner_image')
+                // A plain FileUpload (not SpatieMediaLibraryFileUpload) because the
+                // latter sets dehydrated(false), so its value never reaches the
+                // action's $data. storeFiles(false) keeps the state as a
+                // TemporaryUploadedFile, which is what Banner::addImage() expects.
+                FileUpload::make('banner_image')
                     ->label(__('Image'))
                     ->image()
-                    ->disk('ppuds_banners')
-                    ->collection('banner_image')
+                    ->storeFiles(false)
                     ->required(! $record)
                     ->imageResizeMode('cover')
                     ->imageCropAspectRatio('16:9')
