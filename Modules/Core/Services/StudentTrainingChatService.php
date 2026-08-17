@@ -355,6 +355,7 @@ class StudentTrainingChatService
         $totalMinutes = (clone $baseQuery)
             ->whereNotNull('check_in')
             ->whereNotNull('check_out')
+            ->where('status', '!=', AttendanceStatus::DISCREPANCY->value)
             ->selectRaw('COALESCE(SUM(TIMESTAMPDIFF(MINUTE, check_in, check_out)), 0) as total_minutes')
             ->value('total_minutes');
 

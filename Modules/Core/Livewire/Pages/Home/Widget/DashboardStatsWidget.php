@@ -13,6 +13,7 @@ use Modules\PPUDS\Entities\LeaveRequest;
 use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Entities\StudentAttendance;
 use Modules\PPUDS\Entities\StudentCompany;
+use Modules\PPUDS\Enums\AttendanceStatus;
 use Modules\PPUDS\Enums\StudentGender;
 use Modules\PPUDS\Settings\GeneralSettings;
 
@@ -287,6 +288,7 @@ class DashboardStatsWidget extends StatsOverviewWidget
             ->whereIn('student_company_id', $studentCompanyIds)
             ->whereNotNull('check_in')
             ->whereNotNull('check_out')
+            ->where('status', '!=', AttendanceStatus::DISCREPANCY->value)
             ->get(['check_in', 'check_out'])
             ->sum(fn (StudentAttendance $attendance) => $attendance->check_in->diffInMinutes($attendance->check_out));
 
