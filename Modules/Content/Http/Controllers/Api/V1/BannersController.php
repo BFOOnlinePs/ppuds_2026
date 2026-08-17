@@ -3,7 +3,6 @@
 namespace Modules\Content\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use Modules\Content\Entities\Banner;
 use Modules\Content\Transformers\V1\BannerResource;
 use Modules\Core\Traits\ApiResponse;
@@ -106,6 +105,7 @@ class BannersController extends Controller
             ->allowedFields(BannerResource::allowedFields())
             ->allowedFilters(BannerResource::allowedFilters())
             ->allowedSorts(BannerResource::allowedSorts())
+            ->where('active', true)
             ->with(['media'])
             ->paginate($perPage)
             ->appends(request()->query());
@@ -117,41 +117,74 @@ class BannersController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        return view('content::create');
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request) {}
-
-    /**
-     * Show the specified resource.
+     * @OA\Get(
+     *     path="/api/v1/content/banners/{banner}",
+     *     summary="Get a single banner",
+     *     description="Retrieve details of a single active banner by id",
+     *     tags={"Content"},
+     *     security={{"sanctum": {}}},
+     *     @OA\Parameter(
+     *          name="Accept-Language",
+     *          in="header",
+     *          required=true,
+     *          description="Language header (ar or en)",
+     *          @OA\Schema(
+     *              type="string",
+     *              default="ar",
+     *              example="en"
+     *          )
+     *      ),
+     *     @OA\Parameter(
+     *         name="banner",
+     *         in="path",
+     *         required=true,
+     *         description="Banner id",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="fields",
+     *         in="query",
+     *         required=false,
+     *         description="Comma separated list of fields to be returned",
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Banner retrieved successfully",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="status", type="boolean", example=true),
+     *             @OA\Property(property="message", type="string", example="Banner retrieved successfully"),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="object",
+     *                 @OA\Property(property="id", type="integer", example=1),
+     *                 @OA\Property(property="name", type="string", example="Banner Name"),
+     *                 @OA\Property(property="branch_id", type="integer", example=1),
+     *                 @OA\Property(property="description", type="string", example="Banner Description")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=404, description="Banner not found"),
+     *     @OA\Response(response=401, description="Unauthenticated")
+     * )
      */
     public function show($id)
     {
-        return view('content::show');
+        $banner = QueryBuilder::for(Banner::class)
+            ->allowedFields(BannerResource::allowedFields())
+            ->where('id', $id)
+            ->where('active', true)
+            ->with(['media'])
+            ->first();
+
+        if (! $banner) {
+            return $this->errorResponse(__('Banner not found'), 404);
+        }
+
+        return $this->successResponse(
+            new BannerResource($banner),
+            __('Banner retrieved successfully')
+        );
     }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit($id)
-    {
-        return view('content::edit');
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, $id) {}
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy($id) {}
 }

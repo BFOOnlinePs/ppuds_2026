@@ -476,6 +476,101 @@
                 ]
             }
         },
+        "/api/v1/content/banners/{banner}": {
+            "get": {
+                "tags": [
+                    "Content"
+                ],
+                "summary": "Get a single banner",
+                "description": "Retrieve details of a single active banner by id",
+                "operationId": "79e8e7df5a5b6f0b89787e835311feb9",
+                "parameters": [
+                    {
+                        "name": "Accept-Language",
+                        "in": "header",
+                        "description": "Language header (ar or en)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "default": "ar",
+                            "example": "en"
+                        }
+                    },
+                    {
+                        "name": "banner",
+                        "in": "path",
+                        "description": "Banner id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "fields",
+                        "in": "query",
+                        "description": "Comma separated list of fields to be returned",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Banner retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Banner retrieved successfully"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "Banner Name"
+                                                },
+                                                "branch_id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "description": {
+                                                    "type": "string",
+                                                    "example": "Banner Description"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Banner not found"
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/content/faq-categories": {
             "get": {
                 "tags": [

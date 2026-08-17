@@ -40,9 +40,25 @@ use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 class Index extends Component implements HasForms, HasTable
 {
     use InteractsWithForms;
-    use InteractsWithTable;
+    use InteractsWithTable {
+        updatedTableFilters as baseUpdatedTableFilters;
+    }
     use HasSupervisorFilter;
     use ScopesStudentCompanyVisibility;
+
+    public function updatedTableFilters(): void
+    {
+        $this->baseUpdatedTableFilters();
+
+        // The table (query/columns/actions) is built once during Livewire's
+        // hydrate/booted phase, which runs BEFORE this filter update is applied
+        // to $this->tableFilters. Since switching "not visited" mode swaps the
+        // entire query/columns/actions (not just a where clause), we must
+        // rebuild the table here so it reflects the freshly toggled state
+        // before rendering — otherwise the toggle appears to do nothing until
+        // a later, unrelated interaction.
+        $this->bootedInteractsWithTable();
+    }
 
     public function table(Table $table): Table
     {

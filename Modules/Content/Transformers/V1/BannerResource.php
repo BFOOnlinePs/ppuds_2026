@@ -4,9 +4,9 @@ namespace Modules\Content\Transformers\V1;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Modules\Core\Entities\User;
 use Modules\Core\Traits\Concerns\SelectsFieldsFromApi;
 use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\AllowedSort;
 
 class BannerResource extends JsonResource
 {
@@ -33,20 +33,34 @@ class BannerResource extends JsonResource
 
     public static function allowedFields(): array
     {
-        $table = (new User())->getTable();
-        return array_map(fn($field) => $table . '.' . $field, (new User())->getFillable());
+        return [
+            'id',
+            'branch_id',
+            'bannable_type',
+            'bannable_id',
+            'active',
+            'created_at',
+            'updated_at',
+            'name',
+            'description',
+        ];
     }
 
     public static function allowedSorts(): array
     {
-        return [];
+        return [
+            AllowedSort::field('id'),
+            AllowedSort::field('branch_id'),
+            AllowedSort::field('created_at'),
+            AllowedSort::field('updated_at'),
+        ];
     }
 
     public static function allowedFilters(): array
     {
         return [
             AllowedFilter::exact('id'),
-            AllowedFilter::partial('name'),
+            AllowedFilter::partial('name', 'translations.name'),
             AllowedFilter::exact('branch_id'),
         ];
     }
