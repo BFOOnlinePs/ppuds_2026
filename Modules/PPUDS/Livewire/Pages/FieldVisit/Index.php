@@ -3,6 +3,7 @@
 namespace Modules\PPUDS\Livewire\Pages\FieldVisit;
 
 use App\View\Components\AppLayout;
+use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Textarea;
@@ -45,60 +46,14 @@ class Index extends Component implements HasForms, HasTable
 
     public function table(Table $table): Table
     {
+        $showingUnvisited = $this->isShowingUnvisitedStudents();
+
         return $table
-            ->query(fn () => FieldVisit::query()
-                ->with(['studentCompany.registration.student', 'supervisor'])
-                ->whereHas(
-                    'studentCompany',
-                    fn (Builder $studentCompanyQuery): Builder => $this->applyStudentCompanyVisibilityScope($studentCompanyQuery)
-                ))
-            ->columns([
-                TextColumn::make('studentCompany.registration.student.name')
-                    ->label(__('Student'))
-                    ->searchable()
-                    ->sortable()
-                    ->weight('bold')
-                    ->color('primary')
-                    ->description(fn (FieldVisit $record) => $record->studentCompany?->registration?->student?->email)
-                    ->url(fn (FieldVisit $record) => route('field-visits.edit', $record)),
-
-                TextColumn::make('supervisor.name')
-                    ->label(__('Supervisor'))
-                    ->searchable()
-                    ->sortable()
-                    ->icon('solar-user-id-bold-duotone'),
-
-                TextColumn::make('visiting_place')
-                    ->label(__('Visiting Place'))
-                    ->searchable()
-                    ->limit(30)
-                    ->icon('solar-map-point-bold-duotone'),
-
-                TextColumn::make('visit_date')
-                    ->label(__('Visit Date'))
-                    ->date('Y-m-d')
-                    ->sortable()
-                    ->icon('solar-calendar-date-bold-duotone'),
-
-                TextColumn::make('visit_time')
-                    ->label(__('Visit Time'))
-                    ->time('H:i')
-                    ->icon('solar-clock-circle-bold-duotone'),
-
-                TextColumn::make('visit_duration')
-                    ->label(__('Duration (Mins)'))
-                    ->numeric()
-                    ->sortable()
-                    ->suffix(' '.__('Mins')),
-
-                TextColumn::make('created_at')
-                    ->label(__('Created At'))
-                    ->dateTime('Y-m-d')
-                    ->toggleable(isToggledHiddenByDefault: true),
-            ])
+            ->query(fn () => $showingUnvisited ? $this->unvisitedStudentsQuery() : $this->fieldVisitsQuery())
+            ->columns($showingUnvisited ? $this->unvisitedStudentColumns() : $this->fieldVisitColumns())
             ->filters($this->getTableFilters(), layout: \Filament\Tables\Enums\FiltersLayout::AboveContent)
             ->filtersFormColumns(5)
-            ->actions($this->getTableActions())
+            ->actions($showingUnvisited ? [] : $this->getTableActions())
             ->headerActions([
                 Action::make('export_field_visits')
                     ->label(__('Export Field Visits'))
@@ -109,29 +64,164 @@ class Index extends Component implements HasForms, HasTable
                         $this->exportFilename(),
                         WriterType::XLSX
                     ))
-                    ->visible(fn () => auth()->user()->can('FieldVisit View List')),
+                    ->visible(fn () => ! $showingUnvisited && auth()->user()->can('FieldVisit View List')),
 
                 \Modules\Core\Filament\Forms\Components\CreateAction::make('create')
                     ->label(__('Add Field Visit'))
                     ->url(route('field-visits.add'))
                     ->visible(fn () => auth()->user()->can('FieldVisit Create')),
             ])
-            ->bulkActions($this->getTableBulkAction());
+            ->bulkActions($showingUnvisited ? [] : $this->getTableBulkAction());
+    }
+
+    protected function fieldVisitsQuery(): Builder
+    {
+        return FieldVisit::query()
+            ->with(['studentCompany.registration.student', 'supervisor'])
+            ->whereHas(
+                'studentCompany',
+                fn (Builder $studentCompanyQuery): Builder => $this->applyStudentCompanyVisibilityScope($studentCompanyQuery)
+            );
+    }
+
+    protected function unvisitedStudentsQuery(): Builder
+    {
+        return StudentCompany::query()
+            ->with([
+                'student.studentProfile',
+                'company.translations',
+                'branch.translations',
+                'department.translations',
+                'registration.supervisor',
+            ])
+            ->whereDoesntHave('fieldVisits')
+            ->tap(fn (Builder $query): Builder => $this->applyStudentCompanyVisibilityScope($query));
+    }
+
+    protected function fieldVisitColumns(): array
+    {
+        return [
+            TextColumn::make('studentCompany.registration.student.name')
+                ->label(__('Student'))
+                ->searchable()
+                ->sortable()
+                ->weight('bold')
+                ->color('primary')
+                ->description(fn (FieldVisit $record) => $record->studentCompany?->registration?->student?->email)
+                ->url(fn (FieldVisit $record) => route('field-visits.edit', $record)),
+
+            TextColumn::make('supervisor.name')
+                ->label(__('Supervisor'))
+                ->searchable()
+                ->sortable()
+                ->icon('solar-user-id-bold-duotone'),
+
+            TextColumn::make('visiting_place')
+                ->label(__('Visiting Place'))
+                ->searchable()
+                ->limit(30)
+                ->icon('solar-map-point-bold-duotone'),
+
+            TextColumn::make('visit_date')
+                ->label(__('Visit Date'))
+                ->date('Y-m-d')
+                ->sortable()
+                ->icon('solar-calendar-date-bold-duotone'),
+
+            TextColumn::make('visit_time')
+                ->label(__('Visit Time'))
+                ->time('H:i')
+                ->icon('solar-clock-circle-bold-duotone'),
+
+            TextColumn::make('visit_duration')
+                ->label(__('Duration (Mins)'))
+                ->numeric()
+                ->sortable()
+                ->suffix(' '.__('Mins')),
+
+            TextColumn::make('created_at')
+                ->label(__('Created At'))
+                ->dateTime('Y-m-d')
+                ->toggleable(isToggledHiddenByDefault: true),
+        ];
+    }
+
+    protected function unvisitedStudentColumns(): array
+    {
+        return [
+            TextColumn::make('student.studentProfile.student_number')
+                ->label(__('Student Number'))
+                ->weight('bold')
+                ->searchable(),
+
+            TextColumn::make('student.name')
+                ->label(__('Student'))
+                ->searchable()
+                ->sortable()
+                ->weight('bold')
+                ->color('primary')
+                ->description(fn (StudentCompany $record) => $record->student?->email),
+
+            TextColumn::make('company.name')
+                ->label(__('Company'))
+                ->icon('solar-buildings-bold-duotone'),
+
+            TextColumn::make('branch.name')
+                ->label(__('Branch'))
+                ->toggleable(),
+
+            TextColumn::make('department.name')
+                ->label(__('Department'))
+                ->toggleable(isToggledHiddenByDefault: true),
+
+            TextColumn::make('registration.supervisor.name')
+                ->label(__('Supervisor'))
+                ->icon('solar-user-id-bold-duotone'),
+
+            TextColumn::make('registration.semester')
+                ->label(__('Semester'))
+                ->badge()
+                ->toggleable(isToggledHiddenByDefault: true),
+
+            TextColumn::make('registration.year')
+                ->label(__('Year'))
+                ->toggleable(isToggledHiddenByDefault: true),
+        ];
+    }
+
+    protected function isShowingUnvisitedStudents(): bool
+    {
+        return (bool) data_get($this->getTableFilterState('not_visited'), 'not_visited', false);
     }
 
     protected function getTableFilters(): array
     {
+        $showingUnvisited = $this->isShowingUnvisitedStudents();
+
         return [
+            \Filament\Tables\Filters\Filter::make('not_visited')
+                ->label(__('Students Not Visited'))
+                ->form([
+                    Checkbox::make('not_visited')
+                        ->label(__('Show Students Not Visited Yet')),
+                ])
+                ->query(fn (Builder $query): Builder => $query)
+                ->indicateUsing(fn (array $data): array => filled($data['not_visited'] ?? null) && $data['not_visited']
+                    ? [\Filament\Tables\Filters\Indicator::make(__('Students Not Visited'))->removeField('not_visited')]
+                    : []),
+
             \Filament\Tables\Filters\SelectFilter::make('student_id')
                 ->label(__('Student'))
                 ->options(fn (): array => $this->studentOptions())
-                ->query(function (Builder $query, array $data): Builder {
+                ->query(function (Builder $query, array $data) use ($showingUnvisited): Builder {
                     return $query->when(
                         $data['value'] ?? null,
-                        fn (Builder $fieldVisitQuery, $studentId): Builder => $fieldVisitQuery->whereHas(
-                            'studentCompany',
-                            fn (Builder $studentCompanyQuery): Builder => $studentCompanyQuery->where('student_id', (int) $studentId)
-                        )
+                        fn (Builder $query, $studentId): Builder => $showingUnvisited
+                            ? $query->where('student_id', (int) $studentId)
+                            : $query->whereHas(
+                                'studentCompany',
+                                fn (Builder $studentCompanyQuery): Builder => $studentCompanyQuery->where('student_id', (int) $studentId)
+                            )
                     );
                 })
                 ->searchable()
@@ -140,15 +230,15 @@ class Index extends Component implements HasForms, HasTable
             \Filament\Tables\Filters\SelectFilter::make('supervisor_id')
                 ->label(__('Supervisor'))
                 ->options(fn (): array => $this->supervisorOptions())
-                ->query(function (Builder $query, array $data): Builder {
+                ->query(function (Builder $query, array $data) use ($showingUnvisited): Builder {
                     if ($this->shouldLockSupervisorFilter()) {
                         return $query;
                     }
 
                     return $query->when(
                         $data['value'] ?? null,
-                        fn (Builder $fieldVisitQuery, $supervisorId): Builder => $fieldVisitQuery->whereHas(
-                            'studentCompany.registration',
+                        fn (Builder $query, $supervisorId): Builder => $query->whereHas(
+                            $showingUnvisited ? 'registration' : 'studentCompany.registration',
                             fn (Builder $registrationQuery): Builder => $registrationQuery->where('supervisor_id', $supervisorId)
                         )
                     );
@@ -160,9 +250,11 @@ class Index extends Component implements HasForms, HasTable
             \Filament\Tables\Filters\SelectFilter::make('company')
                 ->label(__('Company'))
                 ->options(fn (): array => $this->companyOptions())
-                ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data) {
-                    return $query->when($data['value'], function ($q, $companyId) {
-                        $q->whereHas('studentCompany', fn ($scQ) => $scQ->where('company_id', $companyId));
+                ->query(function (Builder $query, array $data) use ($showingUnvisited): Builder {
+                    return $query->when($data['value'], function (Builder $query, $companyId) use ($showingUnvisited) {
+                        return $showingUnvisited
+                            ? $query->where('company_id', $companyId)
+                            : $query->whereHas('studentCompany', fn (Builder $scQuery) => $scQuery->where('company_id', $companyId));
                     });
                 })
                 ->searchable()
@@ -177,10 +269,13 @@ class Index extends Component implements HasForms, HasTable
                         ->placeholder(date('Y'))
                         ->prefixIcon('solar-calendar-search-bold-duotone'),
                 ])
-                ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data): \Illuminate\Database\Eloquent\Builder {
+                ->query(function (Builder $query, array $data) use ($showingUnvisited): Builder {
                     return $query->when(
                         $data['year'],
-                        fn (\Illuminate\Database\Eloquent\Builder $q, $year) => $q->whereHas('studentCompany.registration', fn ($regQ) => $regQ->where('year', $year))
+                        fn (Builder $query, $year): Builder => $query->whereHas(
+                            $showingUnvisited ? 'registration' : 'studentCompany.registration',
+                            fn (Builder $regQuery) => $regQuery->where('year', $year)
+                        )
                     );
                 }),
 
@@ -192,10 +287,13 @@ class Index extends Component implements HasForms, HasTable
                         ->default(app(\Modules\PPUDS\Settings\GeneralSettings::class)->semester_type->value)
                         ->prefixIcon('solar-bookmark-circle-bold-duotone'),
                 ])
-                ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data): \Illuminate\Database\Eloquent\Builder {
+                ->query(function (Builder $query, array $data) use ($showingUnvisited): Builder {
                     return $query->when(
                         $data['semester_type'],
-                        fn (\Illuminate\Database\Eloquent\Builder $q, $semester_type) => $q->whereHas('studentCompany.registration', fn ($regQ) => $regQ->where('semester', $semester_type))
+                        fn (Builder $query, $semester_type): Builder => $query->whereHas(
+                            $showingUnvisited ? 'registration' : 'studentCompany.registration',
+                            fn (Builder $regQuery) => $regQuery->where('semester', $semester_type)
+                        )
                     );
                 }),
         ];

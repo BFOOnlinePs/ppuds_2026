@@ -231,6 +231,30 @@ class Edit extends Component implements HasActions, HasForms
                 'data.department_id' => __('The selected department does not belong to the selected branch.'),
             ]);
         }
+
+        $this->guardAgainstPlacementChangeWithHistory($data);
+    }
+
+    protected function guardAgainstPlacementChangeWithHistory(array $data): void
+    {
+        $companyChanged = (int) ($data['company_id'] ?? 0) !== (int) $this->record->company_id;
+        $branchChanged = (int) ($data['branch_id'] ?? 0) !== (int) $this->record->branch_id;
+        $departmentChanged = (int) ($data['department_id'] ?? 0) !== (int) $this->record->department_id;
+
+        if (! $companyChanged && ! $branchChanged && ! $departmentChanged) {
+            return;
+        }
+
+        $hasHistory = $this->record->attendances()->exists()
+            || $this->record->fieldVisits()->exists()
+            || $this->record->leaveRequests()->exists()
+            || $this->record->payments()->exists();
+
+        if ($hasHistory) {
+            throw ValidationException::withMessages([
+                'data.company_id' => __('This placement already has attendance, field visits, leave requests, or payments recorded. Changing the company/branch/department here would wrongly attribute that history to the new company. Please mark this placement as finished and add a new placement for the new company instead.'),
+            ]);
+        }
     }
 
     public function render()
