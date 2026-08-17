@@ -6,7 +6,7 @@
     "Subscription": false,
     "Clinic": false,
     "Branch": true,
-    "Content": false,
+    "Content": true,
     "Marketing": false,
     "Delivery": false,
     "Reels": true,
