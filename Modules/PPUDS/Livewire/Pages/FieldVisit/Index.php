@@ -50,9 +50,9 @@ class Index extends Component implements HasForms, HasTable
 
         return $table
             ->heading($showingUnvisited ? '[DEBUG] not-visited mode is ON' : '[DEBUG] not-visited mode is OFF')
-            ->query(fn () => $this->isShowingUnvisitedStudents() ? $this->unvisitedStudentsQuery() : $this->fieldVisitsQuery())
+            ->query(fn () => $showingUnvisited ? $this->unvisitedStudentsQuery() : $this->fieldVisitsQuery())
             ->columns($showingUnvisited ? $this->unvisitedStudentColumns() : $this->fieldVisitColumns())
-            ->filters($this->getTableFilters(), layout: \Filament\Tables\Enums\FiltersLayout::AboveContent)
+            ->filters($this->getTableFilters($showingUnvisited), layout: \Filament\Tables\Enums\FiltersLayout::AboveContent)
             ->filtersFormColumns(5)
             ->actions($showingUnvisited ? [] : $this->getTableActions())
             ->headerActions([
@@ -65,7 +65,7 @@ class Index extends Component implements HasForms, HasTable
                         $this->exportFilename(),
                         WriterType::XLSX
                     ))
-                    ->visible(fn () => ! $this->isShowingUnvisitedStudents() && auth()->user()->can('FieldVisit View List')),
+                    ->visible(fn () => ! $showingUnvisited && auth()->user()->can('FieldVisit View List')),
 
                 \Modules\Core\Filament\Forms\Components\CreateAction::make('create')
                     ->label(__('Add Field Visit'))
@@ -218,7 +218,7 @@ class Index extends Component implements HasForms, HasTable
         return route('students.details', $student->id);
     }
 
-    protected function getTableFilters(): array
+    protected function getTableFilters(bool $showingUnvisited): array
     {
         return [
             \Filament\Tables\Filters\Filter::make('not_visited')
@@ -236,10 +236,10 @@ class Index extends Component implements HasForms, HasTable
             \Filament\Tables\Filters\SelectFilter::make('student_id')
                 ->label(__('Student'))
                 ->options(fn (): array => $this->studentOptions())
-                ->query(function (Builder $query, array $data): Builder {
+                ->query(function (Builder $query, array $data) use ($showingUnvisited): Builder {
                     return $query->when(
                         $data['value'] ?? null,
-                        fn (Builder $query, $studentId): Builder => $this->isShowingUnvisitedStudents()
+                        fn (Builder $query, $studentId): Builder => $showingUnvisited
                             ? $query->where('student_id', (int) $studentId)
                             : $query->whereHas(
                                 'studentCompany',
@@ -253,7 +253,7 @@ class Index extends Component implements HasForms, HasTable
             \Filament\Tables\Filters\SelectFilter::make('supervisor_id')
                 ->label(__('Supervisor'))
                 ->options(fn (): array => $this->supervisorOptions())
-                ->query(function (Builder $query, array $data): Builder {
+                ->query(function (Builder $query, array $data) use ($showingUnvisited): Builder {
                     if ($this->shouldLockSupervisorFilter()) {
                         return $query;
                     }
@@ -261,7 +261,7 @@ class Index extends Component implements HasForms, HasTable
                     return $query->when(
                         $data['value'] ?? null,
                         fn (Builder $query, $supervisorId): Builder => $query->whereHas(
-                            $this->isShowingUnvisitedStudents() ? 'registration' : 'studentCompany.registration',
+                            $showingUnvisited ? 'registration' : 'studentCompany.registration',
                             fn (Builder $registrationQuery): Builder => $registrationQuery->where('supervisor_id', $supervisorId)
                         )
                     );
@@ -273,9 +273,9 @@ class Index extends Component implements HasForms, HasTable
             \Filament\Tables\Filters\SelectFilter::make('company')
                 ->label(__('Company'))
                 ->options(fn (): array => $this->companyOptions())
-                ->query(function (Builder $query, array $data): Builder {
-                    return $query->when($data['value'], function (Builder $query, $companyId) {
-                        return $this->isShowingUnvisitedStudents()
+                ->query(function (Builder $query, array $data) use ($showingUnvisited): Builder {
+                    return $query->when($data['value'], function (Builder $query, $companyId) use ($showingUnvisited) {
+                        return $showingUnvisited
                             ? $query->where('company_id', $companyId)
                             : $query->whereHas('studentCompany', fn (Builder $scQuery) => $scQuery->where('company_id', $companyId));
                     });
@@ -292,11 +292,11 @@ class Index extends Component implements HasForms, HasTable
                         ->placeholder(date('Y'))
                         ->prefixIcon('solar-calendar-search-bold-duotone'),
                 ])
-                ->query(function (Builder $query, array $data): Builder {
+                ->query(function (Builder $query, array $data) use ($showingUnvisited): Builder {
                     return $query->when(
                         $data['year'],
                         fn (Builder $query, $year): Builder => $query->whereHas(
-                            $this->isShowingUnvisitedStudents() ? 'registration' : 'studentCompany.registration',
+                            $showingUnvisited ? 'registration' : 'studentCompany.registration',
                             fn (Builder $regQuery) => $regQuery->where('year', $year)
                         )
                     );
@@ -310,11 +310,11 @@ class Index extends Component implements HasForms, HasTable
                         ->default(app(\Modules\PPUDS\Settings\GeneralSettings::class)->semester_type->value)
                         ->prefixIcon('solar-bookmark-circle-bold-duotone'),
                 ])
-                ->query(function (Builder $query, array $data): Builder {
+                ->query(function (Builder $query, array $data) use ($showingUnvisited): Builder {
                     return $query->when(
                         $data['semester_type'],
                         fn (Builder $query, $semester_type): Builder => $query->whereHas(
-                            $this->isShowingUnvisitedStudents() ? 'registration' : 'studentCompany.registration',
+                            $showingUnvisited ? 'registration' : 'studentCompany.registration',
                             fn (Builder $regQuery) => $regQuery->where('semester', $semester_type)
                         )
                     );
