@@ -34,6 +34,7 @@ class Banner extends Model implements TranslatableContract, HasMedia
     ];
 
     public $translatedAttributes = [
+        'name',
         'url',
     ];
 

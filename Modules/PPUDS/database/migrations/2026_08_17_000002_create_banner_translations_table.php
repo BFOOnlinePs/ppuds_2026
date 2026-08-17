@@ -19,6 +19,7 @@ return new class extends Migration
                 ->cascadeOnDelete();
 
             $table->string('locale')->index();
+            $table->string('name');
             $table->string('url');
 
             $table->timestamps();

@@ -52,6 +52,18 @@ class Index extends Component implements HasTable, HasForms
                     ->width(72)
                     ->extraImgAttributes(['class' => 'rounded-md object-cover']),
 
+                TextColumn::make('name_ar')
+                    ->label(__('Name (Arabic)'))
+                    ->getStateUsing(fn (Banner $record) => $record->translate('ar')?->name)
+                    ->limit(30)
+                    ->placeholder('-'),
+
+                TextColumn::make('name_en')
+                    ->label(__('Name (English)'))
+                    ->getStateUsing(fn (Banner $record) => $record->translate('en')?->name)
+                    ->limit(30)
+                    ->placeholder('-'),
+
                 TextColumn::make('url_ar')
                     ->label(__('Link (Arabic)'))
                     ->getStateUsing(fn (Banner $record) => $record->translate('ar')?->url)
@@ -104,6 +116,8 @@ class Index extends Component implements HasTable, HasForms
                 ->form(fn (Banner $record) => $this->getFormSchema($record))
                 ->mountUsing(function (Forms\ComponentContainer $form, Banner $record) {
                     $form->fill([
+                        'name_ar' => $record->translate('ar')?->name,
+                        'name_en' => $record->translate('en')?->name,
                         'url_ar' => $record->translate('ar')?->url,
                         'url_en' => $record->translate('en')?->url,
                         'active' => $record->active,
@@ -146,6 +160,16 @@ class Index extends Component implements HasTable, HasForms
         return [
             Grid::make(1)->schema([
                 Grid::make(2)->schema([
+                    TextInput::make('name_ar')
+                        ->label(__('Name (Arabic)'))
+                        ->required()
+                        ->columnSpan(1),
+
+                    TextInput::make('name_en')
+                        ->label(__('Name (English)'))
+                        ->required()
+                        ->columnSpan(1),
+
                     TextInput::make('url_ar')
                         ->label(__('Link (Arabic)'))
                         ->url()
@@ -190,12 +214,18 @@ class Index extends Component implements HasTable, HasForms
 
     private function saveBanner(Banner $banner, array $data): void
     {
-        if (! empty($data['url_ar'])) {
-            $banner->translateOrNew('ar')->url = $data['url_ar'];
+        if (! empty($data['name_ar']) || ! empty($data['url_ar'])) {
+            $banner->translateOrNew('ar')->fill([
+                'name' => $data['name_ar'] ?? null,
+                'url' => $data['url_ar'] ?? null,
+            ]);
         }
 
-        if (! empty($data['url_en'])) {
-            $banner->translateOrNew('en')->url = $data['url_en'];
+        if (! empty($data['name_en']) || ! empty($data['url_en'])) {
+            $banner->translateOrNew('en')->fill([
+                'name' => $data['name_en'] ?? null,
+                'url' => $data['url_en'] ?? null,
+            ]);
         }
 
         $banner->save();

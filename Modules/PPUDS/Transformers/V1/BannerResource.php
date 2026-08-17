@@ -12,6 +12,7 @@ use Spatie\QueryBuilder\AllowedSort;
  *     title="PPUDS Banner Resource",
  *     description="Banner details",
  *     @OA\Property(property="id", type="integer", example=1),
+ *     @OA\Property(property="name", type="string", example="Registration Campaign"),
  *     @OA\Property(property="url", type="string", example="https://example.com/campaign"),
  *     @OA\Property(property="image", type="string", example="https://site.com/storage/ppuds/banners/img.png"),
  *     @OA\Property(property="created_at", type="string", format="date-time")
@@ -23,6 +24,7 @@ class BannerResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'name' => $this->name,
             'url' => $this->url,
             'image' => $this->getFirstMediaUrl('banner_image'),
             'created_at' => $this->created_at,
@@ -34,6 +36,7 @@ class BannerResource extends JsonResource
         return [
             'id',
             'created_at',
+            'name',
             'url',
         ];
     }

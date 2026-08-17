@@ -13,6 +13,7 @@ class BannerTranslation extends Model
     }
 
     protected $fillable = [
+        'name',
         'url',
         'locale',
     ];
