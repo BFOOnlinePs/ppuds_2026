@@ -49,8 +49,8 @@ class Index extends Component implements HasTable, HasForms
                     ->label('')
                     ->getStateUsing(fn (Banner $record) => $record->getImageAttribute())
                     ->height(48)
-                    ->width(72)
-                    ->extraImgAttributes(['class' => 'rounded-md object-cover']),
+                    ->width(96)
+                    ->extraImgAttributes(['class' => 'rounded-md object-contain']),
 
                 TextColumn::make('name_ar')
                     ->label(__('Name (Arabic)'))
@@ -203,8 +203,6 @@ class Index extends Component implements HasTable, HasForms
                     ->image()
                     ->storeFiles(false)
                     ->required(! $record)
-                    ->imageResizeMode('cover')
-                    ->imageCropAspectRatio('16:9')
                     ->maxSize(10000),
             ]),
         ];

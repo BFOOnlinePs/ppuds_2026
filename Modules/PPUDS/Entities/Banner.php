@@ -107,7 +107,9 @@ class Banner extends Model implements TranslatableContract, HasMedia
                 ->usingFileName($fileName)
                 ->toMediaCollection('banner_image', 'ppuds_banners');
 
-            $size = ImageSize::MEDIUM;
+            // scale() keeps the aspect ratio and only bounds the image, so the
+            // full banner stays visible — nothing is cropped off.
+            $size = ImageSize::LARGE;
 
             ImageService::optimize($media->getPath(), ImageQuality::HIGH->value);
             ImageService::resize($media->getPath(), $size->width(), $size->height());
