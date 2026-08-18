@@ -46,17 +46,38 @@ class Index extends Component implements HasForms, HasTable
     use HasSupervisorFilter;
     use ScopesStudentCompanyVisibility;
 
+    /**
+     * Mirrors the "not visited" toggle between requests so we can tell when the
+     * mode actually flips. Public so it survives in the Livewire snapshot.
+     */
+    public bool $notVisitedMode = false;
+
     public function updatedTableFilters(): void
     {
         $this->baseUpdatedTableFilters();
 
-        // The table (query/columns/actions) is built once during Livewire's
-        // hydrate/booted phase, which runs BEFORE this filter update is applied
-        // to $this->tableFilters. Since switching "not visited" mode swaps the
-        // entire query/columns/actions (not just a where clause), we must
-        // rebuild the table here so it reflects the freshly toggled state
-        // before rendering — otherwise the toggle appears to do nothing until
-        // a later, unrelated interaction.
+        $mode = $this->isShowingUnvisitedStudents();
+
+        if ($mode !== $this->notVisitedMode) {
+            $this->notVisitedMode = $mode;
+
+            // The two modes list different models, so any state keyed to the
+            // other model's columns has to go — a leftover search term or sort
+            // column silently empties the new list instead of filtering it.
+            $this->resetTableSearch();
+            $this->resetTableColumnSearches();
+            $this->tableSortColumn = null;
+            $this->tableSortDirection = null;
+            $this->deselectAllTableRecords();
+            $this->resetPage();
+        }
+
+        // Records fetched earlier in this request belong to the previous mode.
+        $this->flushCachedTableRecords();
+
+        // Columns/actions are baked into the table object, which was built during
+        // the hydrate/booted phase — before this filter update was applied. Rebuild
+        // so they match the mode we just switched to.
         $this->bootedInteractsWithTable();
     }
 
@@ -65,7 +86,11 @@ class Index extends Component implements HasForms, HasTable
         $showingUnvisited = $this->isShowingUnvisitedStudents();
 
         return $table
-            ->query(fn () => $showingUnvisited ? $this->unvisitedStudentsQuery() : $this->fieldVisitsQuery())
+            // Resolved lazily on every getQuery() call, so the rows always match
+            // the current toggle state even if this table object is stale.
+            ->query(fn (): Builder => $this->isShowingUnvisitedStudents()
+                ? $this->unvisitedStudentsQuery()
+                : $this->fieldVisitsQuery())
             ->columns($showingUnvisited ? $this->unvisitedStudentColumns() : $this->fieldVisitColumns())
             ->filters($this->getTableFilters($showingUnvisited), layout: \Filament\Tables\Enums\FiltersLayout::AboveContent)
             ->filtersFormColumns(5)
