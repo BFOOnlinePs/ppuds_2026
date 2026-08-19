@@ -19,6 +19,7 @@ class FieldVisitsExport implements FromGenerator, ShouldAutoSize, WithHeadings
         return [
             __('Student'),
             __('Email'),
+            __('Company'),
             __('Supervisor'),
             __('Visiting Place'),
             __('Visit Date'),
@@ -35,6 +36,7 @@ class FieldVisitsExport implements FromGenerator, ShouldAutoSize, WithHeadings
 
         $query->with([
             'studentCompany.registration.student',
+            'studentCompany.company.translations',
             'supervisor',
         ]);
 
@@ -50,6 +52,7 @@ class FieldVisitsExport implements FromGenerator, ShouldAutoSize, WithHeadings
         return [
             (string) $student?->name,
             (string) $student?->email,
+            (string) $fieldVisit->studentCompany?->company?->name,
             (string) $fieldVisit->supervisor?->name,
             (string) $fieldVisit->visiting_place,
             $this->dateValue($fieldVisit->visit_date),
