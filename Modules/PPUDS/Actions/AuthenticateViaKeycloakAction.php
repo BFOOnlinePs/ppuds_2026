@@ -4,6 +4,7 @@ namespace Modules\PPUDS\Actions;
 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Laravel\Socialite\Contracts\User as KeycloakUser;
 use Modules\Core\Entities\User;
@@ -83,7 +84,16 @@ class AuthenticateViaKeycloakAction
                 $user->update(['name' => $name]);
             }
 
-            $this->syncStudentIdentity($user, $username);
+            // Bookkeeping must never be the reason someone cannot sign in.
+            try {
+                $this->syncStudentIdentity($user, $username);
+            } catch (\Throwable $e) {
+                Log::error('Keycloak sign-in: could not sync the student identity.', [
+                    'user_id' => $user->id,
+                    'username' => $username,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             $user->generateAvatar();
 
@@ -132,6 +142,30 @@ class AuthenticateViaKeycloakAction
 
         if ($user->hasRole(UserRole::SUPER_ADMIN->value)) {
             $user->removeRole(UserRole::SUPER_ADMIN->value);
+        }
+
+        // `student_number` is UNIQUE, and MySQL counts soft-deleted rows in a
+        // unique index — while findUser() above cannot see them, because
+        // whereHas() filters them out. So a number held by a trashed profile
+        // is invisible to the lookup yet still blocks the write, which used to
+        // abort the whole sign-in with a constraint violation.
+        //
+        // Never take a number that belongs to a different profile: it is
+        // another student's identity. Record it and let the sign-in continue.
+        $existing = StudentProfile::withTrashed()
+            ->where('student_number', $username)
+            ->first();
+
+        if ($existing && (int) $existing->user_id !== (int) $user->id) {
+            Log::warning('Keycloak sign-in: student number already belongs to another profile, leaving it unchanged.', [
+                'student_number' => $username,
+                'signing_in_user_id' => $user->id,
+                'existing_profile_id' => $existing->id,
+                'existing_user_id' => $existing->user_id,
+                'existing_profile_trashed' => $existing->trashed(),
+            ]);
+
+            return;
         }
 
         StudentProfile::updateOrCreate(
