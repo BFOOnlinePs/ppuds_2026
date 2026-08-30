@@ -20,10 +20,16 @@ class GeneralSettings extends Settings
     public Carbon $start_semester;
     public Carbon $end_semester;
 
-    /** Whether students must be at the training branch to check in or out. */
+    // NOTE: these use `//` comments, not docblocks, on purpose. Spatie's
+    // PropertyReflector stops reading the native type as soon as a property
+    // has a docblock, and returns no type at all unless that docblock carries
+    // a @var line — which leaves the property uncast, so the stored int lands
+    // on an enum-typed property and blows up on load.
+
+    // Whether students must be at the training branch to check in or out.
     public WorkLocationEnforcement $work_location_enforcement;
 
-    /** How far from the branch a check-in still counts as "at work", in metres. */
+    // How far from the branch a stamp still counts as "at work", in metres.
     public int $work_location_allowed_distance_meters;
 
     /**
@@ -35,7 +41,7 @@ class GeneralSettings extends Settings
      */
     public array $work_location_required_major_ids;
 
-    /** Whether check-out is held to the same rule as check-in. */
+    // Whether check-out is held to the same rule as check-in.
     public bool $work_location_enforce_on_check_out;
 
     public string $facebook_url = 'https://www.facebook.com/ppu.edu';
