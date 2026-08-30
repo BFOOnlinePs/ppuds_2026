@@ -28,6 +28,7 @@ use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\Core\Listeners\AuthActivitySubscriber;
 use Modules\Core\Traits\ActivityLogReporting;
 use Modules\Core\Traits\PrintsTableReportPdf;
+use Spatie\Permission\Models\Role;
 
 /**
  * Sign-in report: successful logins, logouts, failed attempts and lockouts,
@@ -43,7 +44,7 @@ class AuthLog extends Component implements HasForms, HasTable
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn (): Builder => $this->activityQuery()->with('causer'))
+            ->query(fn (): Builder => $this->activityQuery()->with('causer.roles'))
             ->columns([
                 TextColumn::make('created_at')
                     ->label(__('Date'))
@@ -70,6 +71,14 @@ class AuthLog extends Component implements HasForms, HasTable
                             ->orWhere('email', 'like', "%{$search}%")
                     ))
                     ->weight('bold'),
+
+                TextColumn::make('causer_roles')
+                    ->label(__('Roles'))
+                    ->getStateUsing(fn (Model $record): string => $this->causerRoles($record))
+                    ->badge()
+                    ->separator('،')
+                    ->color('gray')
+                    ->toggleable(),
 
                 TextColumn::make('login')
                     ->label(__('Login Identifier'))
@@ -159,6 +168,14 @@ class AuthLog extends Component implements HasForms, HasTable
                     ? $query->where('causer_id', $data['value'])->where('causer_type', (new User)->getMorphClass())
                     : $query),
 
+            SelectFilter::make('causer_role')
+                ->label(__('Roles'))
+                ->options(fn (): array => $this->roleOptions())
+                ->multiple()
+                ->searchable()
+                ->preload()
+                ->query(fn (Builder $query, array $data): Builder => $this->applyRoleFilter($query, (array) ($data['values'] ?? []))),
+
             Filter::make('ip')
                 ->label(__('IP Address'))
                 ->form([
@@ -240,6 +257,73 @@ class AuthLog extends Component implements HasForms, HasTable
                 ])
                 ->modalSubmitAction(false),
         ];
+    }
+
+    /**
+     * Restricts the log to entries caused by a user holding any of the given
+     * roles.
+     *
+     * Failed attempts against an unknown login have no causer at all, so they
+     * drop out as soon as a role is chosen — a row with no user cannot belong
+     * to a role.
+     */
+    protected function applyRoleFilter(Builder $query, array $roles): Builder
+    {
+        $roles = array_values(array_filter($roles));
+
+        if ($roles === []) {
+            return $query;
+        }
+
+        return $query->whereHasMorph(
+            'causer',
+            [User::class],
+            fn (Builder $causer): Builder => $causer->whereHas(
+                'roles',
+                fn (Builder $causerRoles): Builder => $causerRoles->whereIn('name', $roles)
+            )
+        );
+    }
+
+    /**
+     * Only roles that actually appear in the sign-in log, so the list stays
+     * short and never offers a filter that returns nothing.
+     *
+     * @return array<string, string>
+     */
+    protected function roleOptions(): array
+    {
+        $causerIds = $this->activityQuery()
+            ->where('causer_type', (new User)->getMorphClass())
+            ->whereNotNull('causer_id')
+            ->distinct()
+            ->pluck('causer_id');
+
+        if ($causerIds->isEmpty()) {
+            return [];
+        }
+
+        return Role::query()
+            ->whereHas(
+                'users',
+                fn (Builder $users): Builder => $users->whereIn((new User)->getTable().'.id', $causerIds)
+            )
+            ->orderBy('name')
+            ->pluck('name', 'name')
+            ->map(fn (string $role): string => __($role))
+            ->all();
+    }
+
+    /** Comma-separated role names for one log row's causer. */
+    protected function causerRoles(Model $activity): string
+    {
+        $roles = $activity->causer?->roles;
+
+        if (blank($roles)) {
+            return '—';
+        }
+
+        return $roles->pluck('name')->map(fn (string $role): string => __($role))->implode('، ');
     }
 
     protected function eventLabel(?string $event): string

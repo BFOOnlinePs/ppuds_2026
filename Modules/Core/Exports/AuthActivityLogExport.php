@@ -27,6 +27,7 @@ class AuthActivityLogExport implements FromGenerator, ShouldAutoSize, WithHeadin
             __('Description'),
             __('User'),
             __('Email'),
+            __('Roles'),
             __('Login Identifier'),
             __('IP Address'),
             __('Browser'),
@@ -40,7 +41,7 @@ class AuthActivityLogExport implements FromGenerator, ShouldAutoSize, WithHeadin
     {
         $query = clone $this->query;
 
-        $query->with('causer');
+        $query->with('causer.roles');
 
         foreach ($query->lazy(500) as $activity) {
             yield $this->rowFor($activity);
@@ -57,6 +58,7 @@ class AuthActivityLogExport implements FromGenerator, ShouldAutoSize, WithHeadin
             __((string) $activity->description),
             (string) ($activity->causer?->name ?? '---'),
             (string) ($activity->causer?->email ?? '---'),
+            $this->rolesValue($activity),
             (string) ($properties['login'] ?? '---'),
             (string) ($properties['ip'] ?? '---'),
             (string) ($properties['browser'] ?? '---'),
@@ -64,6 +66,18 @@ class AuthActivityLogExport implements FromGenerator, ShouldAutoSize, WithHeadin
             (string) ($properties['guard'] ?? '---'),
             (string) ($properties['user_agent'] ?? '---'),
         ];
+    }
+
+    /** The roles held by whoever caused the entry, translated. */
+    protected function rolesValue(Model $activity): string
+    {
+        $roles = $activity->causer?->roles;
+
+        if (blank($roles)) {
+            return '---';
+        }
+
+        return $roles->pluck('name')->map(fn (string $role): string => __($role))->implode('، ');
     }
 
     /** @return array<string, mixed> */
