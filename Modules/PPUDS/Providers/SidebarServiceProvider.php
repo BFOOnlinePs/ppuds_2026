@@ -105,6 +105,7 @@ class SidebarServiceProvider extends ServiceProvider
                 ->add(new SidebarItem('Today Reports', 'solar-document-text-bold-duotone', ['Report View List'], 'reports.today'))
                 ->add(new SidebarItem('Absence Report', 'solar-calendar-search-bold-duotone', ['Report View List'], 'absence-reports.index'))
                 ->add(new SidebarItem('Non Compliance Report', 'solar-calendar-search-bold-duotone', ['Report View List'], 'non-compliance-reports.index'))
+                ->add(new SidebarItem('Supervisor Report', 'solar-user-speak-rounded-bold-duotone', ['Supervisor Report View List'], 'supervisor-reports.index'))
         );
 
         $sidebar->add(

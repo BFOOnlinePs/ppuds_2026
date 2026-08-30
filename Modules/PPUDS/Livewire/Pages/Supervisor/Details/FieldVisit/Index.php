@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Livewire\Component;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
+use Modules\Core\Filament\Tables\Columns\UserColumn;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\FieldVisit;
 use Modules\PPUDS\Enums\SemesterType;
@@ -52,17 +53,11 @@ class Index extends Component implements HasForms, HasTable
                 ])
             )
             ->columns([
-                TextColumn::make('studentCompany.student.name')
+                UserColumn::make('studentCompany.student.name')
                     ->label(__('Student'))
+                    ->user(fn (FieldVisit $record) => $record->studentCompany?->student)
                     ->searchable()
-                    ->sortable()
-                    ->weight('bold')
-                    ->color('primary')
-                    ->description(fn (FieldVisit $record) => $record->studentCompany?->student?->email)
-                    ->url(fn (FieldVisit $record) => auth()->user()->can('Student Details List') && $record->studentCompany?->student_id
-                        ? route('students.details', $record->studentCompany->student_id)
-                        : null
-                    ),
+                    ->sortable(),
 
                 TextColumn::make('studentCompany.company.name')
                     ->label(__('Company'))

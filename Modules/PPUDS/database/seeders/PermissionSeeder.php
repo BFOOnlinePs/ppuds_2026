@@ -717,6 +717,20 @@ class PermissionSeeder extends Seeder
             ],
 
 
+            // TODO Supervisor Report
+            [
+                'name' => 'Supervisor Report View List',
+                'guard_name' => 'web',
+                'module_name' => 'Supervisor Report',
+            ],
+
+            // TODO Activity Log
+            [
+                'name' => 'Activity Log View List',
+                'guard_name' => 'web',
+                'module_name' => 'Activity Log',
+            ],
+
             // TODO Report
             [
                 'name' => 'Report View List',

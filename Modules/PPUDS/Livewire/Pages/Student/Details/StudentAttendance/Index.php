@@ -30,6 +30,7 @@ use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\MapPicker;
 use Modules\Core\Filament\Forms\Components\Textarea;
 use Modules\Core\Filament\Forms\Components\ViewAction;
+use Modules\Core\Filament\Tables\Columns\UserColumn;
 use Modules\PPUDS\Entities\Major;
 use Modules\PPUDS\Entities\StudentAttendance;
 use Modules\PPUDS\Entities\StudentCompany;
@@ -65,8 +66,9 @@ class Index extends Component implements HasForms, HasTable
                 ))
                 ->with(['studentCompany.registration', 'studentReport']))
             ->columns([
-                TextColumn::make('studentCompany.student.name')
+                UserColumn::make('studentCompany.student.name')
                     ->label(__('Student Name'))
+                    ->user(fn ($record) => $record->studentCompany?->student)
                     ->searchable(query: fn (Builder $query, string $search): Builder => $this->applyStudentSearchToAttendanceQuery($query, $search)),
 
                 TextColumn::make('studentCompany.company.name')

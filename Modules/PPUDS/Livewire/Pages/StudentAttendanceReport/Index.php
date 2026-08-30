@@ -10,6 +10,7 @@ use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Columns\TextColumn;
@@ -25,13 +26,17 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\HtmlString;
 use Livewire\Component;
+use Maatwebsite\Excel\Excel as WriterType;
 use Masmerise\Toaster\Toaster;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
+use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\StudentReport;
+use Modules\PPUDS\Exports\StudentReportsExport;
 use Modules\PPUDS\Support\HasSupervisorFilter;
+use Modules\Core\Traits\PrintsTableReportPdf;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
 class Index extends Component implements HasForms, HasTable
@@ -39,6 +44,7 @@ class Index extends Component implements HasForms, HasTable
     use InteractsWithForms;
     use InteractsWithTable;
     use HasSupervisorFilter;
+    use PrintsTableReportPdf;
     use ScopesStudentCompanyVisibility;
 
     public array $filters = [];
@@ -140,8 +146,32 @@ class Index extends Component implements HasForms, HasTable
                 //    ->label(__('Add Report'))
                 //    ->url(route('student-reports.add'))
                 //    ->visible(fn() => auth()->user()->can('StudentReport Create')),
+
+                Action::make('export')
+                    ->label(__('Export'))
+                    ->icon('heroicon-m-arrow-down-tray')
+                    ->color('success')
+                    ->action(fn () => app(ExcelServiceInterface::class)->download(
+                        new StudentReportsExport($this->getTableQueryForExport()),
+                        $this->exportFilename(),
+                        WriterType::XLSX
+                    ))
+                    ->visible(fn (): bool => auth()->user()->can('StudentReport View')),
+
+                $this->printPdfAction()
+                    ->visible(fn (): bool => auth()->user()->can('StudentReport View')),
             ])
             ->bulkActions($this->getTableBulkAction());
+    }
+
+    protected function exportFilename(): string
+    {
+        return 'attendance-reports-'.now()->format('Y-m-d-His').'.xlsx';
+    }
+
+    protected function tableReportPdfTitle(): string
+    {
+        return __('Attendance Reports');
     }
 
     protected function studentDisplayColumnState(StudentReport $record): HtmlString|string

@@ -33,6 +33,7 @@ use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
+use Modules\Core\Filament\Tables\Columns\UserColumn;
 use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\PPUDS\Entities\LeaveRequest;
 use Modules\PPUDS\Entities\StudentCompany;
@@ -71,12 +72,10 @@ class Index extends Component implements HasTable, HasForms
                 )
                 ->latest())
             ->columns([
-                TextColumn::make('studentCompany.student.name')
+                UserColumn::make('studentCompany.student.name')
                     ->label(__('Student'))
+                    ->user(fn (LeaveRequest $record) => $record->studentCompany?->student)
                     ->searchable()
-                    ->action(fn (LeaveRequest $record) => $this->mountTableAction('view', (string) $record->getKey()))
-                    ->disabledClick(fn (): bool => ! auth()->user()?->can('LeaveRequest View'))
-                    ->color(fn (): ?string => auth()->user()?->can('LeaveRequest View') ? 'primary' : null)
                     ->sortable(),
 
                 TextColumn::make('type')

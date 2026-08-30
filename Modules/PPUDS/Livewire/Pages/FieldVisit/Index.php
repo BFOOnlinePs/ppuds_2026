@@ -28,6 +28,7 @@ use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
+use Modules\Core\Filament\Tables\Columns\UserColumn;
 use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\FieldVisit;
@@ -142,14 +143,11 @@ class Index extends Component implements HasForms, HasTable
     protected function fieldVisitColumns(): array
     {
         return [
-            TextColumn::make('studentCompany.registration.student.name')
+            UserColumn::make('studentCompany.registration.student.name')
                 ->label(__('Student'))
+                ->user(fn (FieldVisit $record) => $record->studentCompany?->registration?->student ?? $record->studentCompany?->student)
                 ->searchable()
-                ->sortable()
-                ->weight('bold')
-                ->color('primary')
-                ->description(fn (FieldVisit $record) => $record->studentCompany?->registration?->student?->email)
-                ->url(fn (FieldVisit $record) => $this->fieldVisitStudentDetailsUrl($record)),
+                ->sortable(),
 
             TextColumn::make('studentCompany.company.name')
                 ->label(__('Company'))
@@ -162,11 +160,12 @@ class Index extends Component implements HasForms, HasTable
                 ->icon('solar-buildings-bold-duotone')
                 ->url(fn (FieldVisit $record) => $this->fieldVisitCompanyDetailsUrl($record)),
 
-            TextColumn::make('supervisor.name')
+            UserColumn::make('supervisor.name')
                 ->label(__('Supervisor'))
+                ->user(fn (FieldVisit $record) => $record->supervisor)
+                ->linksToSupervisor()
                 ->searchable()
-                ->sortable()
-                ->icon('solar-user-id-bold-duotone'),
+                ->sortable(),
 
             TextColumn::make('visiting_place')
                 ->label(__('Visiting Place'))
@@ -206,14 +205,11 @@ class Index extends Component implements HasForms, HasTable
                 ->weight('bold')
                 ->searchable(),
 
-            TextColumn::make('student.name')
+            UserColumn::make('student.name')
                 ->label(__('Student'))
+                ->user(fn (StudentCompany $record) => $record->student)
                 ->searchable()
-                ->sortable()
-                ->weight('bold')
-                ->color('primary')
-                ->description(fn (StudentCompany $record) => $record->student?->email)
-                ->url(fn (StudentCompany $record) => $this->unvisitedStudentDetailsUrl($record)),
+                ->sortable(),
 
             TextColumn::make('company.name')
                 ->label(__('Company'))
@@ -227,9 +223,10 @@ class Index extends Component implements HasForms, HasTable
                 ->label(__('Department'))
                 ->toggleable(isToggledHiddenByDefault: true),
 
-            TextColumn::make('registration.supervisor.name')
+            UserColumn::make('registration.supervisor.name')
                 ->label(__('Supervisor'))
-                ->icon('solar-user-id-bold-duotone'),
+                ->user(fn (StudentCompany $record) => $record->registration?->supervisor)
+                ->linksToSupervisor(),
 
             TextColumn::make('registration.semester')
                 ->label(__('Semester'))
@@ -247,17 +244,6 @@ class Index extends Component implements HasForms, HasTable
         return (bool) data_get($this->getTableFilterState('not_visited'), 'not_visited_toggle', false);
     }
 
-    protected function fieldVisitStudentDetailsUrl(FieldVisit $record): ?string
-    {
-        $student = $record->studentCompany?->registration?->student;
-
-        if (! $student || ! auth()->user()?->can('Student Details List')) {
-            return null;
-        }
-
-        return route('students.details', $student->id);
-    }
-
     protected function fieldVisitCompanyDetailsUrl(FieldVisit $record): ?string
     {
         $companyId = $record->studentCompany?->company_id;
@@ -267,17 +253,6 @@ class Index extends Component implements HasForms, HasTable
         }
 
         return route('companies.details', $companyId);
-    }
-
-    protected function unvisitedStudentDetailsUrl(StudentCompany $record): ?string
-    {
-        $student = $record->student;
-
-        if (! $student || ! auth()->user()?->can('Student Details List')) {
-            return null;
-        }
-
-        return route('students.details', $student->id);
     }
 
     protected function getTableFilters(bool $showingUnvisited): array

@@ -166,6 +166,13 @@ class User extends Authenticatable implements HasMedia, WirechatUser
         return $this->getAvatarUrlAttribute();
     }
 
+    /** Avatar background colours, indexed deterministically per user. */
+    protected const AVATAR_PALETTE = [
+        '#f44336', '#E91E63', '#9C27B0', '#673AB7', '#3F51B5',
+        '#2196F3', '#03A9F4', '#00BCD4', '#009688', '#4CAF50',
+        '#8BC34A', '#CDDC39', '#FFC107', '#FF9800', '#FF5722',
+    ];
+
     public function getWirechatNameAttribute(): string
     {
         return $this->name;
@@ -205,13 +212,18 @@ class User extends Authenticatable implements HasMedia, WirechatUser
 
     protected function getDefaultRandomColor(): string
     {
-        $colors = [
-            '#f44336', '#E91E63', '#9C27B0', '#673AB7', '#3F51B5',
-            '#2196F3', '#03A9F4', '#00BCD4', '#009688', '#4CAF50',
-            '#8BC34A', '#CDDC39', '#FFC107', '#FF9800', '#FF5722',
-        ];
+        return self::AVATAR_PALETTE[$this->avatarPaletteIndex()];
+    }
 
-        return $colors[array_rand($colors)];
+    /**
+     * Same user, same colour, every render. Picking at random made a row's
+     * avatar flicker to a new colour on each Livewire refresh.
+     */
+    protected function avatarPaletteIndex(): int
+    {
+        $seed = $this->getKey() ?: crc32((string) ($this->name ?? $this->email ?? ''));
+
+        return ((int) $seed) % count(self::AVATAR_PALETTE);
     }
 
     private function generateInitials(string $name): array
@@ -223,7 +235,18 @@ class User extends Authenticatable implements HasMedia, WirechatUser
         return ['initials' => $initials, 'is_arabic' => $isArabic];
     }
 
+    protected ?string $generatedDefaultAvatar = null;
+
     protected function generateDefaultAvatar(): string
+    {
+        if ($this->generatedDefaultAvatar !== null) {
+            return $this->generatedDefaultAvatar;
+        }
+
+        return $this->generatedDefaultAvatar = $this->buildDefaultAvatar();
+    }
+
+    protected function buildDefaultAvatar(): string
     {
         // 1. Get the full name and generate initials data
         $name = $this->getAvatarName();
@@ -276,29 +299,63 @@ class User extends Authenticatable implements HasMedia, WirechatUser
 
     public function getUserDisplayHtmlAttribute(): \Illuminate\Support\HtmlString
     {
-        $imageUrl = $this->getProfileImageUrlAttribute();
-        $name = e($this->name);
-        $email = e($this->email);
+        return $this->userDisplayHtml();
+    }
+
+    /**
+     * Avatar + name + secondary line, as used for every person shown in a
+     * table cell. $subtitle defaults to the email; pass something else (a
+     * student number, a role) when the table needs a different second line.
+     */
+    public function userDisplayHtml(?string $subtitle = null, bool $muted = false): \Illuminate\Support\HtmlString
+    {
+        $name = e($this->name ?: __('Unknown'));
+        $subtitle = $subtitle ?? $this->email;
+        $nameColor = $muted
+            ? 'text-gray-700 dark:text-gray-300'
+            : 'text-gray-900 dark:text-gray-100';
+
+        $avatar = $this->avatarMarkup();
+
+        $subtitleMarkup = filled($subtitle)
+            ? '<span class="block max-w-full truncate text-xs text-gray-500 dark:text-gray-400" dir="auto">'.e($subtitle).'</span>'
+            : '';
 
         $html = <<<HTML
-            <div class="flex items-center gap-4">
-                <img
-                    src="{$imageUrl}"
-                    alt="{$name}"
-                    class="w-10 h-10 rounded-full object-cover border border-gray-300 dark:border-gray-600"
-                    loading="lazy"
-                    width="20"
-                    height="20"
-                    onerror="this.onerror=null;this.src='{$imageUrl}';"
-                >
-                <div class="flex flex-col overflow-hidden">
-                    <span class="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">{$name}</span>
-                    <span class="text-sm text-gray-500 dark:text-gray-400 truncate">{$email}</span>
-                </div>
+            <div class="flex min-w-0 items-center gap-3">
+                {$avatar}
+                <span class="flex min-w-0 flex-col leading-tight">
+                    <span class="block max-w-full truncate text-sm font-semibold {$nameColor}">{$name}</span>
+                    {$subtitleMarkup}
+                </span>
             </div>
             HTML;
 
         return new \Illuminate\Support\HtmlString($html);
+    }
+
+    /**
+     * An uploaded avatar renders as an <img>; everyone else gets a coloured
+     * initial drawn in CSS. The CSS branch matters: the PNG fallback runs the
+     * image encoder once per user, which is far too slow for a table page.
+     */
+    protected function avatarMarkup(): string
+    {
+        $name = e($this->name ?: __('Unknown'));
+        $ring = 'ring-1 ring-gray-200';
+        $media = $this->getFirstMedia('avatar');
+
+        if ($media) {
+            return '<img src="'.e($media->getUrl()).'" alt="'.$name.'" loading="lazy" width="40" height="40"'
+                .' class="h-10 w-10 shrink-0 rounded-full object-cover shadow-sm '.$ring.'">';
+        }
+
+        $initials = e($this->generateInitials($this->getAvatarName())['initials']);
+        $color = $this->getDefaultRandomColor();
+
+        return '<span aria-hidden="true" style="background-color: '.e($color).'"'
+            .' class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold uppercase text-white shadow-sm '.$ring.'">'
+            .$initials.'</span>';
     }
 
     public function userModules(): HasMany

@@ -266,6 +266,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 });
 
                 Route::group([
+                    'prefix' => 'supervisor-reports',
+                    'as' => 'supervisor-reports.',
+                    'namespace' => 'Modules\PPUDS\Livewire\Pages\SupervisorReport',
+                ], function () {
+                    Route::get('/', Index::class)->name('index')->can('Supervisor Report View List');
+                    Route::get('/{user}/details', Details::class)->name('details')->can('Supervisor Report View List');
+                });
+
+                Route::group([
                     'prefix' => 'sync-company-supervisors',
                     'as' => 'sync-company-supervisors.',
                     'namespace' => 'Modules\PPUDS\Livewire\Pages\SyncCompanySupervisors',

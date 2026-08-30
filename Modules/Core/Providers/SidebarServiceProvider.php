@@ -34,6 +34,12 @@ class SidebarServiceProvider extends ServiceProvider
         );
 
         $sidebar->add(
+            (new SidebarGroup('Activity Log', 'solar-history-3-bold-duotone', [], 135))
+                ->add(new SidebarItem('Activity Log Report', 'solar-clipboard-list-bold-duotone', ['Activity Log View List'], 'activity-logs.index'))
+                ->add(new SidebarItem('Login Activity Log', 'solar-login-3-bold-duotone', ['Activity Log View List'], 'activity-logs.auth'))
+        );
+
+        $sidebar->add(
             (new SidebarGroup('Settings', 'solar-settings-bold-duotone', [], 140))
                 ->add(new SidebarItem('System Settings', 'solar-settings-bold-duotone', ['Setting View'], 'settings'))
                 ->add(new SidebarItem('Sync System Data', 'solar-server-square-update-bold-duotone', ['Sync System Data View'], 'sync-system-data.index'))

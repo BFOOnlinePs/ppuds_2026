@@ -3,8 +3,13 @@
 namespace Modules\PPUDS\Livewire\Pages\NonComplianceReport;
 
 use App\View\Components\AppLayout;
+use Filament\Actions\Action;
+use Filament\Actions\Concerns\InteractsWithActions;
+use Filament\Actions\Contracts\HasActions;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -13,22 +18,32 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Maatwebsite\Excel\Excel as WriterType;
+use Masmerise\Toaster\Toaster;
+use Modules\Core\Interfaces\ExcelServiceInterface;
+use Modules\Core\Services\PdfService;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\SemesterType;
+use Modules\PPUDS\Exports\NonComplianceReportExport;
 use Modules\PPUDS\Services\NonComplianceReportService;
 use Modules\PPUDS\Settings\GeneralSettings;
 use Modules\PPUDS\Support\HasSupervisorFilter;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
-class Index extends Component implements HasForms
+class Index extends Component implements HasActions, HasForms
 {
+    use InteractsWithActions;
     use InteractsWithForms;
     use HasSupervisorFilter;
     use ScopesStudentCompanyVisibility;
     use WithPagination;
+
+    /** mPDF holds the whole document in memory, so cap what one print can contain. */
+    private const PRINT_MAX_ROWS = 2000;
 
     public ?array $filters = [];
 
@@ -171,6 +186,136 @@ class Index extends Component implements HasForms
                     $this->outsideWorkRangeDistanceMeters(),
                 ]
             );
+    }
+
+    public function exportAction(): Action
+    {
+        return Action::make('export')
+            ->label(__('Export'))
+            ->icon('heroicon-m-arrow-down-tray')
+            ->color('success')
+            ->action(fn () => app(ExcelServiceInterface::class)->download(
+                $this->reportExportFor($this->nonCompliantQuery()),
+                'non-compliance-report-'.now()->format('Y-m-d-His').'.xlsx',
+                WriterType::XLSX
+            ))
+            ->visible(fn (): bool => auth()->user()->can('Report View List'));
+    }
+
+    public function printPdfAction(): Action
+    {
+        return Action::make('printPdf')
+            ->label(__('Print PDF'))
+            ->icon('solar-printer-bold')
+            ->color('info')
+            ->modalHeading(__('Print PDF'))
+            ->modalDescription(__('Select the columns you want to include in the printed report.'))
+            ->modalSubmitActionLabel(__('Print'))
+            ->modalWidth('2xl')
+            ->form([
+                CheckboxList::make('columns')
+                    ->label(__('Columns To Print'))
+                    ->options(fn (): array => $this->printableColumnOptions())
+                    ->default(fn (): array => array_keys($this->printableColumnOptions()))
+                    ->columns(3)
+                    ->bulkToggleable()
+                    ->required(),
+
+                Radio::make('orientation')
+                    ->label(__('Page Orientation'))
+                    ->options([
+                        'L' => __('Landscape'),
+                        'P' => __('Portrait'),
+                    ])
+                    ->default('L')
+                    ->inline()
+                    ->inlineLabel(false),
+            ])
+            ->action(fn (array $data) => $this->streamNonCompliancePdf(
+                (array) ($data['columns'] ?? []),
+                $data['orientation'] ?? 'L',
+            ))
+            ->visible(fn (): bool => auth()->user()->can('Report View List'));
+    }
+
+    /**
+     * The report has no Filament table to read columns from, so the printable
+     * columns are the export's own headings, addressed by position.
+     */
+    private function printableColumnOptions(): array
+    {
+        return collect($this->reportExportFor(StudentCompany::query())->headings())
+            ->mapWithKeys(fn (string $heading, int $index): array => [$index => $heading])
+            ->all();
+    }
+
+    private function streamNonCompliancePdf(array $columnIndexes, string $orientation = 'L')
+    {
+        $columnIndexes = array_values(array_map('intval', $columnIndexes));
+
+        if ($columnIndexes === []) {
+            Toaster::error(__('Select at least one column to print.'));
+
+            return null;
+        }
+
+        $query = $this->nonCompliantQuery();
+        $recordsCount = (clone $query)->count();
+
+        if ($recordsCount > self::PRINT_MAX_ROWS) {
+            Toaster::error(__('The filtered results (:count) exceed the print limit of :max records. Please narrow your filter and try again.', [
+                'count' => $recordsCount,
+                'max' => self::PRINT_MAX_ROWS,
+            ]));
+
+            return null;
+        }
+
+        $export = $this->reportExportFor($query);
+        $headings = $export->headings();
+        $rows = new Collection;
+
+        foreach ($export->generator() as $row) {
+            $rows->push(array_map(fn (int $index): string => (string) ($row[$index] ?? '—'), $columnIndexes));
+        }
+
+        return app(PdfService::class)->streamPdf(
+            'core::pdf.table-report',
+            [
+                'title' => __('Non Compliance Report'),
+                'headings' => array_map(fn (int $index): string => $headings[$index] ?? '', $columnIndexes),
+                'rows' => $rows,
+            ],
+            'non-compliance-report-'.now()->format('Y-m-d-His').'.pdf',
+            ['orientation' => $orientation === 'P' ? 'P' : 'L'],
+        );
+    }
+
+    private function reportExportFor(Builder $query): NonComplianceReportExport
+    {
+        return new NonComplianceReportExport(
+            $query,
+            ...$this->dateFilters(),
+            outsideWorkRangeDistanceMeters: $this->outsideWorkRangeDistanceMeters(),
+        );
+    }
+
+    /** The same placements the cards show, unpaginated. */
+    private function nonCompliantQuery(): Builder
+    {
+        $query = $this->filteredBaseQuery();
+
+        $nonCompliantIds = app(NonComplianceReportService::class)
+            ->nonCompliantStudentCompanyIds(
+                clone $query,
+                ...[
+                    ...$this->dateFilters(),
+                    $this->selectedNonComplianceTypes(),
+                    $this->outsideWorkRangeDistanceMeters(),
+                ]
+            );
+
+        return $query->whereKey($nonCompliantIds)->orderBy('id');
     }
 
     private function filteredBaseQuery(): Builder

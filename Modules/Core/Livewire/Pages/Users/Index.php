@@ -24,6 +24,7 @@ use Modules\Core\Filament\Forms\Components\CreateAction;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
+use Modules\Core\Filament\Tables\Columns\UserColumn;
 use Throwable;
 
 class Index extends Component implements HasTable, HasForms
@@ -36,8 +37,10 @@ class Index extends Component implements HasTable, HasForms
         return $table
             ->query(fn() => User::query()->with('roles'))
             ->columns([
-                TextColumn::make('name')
+                UserColumn::make('name')
                     ->label(__('Name'))
+                    ->user(fn (User $record) => $record)
+                    ->withoutLink()
                     ->searchable()
                     ->sortable(),
 

@@ -21,6 +21,7 @@ use Modules\Core\Entities\User;
 use Modules\Core\Enums\UserRole;
 use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
+use Modules\Core\Filament\Tables\Columns\UserColumn;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\Course;
 use Modules\PPUDS\Entities\Registration;
@@ -46,16 +47,12 @@ class Index extends Component implements HasForms, HasTable
                     'studentCompany.department',
                 ]))
             ->columns([
-                TextColumn::make('student.name')
+                UserColumn::make('student.name')
                     ->label(__('Student'))
+                    ->user(fn (Registration $record) => $record->student)
+                    ->subtitle(fn (Registration $record): ?string => $record->student?->studentProfile?->student_number)
                     ->searchable()
-                    ->sortable()
-                    ->weight('bold')
-                    ->color('primary')
-                    ->description(fn (Registration $record): ?string => $record->student?->studentProfile?->student_number)
-                    ->url(fn (Registration $record): ?string => $record->student_id && auth()->user()->can('Student Details List')
-                        ? route('students.details', $record->student_id)
-                        : null),
+                    ->sortable(),
 
                 TextColumn::make('student.email')
                     ->label(__('Email'))
@@ -73,8 +70,10 @@ class Index extends Component implements HasForms, HasTable
                     ->placeholder('---')
                     ->toggleable(),
 
-                TextColumn::make('supervisor.name')
+                UserColumn::make('supervisor.name')
                     ->label(__('Practical Training Supervisor'))
+                    ->user(fn (Registration $record) => $record->supervisor)
+                    ->linksToSupervisor()
                     ->searchable()
                     ->toggleable()
                     ->visible(fn (): bool => ! $this->shouldScopeToAuthenticatedSupervisor()),

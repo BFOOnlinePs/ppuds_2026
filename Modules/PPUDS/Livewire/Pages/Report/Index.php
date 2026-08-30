@@ -26,6 +26,7 @@ use Maatwebsite\Excel\Excel as WriterType;
 use Masmerise\Toaster\Toaster;
 use Modules\Core\Filament\Forms\Components\CreateAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
+use Modules\Core\Filament\Tables\Columns\UserColumn;
 use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\Note;
@@ -35,6 +36,7 @@ use Modules\PPUDS\Enums\StudentGender;
 use Modules\PPUDS\Exports\ReportExport;
 use Modules\PPUDS\Settings\GeneralSettings;
 use Modules\PPUDS\Support\HasSupervisorFilter;
+use Modules\Core\Traits\PrintsTableReportPdf;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
 class Index extends Component implements HasForms, HasTable
@@ -42,6 +44,7 @@ class Index extends Component implements HasForms, HasTable
     use InteractsWithForms;
     use InteractsWithTable;
     use HasSupervisorFilter;
+    use PrintsTableReportPdf;
     use ScopesStudentCompanyVisibility;
 
     public function table(Table $table)
@@ -59,8 +62,9 @@ class Index extends Component implements HasForms, HasTable
                     ->label(__('Student Number'))
                     ->weight('bold'),
 
-                TextColumn::make('student.name')
+                UserColumn::make('student.name')
                     ->label(__('Student Name'))
+                    ->user(fn (StudentCompany $record) => $record->student)
                     ->summarize(Count::make('student.name')),
 
                 TextColumn::make('student.studentProfile.gender')
@@ -119,6 +123,9 @@ class Index extends Component implements HasForms, HasTable
                         $this->exportFilename(),
                         WriterType::XLSX
                     ))
+                    ->visible(fn () => auth()->user()->can('Report View List')),
+
+                $this->printPdfAction()
                     ->visible(fn () => auth()->user()->can('Report View List')),
             ])
             ->bulkActions([]);
@@ -261,6 +268,11 @@ class Index extends Component implements HasForms, HasTable
     protected function exportFilename(): string
     {
         return 'reports-'.now()->format('Y-m-d-His').'.xlsx';
+    }
+
+    protected function tableReportPdfTitle(): string
+    {
+        return __('Report List');
     }
 
     public function render()

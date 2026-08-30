@@ -12,7 +12,6 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Actions\BulkActionGroup;
-use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\SelectColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -33,6 +32,7 @@ use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
+use Modules\Core\Filament\Tables\Columns\UserColumn;
 use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\PPUDS\Entities\Course;
 use Modules\PPUDS\Entities\Major;
@@ -66,23 +66,12 @@ class Index extends Component implements HasForms, HasTable
                         ))
             )
             ->columns([
-                ImageColumn::make('student_avatar')
-                    ->label(__('Avatar'))
-                    ->getStateUsing(fn (Registration $record): ?string => $record->student?->profile_image_url)
-                    ->circular()
-                    ->size(40)
-                    ->extraImgAttributes(fn (Registration $record): array => [
-                        'alt' => $record->student?->name ?? __('Student'),
-                    ]),
-
                 // 1. عمود الطالب
-                TextColumn::make('student.name')
+                UserColumn::make('student.name')
                     ->label(__('Student'))
+                    ->user(fn (Registration $record) => $record->student)
                     ->searchable()
-                    ->sortable()
-                    ->url(fn (Registration $record) => route('students.details', $record->student_id))
-                    ->color('primary')
-                    ->weight('bold'),
+                    ->sortable(),
 
                 // 2. عمود المساق
                 TextColumn::make('course.name')

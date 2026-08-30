@@ -26,6 +26,7 @@ use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
+use Modules\Core\Filament\Tables\Columns\UserColumn;
 use Modules\PPUDS\Entities\Course;
 use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Enums\SemesterType;
@@ -62,9 +63,10 @@ class Index extends Component implements HasTable, HasForms
                     })
                     ->icon('solar-calendar-date-linear'),
 
-                TextColumn::make('supervisor.name')
+                UserColumn::make('supervisor.name')
                     ->label(__('Supervisor'))
-                    ->icon('solar-user-speak-rounded-linear')
+                    ->user(fn ($record) => $record->supervisor)
+                    ->linksToSupervisor()
                     ->toggleable(),
 
                 TextColumn::make('semester')

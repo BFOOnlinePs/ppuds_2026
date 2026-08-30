@@ -22,6 +22,7 @@ use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
+use Modules\Core\Filament\Tables\Columns\UserColumn;
 use Modules\PPUDS\Entities\Payment;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Support\HasSupervisorFilter;
@@ -46,11 +47,11 @@ class Index extends Component implements HasForms, HasTable
                     fn (Builder $studentCompanyQuery): Builder => $this->applyStudentCompanyVisibilityScope($studentCompanyQuery)
                 ))
             ->columns([
-                TextColumn::make('studentCompany.registration.student.name')
+                UserColumn::make('studentCompany.registration.student.name')
                     ->label(__('Student'))
+                    ->user(fn (Payment $record) => $record->studentCompany?->registration?->student ?? $record->studentCompany?->student)
                     ->searchable()
-                    ->sortable()
-                    ->weight('bold'),
+                    ->sortable(),
 
                 TextColumn::make('reference_id')
                     ->label(__('Reference ID'))
@@ -63,8 +64,10 @@ class Index extends Component implements HasForms, HasTable
                 TextColumn::make('currency.name')
                     ->label(__('Currency')),
 
-                TextColumn::make('supervisor.name')
-                    ->label(__('Supervisor')),
+                UserColumn::make('supervisor.name')
+                    ->label(__('Supervisor'))
+                    ->user(fn (Payment $record) => $record->supervisor)
+                    ->linksToSupervisor(),
 
                 TextColumn::make('student_notes')
                     ->label(__('Student Notes'))

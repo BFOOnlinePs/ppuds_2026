@@ -16,6 +16,7 @@ use Livewire\Component;
 use Maatwebsite\Excel\Excel as WriterType;
 use Modules\Core\Entities\User;
 use Modules\Core\Enums\UserRole;
+use Modules\Core\Filament\Tables\Columns\UserColumn;
 use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Entities\Survey;
@@ -77,13 +78,13 @@ class Submissions extends Component implements HasForms, HasTable
                 )
             )
             ->columns([
-                TextColumn::make('name')
+                UserColumn::make('name')
                     ->label(__('Name'))
+                    ->user(fn (User $record) => $record)
                     ->url(fn (User $record): string => route('surveys.submission-details', [
                         'survey' => $this->surveyId,
                         'user' => $record->id,
                     ]))
-                    ->color('primary')
                     ->searchable()
                     ->sortable(),
 

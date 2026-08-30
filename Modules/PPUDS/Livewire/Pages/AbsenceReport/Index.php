@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Livewire\Component;
 use Maatwebsite\Excel\Excel as WriterType;
+use Modules\Core\Filament\Tables\Columns\UserColumn;
 use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\StudentCompany;
@@ -30,6 +31,7 @@ use Modules\PPUDS\Exports\AbsenceReportExport;
 use Modules\PPUDS\Services\AbsenceReportService;
 use Modules\PPUDS\Settings\GeneralSettings;
 use Modules\PPUDS\Support\HasSupervisorFilter;
+use Modules\Core\Traits\PrintsTableReportPdf;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
 class Index extends Component implements HasForms, HasTable
@@ -37,6 +39,7 @@ class Index extends Component implements HasForms, HasTable
     use InteractsWithForms;
     use InteractsWithTable;
     use HasSupervisorFilter;
+    use PrintsTableReportPdf;
     use ScopesStudentCompanyVisibility;
 
     private ?array $absentStudentCompanyIds = null;
@@ -65,12 +68,11 @@ class Index extends Component implements HasForms, HasTable
                     ->weight('bold')
                     ->searchable(),
 
-                TextColumn::make('student.name')
+                UserColumn::make('student.name')
                     ->label(__('Student Name'))
+                    ->user(fn (StudentCompany $record) => $record->student)
                     ->searchable()
-                    ->sortable()
-                    ->url(fn (StudentCompany $record): ?string => $this->studentDetailsUrl($record))
-                    ->color(fn (StudentCompany $record): ?string => $this->studentDetailsUrl($record) ? 'primary' : null),
+                    ->sortable(),
 
                 TextColumn::make('company.name')
                     ->label(__('Company'))
@@ -150,8 +152,11 @@ class Index extends Component implements HasForms, HasTable
                     ))
                     ->visible(fn () => auth()->user()->can('Report View List')),
 
+                $this->printPdfAction()
+                    ->visible(fn () => auth()->user()->can('Report View List')),
+
                 Action::make('print_all_absence_dates')
-                    ->label(__('Print'))
+                    ->label(__('Print Absence Dates'))
                     ->icon('solar-printer-bold')
                     ->color('info')
                     ->action(fn () => app(ExcelServiceInterface::class)->download(
@@ -344,6 +349,11 @@ class Index extends Component implements HasForms, HasTable
     protected function exportFilename(): string
     {
         return 'absence-report-'.now()->format('Y-m-d-His').'.xlsx';
+    }
+
+    protected function tableReportPdfTitle(): string
+    {
+        return __('Absence Report');
     }
 
     protected function absenceDatesFilename(?StudentCompany $studentCompany = null): string

@@ -24,6 +24,7 @@ use Masmerise\Toaster\Toaster;
 use Modules\Core\Entities\User;
 use Modules\Core\Enums\UserRole;
 use Modules\Core\Filament\Forms\Components\ViewAction;
+use Modules\Core\Filament\Tables\Columns\UserColumn;
 use Modules\PPUDS\Entities\FieldVisit;
 use Modules\PPUDS\Entities\StudentCompany;
 use Spatie\Permission\Models\Role;
@@ -45,13 +46,13 @@ class Index extends Component implements HasTable, HasForms
                 })
             )
             ->columns([
-                TextColumn::make('name')
+                UserColumn::make('name')
                     ->label(__('Name'))
+                    ->user(fn (User $record) => $record)
+                    ->subtitle(fn (User $record): ?string => $record->name_en ?: $record->email)
+                    ->linksToSupervisor()
                     ->searchable()
-                    ->sortable()
-                    ->url(fn (User $record) => route('supervisors.details', $record))
-                    ->description(fn (User $record) => $record->name_en)
-                    ->color('primary'),
+                    ->sortable(),
 
                 TextColumn::make('email')
                     ->label(__('Email'))

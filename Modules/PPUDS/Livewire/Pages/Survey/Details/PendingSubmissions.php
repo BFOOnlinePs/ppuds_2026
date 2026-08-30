@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Livewire\Component;
 use Modules\Core\Entities\User;
 use Modules\Core\Enums\UserRole;
+use Modules\Core\Filament\Tables\Columns\UserColumn;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Entities\Survey;
 use Modules\PPUDS\Entities\SurveyAnswer;
@@ -59,8 +60,9 @@ class PendingSubmissions extends Component implements HasForms, HasTable
                 )
             )
             ->columns([
-                TextColumn::make('name')
+                UserColumn::make('name')
                     ->label(__('Name'))
+                    ->user(fn (User $record) => $record)
                     ->searchable()
                     ->sortable(),
 
@@ -116,8 +118,9 @@ class PendingSubmissions extends Component implements HasForms, HasTable
                 )
             )
             ->columns([
-                TextColumn::make('student.name')
+                UserColumn::make('student.name')
                     ->label(__('Evaluated Student'))
+                    ->user(fn (StudentCompany $record) => $record->student)
                     ->searchable()
                     ->sortable(),
 

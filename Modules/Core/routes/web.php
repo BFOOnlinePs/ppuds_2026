@@ -73,6 +73,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     Route::get('/add', Add::class)->name('add')->can('Currency Create');
                     Route::get('/{currency}/edit', Edit::class)->name('edit')->can('Currency Update');
                 });
+
+                Route::group([
+                    'prefix' => 'activity-logs',
+                    'as' => 'activity-logs.',
+                    'namespace' => 'Modules\Core\Livewire\Pages\ActivityLog',
+                ], function () {
+                    Route::get('/', Index::class)->name('index')->can('Activity Log View List');
+                    Route::get('/auth', AuthLog::class)->name('auth')->can('Activity Log View List');
+                });
             });
         }
     );

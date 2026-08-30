@@ -25,6 +25,11 @@
 >
     {{ $this->form }}
 
+    <div class="flex flex-wrap items-center justify-end gap-2">
+        {{ $this->exportAction }}
+        {{ $this->printPdfAction }}
+    </div>
+
     @if ($records->count() > 0)
         <div class="grid grid-cols-1 gap-4 2xl:grid-cols-2">
             @foreach ($records as $studentCompany)
@@ -591,4 +596,6 @@
             }));
         </script>
     @endscript
+
+    <x-filament-actions::modals />
 </div>

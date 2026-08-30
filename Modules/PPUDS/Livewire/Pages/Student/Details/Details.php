@@ -86,6 +86,19 @@ class Details extends Component implements HasForms, HasInfolists
                         Tabs::make('tabs')
                             ->tabs([
 
+                                Tabs\Tab::make('statistics')
+                                    ->label(__('Statistics'))
+                                    ->icon('heroicon-o-chart-bar')
+                                    ->schema([
+                                        Livewire::make(
+                                            \Modules\PPUDS\Livewire\Pages\Student\Details\Statistics\Index::class,
+                                            [
+                                                'studentId' => $this->userId,
+                                            ]
+                                        )
+                                            ->columnSpanFull(),
+                                    ]),
+
                                 Tabs\Tab::make('personal-information')
                                     ->label(__('Personal Information'))
                                     ->icon('heroicon-o-user')

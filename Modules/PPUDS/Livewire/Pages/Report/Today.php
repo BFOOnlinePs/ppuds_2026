@@ -10,6 +10,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Columns\TextColumn;
@@ -25,14 +26,18 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\HtmlString;
 use Livewire\Component;
+use Maatwebsite\Excel\Excel as WriterType;
 use Masmerise\Toaster\Toaster;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
+use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\StudentReport;
+use Modules\PPUDS\Exports\StudentReportsExport;
 use Modules\PPUDS\Livewire\Concerns\SearchesStudentAttendanceRelationships;
 use Modules\PPUDS\Support\HasSupervisorFilter;
+use Modules\Core\Traits\PrintsTableReportPdf;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
 class Today extends Component implements HasForms, HasTable
@@ -41,6 +46,7 @@ class Today extends Component implements HasForms, HasTable
     use InteractsWithTable;
     use SearchesStudentAttendanceRelationships;
     use HasSupervisorFilter;
+    use PrintsTableReportPdf;
     use ScopesStudentCompanyVisibility;
 
     public function table(Table $table): Table
@@ -121,9 +127,39 @@ class Today extends Component implements HasForms, HasTable
             ])
             ->filters($this->getTableFilters(), layout: FiltersLayout::AboveContent)
             ->filtersFormColumns(4)
+            ->headerActions($this->getTableHeaderActions())
             ->actions($this->getTableActions())
             ->bulkActions($this->getTableBulkActions())
             ->defaultSort('created_at', 'desc');
+    }
+
+    protected function getTableHeaderActions(): array
+    {
+        return [
+            Action::make('export')
+                ->label(__('Export'))
+                ->icon('heroicon-m-arrow-down-tray')
+                ->color('success')
+                ->action(fn () => app(ExcelServiceInterface::class)->download(
+                    new StudentReportsExport($this->getTableQueryForExport()),
+                    $this->exportFilename(),
+                    WriterType::XLSX
+                ))
+                ->visible(fn (): bool => auth()->user()->can('Report View List')),
+
+            $this->printPdfAction()
+                ->visible(fn (): bool => auth()->user()->can('Report View List')),
+        ];
+    }
+
+    protected function exportFilename(): string
+    {
+        return 'today-reports-'.now()->format('Y-m-d-His').'.xlsx';
+    }
+
+    protected function tableReportPdfTitle(): string
+    {
+        return __('Today Reports');
     }
 
     protected function todayReportsQuery(): Builder
