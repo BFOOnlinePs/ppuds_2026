@@ -843,6 +843,13 @@
     "Unspecified": "غير محدد",
     "Company feedback saved successfully": "تم حفظ ملاحظات الشركة بنجاح",
 
+    "Could not reach the university system. Please try again.": "تعذّر الاتصال بنظام الجامعة. يرجى المحاولة مرة أخرى.",
+    "Token refreshed successfully": "تم تحديث التوكن بنجاح",
+    "Your session has expired. Please sign in again.": "انتهت صلاحية جلستك. يرجى تسجيل الدخول مرة أخرى.",
+    "The refresh token is required.": "توكن التحديث مطلوب.",
+    "The username is required.": "اسم المستخدم مطلوب.",
+    "The password is required.": "كلمة المرور مطلوبة.",
+
     "Someone": "شخص ما",
     "Company Manager": "مدير الشركة",
     "University Supervisor": "المشرف الجامعي",

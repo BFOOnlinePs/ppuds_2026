@@ -3,6 +3,7 @@
 namespace Modules\Core\Http\Controllers\Api\V1\Auth;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Auth\Events\Logout;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Modules\Core\Entities\User;
@@ -99,7 +100,7 @@ class LoginController extends Controller
      * @OA\Post(
      *     path="/api/v1/auth/logout",
      *     summary="Logout a user",
-     *     description="Revoke the authenticated user's current access token",
+     *     description="Revokes the authenticated user's current access token and records the sign-out in the activity log. Works under both the Sanctum and Keycloak guards; under Keycloak there is no local token to revoke, but the sign-out is still recorded.",
      *     tags={"Auth"},
      *     security={{"sanctum": {}}},
      *     @OA\Response(
@@ -117,7 +118,18 @@ class LoginController extends Controller
      */
     public function logout(Request $request)
     {
-        $request->user()?->currentAccessToken()?->delete();
+        $user = $request->user();
+
+        // Null under the Keycloak guard, where the token is a JWT this app
+        // never issued; the sign-out below still has to be recorded.
+        $user?->currentAccessToken()?->delete();
+
+        // Neither guard raises the framework's Logout event: it belongs to the
+        // session guard, while the API is stateless under both Sanctum and
+        // Keycloak. Without this, sign-outs from the mobile app are invisible.
+        if ($user) {
+            event(new Logout(config('auth.guards.api.driver', 'api'), $user));
+        }
 
         return $this->successResponse(null, __('User logged out successfully'));
     }

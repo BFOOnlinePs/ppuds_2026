@@ -2,6 +2,7 @@
 
     use Illuminate\Support\Facades\Route;
     use Modules\PPUDS\Http\Controllers\Api\V1\AbsenceReportController;
+    use Modules\PPUDS\Http\Controllers\Api\V1\Auth\UniversityLoginController;
     use Modules\PPUDS\Http\Controllers\Api\V1\AnnouncementCategoryController;
     use Modules\PPUDS\Http\Controllers\Api\V1\AnnouncementController;
     use Modules\PPUDS\Http\Controllers\Api\V1\BannerController;
@@ -29,6 +30,18 @@
     use Modules\PPUDS\Http\Controllers\Api\V1\WorkExperienceController;
 
     Route::prefix('v1')->as('api.v1.')->group(function () {
+
+        // Signs the app in through the university realm so the attempt is
+        // recorded; the token it returns is the realm's own.
+        Route::prefix('auth')->as('auth.')->group(function () {
+            Route::post('university-login', [UniversityLoginController::class, 'login'])
+                ->name('university-login');
+
+            // Unauthenticated: it is called when the access token has already
+            // expired, and the refresh token is itself the credential.
+            Route::post('university-refresh', [UniversityLoginController::class, 'refresh'])
+                ->name('university-refresh');
+        });
 
         Route::prefix('ppuds')->as('ppuds.')->group(function () {
             Route::controller(SettingsController::class)

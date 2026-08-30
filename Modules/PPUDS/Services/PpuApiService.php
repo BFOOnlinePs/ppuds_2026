@@ -74,8 +74,11 @@ class PpuApiService
 
         $baseUrl = config('services.keycloak.base_url');
         $realm = config('services.keycloak.realms');
-        $clientId = config('services.keycloak.client_id');
-        $clientSecret = config('services.keycloak.client_secret');
+
+        // A refresh token may only be redeemed by the client it was issued to,
+        // so use whichever client obtained this pair — the mobile app's client
+        // for a sign-in from the phone, the web one otherwise.
+        [$clientId, $clientSecret] = $this->clientCredentialsFor($cachedTokenPair['client_id'] ?? null);
 
         $response = Http::asForm()->post("{$baseUrl}/realms/{$realm}/protocol/openid-connect/token", [
             'grant_type'    => 'refresh_token',
@@ -98,12 +101,149 @@ class PpuApiService
             throw new \Exception('لم يرجع نظام الجامعة access token جديد. يرجى تسجيل الدخول مرة أخرى.');
         }
 
-        $this->storeTokenPair($newAccessToken, $newRefreshToken, $userId);
+        // Keep the issuing client on the pair so the next refresh uses it too.
+        $this->storeTokenPair($newAccessToken, $newRefreshToken, $userId, $clientId);
 
         return $newAccessToken;
     }
 
-    public function storeTokenPair(string $accessToken, ?string $refreshToken = null, ?int $userId = null): void
+    /**
+     * Renews the mobile app's token pair. Mirrors the app's own refresh call,
+     * but through this system so the stored pair stays in step.
+     *
+     * @return array{ok: bool, status: int, data: array}
+     */
+    public function refreshPasswordGrantToken(string $refreshToken): array
+    {
+        $baseUrl = config('services.keycloak.base_url');
+        $realm = config('services.keycloak.realms');
+
+        [$clientId, $clientSecret] = $this->clientCredentialsFor($this->mobileClientId());
+
+        $form = [
+            'grant_type' => 'refresh_token',
+            'client_id' => $clientId,
+            'refresh_token' => $refreshToken,
+        ];
+
+        if (filled($clientSecret)) {
+            $form['client_secret'] = $clientSecret;
+        }
+
+        try {
+            $response = Http::asForm()
+                ->timeout((int) config('services.keycloak.timeout', 20))
+                ->post("{$baseUrl}/realms/{$realm}/protocol/openid-connect/token", $form);
+        } catch (\Throwable $e) {
+            Log::error('University token refresh failed: '.$e->getMessage());
+
+            return ['ok' => false, 'status' => 503, 'data' => ['error' => 'unreachable']];
+        }
+
+        return [
+            'ok' => $response->successful(),
+            'status' => $response->status(),
+            'data' => $response->json() ?? [],
+        ];
+    }
+
+    public function mobileClientId(): ?string
+    {
+        return config('services.keycloak.mobile_client_id')
+            ?: config('services.keycloak.client_id');
+    }
+
+    /**
+     * The id/secret pair for a given client, defaulting to the web client.
+     *
+     * @return array{0: ?string, 1: ?string}
+     */
+    private function clientCredentialsFor(?string $clientId): array
+    {
+        $mobileClientId = config('services.keycloak.mobile_client_id');
+
+        if (filled($clientId) && filled($mobileClientId) && $clientId === $mobileClientId) {
+            return [
+                $mobileClientId,
+                config('services.keycloak.mobile_client_secret') ?: config('services.keycloak.client_secret'),
+            ];
+        }
+
+        return [
+            config('services.keycloak.client_id'),
+            config('services.keycloak.client_secret'),
+        ];
+    }
+
+    /**
+     * Signs a user in against the university's Keycloak realm with the
+     * password grant, the same request the mobile app used to make on its
+     * own. Routing it through here is what lets the sign-in be recorded.
+     *
+     * `auth_type` and `otp` are the realm's own two-factor parameters; they
+     * are passed straight through and only when supplied, so the caller
+     * decides the flow rather than this method guessing at it.
+     *
+     * @return array{ok: bool, status: int, data: array}
+     */
+    public function requestPasswordGrantToken(
+        string $username,
+        string $password,
+        ?string $authType = null,
+        ?string $otp = null,
+    ): array {
+        $baseUrl = config('services.keycloak.base_url');
+        $realm = config('services.keycloak.realms');
+
+        // The app has its own realm client with its own secret, separate from
+        // the web one; sending the web client's secret here would be rejected.
+        $clientSecret = config('services.keycloak.mobile_client_secret')
+            ?: config('services.keycloak.client_secret');
+
+        $form = [
+            'grant_type' => 'password',
+            'client_id' => config('services.keycloak.mobile_client_id')
+                ?: config('services.keycloak.client_id'),
+            'username' => $username,
+            'password' => $password,
+            'scope' => config('services.keycloak.password_grant_scope', 'openid profile offline_access'),
+        ];
+
+        // Sent only when configured, so a public client still works.
+        if (filled($clientSecret)) {
+            $form['client_secret'] = $clientSecret;
+        }
+
+        if (filled($authType)) {
+            $form['auth_type'] = $authType;
+        }
+
+        if (filled($otp)) {
+            $form['otp'] = $otp;
+        }
+
+        try {
+            $response = Http::asForm()
+                ->timeout((int) config('services.keycloak.timeout', 20))
+                ->post("{$baseUrl}/realms/{$realm}/protocol/openid-connect/token", $form);
+        } catch (\Throwable $e) {
+            Log::error('University login request failed: '.$e->getMessage());
+
+            return ['ok' => false, 'status' => 503, 'data' => ['error' => 'unreachable']];
+        }
+
+        return [
+            'ok' => $response->successful(),
+            'status' => $response->status(),
+            'data' => $response->json() ?? [],
+        ];
+    }
+
+    /**
+     * `$clientId` records which realm client obtained the pair, because only
+     * that client may later redeem the refresh token.
+     */
+    public function storeTokenPair(string $accessToken, ?string $refreshToken = null, ?int $userId = null, ?string $clientId = null): void
     {
         $userId = $userId ?? auth()->id();
         $this->runtimeAccessToken = $accessToken;
@@ -122,6 +262,7 @@ class PpuApiService
             cache()->put($this->tokenCacheKey($userId), [
                 'access_token' => $accessToken,
                 'refresh_token' => $refreshToken,
+                'client_id' => $clientId,
             ], now()->addHours(self::TOKEN_CACHE_TTL_HOURS));
         }
     }

@@ -19,13 +19,51 @@ class AuthenticateViaKeycloakAction
 
     public function execute(KeycloakUser $keycloakUser): User
     {
-        $payload = $this->decodeTokenPayload($keycloakUser->token);
+        $user = $this->resolveUserFromToken(
+            $keycloakUser->token,
+            $keycloakUser->getNickname(),
+            $keycloakUser->getEmail(),
+            $keycloakUser->getName(),
+        );
+
+        Auth::login($user);
+
+        session([
+            'keycloak_access_token' => $keycloakUser->token,
+            'keycloak_refresh_token' => $keycloakUser->refreshToken,
+        ]);
+
+        app(PpuApiService::class)->storeTokenPair(
+            $keycloakUser->token,
+            $keycloakUser->refreshToken,
+            $user->id
+        );
+
+        return $user;
+    }
+
+    /**
+     * Maps a Keycloak access token onto the local user, applying the same
+     * rules the browser flow uses: the blocked-role check, the username /
+     * email lookup, and the student-identity sync.
+     *
+     * It deliberately does not sign anyone in or touch the session, so the
+     * stateless mobile flow can reuse it and raise its own Login event.
+     */
+    public function resolveUserFromToken(
+        string $accessToken,
+        ?string $username = null,
+        ?string $email = null,
+        ?string $name = null,
+    ): User {
+        $payload = $this->decodeTokenPayload($accessToken);
 
         $this->ensureUserIsAllowedByKeycloakRoles($payload);
 
-        return DB::transaction(function () use ($keycloakUser, $payload) {
-            $username = $this->cleanIdentifier($payload['preferred_username'] ?? $keycloakUser->getNickname());
-            $email = $keycloakUser->getEmail();
+        return DB::transaction(function () use ($payload, $username, $email, $name) {
+            $username = $this->cleanIdentifier($payload['preferred_username'] ?? $username);
+            $email = $email ?? ($payload['email'] ?? null);
+            $name = $name ?? ($payload['name'] ?? null);
 
             if (! $username && ! $email) {
                 throw ValidationException::withMessages([
@@ -41,26 +79,13 @@ class AuthenticateViaKeycloakAction
                 ]);
             }
 
-            if (! $user->name && $keycloakUser->getName()) {
-                $user->update(['name' => $keycloakUser->getName()]);
+            if (! $user->name && $name) {
+                $user->update(['name' => $name]);
             }
 
             $this->syncStudentIdentity($user, $username);
 
             $user->generateAvatar();
-
-            Auth::login($user);
-
-            session([
-                'keycloak_access_token' => $keycloakUser->token,
-                'keycloak_refresh_token' => $keycloakUser->refreshToken,
-            ]);
-
-            app(PpuApiService::class)->storeTokenPair(
-                $keycloakUser->token,
-                $keycloakUser->refreshToken,
-                $user->id
-            );
 
             return $user;
         });

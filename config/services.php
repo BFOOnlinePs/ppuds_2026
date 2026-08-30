@@ -50,6 +50,17 @@ return [
         // الـ Client ID الخاص بالـ API لضمان أن التوكن موجه لنظامك (Audience)
         'api_client_id' => env('KEYCLOAK_API_CLIENT_ID'),
         'issuer'        => env('KEYCLOAK_ISSUER'),
+
+        // --- تسجيل دخول تطبيق الهاتف عبر الجامعة (password grant) ---
+
+        // عميل تطبيق Flutter، وهو غير عميل الويب أعلاه وله سرّه الخاص
+        'mobile_client_id' => env('KEYCLOAK_MOBILE_CLIENT_ID', 'dualstudies-flutter-app'),
+        'mobile_client_secret' => env('KEYCLOAK_MOBILE_CLIENT_SECRET'),
+
+        // offline_access مطلوب ليعيد الـ realm توكن تحديث للتطبيق
+        'password_grant_scope' => env('KEYCLOAK_PASSWORD_GRANT_SCOPE', 'openid profile offline_access'),
+
+        'timeout' => env('KEYCLOAK_TIMEOUT', 20),
     ],
 
     'ppu_api' => [

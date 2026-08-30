@@ -1359,7 +1359,7 @@
                     "Auth"
                 ],
                 "summary": "Logout a user",
-                "description": "Revoke the authenticated user's current access token",
+                "description": "Revokes the authenticated user's current access token and records the sign-out in the activity log. Works under both the Sanctum and Keycloak guards; under Keycloak there is no local token to revoke, but the sign-out is still recorded.",
                 "operationId": "7190562eb82aeaf21c54260b78129fdb",
                 "responses": {
                     "200": {
@@ -6662,6 +6662,346 @@
                                 }
                             }
                         }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/auth/university-login": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Sign in through the university (Keycloak)",
+                "description": "Signs the mobile app in against the university realm using the password grant and returns the realm's own token. Routing the call through this endpoint is what makes the sign-in appear in the activity log; successful and failed attempts are both recorded.",
+                "operationId": "fcdfdbc751fe343b178c62c490613800",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "username",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "username": {
+                                        "description": "University username or student number",
+                                        "type": "string",
+                                        "example": "202010001"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "secret12345"
+                                    },
+                                    "auth_type": {
+                                        "description": "Realm two-factor parameter, forwarded only when sent",
+                                        "type": "string",
+                                        "example": "otp",
+                                        "nullable": true
+                                    },
+                                    "otp": {
+                                        "description": "One-time code, forwarded only when sent",
+                                        "type": "string",
+                                        "example": "123456",
+                                        "nullable": true
+                                    },
+                                    "device_name": {
+                                        "type": "string",
+                                        "example": "Samsung S23",
+                                        "nullable": true
+                                    },
+                                    "fcm_token": {
+                                        "description": "Stored for push notifications when supplied",
+                                        "type": "string",
+                                        "example": "fcm-token-value",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Signed in successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "User logged in successfully"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "token": {
+                                                    "description": "The university access token, unmodified",
+                                                    "type": "string",
+                                                    "example": "eyJhbGciOiJSUzI1NiIsInR5cCI6..."
+                                                },
+                                                "token_type": {
+                                                    "type": "string",
+                                                    "example": "Bearer"
+                                                },
+                                                "refresh_token": {
+                                                    "type": "string",
+                                                    "example": "eyJhbGciOiJIUzUxMiIsInR5cCI6...",
+                                                    "nullable": true
+                                                },
+                                                "expires_in": {
+                                                    "type": "integer",
+                                                    "example": 300,
+                                                    "nullable": true
+                                                },
+                                                "user": {
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Rejected by the university. The realm's own error is passed through so the app can tell a wrong password from an OTP challenge.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Invalid user credentials"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "error": {
+                                                    "type": "string",
+                                                    "example": "invalid_grant"
+                                                },
+                                                "error_description": {
+                                                    "type": "string",
+                                                    "example": "Invalid user credentials"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Signed in at the university but no matching local account, or the account is blocked"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "503": {
+                        "description": "The university system could not be reached"
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/university-refresh": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Renew the university token",
+                "description": "Exchanges a refresh token for a new access token against the university realm, and keeps the pair stored on the server in step. Deliberately unauthenticated: it is called once the access token has expired, and the refresh token is itself the credential. A refresh is not recorded in the activity log, since it is not a new sign-in.",
+                "operationId": "fab496957806e4ce6f53d4fdb22b36cf",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "refresh_token"
+                                ],
+                                "properties": {
+                                    "refresh_token": {
+                                        "type": "string",
+                                        "example": "eyJhbGciOiJIUzUxMiIsInR5cCI6..."
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Token renewed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Token refreshed successfully"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "token": {
+                                                    "type": "string",
+                                                    "example": "eyJhbGciOiJSUzI1NiIsInR5cCI6..."
+                                                },
+                                                "token_type": {
+                                                    "type": "string",
+                                                    "example": "Bearer"
+                                                },
+                                                "refresh_token": {
+                                                    "type": "string",
+                                                    "nullable": true
+                                                },
+                                                "expires_in": {
+                                                    "type": "integer",
+                                                    "example": 300,
+                                                    "nullable": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "The refresh token has expired or been revoked; the app must sign in again"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "503": {
+                        "description": "The university system could not be reached"
+                    }
+                }
+            }
+        },
+        "/api/v1/ppuds/banners": {
+            "get": {
+                "tags": [
+                    "Banners"
+                ],
+                "summary": "Get all active banners",
+                "description": "Retrieve a list of all active banners, with the link localized to the Accept-Language header",
+                "operationId": "03f5a7aaa2566520cb65a5f8395c8c07",
+                "parameters": [
+                    {
+                        "name": "Accept-Language",
+                        "in": "header",
+                        "description": "Language header (ar or en)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "default": "ar",
+                            "example": "en"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Banners retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Banners retrieved successfully"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/PpudsBannerResource"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/banners/{banner}": {
+            "get": {
+                "tags": [
+                    "Banners"
+                ],
+                "summary": "Get a single banner",
+                "operationId": "a76be4f4ab2424aa01923ea8b016ae05",
+                "parameters": [
+                    {
+                        "name": "banner",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Banner retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Banner retrieved successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/PpudsBannerResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Banner not found"
                     }
                 },
                 "security": [
@@ -13195,6 +13535,33 @@
                     "name": "AnnouncementResource"
                 }
             },
+            "PpudsBannerResource": {
+                "title": "PPUDS Banner Resource",
+                "description": "Banner details",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Registration Campaign"
+                    },
+                    "url": {
+                        "type": "string",
+                        "example": "https://example.com/campaign"
+                    },
+                    "image": {
+                        "type": "string",
+                        "example": "https://site.com/storage/ppuds/banners/img.png"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
             "FieldVisitResource": {
                 "title": "Field Visit Resource",
                 "description": "Field Visit details",
@@ -13857,6 +14224,10 @@
         {
             "name": "Announcements",
             "description": "Announcements"
+        },
+        {
+            "name": "Banners",
+            "description": "Banners"
         },
         {
             "name": "Chat",

@@ -13,6 +13,7 @@ use Modules\Core\Entities\User;
 use Modules\PPUDS\Auth\KeycloakUserProvider;
 use Modules\PPUDS\Enums\LoginMethod;
 use Modules\PPUDS\Settings\GeneralSettings;
+use Modules\PPUDS\Settings\KeycloakSettings;
 use Nwidart\Modules\Traits\PathNamespace;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -49,6 +50,8 @@ class PPUDSServiceProvider extends ServiceProvider
 
         if (! $this->app->runningInConsole()) {
             try {
+                $this->applyKeycloakSettings();
+
                 $settings = app(GeneralSettings::class);
 
                 if ($settings->login_method === LoginMethod::PPU) {
@@ -66,6 +69,44 @@ class PPUDSServiceProvider extends ServiceProvider
                 Log::error('Failed to load PPUDS general settings: '.$e->getMessage());
             }
         }
+    }
+
+    /**
+     * Lets the settings screen override the realm's .env configuration.
+     *
+     * Anything left blank on that screen keeps its .env value, so an install
+     * that has never opened the screen behaves exactly as before. Failures
+     * are swallowed on purpose: a missing settings table must not take the
+     * whole application down before the migration has run.
+     */
+    private function applyKeycloakSettings(): void
+    {
+        try {
+            $keycloak = app(KeycloakSettings::class);
+        } catch (\Throwable $e) {
+            Log::warning('Keycloak settings unavailable, falling back to .env: '.$e->getMessage());
+
+            return;
+        }
+
+        Config::set('services.keycloak.base_url', $keycloak->valueOr('base_url', config('services.keycloak.base_url')));
+        Config::set('services.keycloak.realms', $keycloak->valueOr('realm', config('services.keycloak.realms')));
+        Config::set('services.keycloak.client_id', $keycloak->valueOr('client_id', config('services.keycloak.client_id')));
+        Config::set('services.keycloak.client_secret', $keycloak->valueOr('client_secret', config('services.keycloak.client_secret')));
+        Config::set('services.keycloak.redirect', $keycloak->valueOr('redirect_uri', config('services.keycloak.redirect')));
+        Config::set('services.keycloak.mobile_client_id', $keycloak->valueOr('mobile_client_id', config('services.keycloak.mobile_client_id')));
+        Config::set('services.keycloak.mobile_client_secret', $keycloak->valueOr('mobile_client_secret', config('services.keycloak.mobile_client_secret')));
+        Config::set('services.keycloak.api_client_id', $keycloak->valueOr('api_client_id', config('services.keycloak.api_client_id')));
+        Config::set('services.keycloak.password_grant_scope', $keycloak->valueOr('password_grant_scope', config('services.keycloak.password_grant_scope')));
+
+        // Derived from base_url + realm rather than stored, so they can never
+        // drift out of step with the realm they describe.
+        Config::set('services.keycloak.issuer', $keycloak->issuer() ?? config('services.keycloak.issuer'));
+        Config::set('services.keycloak.jwks_url', $keycloak->jwksUrl() ?? config('services.keycloak.jwks_url'));
+
+        // The token guard reads from its own config file.
+        Config::set('keycloak.realm_public_key', $keycloak->valueOr('realm_public_key', config('keycloak.realm_public_key')));
+        Config::set('keycloak.allowed_resources', $keycloak->valueOr('allowed_resources', config('keycloak.allowed_resources')));
     }
 
     /**

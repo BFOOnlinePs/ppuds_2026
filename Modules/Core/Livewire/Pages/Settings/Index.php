@@ -29,6 +29,7 @@ use Modules\PPUDS\Enums\ReportStatus;
 use Modules\PPUDS\Enums\SemesterType;
 use Modules\PPUDS\Enums\WorkLocationEnforcement;
 use Modules\PPUDS\Settings\GeneralSettings as PPUDSGeneralSettings;
+use Modules\PPUDS\Settings\KeycloakSettings;
 
 class Index extends Component implements HasForms
 {
@@ -45,6 +46,7 @@ class Index extends Component implements HasForms
         // جلب الإعدادات من كلا الموديولين
         $generalSettings = app(GeneralSettings::class);
         $ppudsSettings = app(PPUDSGeneralSettings::class);
+        $keycloakSettings = app(KeycloakSettings::class);
 
         $appVersions = DB::table('app_versions')->get()->map(function ($item) {
             return (array) $item;
@@ -67,6 +69,18 @@ class Index extends Component implements HasForms
             'linkedin_url' => $ppudsSettings->linkedin_url,
             'x_url' => $ppudsSettings->x_url,
             'instagram_url' => $ppudsSettings->instagram_url,
+
+            'keycloak_base_url' => $keycloakSettings->base_url,
+            'keycloak_realm' => $keycloakSettings->realm,
+            'keycloak_client_id' => $keycloakSettings->client_id,
+            'keycloak_client_secret' => $keycloakSettings->client_secret,
+            'keycloak_redirect_uri' => $keycloakSettings->redirect_uri,
+            'keycloak_mobile_client_id' => $keycloakSettings->mobile_client_id,
+            'keycloak_mobile_client_secret' => $keycloakSettings->mobile_client_secret,
+            'keycloak_api_client_id' => $keycloakSettings->api_client_id,
+            'keycloak_realm_public_key' => $keycloakSettings->realm_public_key,
+            'keycloak_allowed_resources' => $keycloakSettings->allowed_resources,
+            'keycloak_password_grant_scope' => $keycloakSettings->password_grant_scope,
 
             'work_location_enforcement' => $ppudsSettings->work_location_enforcement->value,
             'work_location_allowed_distance_meters' => $ppudsSettings->work_location_allowed_distance_meters,
@@ -179,6 +193,80 @@ class Index extends Component implements HasForms
                                         ->options(GigEvaluationStatus::options())
                                         ->required(),
                                 ]),
+                            ]),
+
+                        Tabs\Tab::make(__('University Connection'))
+                            ->icon('solar-key-bold-duotone')
+                            ->schema([
+                                Section::make(__('University Realm'))
+                                    ->description(__('Leave a field empty to keep using the value from the .env file. The issuer and JWKS links are derived from the base URL and realm automatically.'))
+                                    ->schema([
+                                        Grid::make(2)->schema([
+                                            TextInput::make('keycloak_base_url')
+                                                ->label(__('Base URL'))
+                                                ->prefixIcon('solar-global-bold-duotone')
+                                                ->url()
+                                                ->placeholder('https://midad.ppu.edu'),
+
+                                            TextInput::make('keycloak_realm')
+                                                ->label(__('Realm'))
+                                                ->prefixIcon('solar-shield-keyhole-bold-duotone')
+                                                ->placeholder('PPU'),
+
+                                            TextInput::make('keycloak_client_id')
+                                                ->label(__('Web Client ID'))
+                                                ->prefixIcon('solar-monitor-bold-duotone')
+                                                ->helperText(__('Used for signing in through the browser.')),
+
+                                            TextInput::make('keycloak_client_secret')
+                                                ->label(__('Web Client Secret'))
+                                                ->prefixIcon('solar-lock-password-bold-duotone')
+                                                ->password()
+                                                ->revealable()
+                                                ->autocomplete(false)
+                                                ->helperText(__('Leave empty for a public client.')),
+
+                                            TextInput::make('keycloak_redirect_uri')
+                                                ->label(__('Redirect URI'))
+                                                ->prefixIcon('solar-arrow-right-bold-duotone')
+                                                ->url(),
+
+                                            TextInput::make('keycloak_mobile_client_id')
+                                                ->label(__('Mobile App Client ID'))
+                                                ->prefixIcon('solar-smartphone-bold-duotone')
+                                                ->placeholder('dualstudies-flutter-app')
+                                                ->helperText(__('Used for signing the mobile app in through the university.')),
+
+                                            TextInput::make('keycloak_mobile_client_secret')
+                                                ->label(__('Mobile App Client Secret'))
+                                                ->prefixIcon('solar-lock-password-bold-duotone')
+                                                ->password()
+                                                ->revealable()
+                                                ->autocomplete(false)
+                                                ->helperText(__('The mobile client has its own secret, separate from the web one.')),
+
+                                            TextInput::make('keycloak_api_client_id')
+                                                ->label(__('API Client ID (Audience)'))
+                                                ->prefixIcon('solar-code-bold-duotone'),
+
+                                            TextInput::make('keycloak_password_grant_scope')
+                                                ->label(__('Mobile Login Scope'))
+                                                ->prefixIcon('solar-list-bold-duotone')
+                                                ->placeholder('openid profile offline_access')
+                                                ->helperText(__('offline_access is required for the app to receive a refresh token.')),
+
+                                            TextInput::make('keycloak_allowed_resources')
+                                                ->label(__('Allowed Resources'))
+                                                ->prefixIcon('solar-shield-check-bold-duotone'),
+
+                                            Textarea::make('keycloak_realm_public_key')
+                                                ->label(__('Realm Public Key (RS256)'))
+                                                ->rows(4)
+                                                ->autocomplete(false)
+                                                ->columnSpanFull()
+                                                ->helperText(__('Realm Settings → Keys → RS256 → Public key. Without it the system cannot verify university tokens and every authenticated request fails.')),
+                                        ]),
+                                    ]),
                             ]),
 
                         Tabs\Tab::make(__('Attendance Settings'))
@@ -333,6 +421,26 @@ class Index extends Component implements HasForms
         }
 
         $ppudsSettings->save();
+
+        $keycloakSettings = app(KeycloakSettings::class);
+
+        foreach ([
+            'base_url' => 'keycloak_base_url',
+            'realm' => 'keycloak_realm',
+            'client_id' => 'keycloak_client_id',
+            'client_secret' => 'keycloak_client_secret',
+            'redirect_uri' => 'keycloak_redirect_uri',
+            'mobile_client_id' => 'keycloak_mobile_client_id',
+            'mobile_client_secret' => 'keycloak_mobile_client_secret',
+            'api_client_id' => 'keycloak_api_client_id',
+            'realm_public_key' => 'keycloak_realm_public_key',
+            'allowed_resources' => 'keycloak_allowed_resources',
+            'password_grant_scope' => 'keycloak_password_grant_scope',
+        ] as $property => $field) {
+            $keycloakSettings->{$property} = trim((string) ($data[$field] ?? ''));
+        }
+
+        $keycloakSettings->save();
 
         if (isset($data['app_versions'])) {
             $platformsToKeep = [];
