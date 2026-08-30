@@ -6677,7 +6677,7 @@
                     "Auth"
                 ],
                 "summary": "Sign in through the university (Keycloak)",
-                "description": "Signs the mobile app in against the university realm using the password grant and returns the realm's own token. Routing the call through this endpoint is what makes the sign-in appear in the activity log; successful and failed attempts are both recorded.",
+                "description": "Signs the mobile app in against the university realm using the password grant. **The response is the realm's own JSON, passed through unchanged with the realm's own status code** — not this API's usual {status, message, data} envelope — so the app only needs to change the URL it calls; nothing else about its parsing changes. Routing the call through here is what makes the sign-in appear in the activity log; successful and failed attempts are both recorded.",
                 "operationId": "fcdfdbc751fe343b178c62c490613800",
                 "requestBody": {
                     "required": true,
@@ -6730,45 +6730,37 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Signed in successfully",
+                        "description": "Signed in. The realm's token response, verbatim.",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "properties": {
-                                        "status": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
-                                        "message": {
+                                        "access_token": {
                                             "type": "string",
-                                            "example": "User logged in successfully"
+                                            "example": "eyJhbGciOiJSUzI1NiIsInR5cCI6..."
                                         },
-                                        "data": {
-                                            "properties": {
-                                                "token": {
-                                                    "description": "The university access token, unmodified",
-                                                    "type": "string",
-                                                    "example": "eyJhbGciOiJSUzI1NiIsInR5cCI6..."
-                                                },
-                                                "token_type": {
-                                                    "type": "string",
-                                                    "example": "Bearer"
-                                                },
-                                                "refresh_token": {
-                                                    "type": "string",
-                                                    "example": "eyJhbGciOiJIUzUxMiIsInR5cCI6...",
-                                                    "nullable": true
-                                                },
-                                                "expires_in": {
-                                                    "type": "integer",
-                                                    "example": 300,
-                                                    "nullable": true
-                                                },
-                                                "user": {
-                                                    "type": "object"
-                                                }
-                                            },
-                                            "type": "object"
+                                        "expires_in": {
+                                            "type": "integer",
+                                            "example": 300
+                                        },
+                                        "refresh_expires_in": {
+                                            "type": "integer",
+                                            "example": 1800
+                                        },
+                                        "refresh_token": {
+                                            "type": "string",
+                                            "example": "eyJhbGciOiJIUzUxMiIsInR5cCI6..."
+                                        },
+                                        "token_type": {
+                                            "type": "string",
+                                            "example": "Bearer"
+                                        },
+                                        "id_token": {
+                                            "type": "string"
+                                        },
+                                        "scope": {
+                                            "type": "string",
+                                            "example": "openid profile offline_access"
                                         }
                                     },
                                     "type": "object"
@@ -6777,31 +6769,31 @@
                         }
                     },
                     "401": {
-                        "description": "Rejected by the university. The realm's own error is passed through so the app can tell a wrong password from an OTP challenge.",
+                        "description": "Rejected by the university, verbatim. A 401 is NOT always a wrong password: the realm answers a two-factor challenge with the same status and adds two_factor_required, sms_available and alternative_email. Check two_factor_required before showing a credentials error, then resend the request with auth_type and otp.",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "properties": {
-                                        "status": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "invalid_grant"
+                                        },
+                                        "error_description": {
+                                            "type": "string",
+                                            "example": "Device not trusted. Please select OTP method."
+                                        },
+                                        "two_factor_required": {
+                                            "description": "Present when the realm wants a one-time code",
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "sms_available": {
                                             "type": "boolean",
                                             "example": false
                                         },
-                                        "message": {
-                                            "type": "string",
-                                            "example": "Invalid user credentials"
-                                        },
-                                        "data": {
-                                            "properties": {
-                                                "error": {
-                                                    "type": "string",
-                                                    "example": "invalid_grant"
-                                                },
-                                                "error_description": {
-                                                    "type": "string",
-                                                    "example": "Invalid user credentials"
-                                                }
-                                            },
-                                            "type": "object"
+                                        "alternative_email": {
+                                            "type": "boolean",
+                                            "example": true
                                         }
                                     },
                                     "type": "object"
@@ -6810,13 +6802,46 @@
                         }
                     },
                     "403": {
-                        "description": "Signed in at the university but no matching local account, or the account is blocked"
+                        "description": "The university accepted the credentials, but no matching local account exists or the account is blocked.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "account_not_linked"
+                                        },
+                                        "error_description": {
+                                            "type": "string",
+                                            "example": "لا يوجد حساب مرتبط باسم المستخدم هذا في النظام."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "422": {
-                        "description": "Validation error"
+                        "description": "Validation error (username or password missing)"
                     },
                     "503": {
-                        "description": "The university system could not be reached"
+                        "description": "The university system could not be reached.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "unreachable"
+                                        },
+                                        "error_description": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -6827,7 +6852,7 @@
                     "Auth"
                 ],
                 "summary": "Renew the university token",
-                "description": "Exchanges a refresh token for a new access token against the university realm, and keeps the pair stored on the server in step. Deliberately unauthenticated: it is called once the access token has expired, and the refresh token is itself the credential. A refresh is not recorded in the activity log, since it is not a new sign-in.",
+                "description": "Exchanges a refresh token for a new access token against the university realm, and keeps the pair stored on the server in step. **The realm's own JSON is passed through unchanged, with its own status code**, exactly like the sign-in endpoint. Deliberately unauthenticated: it is called once the access token has expired, and the refresh token is itself the credential. A refresh is not recorded in the activity log, since it is not a new sign-in.",
                 "operationId": "fab496957806e4ce6f53d4fdb22b36cf",
                 "requestBody": {
                     "required": true,
@@ -6850,40 +6875,33 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Token renewed",
+                        "description": "Token renewed. The realm's token response, verbatim.",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "properties": {
-                                        "status": {
-                                            "type": "boolean",
-                                            "example": true
-                                        },
-                                        "message": {
+                                        "access_token": {
                                             "type": "string",
-                                            "example": "Token refreshed successfully"
+                                            "example": "eyJhbGciOiJSUzI1NiIsInR5cCI6..."
                                         },
-                                        "data": {
-                                            "properties": {
-                                                "token": {
-                                                    "type": "string",
-                                                    "example": "eyJhbGciOiJSUzI1NiIsInR5cCI6..."
-                                                },
-                                                "token_type": {
-                                                    "type": "string",
-                                                    "example": "Bearer"
-                                                },
-                                                "refresh_token": {
-                                                    "type": "string",
-                                                    "nullable": true
-                                                },
-                                                "expires_in": {
-                                                    "type": "integer",
-                                                    "example": 300,
-                                                    "nullable": true
-                                                }
-                                            },
-                                            "type": "object"
+                                        "expires_in": {
+                                            "type": "integer",
+                                            "example": 300
+                                        },
+                                        "refresh_expires_in": {
+                                            "type": "integer",
+                                            "example": 1800
+                                        },
+                                        "refresh_token": {
+                                            "type": "string"
+                                        },
+                                        "token_type": {
+                                            "type": "string",
+                                            "example": "Bearer"
+                                        },
+                                        "scope": {
+                                            "type": "string",
+                                            "example": "openid profile offline_access"
                                         }
                                     },
                                     "type": "object"
@@ -6892,13 +6910,46 @@
                         }
                     },
                     "401": {
-                        "description": "The refresh token has expired or been revoked; the app must sign in again"
+                        "description": "The refresh token has expired or been revoked; the app must sign in again. The realm's own error, verbatim.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "invalid_grant"
+                                        },
+                                        "error_description": {
+                                            "type": "string",
+                                            "example": "Token is not active"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
                     "422": {
-                        "description": "Validation error"
+                        "description": "Validation error (refresh_token missing)"
                     },
                     "503": {
-                        "description": "The university system could not be reached"
+                        "description": "The university system could not be reached.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "unreachable"
+                                        },
+                                        "error_description": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 }
             }
