@@ -35,15 +35,15 @@ class SupervisorReportService
                 ->orWhereHas('supervisedRegistrations'))
             ->select('users.*')
             ->addSelect([
-                'supervised_students_count' => $this->studentCompaniesSubQuery($filters, 'count(distinct student_id)'),
+                'supervised_students_count' => $this->studentCompaniesSubQuery($filters, 'count(distinct {table}.student_id)'),
                 'supervised_trainings_count' => $this->studentCompaniesSubQuery($filters, 'count(*)'),
-                'supervised_companies_count' => $this->studentCompaniesSubQuery($filters, 'count(distinct company_id)'),
+                'supervised_companies_count' => $this->studentCompaniesSubQuery($filters, 'count(distinct {table}.company_id)'),
                 'field_visits_count' => $this->fieldVisitsSubQuery($filters, 'count(*)'),
-                'field_visit_minutes' => $this->fieldVisitsSubQuery($filters, 'coalesce(sum(visit_duration), 0)'),
-                'visited_students_count' => $this->fieldVisitsSubQuery($filters, 'count(distinct student_company_id)'),
-                'last_field_visit_at' => $this->fieldVisitsSubQuery($filters, 'max(visit_date)'),
+                'field_visit_minutes' => $this->fieldVisitsSubQuery($filters, 'coalesce(sum({table}.visit_duration), 0)'),
+                'visited_students_count' => $this->fieldVisitsSubQuery($filters, 'count(distinct {table}.student_company_id)'),
+                'last_field_visit_at' => $this->fieldVisitsSubQuery($filters, 'max({table}.visit_date)'),
                 'activities_count' => $this->activitiesSubQuery($filters, 'count(*)'),
-                'last_activity_at' => $this->activitiesSubQuery($filters, 'max(created_at)'),
+                'last_activity_at' => $this->activitiesSubQuery($filters, 'max({table}.created_at)'),
             ]);
     }
 
@@ -120,7 +120,11 @@ class SupervisorReportService
 
     /**
      * Placement aggregate for the supervisor of the row being selected.
-     * `$aggregate` is a SQL expression such as `count(distinct student_id)`.
+     *
+     * `$aggregate` is a SQL expression such as `count(distinct {table}.student_id)`;
+     * `{table}` stands for the placements table, and must be used for any
+     * column the joined registrations table also has — both carry
+     * `student_id`, so an unqualified name is ambiguous.
      */
     private function studentCompaniesSubQuery(array $filters, string $aggregate): QueryBuilder
     {
@@ -128,9 +132,13 @@ class SupervisorReportService
         $registrations = (new Registration)->getTable();
 
         return DB::table($studentCompanies)
-            ->selectRaw($aggregate)
+            ->selectRaw(str_replace('{table}', $studentCompanies, $aggregate))
             ->join($registrations, "{$registrations}.id", '=', "{$studentCompanies}.registration_id")
             ->whereColumn("{$registrations}.supervisor_id", 'users.id')
+            // Raw sub-queries bypass the models, so the soft-delete scopes
+            // Eloquent would add have to be spelled out here.
+            ->whereNull("{$studentCompanies}.deleted_at")
+            ->whereNull("{$registrations}.deleted_at")
             ->when(
                 filled($filters['year'] ?? null),
                 fn (QueryBuilder $query): QueryBuilder => $query->where("{$registrations}.year", $filters['year'])
@@ -146,7 +154,7 @@ class SupervisorReportService
         $fieldVisits = (new FieldVisit)->getTable();
 
         return DB::table($fieldVisits)
-            ->selectRaw($aggregate)
+            ->selectRaw(str_replace('{table}', $fieldVisits, $aggregate))
             ->whereColumn("{$fieldVisits}.supervisor_id", 'users.id')
             ->whereNull("{$fieldVisits}.deleted_at")
             ->when(
@@ -164,7 +172,7 @@ class SupervisorReportService
         $activities = $this->activityTable();
 
         return DB::table($activities)
-            ->selectRaw($aggregate)
+            ->selectRaw(str_replace('{table}', $activities, $aggregate))
             ->whereColumn("{$activities}.causer_id", 'users.id')
             ->where("{$activities}.causer_type", (new User)->getMorphClass())
             ->when(
