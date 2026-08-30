@@ -198,8 +198,14 @@ class Index extends Component implements HasForms
                         Tabs\Tab::make(__('University Connection'))
                             ->icon('solar-key-bold-duotone')
                             ->schema([
+                                // Split by audience: the realm itself, then one
+                                // section per sign-in method. The web and mobile
+                                // clients have separate ids and separate secrets,
+                                // and mixing them up is the easiest way to break
+                                // sign-in — so they never share a section.
                                 Section::make(__('University Realm'))
-                                    ->description(__('Leave a field empty to keep using the value from the .env file. The issuer and JWKS links are derived from the base URL and realm automatically.'))
+                                    ->description(__('Shared by both sign-in methods. Leave a field empty to keep using the value from the .env file. The issuer and JWKS links are derived from the base URL and realm automatically.'))
+                                    ->icon('solar-server-square-bold-duotone')
                                     ->schema([
                                         Grid::make(2)->schema([
                                             TextInput::make('keycloak_base_url')
@@ -213,10 +219,31 @@ class Index extends Component implements HasForms
                                                 ->prefixIcon('solar-shield-keyhole-bold-duotone')
                                                 ->placeholder('PPU'),
 
+                                            TextInput::make('keycloak_allowed_resources')
+                                                ->label(__('Allowed Resources'))
+                                                ->prefixIcon('solar-shield-check-bold-duotone')
+                                                ->columnSpanFull()
+                                                ->helperText(__('Comma separated realm clients. A token is rejected unless one of these appears in its resource_access, so every client that calls this API must be listed here — including the mobile app.')),
+
+                                            Textarea::make('keycloak_realm_public_key')
+                                                ->label(__('Realm Public Key (RS256)'))
+                                                ->rows(4)
+                                                ->autocomplete(false)
+                                                ->columnSpanFull()
+                                                ->helperText(__('Realm Settings → Keys → RS256 → Public key. Without it the system cannot verify university tokens and every authenticated request fails.')),
+                                        ]),
+                                    ]),
+
+                                Section::make(__('Browser Sign In (Web)'))
+                                    ->description(__('Used when signing in to this dashboard through the university.'))
+                                    ->icon('solar-monitor-bold-duotone')
+                                    ->collapsible()
+                                    ->schema([
+                                        Grid::make(2)->schema([
                                             TextInput::make('keycloak_client_id')
                                                 ->label(__('Web Client ID'))
                                                 ->prefixIcon('solar-monitor-bold-duotone')
-                                                ->helperText(__('Used for signing in through the browser.')),
+                                                ->placeholder('Dual-Studies-Laravel'),
 
                                             TextInput::make('keycloak_client_secret')
                                                 ->label(__('Web Client Secret'))
@@ -229,13 +256,22 @@ class Index extends Component implements HasForms
                                             TextInput::make('keycloak_redirect_uri')
                                                 ->label(__('Redirect URI'))
                                                 ->prefixIcon('solar-arrow-right-bold-duotone')
-                                                ->url(),
+                                                ->url()
+                                                ->columnSpanFull()
+                                                ->helperText(__('Must match a redirect URI registered on the web client in Keycloak.')),
+                                        ]),
+                                    ]),
 
+                                Section::make(__('Mobile App Sign In'))
+                                    ->description(__('Used when the phone app signs in through the university. The app has its own realm client with its own secret — these are not the web values above.'))
+                                    ->icon('solar-smartphone-bold-duotone')
+                                    ->collapsible()
+                                    ->schema([
+                                        Grid::make(2)->schema([
                                             TextInput::make('keycloak_mobile_client_id')
                                                 ->label(__('Mobile App Client ID'))
                                                 ->prefixIcon('solar-smartphone-bold-duotone')
-                                                ->placeholder('dualstudies-flutter-app')
-                                                ->helperText(__('Used for signing the mobile app in through the university.')),
+                                                ->placeholder('dualstudies-flutter-app'),
 
                                             TextInput::make('keycloak_mobile_client_secret')
                                                 ->label(__('Mobile App Client Secret'))
@@ -245,27 +281,24 @@ class Index extends Component implements HasForms
                                                 ->autocomplete(false)
                                                 ->helperText(__('The mobile client has its own secret, separate from the web one.')),
 
-                                            TextInput::make('keycloak_api_client_id')
-                                                ->label(__('API Client ID (Audience)'))
-                                                ->prefixIcon('solar-code-bold-duotone'),
-
                                             TextInput::make('keycloak_password_grant_scope')
                                                 ->label(__('Mobile Login Scope'))
                                                 ->prefixIcon('solar-list-bold-duotone')
                                                 ->placeholder('openid profile offline_access')
-                                                ->helperText(__('offline_access is required for the app to receive a refresh token.')),
-
-                                            TextInput::make('keycloak_allowed_resources')
-                                                ->label(__('Allowed Resources'))
-                                                ->prefixIcon('solar-shield-check-bold-duotone'),
-
-                                            Textarea::make('keycloak_realm_public_key')
-                                                ->label(__('Realm Public Key (RS256)'))
-                                                ->rows(4)
-                                                ->autocomplete(false)
                                                 ->columnSpanFull()
-                                                ->helperText(__('Realm Settings → Keys → RS256 → Public key. Without it the system cannot verify university tokens and every authenticated request fails.')),
+                                                ->helperText(__('offline_access is required for the app to receive a refresh token.')),
                                         ]),
+                                    ]),
+
+                                Section::make(__('Advanced'))
+                                    ->icon('solar-settings-bold-duotone')
+                                    ->collapsible()
+                                    ->collapsed()
+                                    ->schema([
+                                        TextInput::make('keycloak_api_client_id')
+                                            ->label(__('API Client ID (Audience)'))
+                                            ->prefixIcon('solar-code-bold-duotone')
+                                            ->helperText(__('Reserved. Nothing reads this value yet — access is controlled by Allowed Resources above.')),
                                     ]),
                             ]),
 
