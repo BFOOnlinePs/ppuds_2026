@@ -90,6 +90,12 @@ class AuthLog extends Component implements HasForms, HasTable
                     ->getStateUsing(fn (Model $record): string => (string) ($this->activityProperties($record)['ip'] ?? '—'))
                     ->copyable(),
 
+                TextColumn::make('device_name')
+                    ->label(__('Device'))
+                    ->getStateUsing(fn (Model $record): string => (string) ($this->activityProperties($record)['device_name'] ?? '—'))
+                    ->icon('solar-smartphone-bold-duotone')
+                    ->toggleable(),
+
                 TextColumn::make('browser')
                     ->label(__('Browser'))
                     ->getStateUsing(fn (Model $record): string => (string) ($this->activityProperties($record)['browser'] ?? '—'))

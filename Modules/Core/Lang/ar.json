@@ -216,6 +216,8 @@
     "Request Details": "تفاصيل الطلب",
     "Login Identifier": "معرّف الدخول",
     "IP Address": "عنوان IP",
+    "Device": "الجهاز",
+    "Mobile App": "تطبيق الهاتف",
     "Browser": "المتصفح",
     "Platform": "نظام التشغيل",
     "Guard": "البوابة",

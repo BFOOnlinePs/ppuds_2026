@@ -160,6 +160,10 @@ class AuthActivitySubscriber
             'user_agent' => $userAgent !== '' ? mb_substr($userAgent, 0, 500) : null,
             'browser' => $this->browser($userAgent),
             'platform' => $this->platform($userAgent),
+            // The mobile app names its own device; that is far better than
+            // anything guessable from a User-Agent, which for a Dart HTTP
+            // client carries no device information at all.
+            'device_name' => $this->deviceName($request),
             'url' => mb_substr((string) $request->fullUrl(), 0, 500),
             'method' => $request->method(),
         ], fn (mixed $value): bool => filled($value));
@@ -189,12 +193,34 @@ class AuthActivitySubscriber
         ])));
     }
 
+    /**
+     * The device the app reported for itself, when it sent one.
+     *
+     * Only read on requests that carry it, and length-capped, since this is
+     * client-supplied text going straight into the audit trail.
+     */
+    protected function deviceName(Request $request): ?string
+    {
+        $deviceName = $request->input('device_name');
+
+        if (! is_string($deviceName)) {
+            return null;
+        }
+
+        $deviceName = trim($deviceName);
+
+        return $deviceName !== '' ? mb_substr($deviceName, 0, 120) : null;
+    }
+
     protected function browser(string $userAgent): ?string
     {
         return $this->firstMatch($userAgent, [
             'Edge' => '/Edg[e]?\//i',
             'Opera' => '/OPR\/|Opera/i',
             'Samsung Internet' => '/SamsungBrowser/i',
+            // Ahead of Chrome/Safari: mobile HTTP clients often borrow those
+            // names, and knowing it is the app matters more than the engine.
+            'Mobile App' => '/Dart\/|Flutter|okhttp|CFNetwork|Alamofire/i',
             'Chrome' => '/Chrome|CriOS/i',
             'Firefox' => '/Firefox|FxiOS/i',
             'Safari' => '/Safari/i',
@@ -205,8 +231,9 @@ class AuthActivitySubscriber
     protected function platform(string $userAgent): ?string
     {
         return $this->firstMatch($userAgent, [
-            'Android' => '/Android/i',
-            'iOS' => '/iPhone|iPad|iPod/i',
+            'Android' => '/Android|okhttp/i',
+            // Dart on iOS reports through Darwin / CFNetwork rather than iPhone.
+            'iOS' => '/iPhone|iPad|iPod|CFNetwork|Darwin/i',
             'Windows' => '/Windows/i',
             'macOS' => '/Macintosh|Mac OS X/i',
             'Linux' => '/Linux/i',
