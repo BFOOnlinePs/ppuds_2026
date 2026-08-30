@@ -44,8 +44,12 @@ class MapPicker extends Map
             ->maxZoom(20)
 
             // ============ التفاعل والبيانات (مهم جداً) ============
+            // Must sync on change, not on blur: clicking or dragging the
+            // marker never blurs the map, so with `onBlur` the coordinates
+            // reached the server late or not at all and the latitude /
+            // longitude inputs below the map stayed empty.
             ->reactive()
-            ->live(onBlur: true)
+            ->live()
             ->debounce(300)
 
             // ============ التلميحات والمساعدة ============

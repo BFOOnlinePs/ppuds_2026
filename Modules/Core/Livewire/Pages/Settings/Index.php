@@ -22,10 +22,12 @@ use Jantinnerezo\LivewireAlert\Facades\LivewireAlert;
 use Livewire\Component;
 use Modules\Core\Entities\Settings;
 use Modules\Core\Settings\GeneralSettings;
+use Modules\PPUDS\Entities\Major;
 use Modules\PPUDS\Enums\GigEvaluationStatus;
 use Modules\PPUDS\Enums\LoginMethod;
 use Modules\PPUDS\Enums\ReportStatus;
 use Modules\PPUDS\Enums\SemesterType;
+use Modules\PPUDS\Enums\WorkLocationEnforcement;
 use Modules\PPUDS\Settings\GeneralSettings as PPUDSGeneralSettings;
 
 class Index extends Component implements HasForms
@@ -65,6 +67,11 @@ class Index extends Component implements HasForms
             'linkedin_url' => $ppudsSettings->linkedin_url,
             'x_url' => $ppudsSettings->x_url,
             'instagram_url' => $ppudsSettings->instagram_url,
+
+            'work_location_enforcement' => $ppudsSettings->work_location_enforcement->value,
+            'work_location_allowed_distance_meters' => $ppudsSettings->work_location_allowed_distance_meters,
+            'work_location_required_major_ids' => $ppudsSettings->work_location_required_major_ids,
+            'work_location_enforce_on_check_out' => $ppudsSettings->work_location_enforce_on_check_out,
 
             'app_versions' => $appVersions,
 
@@ -173,6 +180,52 @@ class Index extends Component implements HasForms
                                         ->required(),
                                 ]),
                             ]),
+
+                        Tabs\Tab::make(__('Attendance Settings'))
+                            ->icon('solar-map-point-wave-bold-duotone')
+                            ->schema([
+                                Section::make(__('Workplace Attendance'))
+                                    ->description(__('Require students to be at the training branch when they record attendance. Branches with no coordinates on file are never blocked.'))
+                                    ->schema([
+                                        Grid::make(2)->schema([
+                                            Select::make('work_location_enforcement')
+                                                ->label(__('Workplace Check In Requirement'))
+                                                ->prefixIcon('solar-map-point-bold-duotone')
+                                                ->options(WorkLocationEnforcement::options())
+                                                ->live()
+                                                ->required(),
+
+                                            TextInput::make('work_location_allowed_distance_meters')
+                                                ->label(__('Allowed Range (meters)'))
+                                                ->prefixIcon('solar-ruler-bold-duotone')
+                                                ->numeric()
+                                                ->minValue(10)
+                                                ->maxValue(50000)
+                                                ->required()
+                                                ->visible(fn (callable $get): bool => $this->workLocationIsEnforced($get)),
+
+                                            Select::make('work_location_required_major_ids')
+                                                ->label(__('Majors Required To Check In From Workplace'))
+                                                ->helperText(__('Any major not listed here is exempt from the workplace requirement.'))
+                                                ->prefixIcon('solar-square-academic-cap-bold-duotone')
+                                                ->options(fn (): array => Major::query()
+                                                    ->with('translations')
+                                                    ->get()
+                                                    ->pluck('name', 'id')
+                                                    ->toArray())
+                                                ->multiple()
+                                                ->searchable()
+                                                ->preload()
+                                                ->columnSpanFull()
+                                                ->visible(fn (callable $get): bool => (int) $get('work_location_enforcement') === WorkLocationEnforcement::SELECTED_MAJORS->value),
+
+                                            Toggle::make('work_location_enforce_on_check_out')
+                                                ->label(__('Apply The Same Rule To Check Out'))
+                                                ->columnSpanFull()
+                                                ->visible(fn (callable $get): bool => $this->workLocationIsEnforced($get)),
+                                        ]),
+                                    ]),
+                            ]),
                         Tabs\Tab::make(__('App Versions'))
                             ->icon('solar-smartphone-linear')
                             ->schema([
@@ -222,6 +275,12 @@ class Index extends Component implements HasForms
             ->statePath('data');
     }
 
+    /** True while the workplace rule applies to anyone at all. */
+    protected function workLocationIsEnforced(callable $get): bool
+    {
+        return (int) $get('work_location_enforcement') !== WorkLocationEnforcement::DISABLED->value;
+    }
+
     public function save()
     {
         $this->authorize('Setting Update');
@@ -249,6 +308,29 @@ class Index extends Component implements HasForms
         $ppudsSettings->linkedin_url = $data['linkedin_url'];
         $ppudsSettings->x_url = $data['x_url'];
         $ppudsSettings->instagram_url = $data['instagram_url'];
+
+        // The distance, major list and check-out toggle are hidden while
+        // enforcement is off, so keep whatever was stored rather than wiping
+        // it — turning the rule back on should restore the old setup.
+        $enforcement = WorkLocationEnforcement::from((int) $data['work_location_enforcement']);
+        $ppudsSettings->work_location_enforcement = $enforcement;
+
+        if (array_key_exists('work_location_allowed_distance_meters', $data)) {
+            $ppudsSettings->work_location_allowed_distance_meters = (int) $data['work_location_allowed_distance_meters'];
+        }
+
+        if ($enforcement === WorkLocationEnforcement::SELECTED_MAJORS) {
+            $ppudsSettings->work_location_required_major_ids = collect($data['work_location_required_major_ids'] ?? [])
+                ->map(fn ($id): int => (int) $id)
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+        }
+
+        if (array_key_exists('work_location_enforce_on_check_out', $data)) {
+            $ppudsSettings->work_location_enforce_on_check_out = (bool) $data['work_location_enforce_on_check_out'];
+        }
 
         $ppudsSettings->save();
 

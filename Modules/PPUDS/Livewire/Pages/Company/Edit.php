@@ -712,6 +712,17 @@ class Edit extends Component implements HasActions, HasForms
         $this->syncSingleSupervisorToUniversity($supervisorId, $plainPassword);
     }
 
+    /**
+     * Safety net for supervisors created through the department's "create
+     * option" form: it back-fills the new user onto the department row in
+     * case the repeater state did not pick up the `$set('user_id', ...)`.
+     *
+     * It only ever fills a department that is still missing a supervisor. It
+     * must not add department rows — doing so used to invent a second
+     * department carrying the same supervisor whenever the department name
+     * had changed since the supervisor was created, which showed up as the
+     * company gaining a supervisor nobody asked for.
+     */
     private function mergePendingCreatedSupervisorAssignmentsIntoFormData(): void
     {
         if ($this->pendingCreatedSupervisorAssignments === []) {
@@ -729,20 +740,22 @@ class Edit extends Component implements HasActions, HasForms
                         continue;
                     }
 
-                    $department['user_id'] = (int) $assignment['user_id'];
+                    // Never overwrite a supervisor the user picked afterwards.
+                    if (blank($department['user_id'] ?? null)) {
+                        $department['user_id'] = (int) $assignment['user_id'];
+                    }
+
                     continue 3;
                 }
 
-                $branch['departments'][] = [
-                    'name' => $assignment['department_name'],
-                    'user_id' => (int) $assignment['user_id'],
-                ];
-
-                continue 2;
+                unset($department);
             }
 
-            unset($department, $branch);
+            unset($branch);
         }
+
+        // Consumed — a later save must not replay them onto another branch.
+        $this->pendingCreatedSupervisorAssignments = [];
     }
 
     private function syncSingleSupervisorToUniversity(int $supervisorId, ?string $plainPassword = null): void

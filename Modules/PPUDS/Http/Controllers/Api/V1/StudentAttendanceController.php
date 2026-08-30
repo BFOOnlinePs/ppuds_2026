@@ -15,6 +15,7 @@ use Modules\PPUDS\Http\Requests\StudentAttendanceIndexRequest;
 use Modules\PPUDS\Http\Requests\StudentAttendanceRequest;
 use Modules\PPUDS\Http\Requests\StudentAttendanceRequestUpdate;
 use Modules\PPUDS\Services\PpudsNotificationService;
+use Modules\PPUDS\Services\WorkLocationService;
 use Modules\PPUDS\Settings\GeneralSettings;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 use Modules\PPUDS\Transformers\V1\StudentAttendanceResource;
@@ -418,6 +419,10 @@ class StudentAttendanceController extends Controller
 
         abort_unless($this->canAccessStudentCompanyRecord((int) $request->student_company_id), 403);
 
+        if ($response = $this->ensureStampedFromWorkplace($request)) {
+            return $response;
+        }
+
         $checkInAt = $this->resolveAttendanceTimestamp($request, 'check_in');
         $attendanceDate = $this->resolveAttendanceDate($request, $checkInAt);
 
@@ -507,6 +512,10 @@ class StudentAttendanceController extends Controller
 
         abort_unless($this->canAccessStudentCompanyRecord((int) $request->student_company_id), 403);
 
+        if ($response = $this->ensureStampedFromWorkplace($request, isCheckOut: true)) {
+            return $response;
+        }
+
         $checkOutAt = $this->resolveAttendanceTimestamp($request, 'check_out');
         $attendanceDate = $this->resolveAttendanceDate($request, $checkOutAt);
 
@@ -533,6 +542,43 @@ class StudentAttendanceController extends Controller
             new StudentAttendanceResource($attendance),
             __('Checked out successfully')
         );
+    }
+
+    /**
+     * Refuses a stamp made away from the training branch, when the settings
+     * require this student's major to be on site.
+     *
+     * Only students are held to it: staff recording attendance on a student's
+     * behalf are not standing at the workplace, and blocking them would make
+     * corrections impossible.
+     */
+    private function ensureStampedFromWorkplace(StudentAttendanceRequest $request, bool $isCheckOut = false)
+    {
+        if (! auth()->user()?->hasRole(UserRole::STUDENT->value)) {
+            return null;
+        }
+
+        $workLocation = app(WorkLocationService::class);
+
+        if ($isCheckOut && ! $workLocation->enforcesOnCheckOut()) {
+            return null;
+        }
+
+        $studentCompany = StudentCompany::query()
+            ->with(['branch', 'student.studentProfile'])
+            ->find((int) $request->student_company_id);
+
+        if (! $studentCompany) {
+            return null;
+        }
+
+        $violation = $workLocation->violationFor($studentCompany, $request->latitude, $request->longitude);
+
+        if (! $violation) {
+            return null;
+        }
+
+        return $this->errorResponse($workLocation->violationMessage($violation), 422, $violation);
     }
 
     private function resolveAttendanceTimestamp(StudentAttendanceRequest $request, string $field): Carbon
