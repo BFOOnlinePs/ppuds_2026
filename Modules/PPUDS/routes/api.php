@@ -19,6 +19,7 @@
     use Modules\PPUDS\Http\Controllers\Api\V1\RegistrationController;
     use Modules\PPUDS\Http\Controllers\Api\V1\ReportController;
     use Modules\PPUDS\Http\Controllers\Api\V1\SettingsController;
+    use Modules\PPUDS\Http\Controllers\Api\V1\StudentAttachmentController;
     use Modules\PPUDS\Http\Controllers\Api\V1\StudentAttendanceController;
     use Modules\PPUDS\Http\Controllers\Api\V1\StudentAttendanceReportController;
     use Modules\PPUDS\Http\Controllers\Api\V1\StudentCompanyAssistantController;
@@ -105,6 +106,17 @@
                         Route::get('/', 'index')->name('index');
                         Route::post('/', 'store')->name('store');
                         Route::get('/{department}', 'show')->name('show');
+                    });
+
+                Route::controller(StudentAttachmentController::class)
+                    ->prefix('student-attachments')
+                    ->as('student-attachments.')
+                    ->group(function () {
+                        Route::get('/', 'index')->name('index');
+                        Route::post('/', 'store')->name('store');
+                        Route::get('/{studentAttachment}', 'show')->name('show');
+                        Route::patch('/{studentAttachment}', 'update')->name('update');
+                        Route::delete('/{studentAttachment}', 'destroy')->name('destroy');
                     });
 
                 Route::controller(StudentCompanyController::class)

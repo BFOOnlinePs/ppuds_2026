@@ -27,6 +27,8 @@ class StudentProfileResource extends JsonResource
             'github_url' => $this->github_url,
             'major' => $this->whenLoaded('major'),
             'cv' => $this->getFirstMediaUrl('cv'),
+            'attachments' => $this->getAttachmentUrls(),
+            'attachment_items' => $this->getAttachmentItems(),
             'created_by' => $this->created_by,
             'created_at' => $this->created_at,
         ];

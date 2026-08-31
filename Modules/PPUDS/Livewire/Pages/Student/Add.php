@@ -4,13 +4,16 @@ namespace Modules\PPUDS\Livewire\Pages\Student;
 
 use App\View\Components\AppLayout;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Component;
@@ -131,6 +134,36 @@ class Add extends Component implements HasForms
                                             ->options(array_combine(range(1, 10), range(1, 10))) // قائمة من 1 إلى 10
                                             ->nullable(),
                                     ]),
+
+                                Section::make(__('Student Attachments'))
+                                    ->description(__('Optional supporting documents for the student'))
+                                    ->icon('heroicon-o-paper-clip')
+                                    ->collapsible()
+                                    ->schema([
+                                        Repeater::make('attachment_uploads')
+                                            ->label(__('Add Attachment'))
+                                            ->schema([
+                                                Grid::make(2)
+                                                    ->schema([
+                                                        TextInput::make('name')
+                                                            ->label(__('Attachment Name'))
+                                                            ->helperText(__('Leave it empty to use the file name'))
+                                                            ->maxLength(255),
+
+                                                        FileUpload::make('file')
+                                                            ->label(__('Attachment File'))
+                                                            ->required()
+                                                            ->storeFiles(false)
+                                                            ->preserveFilenames()
+                                                            ->maxSize(10240),
+                                                    ]),
+                                            ])
+                                            ->defaultItems(0)
+                                            ->addActionLabel(__('Add Another Attachment'))
+                                            ->reorderable(false)
+                                            ->collapsible()
+                                            ->columnSpanFull(),
+                                    ]),
                             ]),
 
                         Grid::make(1)
@@ -199,20 +232,37 @@ class Add extends Component implements HasForms
 
             $user->assignRole(UserRole::STUDENT->value);
 
+            $attachmentUploads = $this->data['attachment_uploads'] ?? [];
+
             $profileData = collect($this->data)
-                ->except(['name', 'email', 'password', 'password_confirmation', 'roles'])
+                ->except(['name', 'email', 'password', 'password_confirmation', 'roles', 'attachment_uploads'])
                 ->toArray();
 
-            StudentProfile::create(array_merge($profileData, [
+            $profile = StudentProfile::create(array_merge($profileData, [
                 'user_id' => $user->id,
                 'cv_status' => 1,
             ]));
+
+            // حفظ مرفقات الطالب الاختيارية بنفس أسلوب مرفقات الشركة
+            $this->saveAttachments($profile, $attachmentUploads);
 
             // Notification::make()->title('Saved successfully')->success()->send();
         });
 
         // إعادة التوجيه بعد الحفظ
         return redirect()->route('students.index');
+    }
+
+    protected function saveAttachments(StudentProfile $profile, array $attachmentUploads): void
+    {
+        foreach ($attachmentUploads as $attachmentUpload) {
+            $files = Arr::wrap($attachmentUpload['file'] ?? []);
+            $name = $attachmentUpload['name'] ?? null;
+
+            foreach (array_filter($files) as $attachmentFile) {
+                $profile->addAttachment($attachmentFile, $name);
+            }
+        }
     }
 
     public function render()

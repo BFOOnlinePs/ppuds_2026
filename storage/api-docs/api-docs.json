@@ -10599,6 +10599,390 @@
                 ]
             }
         },
+        "/api/v1/ppuds/student-attachments": {
+            "get": {
+                "tags": [
+                    "Student Attachments"
+                ],
+                "summary": "List student attachments",
+                "description": "Retrieve the optional attachments of the students visible to the authenticated user",
+                "operationId": "e92749884648c0ad1571122563ff75ad",
+                "parameters": [
+                    {
+                        "name": "Accept-Language",
+                        "in": "header",
+                        "description": "Language header (ar or en)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "ar",
+                            "example": "en"
+                        }
+                    },
+                    {
+                        "name": "filter[student_id]",
+                        "in": "query",
+                        "description": "Filter by student user ID",
+                        "schema": {
+                            "type": "integer",
+                            "example": 42
+                        }
+                    },
+                    {
+                        "name": "filter[student_profile_id]",
+                        "in": "query",
+                        "description": "Filter by student profile ID",
+                        "schema": {
+                            "type": "integer",
+                            "example": 7
+                        }
+                    },
+                    {
+                        "name": "filter[student_number]",
+                        "in": "query",
+                        "description": "Filter by the university student number",
+                        "schema": {
+                            "type": "string",
+                            "example": "202012345"
+                        }
+                    },
+                    {
+                        "name": "filter[name]",
+                        "in": "query",
+                        "description": "Filter by attachment name (partial match)",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "Sort by id, name, size or created_at (prefix with - for descending)",
+                        "schema": {
+                            "type": "string",
+                            "example": "-created_at"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Items per page",
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Student attachments retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Student attachments retrieved successfully"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/StudentAttachmentResource"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Student Attachments"
+                ],
+                "summary": "Upload student attachments",
+                "description": "Upload one or more optional attachments to a student profile. When student_id is omitted the attachment is stored on the authenticated student's own profile. The name is applied only when a single file is uploaded; otherwise every file keeps its own name.",
+                "operationId": "ef5b4c5773b310b28ff04494c7a7e8a6",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "student_id": {
+                                        "description": "Student user ID. Defaults to the authenticated user",
+                                        "type": "integer",
+                                        "example": 42,
+                                        "nullable": true
+                                    },
+                                    "name": {
+                                        "description": "Optional attachment name, defaults to the uploaded file name",
+                                        "type": "string",
+                                        "example": "Training agreement",
+                                        "nullable": true
+                                    },
+                                    "attachment": {
+                                        "description": "Optional single PDF, Word, Excel or image file",
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "attachments[]": {
+                                        "description": "Optional multiple files (max 10)",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "binary"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Student attachment uploaded successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Student attachment uploaded successfully"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/StudentAttachmentResource"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Student profile not found"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/student-attachments/{studentAttachment}": {
+            "get": {
+                "tags": [
+                    "Student Attachments"
+                ],
+                "summary": "Get student attachment details",
+                "operationId": "3105602c084f07e3bc8a75ce244fc07f",
+                "parameters": [
+                    {
+                        "name": "studentAttachment",
+                        "in": "path",
+                        "description": "Attachment (media) ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Student attachment retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Student attachment retrieved successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/StudentAttachmentResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Attachment not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Student Attachments"
+                ],
+                "summary": "Update student attachment",
+                "description": "Rename an attachment and/or replace its file. Use _method=PATCH for multipart support.",
+                "operationId": "c9665b5350d62bebc2a61fd1c9038c6f",
+                "parameters": [
+                    {
+                        "name": "studentAttachment",
+                        "in": "path",
+                        "description": "Attachment (media) ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "_method": {
+                                        "type": "string",
+                                        "example": "PATCH"
+                                    },
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Updated attachment name"
+                                    },
+                                    "attachment": {
+                                        "description": "Optional replacement file",
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Student attachment updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Student attachment updated successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/StudentAttachmentResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Attachment not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Student Attachments"
+                ],
+                "summary": "Delete student attachment",
+                "operationId": "e3444b677aa40d33aacdcdc06f52b717",
+                "parameters": [
+                    {
+                        "name": "studentAttachment",
+                        "in": "path",
+                        "description": "Attachment (media) ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Student attachment deleted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Student attachment deleted successfully"
+                                        },
+                                        "data": {
+                                            "type": "null",
+                                            "example": null,
+                                            "nullable": true
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Attachment not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/ppuds/attendances": {
             "get": {
                 "tags": [
@@ -14014,6 +14398,60 @@
                     "name": "ReportResource"
                 }
             },
+            "StudentAttachmentResource": {
+                "title": "Student Attachment Resource",
+                "description": "Optional attachment attached to a student profile",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 10
+                    },
+                    "student_id": {
+                        "type": "integer",
+                        "example": 42
+                    },
+                    "student_profile_id": {
+                        "type": "integer",
+                        "example": 7
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Training agreement"
+                    },
+                    "file_name": {
+                        "type": "string",
+                        "example": "20260831120000_a1b2c3d4_training-agreement.pdf"
+                    },
+                    "mime_type": {
+                        "type": "string",
+                        "example": "application/pdf"
+                    },
+                    "size": {
+                        "type": "integer",
+                        "example": 204800
+                    },
+                    "human_readable_size": {
+                        "type": "string",
+                        "example": "200 KB"
+                    },
+                    "is_image": {
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "url": {
+                        "type": "string",
+                        "example": "/storage/ppuds/student_profiles/10/training-agreement.pdf"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object",
+                "xml": {
+                    "name": "StudentAttachmentResource"
+                }
+            },
             "StudentAttendanceReportResource": {
                 "title": "Student Attendance Report Resource",
                 "description": "Student Attendance Report details",
@@ -14191,6 +14629,10 @@
         {
             "name": "Registrations",
             "description": "API Endpoints for managing student registrations"
+        },
+        {
+            "name": "Student Attachments",
+            "description": "API Endpoints for managing the optional attachments of a student profile"
         },
         {
             "name": "Student Attendances",
