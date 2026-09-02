@@ -20,7 +20,8 @@ class CleanOrphanCompanyBranchLinks extends Command
 {
     protected $signature = 'ppuds:clean-orphan-company-links
         {--force : Delete the rows. Without it the command only reports what it would delete.}
-        {--company= : Also drop links on this company that were created before the company itself (inherited rows).}';
+        {--company= : Also drop links on this company that were created before the company itself (inherited rows).}
+        {--include-used : Also drop links that student placements are recorded against. Off by default.}';
 
     protected $description = 'Delete branch/company and branch/department rows pointing at records that no longer exist.';
 
@@ -42,6 +43,19 @@ class CleanOrphanCompanyBranchLinks extends Command
                 $prefix.'branch_company',
                 $inheritedIds
             );
+        }
+
+        // A link is only safe to drop when no student placement stands on that
+        // exact company+branch pair. Those are kept unless explicitly included.
+        $usedLinkIds = $this->linkIdsCarryingPlacements($prefix, array_merge($orphanLinkIds, $inheritedIds));
+
+        if ($usedLinkIds !== [] && ! $this->option('include-used')) {
+            $orphanLinkIds = array_values(array_diff($orphanLinkIds, $usedLinkIds));
+            $inheritedIds = array_values(array_diff($inheritedIds, $usedLinkIds));
+
+            $this->newLine();
+            $this->warn('Kept '.count($usedLinkIds).' link(s): student placements are recorded on that company and branch.');
+            $this->line('Pass --include-used only if you know those placements should lose the branch.');
         }
 
         $total = count($orphanLinkIds) + count($orphanDepartmentIds) + count($inheritedIds);
@@ -77,6 +91,28 @@ class CleanOrphanCompanyBranchLinks extends Command
         $this->info("Deleted {$total} row(s).");
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Of the given links, the ones a student placement is recorded against.
+     * Dropping those would leave a placement pointing at a branch its company
+     * no longer lists, so they are kept unless the caller insists.
+     */
+    private function linkIdsCarryingPlacements(string $prefix, array $linkIds): array
+    {
+        if ($linkIds === []) {
+            return [];
+        }
+
+        return DB::table($prefix.'branch_company as bc')
+            ->join($prefix.'students_companies as sc', function ($join): void {
+                $join->on('sc.company_id', '=', 'bc.company_id')
+                    ->on('sc.branch_id', '=', 'bc.branch_id');
+            })
+            ->whereIn('bc.id', $linkIds)
+            ->distinct()
+            ->pluck('bc.id')
+            ->all();
     }
 
     /** branch_company rows pointing at a company that is gone. */

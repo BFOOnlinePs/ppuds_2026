@@ -462,9 +462,10 @@ class Details extends Component implements HasForms, HasInfolists, HasActions
                                                                                         ->getOptionLabelUsing(fn ($value): ?string => User::find($value)?->name)
                                                                                         ->createOptionForm([
                                                                                             Grid::make(2)->schema([
-                                                                                                TextInput::make('name')->required(),
-                                                                                                TextInput::make('name_en')->required(),
+                                                                                                TextInput::make('name')->label(__('Name'))->required(),
+                                                                                                TextInput::make('name_en')->label(__('Name (English)'))->required(),
                                                                                                 TextInput::make('email')
+                                                                                                    ->label(__('Email'))
                                                                                                     ->required()
                                                                                                     ->email()
                                                                                                     ->unique('users', 'email')
@@ -472,9 +473,9 @@ class Details extends Component implements HasForms, HasInfolists, HasActions
                                                                                                     ->validationMessages([
                                                                                                         'unique' => __('This email is already taken'),
                                                                                                     ]),
-                                                                                                TextInput::make('phone')->required()->numeric(),
-                                                                                                TextInput::make('password')->required()->password()->confirmed(),
-                                                                                                TextInput::make('password_confirmation')->required()->password(),
+                                                                                                TextInput::make('phone')->label(__('Phone'))->required()->numeric(),
+                                                                                                TextInput::make('password')->label(__('Password'))->required()->password()->confirmed(),
+                                                                                                TextInput::make('password_confirmation')->label(__('Confirm Password'))->required()->password(),
                                                                                             ]),
                                                                                         ])
                                                                                         ->createOptionUsing(function (array $data, Get $get, Set $set) {
