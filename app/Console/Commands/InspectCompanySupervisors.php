@@ -94,7 +94,48 @@ class InspectCompanySupervisors extends Command
             $this->line('The company form only holds one, so the extra rows are invisible in the UI.');
         }
 
+        $this->orphanReport($prefix);
+
         return self::SUCCESS;
+    }
+
+    /**
+     * Links pointing at companies that no longer exist. They matter because
+     * company ids get reused: the next company created with a recycled id
+     * inherits these rows, and with them branches and supervisors nobody
+     * assigned to it.
+     */
+    private function orphanReport(string $prefix): void
+    {
+        $orphanLinks = DB::table($prefix.'branch_company as bc')
+            ->leftJoin($prefix.'companies as c', 'c.id', '=', 'bc.company_id')
+            ->whereNull('c.id')
+            ->select('bc.company_id', DB::raw('count(*) as links'))
+            ->groupBy('bc.company_id')
+            ->orderBy('bc.company_id')
+            ->get();
+
+        $nextId = DB::table($prefix.'companies')->max('id') + 1;
+
+        $this->line('');
+
+        if ($orphanLinks->isEmpty()) {
+            $this->info('No orphan branch links: every branch_company row points at a company that exists.');
+
+            return;
+        }
+
+        $this->error('Orphan branch links found: '.$orphanLinks->sum('links').' row(s) across '
+            .$orphanLinks->count().' missing company id(s).');
+        $this->line('Each of these ids will hand its branches to the next company created with that id.');
+        $this->table(
+            ['missing company id', 'branch links waiting', 'will hit'],
+            $orphanLinks->map(fn ($row): array => [
+                $row->company_id,
+                $row->links,
+                $row->company_id >= $nextId ? 'a future company' : 'already reused or skipped',
+            ])->all()
+        );
     }
 
     /**
@@ -126,26 +167,41 @@ class InspectCompanySupervisors extends Command
             return;
         }
 
+        // Distinct companies, not rows: the same pair can be linked twice.
         $sharedCounts = DB::table($prefix.'branch_company')
             ->whereIn('branch_id', $links->pluck('branch_id'))
-            ->select('branch_id', DB::raw('count(*) as companies'))
+            ->select('branch_id', DB::raw('count(distinct company_id) as companies'), DB::raw('count(*) as rows_count'))
             ->groupBy('branch_id')
-            ->pluck('companies', 'branch_id');
+            ->get()
+            ->keyBy('branch_id');
 
         $this->line('');
         $this->line('Branches attached to this company:');
         $this->table(
             ['branch', 'name', 'main', 'branch created', 'linked to company at', 'shared with', 'note'],
             $links->map(function ($link) use ($sharedCounts, $companyCreatedAt): array {
-                $shared = (int) ($sharedCounts[$link->branch_id] ?? 1);
+                $stats = $sharedCounts[$link->branch_id] ?? null;
+                $shared = (int) ($stats->companies ?? 1);
+                $rows = (int) ($stats->rows_count ?? 1);
                 $notes = [];
 
                 if ($link->branch_created_at && $link->branch_created_at < $companyCreatedAt) {
                     $notes[] = 'PRE-EXISTING BRANCH';
                 }
 
+                // A link older than the company it points at cannot have been
+                // made for this company: the row outlived a deleted company
+                // whose id was later handed to this one.
+                if ($link->linked_at && $link->linked_at < $companyCreatedAt) {
+                    $notes[] = 'LINK PREDATES THE COMPANY';
+                }
+
                 if ($shared > 1) {
                     $notes[] = 'SHARED WITH '.($shared - 1).' OTHER COMPANY(IES)';
+                }
+
+                if ($rows > $shared) {
+                    $notes[] = 'DUPLICATE LINK ROWS';
                 }
 
                 return [
