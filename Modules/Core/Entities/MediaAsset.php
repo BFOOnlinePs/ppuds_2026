@@ -16,13 +16,14 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 /**
- * One file in the shared media library the admin uploads to directly, rather
- * than through a record that owns it. Spatie's media library is the storage
- * layer, so this model only carries what Spatie does not keep: the alt text
- * and the uploader.
+ * The owner every file uploaded straight into the media library needs: Spatie
+ * always attaches media to a model, and a library file belongs to no record
+ * of its own. The library page itself lists the media table, so this model
+ * carries nothing beyond the uploader — everything shown about a file (name,
+ * size, mime type, alt text, dimensions) lives on the media row.
  *
- * Deliberately not soft deleting: removing a file from the library has to
- * free the disk space too, and Spatie only detaches media on a real delete.
+ * Deliberately not soft deleting: removing a file has to free the disk space
+ * too, and Spatie only detaches media on a real delete.
  */
 class MediaAsset extends Model implements HasMedia
 {
@@ -35,7 +36,6 @@ class MediaAsset extends Model implements HasMedia
     protected $table = 'media_assets';
 
     protected $fillable = [
-        'alt_text',
         'created_by',
     ];
 
@@ -89,7 +89,7 @@ class MediaAsset extends Model implements HasMedia
      * dimensions are read once here and kept as custom properties, so listing
      * the library never has to open the files again.
      */
-    public function addFile($file): ?Media
+    public function addFile($file, ?string $altText = null): ?Media
     {
         if (is_array($file)) {
             $file = reset($file);
@@ -114,57 +114,16 @@ class MediaAsset extends Model implements HasMedia
                 ->addMedia($file)
                 ->usingName($baseName)
                 ->usingFileName($fileName)
-                ->withCustomProperties($dimensions ? [
-                    'width' => $dimensions[0],
-                    'height' => $dimensions[1],
-                ] : [])
+                ->withCustomProperties(array_filter([
+                    'alt_text' => $altText,
+                    'width' => $dimensions ? $dimensions[0] : null,
+                    'height' => $dimensions ? $dimensions[1] : null,
+                ]))
                 ->toMediaCollection(self::COLLECTION, 'media');
         } catch (\Exception $e) {
             Log::error('Error uploading media library file: ' . $e->getMessage());
 
             return null;
         }
-    }
-
-    public function getFileAttribute(): ?Media
-    {
-        return $this->getFirstMedia(self::COLLECTION);
-    }
-
-    /** The full size original, which is what the library hands out. */
-    public function getUrlAttribute(): ?string
-    {
-        return $this->getFirstMediaUrl(self::COLLECTION) ?: null;
-    }
-
-    /**
-     * Grid preview: the thumbnail when it was generated, the original
-     * otherwise — conversions are skipped for anything that is not an image.
-     */
-    public function getPreviewUrlAttribute(): ?string
-    {
-        $media = $this->file;
-
-        if (! $media) {
-            return null;
-        }
-
-        return $media->hasGeneratedConversion('thumb')
-            ? $media->getUrl('thumb')
-            : $media->getUrl();
-    }
-
-    public function getIsImageAttribute(): bool
-    {
-        return Str::startsWith((string) $this->file?->mime_type, 'image/');
-    }
-
-    public function getDimensionsAttribute(): ?string
-    {
-        $media = $this->file;
-        $width = $media?->getCustomProperty('width');
-        $height = $media?->getCustomProperty('height');
-
-        return $width && $height ? $width . '×' . $height : null;
     }
 }
