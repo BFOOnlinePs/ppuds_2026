@@ -19,13 +19,13 @@ class MapPicker extends Map
             ->label(__('Location On Map'))
             ->default(['lat' => 32.2211, 'lng' => 35.2544])
             ->defaultLocation(latitude: 32.2211, longitude: 35.2544) // نابلس
-            ->tilesUrl('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png') // خريطة OSM
+            ->tilesUrl(config('services.map.tiles_url')) // خريطة OSM المستضافة ذاتياً
             ->extraTileControl([
                 'attribution' => '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
                 'tileSize' => 256,
                 'zoomOffset' => 0,
                 'detectRetina' => false,
-                'fallbackTilesUrl' => 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                'fallbackTilesUrl' => config('services.map.fallback_tiles_url'),
             ])
             ->markerColor("#22c55eff")
 

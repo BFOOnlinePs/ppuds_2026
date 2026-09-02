@@ -20,7 +20,7 @@
                         points: [],
                         center: { lat: 32.2211, lng: 35.2544 },
                         modalId: 'attendance-map-modal',
-                        tilesUrl: 'https://tile.openstreetmap.de/{z}/{x}/{y}.png',
+                        tilesUrl: @js(config('services.map.tiles_url')),
                         cssUrl: @js(asset('css/dotswan/filament-map-picker/filament-map-picker-styles.css')),
                         jsUrl: @js(asset('js/dotswan/filament-map-picker/filament-map-picker-scripts.js')),
                         labels: {

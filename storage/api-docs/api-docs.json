@@ -12109,7 +12109,7 @@
                     "Student Statistics"
                 ],
                 "summary": "Get aggregate students statistics",
-                "description": "Returns aggregate statistics for the students visible to the current user: all students for admins, own supervised students for supervisors, or the caller's own record for a student.",
+                "description": "Returns aggregate statistics for the students visible to the current user: all students for admins, own supervised students for supervisors, or the caller's own record for a student. Every filter narrows the payments section too, so filter[student_id] with filter[company_id] answers how much that company paid that student. The payments section carries: total_count, total_amount, paid_count, unpaid_count, paid_amount and unpaid_amount; received_by_currency[] with {currency_id, currency, currency_name, amount} for what was actually received in each currency; by_company[] with {company_id, company_name, currency_id, currency, records_count, paid_amount, unpaid_amount, total_amount}; and recent[] with the last ten payments.",
                 "operationId": "3c8719e5600c6a36361f6e63b4ddbec0",
                 "parameters": [
                     {

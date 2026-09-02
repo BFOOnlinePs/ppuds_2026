@@ -1,8 +1,15 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Modules\Core\Http\Controllers\MapTileController;
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    // خارج مجموعة اللغة عمداً: البلاطات لا تتبع لغة الواجهة، وعنوانها يجب أن يبقى
+    // ثابتاً حتى يستفيد المتصفح من تخزينها المؤقت بغض النظر عن اللغة المختارة.
+    Route::get('map/tile/{z}/{x}/{y}.png', MapTileController::class)
+        ->whereNumber(['z', 'x', 'y'])
+        ->name('map.tile');
+
     Route::group(
         [
             'prefix' => \Mcamara\LaravelLocalization\Facades\LaravelLocalization::setLocale(),

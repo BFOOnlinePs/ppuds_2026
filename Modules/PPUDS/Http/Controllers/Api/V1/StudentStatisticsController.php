@@ -44,7 +44,7 @@ class StudentStatisticsController extends Controller
      * @OA\Get(
      * path="/api/v1/ppuds/students/statistics",
      * summary="Get aggregate students statistics",
-     * description="Returns aggregate statistics for the students visible to the current user: all students for admins, own supervised students for supervisors, or the caller's own record for a student.",
+     * description="Returns aggregate statistics for the students visible to the current user: all students for admins, own supervised students for supervisors, or the caller's own record for a student. Every filter narrows the payments section too, so filter[student_id] with filter[company_id] answers how much that company paid that student. The payments section carries: total_count, total_amount, paid_count, unpaid_count, paid_amount and unpaid_amount; received_by_currency[] with {currency_id, currency, currency_name, amount} for what was actually received in each currency; by_company[] with {company_id, company_name, currency_id, currency, records_count, paid_amount, unpaid_amount, total_amount}; and recent[] with the last ten payments.",
      * tags={"Student Statistics"},
      * security={{"sanctum": {}}},
      *
@@ -158,6 +158,7 @@ class StudentStatisticsController extends Controller
             'field_visits' => $this->fieldVisitsSection($summary, $fieldVisits, $studentCompanies, $charts),
             'leave_requests' => $this->leaveRequestsSection($summary, $leaveRequests, $charts),
             'reports' => $this->reportsSection($summary, $studentReports),
+            'payments' => $this->paymentsSection($studentCompanies, $dateFrom, $dateTo),
             'sections' => $this->orderedSections(),
             'summary' => $summary,
             'charts' => $charts,
@@ -260,7 +261,7 @@ class StudentStatisticsController extends Controller
                 'today_count' => (clone $studentReports)->whereDate('created_at', now()->toDateString())->count(),
                 'records' => $this->recentStudentReports($studentReports, 10),
             ],
-            'payments' => $this->paymentsSection($studentCompanies),
+            'payments' => $this->paymentsSection($studentCompanies, $dateFrom, $dateTo),
             'trainings_history' => $this->trainingsHistory($student->id),
         ], __('Student statistics retrieved successfully'));
     }
@@ -568,6 +569,7 @@ class StudentStatisticsController extends Controller
             ['order' => 5, 'key' => 'field_visits', 'label' => __('Field Visits')],
             ['order' => 6, 'key' => 'leave_requests', 'label' => __('Leave Requests')],
             ['order' => 7, 'key' => 'reports', 'label' => __('Reports')],
+            ['order' => 8, 'key' => 'payments', 'label' => __('Payments')],
         ];
     }
 
@@ -641,9 +643,14 @@ class StudentStatisticsController extends Controller
             ->all();
     }
 
-    private function paymentsSection(Builder $studentCompanies): array
+    private function paymentsSection(Builder $studentCompanies, ?string $dateFrom = null, ?string $dateTo = null): array
     {
-        $payments = Payment::query()->whereIn('student_company_id', $this->studentCompanyIds($studentCompanies));
+        $payments = $this->applyDateRange(
+            Payment::query()->whereIn('student_company_id', $this->studentCompanyIds($studentCompanies)),
+            'created_at',
+            $dateFrom,
+            $dateTo
+        );
 
         return [
             'total_count' => (clone $payments)->count(),
@@ -653,7 +660,7 @@ class StudentStatisticsController extends Controller
             'paid_amount' => (float) (clone $payments)->where('status', PaymentStatus::PAID->value)->sum('payment_value'),
             'unpaid_amount' => (float) (clone $payments)->where('status', PaymentStatus::UNPAID->value)->sum('payment_value'),
             'received_by_currency' => $this->paymentsReceivedByCurrency($payments),
-            'by_company' => $this->paymentsByCompany($studentCompanies),
+            'by_company' => $this->paymentsByCompany($studentCompanies, $dateFrom, $dateTo),
             'recent' => (clone $payments)
                 ->with('currency.translations')
                 ->latest('id')
@@ -707,14 +714,19 @@ class StudentStatisticsController extends Controller
      * currency for the same reason, and ordered by the largest amount
      * actually received.
      */
-    private function paymentsByCompany(Builder $studentCompanies): array
+    private function paymentsByCompany(Builder $studentCompanies, ?string $dateFrom = null, ?string $dateTo = null): array
     {
         $paymentsTable = (new Payment)->getTable();
         $studentCompaniesTable = (new StudentCompany)->getTable();
 
-        $rows = Payment::query()
-            ->join($studentCompaniesTable, "{$studentCompaniesTable}.id", '=', "{$paymentsTable}.student_company_id")
-            ->whereIn("{$paymentsTable}.student_company_id", $this->studentCompanyIds($studentCompanies))
+        $rows = $this->applyDateRange(
+            Payment::query()
+                ->join($studentCompaniesTable, "{$studentCompaniesTable}.id", '=', "{$paymentsTable}.student_company_id")
+                ->whereIn("{$paymentsTable}.student_company_id", $this->studentCompanyIds($studentCompanies)),
+            "{$paymentsTable}.created_at",
+            $dateFrom,
+            $dateTo
+        )
             ->select("{$studentCompaniesTable}.company_id", "{$paymentsTable}.currency_id")
             ->selectRaw('COUNT(*) as records_count')
             ->selectRaw("SUM({$paymentsTable}.payment_value) as total_amount")
