@@ -131,6 +131,28 @@ class PermissionSeeder extends Seeder
                 'guard_name' => 'web',
                 'module_name' => 'Settings',
             ],
+
+            // TODO Media Library
+            [
+                'name' => 'Media Library View List',
+                'guard_name' => 'web',
+                'module_name' => 'Media Library',
+            ],
+            [
+                'name' => 'Media Library Create',
+                'guard_name' => 'web',
+                'module_name' => 'Media Library',
+            ],
+            [
+                'name' => 'Media Library Update',
+                'guard_name' => 'web',
+                'module_name' => 'Media Library',
+            ],
+            [
+                'name' => 'Media Library Delete',
+                'guard_name' => 'web',
+                'module_name' => 'Media Library',
+            ],
         ];
 
         foreach ($permissions as $perm) {

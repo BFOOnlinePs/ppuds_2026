@@ -82,6 +82,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     Route::get('/', Index::class)->name('index')->can('Activity Log View List');
                     Route::get('/auth', AuthLog::class)->name('auth')->can('Activity Log View List');
                 });
+
+                Route::group([
+                    'prefix' => 'media',
+                    'as' => 'media.',
+                    'namespace' => 'Modules\Core\Livewire\Pages\MediaLibrary',
+                ], function () {
+                    Route::get('/', Index::class)->name('index')->can('Media Library View List');
+                });
             });
         }
     );

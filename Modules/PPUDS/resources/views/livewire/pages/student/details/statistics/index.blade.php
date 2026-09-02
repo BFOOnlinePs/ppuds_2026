@@ -8,6 +8,7 @@
     $registrations = $this->registrations;
     $workExperience = $this->workExperience;
     $training = $this->currentTraining;
+    $financial = $this->financialRecord;
 
     // Tints are inline rather than Tailwind colour utilities: the compiled
     // stylesheet only ships a handful of colour families, so a class like
@@ -166,5 +167,117 @@
                 </dl>
             </div>
         @endforeach
+    </div>
+
+    {{-- Financial record: what each company actually paid the student --}}
+    <div class="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                {{ __('Financial Record') }}
+            </h3>
+
+            <div class="flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                <span>{{ __('Total Received') }}:</span>
+                @forelse ($financial['received'] as $received)
+                    <span class="rounded-lg px-2 py-1 font-semibold"
+                          style="color: #84cc16; background-color: #84cc161f;">
+                        {{ number_format($received['amount'], 2) }} {{ $received['currency'] }}
+                    </span>
+                @empty
+                    <span class="font-semibold text-gray-900 dark:text-gray-100">—</span>
+                @endforelse
+            </div>
+        </div>
+
+        @if (filled($financial['companies']))
+            {{-- Per company: how much of it was already received --}}
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-gray-100 text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                            <th class="px-3 py-2 text-start font-medium">{{ __('Company') }}</th>
+                            <th class="px-3 py-2 text-start font-medium">{{ __('Records') }}</th>
+                            <th class="px-3 py-2 text-start font-medium">{{ __('Paid') }}</th>
+                            <th class="px-3 py-2 text-start font-medium">{{ __('Unpaid') }}</th>
+                            <th class="px-3 py-2 text-start font-medium">{{ __('Total') }}</th>
+                            <th class="px-3 py-2 text-start font-medium">{{ __('Currency') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                        @foreach ($financial['companies'] as $row)
+                            <tr>
+                                <td class="px-3 py-2 font-semibold text-gray-900 dark:text-gray-100">
+                                    {{ $row['company'] }}
+                                </td>
+                                <td class="px-3 py-2 text-gray-500 dark:text-gray-400">{{ $row['records'] }}</td>
+                                <td class="px-3 py-2 font-semibold" style="color: #10b981;">
+                                    {{ number_format($row['paid'], 2) }}
+                                </td>
+                                <td class="px-3 py-2 font-semibold" style="color: #f43f5e;">
+                                    {{ number_format($row['unpaid'], 2) }}
+                                </td>
+                                <td class="px-3 py-2 font-semibold text-gray-900 dark:text-gray-100">
+                                    {{ number_format($row['total'], 2) }}
+                                </td>
+                                <td class="px-3 py-2 text-gray-500 dark:text-gray-400">{{ $row['currency'] }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+
+            {{-- The individual payments behind those totals --}}
+            <h4 class="mb-2 mt-4 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                {{ __('Payments') }}
+            </h4>
+            <div class="max-h-96 overflow-x-auto overflow-y-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-gray-100 text-xs text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                            <th class="px-3 py-2 text-start font-medium">{{ __('Date') }}</th>
+                            <th class="px-3 py-2 text-start font-medium">{{ __('Company') }}</th>
+                            <th class="px-3 py-2 text-start font-medium">{{ __('Branch') }}</th>
+                            <th class="px-3 py-2 text-start font-medium">{{ __('Payment Value') }}</th>
+                            <th class="px-3 py-2 text-start font-medium">{{ __('Currency') }}</th>
+                            <th class="px-3 py-2 text-start font-medium">{{ __('Status') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                        @foreach ($financial['entries'] as $payment)
+                            @php
+                                $statusColor = $payment->status === \Modules\PPUDS\Enums\PaymentStatus::PAID
+                                    ? '#10b981'
+                                    : '#f43f5e';
+                            @endphp
+                            <tr>
+                                <td class="px-3 py-2 text-gray-500 dark:text-gray-400">
+                                    {{ $payment->created_at?->format('Y-m-d') ?? '—' }}
+                                </td>
+                                <td class="px-3 py-2 text-gray-900 dark:text-gray-100">
+                                    {{ $payment->studentCompany?->company?->name ?: '—' }}
+                                </td>
+                                <td class="px-3 py-2 text-gray-500 dark:text-gray-400">
+                                    {{ $payment->studentCompany?->branch?->name ?: '—' }}
+                                </td>
+                                <td class="px-3 py-2 font-semibold text-gray-900 dark:text-gray-100">
+                                    {{ number_format((float) $payment->payment_value, 2) }}
+                                </td>
+                                <td class="px-3 py-2 text-gray-500 dark:text-gray-400">
+                                    {{ $payment->currency?->name ?: '—' }}
+                                </td>
+                                <td class="px-3 py-2">
+                                    <span class="rounded-lg px-2 py-1 text-xs font-semibold"
+                                          style="color: {{ $statusColor }}; background-color: {{ $statusColor }}1f;">
+                                        {{ $payment->status?->getLabel() ?? '—' }}
+                                    </span>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @else
+            <p class="text-sm text-gray-400 dark:text-gray-500">{{ __('No records found.') }}</p>
+        @endif
     </div>
 </div>

@@ -28,6 +28,10 @@ class SidebarServiceProvider extends ServiceProvider
         );
 
         $sidebar->add(
+            (new SidebarItem('Media Library', 'solar-gallery-bold-duotone', ['Media Library View List'], 'media.index', 20))
+        );
+
+        $sidebar->add(
             (new SidebarGroup('Users', 'solar-users-group-rounded-bold-duotone', [], 30))
                 ->add(new SidebarItem('Users List', 'solar-users-group-two-rounded-bold-duotone', ['User View List'],  'users.index'))
                 ->add(new SidebarItem('Add User', 'solar-user-plus-rounded-bold-duotone', ['User Create'], 'users.add'))

@@ -3,6 +3,7 @@
 namespace Modules\PPUDS\Livewire\Pages\Student\Details\Statistics;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
@@ -169,6 +170,60 @@ class Index extends Component
             'paid_amount' => (float) (clone $base)->where('status', PaymentStatus::PAID->value)->sum('payment_value'),
             'total_amount' => (float) (clone $base)->sum('payment_value'),
         ];
+    }
+
+    /**
+     * The money side of the placements, kept per company so the panel can
+     * answer "how much did this student actually receive from each company".
+     * Rows are grouped by company *and* currency: placements paid in
+     * different currencies must never be summed into a single figure.
+     */
+    #[Computed]
+    public function financialRecord(): array
+    {
+        $payments = Payment::query()
+            ->with([
+                'studentCompany.company.translations',
+                'studentCompany.branch.translations',
+                'currency.translations',
+            ])
+            ->whereIn('student_company_id', $this->studentCompanyIds())
+            ->latest('id')
+            ->get();
+
+        return [
+            'entries' => $payments,
+            'companies' => $payments
+                ->groupBy(fn (Payment $payment): string => $payment->studentCompany?->company_id . ':' . $payment->currency_id)
+                ->map(fn (Collection $group): array => [
+                    'company' => $group->first()->studentCompany?->company?->name ?: __('Unknown'),
+                    'currency' => $group->first()->currency?->name ?: '—',
+                    'records' => $group->count(),
+                    'paid' => $this->sumPaymentsByStatus($group, PaymentStatus::PAID),
+                    'unpaid' => $this->sumPaymentsByStatus($group, PaymentStatus::UNPAID),
+                    'total' => (float) $group->sum('payment_value'),
+                ])
+                ->sortByDesc('paid')
+                ->values()
+                ->all(),
+            'received' => $payments
+                ->filter(fn (Payment $payment): bool => $payment->status === PaymentStatus::PAID)
+                ->groupBy('currency_id')
+                ->map(fn (Collection $group): array => [
+                    'currency' => $group->first()->currency?->name ?: '—',
+                    'amount' => (float) $group->sum('payment_value'),
+                ])
+                ->values()
+                ->all(),
+        ];
+    }
+
+    /** Sums one payment status inside an already loaded collection. */
+    protected function sumPaymentsByStatus(Collection $payments, PaymentStatus $status): float
+    {
+        return (float) $payments
+            ->filter(fn (Payment $payment): bool => $payment->status === $status)
+            ->sum('payment_value');
     }
 
     #[Computed]
