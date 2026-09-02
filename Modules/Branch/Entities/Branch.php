@@ -117,7 +117,7 @@ class Branch extends Model implements TranslatableContract
     public function departments(): BelongsToMany
     {
         return $this->belongsToMany(CompanyDepartment::class, 'ppu_ds_branch_department', 'branch_id', 'company_department_id')
-            ->withPivot('user_id')
+            ->withPivot('id', 'user_id')
             ->withTimestamps();
     }
 

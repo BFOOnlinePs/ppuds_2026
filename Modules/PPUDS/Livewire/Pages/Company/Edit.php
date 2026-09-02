@@ -113,7 +113,12 @@ class Edit extends Component implements HasActions, HasForms
                 'working_hours' => $workingHoursData,
 
                 // جلب الأقسام
+                // The pivot allows more than one supervisor per branch+department.
+                // The form holds one, so it must be the most recently assigned:
+                // taking the oldest hid whoever was picked last, and the next
+                // save then deleted that hidden row for good.
                 'departments' => $branch->departments
+                    ->sortByDesc(fn (CompanyDepartment $dept): int => (int) $dept->pivot->id)
                     ->unique(fn (CompanyDepartment $dept): int => $dept->id)
                     ->map(function (CompanyDepartment $dept) {
                         return [
