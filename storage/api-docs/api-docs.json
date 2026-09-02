@@ -12244,7 +12244,7 @@
                     "Student Statistics"
                 ],
                 "summary": "Get a single student's statistics",
-                "description": "Returns detailed statistics for one student: current training, attendance, field visits, leave requests, reports, payments and training history.",
+                "description": "Returns detailed statistics for one student: current training, attendance, field visits, leave requests, reports, payments and training history. The payments section carries the student's financial record: total_count, total_amount, paid_count, unpaid_count, paid_amount and unpaid_amount; received_by_currency[] with {currency_id, currency, currency_name, amount} for what was actually received in each currency; by_company[] with {company_id, company_name, currency_id, currency, records_count, paid_amount, unpaid_amount, total_amount} for how much each company paid the student; and recent[] with the last ten payments.",
                 "operationId": "0df227db3f6fbbb108e8129b58fc120d",
                 "parameters": [
                     {

@@ -68,4 +68,26 @@ return [
         'access_token' => env('PPU_API_ACCESS_TOKEN'),
     ],
 
+    /*
+     * خوادم الخرائط المستضافة ذاتياً. الخوادم الثلاثة تعمل على HTTP فقط (لا شهادة
+     * TLS على الـ IP)، والتطبيق يُقدَّم عبر HTTPS، فيحجب المتصفح أي طلب إليها
+     * مباشرةً باعتباره mixed content وتظهر الخريطة فارغة. لذلك تُطلب البلاطات من
+     * مسار التطبيق نفسه (tiles_url) وهو يمررها إلى tile_server من جهة الخادم.
+     * إذا صار للخادم اسم نطاق وشهادة TLS، يكفي ضبط MAP_TILES_URL ليشير إليه مباشرة.
+     */
+    'map' => [
+        'tile_server' => env('MAP_TILE_SERVER', 'http://31.97.217.130:8080'),
+        'nominatim_url' => env('MAP_NOMINATIM_URL', 'http://31.97.217.130:8081'),
+        'osrm_url' => env('MAP_OSRM_URL', 'http://31.97.217.130:5000'),
+
+        // العنوان الذي تستهلكه Leaflet: نسبي ⇒ نفس أصل الصفحة ⇒ لا mixed content
+        'tiles_url' => env('MAP_TILES_URL', '/map/tile/{z}/{x}/{y}.png'),
+
+        // يُستخدم فقط عند فشل البلاطة (tileerror) في حقل اختيار الموقع
+        'fallback_tiles_url' => env('MAP_FALLBACK_TILES_URL', 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'),
+
+        'timeout' => env('MAP_TILE_TIMEOUT', 10),
+        'cache_ttl' => env('MAP_TILE_CACHE_TTL', 604800),
+    ],
+
 ];

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Modules\Branch\Entities\Branch;
+use Modules\Core\Entities\Currency;
 use Modules\Core\Entities\User;
 use Modules\Core\Enums\UserRole;
 use Modules\Core\Traits\ApiResponse;
@@ -20,6 +21,7 @@ use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Entities\StudentReport;
 use Modules\PPUDS\Enums\AttendanceStatus;
 use Modules\PPUDS\Enums\LeaveRequestStatus;
+use Modules\PPUDS\Enums\PaymentStatus;
 use Modules\PPUDS\Enums\SemesterType;
 use Modules\PPUDS\Enums\StudentGender;
 use Modules\PPUDS\Enums\TrainingStatus;
@@ -72,7 +74,7 @@ class StudentStatisticsController extends Controller
      * @OA\Get(
      * path="/api/v1/ppuds/students/{student}/statistics",
      * summary="Get a single student's statistics",
-     * description="Returns detailed statistics for one student: current training, attendance, field visits, leave requests, reports, payments and training history.",
+     * description="Returns detailed statistics for one student: current training, attendance, field visits, leave requests, reports, payments and training history. The payments section carries the student's financial record: total_count, total_amount, paid_count, unpaid_count, paid_amount and unpaid_amount; received_by_currency[] with {currency_id, currency, currency_name, amount} for what was actually received in each currency; by_company[] with {company_id, company_name, currency_id, currency, records_count, paid_amount, unpaid_amount, total_amount} for how much each company paid the student; and recent[] with the last ten payments.",
      * tags={"Student Statistics"},
      * security={{"sanctum": {}}},
      *
@@ -646,6 +648,12 @@ class StudentStatisticsController extends Controller
         return [
             'total_count' => (clone $payments)->count(),
             'total_amount' => (float) (clone $payments)->sum('payment_value'),
+            'paid_count' => (clone $payments)->where('status', PaymentStatus::PAID->value)->count(),
+            'unpaid_count' => (clone $payments)->where('status', PaymentStatus::UNPAID->value)->count(),
+            'paid_amount' => (float) (clone $payments)->where('status', PaymentStatus::PAID->value)->sum('payment_value'),
+            'unpaid_amount' => (float) (clone $payments)->where('status', PaymentStatus::UNPAID->value)->sum('payment_value'),
+            'received_by_currency' => $this->paymentsReceivedByCurrency($payments),
+            'by_company' => $this->paymentsByCompany($studentCompanies),
             'recent' => (clone $payments)
                 ->with('currency.translations')
                 ->latest('id')
@@ -662,6 +670,83 @@ class StudentStatisticsController extends Controller
                 ->values()
                 ->all(),
         ];
+    }
+
+    /**
+     * What the student actually received, per currency. Only paid rows count:
+     * an unpaid row is money owed, not money received, and currencies are kept
+     * apart so nothing sums two of them into one meaningless figure.
+     */
+    private function paymentsReceivedByCurrency(Builder $payments): array
+    {
+        $rows = (clone $payments)
+            ->select('currency_id')
+            ->selectRaw('SUM(payment_value) as amount')
+            ->where('status', PaymentStatus::PAID->value)
+            ->groupBy('currency_id')
+            ->get();
+
+        $currencies = Currency::with('translations')
+            ->whereIn('id', $rows->pluck('currency_id')->filter()->all())
+            ->get()
+            ->keyBy('id');
+
+        return $rows
+            ->map(fn ($row): array => [
+                'currency_id' => (int) $row->currency_id,
+                'currency' => $currencies->get($row->currency_id)?->code,
+                'currency_name' => $currencies->get($row->currency_id)?->name,
+                'amount' => (float) $row->amount,
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * How much each company paid the student. Grouped by company *and*
+     * currency for the same reason, and ordered by the largest amount
+     * actually received.
+     */
+    private function paymentsByCompany(Builder $studentCompanies): array
+    {
+        $paymentsTable = (new Payment)->getTable();
+        $studentCompaniesTable = (new StudentCompany)->getTable();
+
+        $rows = Payment::query()
+            ->join($studentCompaniesTable, "{$studentCompaniesTable}.id", '=', "{$paymentsTable}.student_company_id")
+            ->whereIn("{$paymentsTable}.student_company_id", $this->studentCompanyIds($studentCompanies))
+            ->select("{$studentCompaniesTable}.company_id", "{$paymentsTable}.currency_id")
+            ->selectRaw('COUNT(*) as records_count')
+            ->selectRaw("SUM({$paymentsTable}.payment_value) as total_amount")
+            ->selectRaw("SUM(CASE WHEN {$paymentsTable}.status = ? THEN {$paymentsTable}.payment_value ELSE 0 END) as paid_amount", [PaymentStatus::PAID->value])
+            ->selectRaw("SUM(CASE WHEN {$paymentsTable}.status = ? THEN {$paymentsTable}.payment_value ELSE 0 END) as unpaid_amount", [PaymentStatus::UNPAID->value])
+            ->groupBy("{$studentCompaniesTable}.company_id", "{$paymentsTable}.currency_id")
+            ->orderByDesc('paid_amount')
+            ->get();
+
+        $companies = Company::with('translations')
+            ->whereIn('id', $rows->pluck('company_id')->filter()->all())
+            ->get()
+            ->keyBy('id');
+
+        $currencies = Currency::with('translations')
+            ->whereIn('id', $rows->pluck('currency_id')->filter()->all())
+            ->get()
+            ->keyBy('id');
+
+        return $rows
+            ->map(fn ($row): array => [
+                'company_id' => (int) $row->company_id,
+                'company_name' => $companies->get($row->company_id)?->name,
+                'currency_id' => (int) $row->currency_id,
+                'currency' => $currencies->get($row->currency_id)?->code,
+                'records_count' => (int) $row->records_count,
+                'paid_amount' => (float) $row->paid_amount,
+                'unpaid_amount' => (float) $row->unpaid_amount,
+                'total_amount' => (float) $row->total_amount,
+            ])
+            ->values()
+            ->all();
     }
 
     private function trainingsHistory(int $studentId, int $limit = 20): array
