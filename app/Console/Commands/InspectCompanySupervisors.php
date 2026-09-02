@@ -38,6 +38,8 @@ class InspectCompanySupervisors extends Command
 
         $this->info("Company {$company->id}: {$company->name}  (created {$company->created_at})");
 
+        $this->branchLinks($prefix, $companyId, (string) $company->created_at);
+
         $rows = DB::table($prefix.'branch_department as bd')
             ->join($prefix.'branch_company as bc', 'bc.branch_id', '=', 'bd.branch_id')
             ->join('users as u', 'u.id', '=', 'bd.user_id')
@@ -93,6 +95,70 @@ class InspectCompanySupervisors extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * The branches attached to the company, and when each attachment was made.
+     * A branch older than the company, or one shared with another company, is
+     * how a supervisor nobody picked ends up on the company.
+     */
+    private function branchLinks(string $prefix, int $companyId, string $companyCreatedAt): void
+    {
+        $links = DB::table($prefix.'branch_company as bc')
+            ->join('branch_branches as b', 'b.id', '=', 'bc.branch_id')
+            ->leftJoin('branch_branch_translations as bt', function ($join): void {
+                $join->on('bt.branch_id', '=', 'b.id')->where('bt.locale', '=', 'ar');
+            })
+            ->where('bc.company_id', $companyId)
+            ->orderBy('bc.branch_id')
+            ->select([
+                'bc.branch_id',
+                'bt.name as branch_name',
+                'bc.is_main',
+                'bc.created_at as linked_at',
+                'b.created_at as branch_created_at',
+            ])
+            ->get();
+
+        if ($links->isEmpty()) {
+            $this->warn('No branches are attached to this company.');
+
+            return;
+        }
+
+        $sharedCounts = DB::table($prefix.'branch_company')
+            ->whereIn('branch_id', $links->pluck('branch_id'))
+            ->select('branch_id', DB::raw('count(*) as companies'))
+            ->groupBy('branch_id')
+            ->pluck('companies', 'branch_id');
+
+        $this->line('');
+        $this->line('Branches attached to this company:');
+        $this->table(
+            ['branch', 'name', 'main', 'branch created', 'linked to company at', 'shared with', 'note'],
+            $links->map(function ($link) use ($sharedCounts, $companyCreatedAt): array {
+                $shared = (int) ($sharedCounts[$link->branch_id] ?? 1);
+                $notes = [];
+
+                if ($link->branch_created_at && $link->branch_created_at < $companyCreatedAt) {
+                    $notes[] = 'PRE-EXISTING BRANCH';
+                }
+
+                if ($shared > 1) {
+                    $notes[] = 'SHARED WITH '.($shared - 1).' OTHER COMPANY(IES)';
+                }
+
+                return [
+                    $link->branch_id,
+                    $link->branch_name ?? '—',
+                    $link->is_main ? 'yes' : 'no',
+                    (string) $link->branch_created_at,
+                    (string) $link->linked_at,
+                    $shared.' company(ies)',
+                    implode(' + ', $notes),
+                ];
+            })->all()
+        );
     }
 
     /** Flags the rows worth explaining: duplicates, later edits, pre-existing rows. */
