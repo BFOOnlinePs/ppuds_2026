@@ -24,10 +24,12 @@ use Illuminate\Support\Str;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Core\Entities\MediaAsset;
+use Modules\Core\Entities\User;
 use Modules\Core\Filament\Forms\Components\CreateAction;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
+use Modules\PPUDS\Support\HasStudentMediaFilter;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 /**
@@ -40,6 +42,7 @@ class Index extends Component implements HasTable, HasForms
 {
     use InteractsWithTable;
     use InteractsWithForms;
+    use HasStudentMediaFilter;
 
     public function table(Table $table): Table
     {
@@ -64,12 +67,7 @@ class Index extends Component implements HasTable, HasForms
                         ->label(__('File Name'))
                         ->weight('bold')
                         ->limit(32)
-                        ->searchable(query: fn (Builder $query, string $search): Builder => $query->where(
-                            fn (Builder $inner): Builder => $inner
-                                ->where('file_name', 'like', "%{$search}%")
-                                ->orWhere('name', 'like', "%{$search}%")
-                                ->orWhere('custom_properties->alt_text', 'like', "%{$search}%")
-                        )),
+                        ->searchable(query: fn (Builder $query, string $search): Builder => $this->applySearch($query, $search)),
 
                     TextColumn::make('details')
                         ->label('')
@@ -163,6 +161,42 @@ class Index extends Component implements HasTable, HasForms
             : class_basename((string) $media->model_type) . ' · ' . $media->collection_name;
     }
 
+    /**
+     * The search box covers everything a file is described by: its own names
+     * and alt text, the collection and mime type it was filed under, and the
+     * name of the user who owns it — so typing a student's name finds their
+     * avatar without touching the student filter.
+     */
+    protected function applySearch(Builder $query, string $search): Builder
+    {
+        return $query->where(fn (Builder $inner): Builder => $inner
+            ->where('file_name', 'like', "%{$search}%")
+            ->orWhere('name', 'like', "%{$search}%")
+            ->orWhere('custom_properties->alt_text', 'like', "%{$search}%")
+            ->orWhere('collection_name', 'like', "%{$search}%")
+            ->orWhere('mime_type', 'like', "%{$search}%")
+            ->orWhere(fn (Builder $owner): Builder => $owner
+                ->where('model_type', User::class)
+                ->whereIn('model_id', User::query()
+                    ->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->select('id'))));
+    }
+
+    /** The models that actually own files, labelled by their class name. */
+    protected function sourceTypeOptions(): array
+    {
+        return Media::query()
+            ->select('model_type')
+            ->distinct()
+            ->orderBy('model_type')
+            ->pluck('model_type')
+            ->mapWithKeys(fn (?string $type): array => [
+                $type => $type === MediaAsset::class ? __('Media Library') : class_basename((string) $type),
+            ])
+            ->all();
+    }
+
     protected function uploadAction(): CreateAction
     {
         return CreateAction::make('upload')
@@ -229,6 +263,14 @@ class Index extends Component implements HasTable, HasForms
                     ->orderBy('collection_name')
                     ->pluck('collection_name', 'collection_name')
                     ->all())
+                ->native(false)
+                ->searchable(),
+
+            $this->studentMediaSelectFilter(),
+
+            SelectFilter::make('model_type')
+                ->label(__('Source Type'))
+                ->options(fn (): array => $this->sourceTypeOptions())
                 ->native(false)
                 ->searchable(),
         ];
