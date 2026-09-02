@@ -4,6 +4,7 @@ namespace Modules\PPUDS\Livewire\Pages\Company;
 
 use App\View\Components\AppLayout;
 use Filament\Forms;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -139,7 +140,45 @@ class Index extends Component implements HasForms, HasTable
                     ))
                     ->visible(fn () => auth()->user()->can('Company View List')),
             ])
-            ->bulkActions([]);
+            ->bulkActions([
+                $this->updateCategoryBulkAction(),
+            ]);
+    }
+
+    /**
+     * Moves every selected company to one category. Saves through the model
+     * rather than a mass query so the activity log keeps recording who changed
+     * which company's category.
+     */
+    protected function updateCategoryBulkAction(): BulkAction
+    {
+        return BulkAction::make('update_category')
+            ->label(__('Change Category'))
+            ->icon('solar-widget-4-bold-duotone')
+            ->color('primary')
+            ->modalHeading(__('Change Category'))
+            ->modalSubmitActionLabel(__('Save'))
+            ->form([
+                Select::make('company_category_id')
+                    ->label(__('Company Category'))
+                    ->options(fn () => CompanyCategory::with('translations')->get()->pluck('name', 'id'))
+                    ->searchable()
+                    ->preload()
+                    ->required(),
+            ])
+            ->action(function (Collection $records, array $data): void {
+                abort_unless(auth()->user()?->can('Company Update'), 403);
+
+                $categoryId = (int) $data['company_category_id'];
+
+                $records->each(
+                    fn (Company $company) => $company->update(['company_category_id' => $categoryId])
+                );
+
+                Toaster::success(__('Categories updated successfully'));
+            })
+            ->deselectRecordsAfterCompletion()
+            ->visible(fn () => auth()->user()->can('Company Update'));
     }
 
     protected function getTableFilters(): array
