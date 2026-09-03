@@ -12,7 +12,7 @@ class TrainingStatusChart extends DashboardChartWidget
 
     public static function canView(): bool
     {
-        return static::isStudent() || static::canAny(['StudentCompany View List']);
+        return static::canAny(['StudentCompany View List']);
     }
 
     protected function getData(): array

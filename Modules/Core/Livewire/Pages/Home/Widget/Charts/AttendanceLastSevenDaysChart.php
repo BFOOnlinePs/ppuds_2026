@@ -10,7 +10,7 @@ class AttendanceLastSevenDaysChart extends DashboardChartWidget
 
     public static function canView(): bool
     {
-        return static::isStudent() || static::canAny(['StudentAttendance View List']);
+        return static::canAny(['StudentAttendance View List']);
     }
 
     protected function getData(): array

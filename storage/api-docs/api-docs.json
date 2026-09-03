@@ -6852,7 +6852,7 @@
                     "Auth"
                 ],
                 "summary": "Renew the university token",
-                "description": "Exchanges a refresh token for a new access token against the university realm, and keeps the pair stored on the server in step. **The realm's own JSON is passed through unchanged, with its own status code**, exactly like the sign-in endpoint. Deliberately unauthenticated: it is called once the access token has expired, and the refresh token is itself the credential. A refresh is not recorded in the activity log, since it is not a new sign-in.",
+                "description": "Exchanges a refresh token for a new access token against the university realm, and keeps the pair stored on the server in step. **The realm's own JSON is passed through unchanged, with its own status code**, exactly like the sign-in endpoint. Deliberately unauthenticated: it is called once the access token has expired, and the refresh token is itself the credential. A refresh is recorded in the activity log under its own event, separate from the sign-ins.",
                 "operationId": "fab496957806e4ce6f53d4fdb22b36cf",
                 "requestBody": {
                     "required": true,

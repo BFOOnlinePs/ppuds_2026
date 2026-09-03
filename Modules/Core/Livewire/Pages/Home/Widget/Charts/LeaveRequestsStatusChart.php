@@ -12,7 +12,7 @@ class LeaveRequestsStatusChart extends DashboardChartWidget
 
     public static function canView(): bool
     {
-        return static::isStudent() || static::canAny(['LeaveRequest View List']);
+        return static::canAny(['LeaveRequest View List']);
     }
 
     protected function getData(): array

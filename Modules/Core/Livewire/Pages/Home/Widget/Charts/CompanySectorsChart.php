@@ -12,7 +12,7 @@ class CompanySectorsChart extends DashboardChartWidget
 
     public static function canView(): bool
     {
-        return static::canAny(['StudentCompany View List', 'Company View List']);
+        return static::canAny(['Company View List']);
     }
 
     protected function getData(): array

@@ -4,8 +4,11 @@ namespace Modules\Core\Livewire\Pages\Profile;
 
 use App\View\Components\AppLayout;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Livewire;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
@@ -19,11 +22,18 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Concerns\InteractsWithInfolists;
 use Filament\Infolists\Contracts\HasInfolists;
 use Filament\Infolists\Infolist;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\HtmlString;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
+use Masmerise\Toaster\Toaster;
 use Modules\Core\Entities\User;
+use Modules\PPUDS\Entities\StudentProfile;
+use Spatie\MediaLibrary\MediaCollections\Models\Media as SpatieMedia;
 
 class Index extends Component implements HasForms, HasInfolists
 {
@@ -35,7 +45,10 @@ class Index extends Component implements HasForms, HasInfolists
     public function mount()
     {
         // dd(auth()->user());
-        $this->form->fill($this->userRecord->toArray());
+        $this->form->fill(array_merge(
+            $this->userRecord->toArray(),
+            ['attachment_uploads' => []],
+        ));
     }
 
     #[Computed]
@@ -222,7 +235,89 @@ class Index extends Component implements HasForms, HasInfolists
                                     ])
                                     ->visible(fn () => auth()->user()->hasRole('Student')),
 
+                                Tabs\Tab::make('attachments')
+                                    ->label(__('Attachments'))
+                                    ->icon('heroicon-o-paper-clip')
+                                    ->schema([
+                                        Section::make(__('Student Attachments'))
+                                            ->description(__('Optional supporting documents for the student'))
+                                            ->schema([
+                                                Placeholder::make('current_attachments')
+                                                    ->label(__('Current Attachments'))
+                                                    ->visible(fn (): bool => $this->studentAttachments()->isNotEmpty())
+                                                    ->content(fn (): HtmlString => new HtmlString(
+                                                        Blade::render(<<<'HTML'
+                                                            <div class="grid gap-2">
+                                                                @foreach ($attachments as $attachment)
+                                                                    <div
+                                                                        class="flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm transition hover:border-primary-300 hover:bg-primary-50/40 dark:border-gray-700 dark:bg-gray-900 dark:hover:border-primary-500"
+                                                                    >
+                                                                        <div class="min-w-0">
+                                                                            <div class="truncate font-medium text-gray-800 dark:text-gray-100">
+                                                                                {{ $attachment->name ?: $attachment->file_name }}
+                                                                            </div>
+                                                                            <div class="truncate text-xs text-gray-500">
+                                                                                {{ $attachment->file_name }}
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="flex shrink-0 items-center gap-2">
+                                                                            <span class="text-xs text-gray-500">
+                                                                                {{ $attachment->human_readable_size }}
+                                                                            </span>
+                                                                            <button
+                                                                                type="button"
+                                                                                wire:click="downloadAttachment({{ $attachment->id }})"
+                                                                                class="rounded-md px-2 py-1 text-xs font-medium text-primary-600 transition hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-500/10"
+                                                                            >
+                                                                                {{ __('Download') }}
+                                                                            </button>
+                                                                            <button
+                                                                                type="button"
+                                                                                wire:click="deleteAttachment({{ $attachment->id }})"
+                                                                                wire:confirm="{{ __('Are you sure you want to delete this attachment?') }}"
+                                                                                class="rounded-md px-2 py-1 text-xs font-medium text-danger-600 transition hover:bg-danger-50 dark:text-danger-400 dark:hover:bg-danger-500/10"
+                                                                            >
+                                                                                {{ __('Delete') }}
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                @endforeach
+                                                            </div>
+                                                        HTML, [
+                                                            'attachments' => $this->studentAttachments(),
+                                                        ])
+                                                    ))
+                                                    ->columnSpanFull(),
+
+                                                Repeater::make('attachment_uploads')
+                                                    ->label(__('Add Attachment'))
+                                                    ->schema([
+                                                        Grid::make(2)
+                                                            ->schema([
+                                                                TextInput::make('name')
+                                                                    ->label(__('Attachment Name'))
+                                                                    ->helperText(__('Leave it empty to use the file name'))
+                                                                    ->maxLength(255),
+
+                                                                FileUpload::make('file')
+                                                                    ->label(__('Attachment File'))
+                                                                    ->required()
+                                                                    ->storeFiles(false)
+                                                                    ->preserveFilenames()
+                                                                    ->maxSize(10240),
+                                                            ]),
+                                                    ])
+                                                    ->defaultItems(0)
+                                                    ->addActionLabel(__('Add Another Attachment'))
+                                                    ->reorderable(false)
+                                                    ->collapsible()
+                                                    ->columnSpanFull(),
+                                            ]),
+                                    ])
+                                    ->visible(fn () => auth()->user()->hasRole('Student')),
+
                                 Tabs\Tab::make('work-experience')
+
                                     ->label(__('Work Experience'))
                                     ->icon('heroicon-o-briefcase')
                                     ->schema([
@@ -322,8 +417,9 @@ class Index extends Component implements HasForms, HasInfolists
         $this->validate();
 
         $data = $this->form->getState();
+        $savedAttachments = 0;
 
-        DB::transaction(function () use ($data) { // أضف use ($data) هنا
+        DB::transaction(function () use ($data, &$savedAttachments) { // أضف use ($data) هنا
 
             $user = $this->userRecord;
 
@@ -355,14 +451,104 @@ class Index extends Component implements HasForms, HasInfolists
 
             $this->form->model($user)->saveRelationships();
 
+            $savedAttachments = $this->saveAttachments($user, $data['attachment_uploads'] ?? []);
+
             // Notification::make()->title('Saved successfully')->success()->send();
         });
+
+        if ($savedAttachments > 0) {
+            $this->data['attachment_uploads'] = [];
+
+            unset($this->userRecord);
+
+            Toaster::success(__('Student attachment uploaded successfully'));
+        }
 
         // إعادة التوجيه بعد الحفظ
         // return redirect()->route('students.index');
     }
 
+    public function downloadAttachment(int $mediaId)
+    {
+        $media = $this->studentAttachment($mediaId);
+
+        abort_unless($media, 404);
+
+        return response()->download($media->getPath(), $media->file_name, [
+            'Content-Type' => $media->mime_type ?: 'application/octet-stream',
+        ]);
+    }
+
+    public function deleteAttachment(int $mediaId): void
+    {
+        $media = $this->studentAttachment($mediaId);
+
+        if (! $media) {
+            Toaster::error(__('Attachment not found'));
+
+            return;
+        }
+
+        $media->delete();
+
+        unset($this->userRecord);
+
+        Toaster::success(__('Attachment deleted successfully'));
+    }
+
+    protected function studentAttachments(): Collection
+    {
+        $profile = $this->userRecord->studentProfile;
+
+        if (! $profile) {
+            return collect();
+        }
+
+        return $profile->getMedia(StudentProfile::ATTACHMENTS_COLLECTION);
+    }
+
+    protected function studentAttachment(int $mediaId): ?SpatieMedia
+    {
+        $profile = $this->userRecord->studentProfile;
+
+        if (! $profile) {
+            return null;
+        }
+
+        return SpatieMedia::query()
+            ->whereKey($mediaId)
+            ->where('model_type', $profile->getMorphClass())
+            ->where('model_id', $profile->getKey())
+            ->where('collection_name', StudentProfile::ATTACHMENTS_COLLECTION)
+            ->first();
+    }
+
+    protected function saveAttachments(User $user, array $attachmentUploads): int
+    {
+        $profile = $user->studentProfile;
+
+        if (! $profile || $attachmentUploads === []) {
+            return 0;
+        }
+
+        $saved = 0;
+
+        foreach ($attachmentUploads as $attachmentUpload) {
+            $files = Arr::wrap($attachmentUpload['file'] ?? []);
+            $name = $attachmentUpload['name'] ?? null;
+
+            foreach (array_filter($files) as $attachmentFile) {
+                if ($profile->addAttachment($attachmentFile, $name)) {
+                    $saved++;
+                }
+            }
+        }
+
+        return $saved;
+    }
+
     public function render()
+
     {
         return view('core::livewire.pages.profile.index')->layout(AppLayout::class, [
             'breadcrumbs' => [

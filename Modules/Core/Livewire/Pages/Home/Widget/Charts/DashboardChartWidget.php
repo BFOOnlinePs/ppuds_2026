@@ -27,6 +27,18 @@ abstract class DashboardChartWidget extends ChartWidget
         return static::$heading ? __(static::$heading) : null;
     }
 
+    protected function getCachedData(): array
+    {
+        if (! static::canView()) {
+            return [
+                'datasets' => [],
+                'labels' => [],
+            ];
+        }
+
+        return parent::getCachedData();
+    }
+
     protected static function canAny(array $permissions): bool
     {
         $user = auth()->user();
