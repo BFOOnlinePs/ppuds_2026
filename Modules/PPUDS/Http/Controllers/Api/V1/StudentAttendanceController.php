@@ -218,6 +218,7 @@ class StudentAttendanceController extends Controller
                 'student.media',
                 'student.studentProfile.major',
                 'company',
+                'workingHours',
                 'branch.workingHours',
                 'department',
             ])

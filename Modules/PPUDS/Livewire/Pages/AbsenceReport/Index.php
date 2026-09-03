@@ -54,6 +54,7 @@ class Index extends Component implements HasForms, HasTable
             ->query(fn () => StudentCompany::query()
                 ->with([
                     'attendances',
+                    'workingHours',
                     'branch.workingHours',
                     'company',
                     'leaveRequests',
@@ -292,6 +293,7 @@ class Index extends Component implements HasForms, HasTable
         $this->absentStudentCompanyIds = StudentCompany::query()
             ->with([
                 'attendances',
+                'workingHours',
                 'branch.workingHours',
                 'leaveRequests',
                 'registration',

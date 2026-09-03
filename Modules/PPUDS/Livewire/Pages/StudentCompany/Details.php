@@ -37,6 +37,7 @@ class Details extends Component implements HasForms, HasInfolists
                 'student.studentProfile',
                 'company',
                 'branch',
+                'workingHours',
                 'branch.workingHours',
                 'department',
                 'attendances',

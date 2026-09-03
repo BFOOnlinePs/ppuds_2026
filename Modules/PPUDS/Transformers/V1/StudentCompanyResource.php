@@ -181,6 +181,7 @@ class StudentCompanyResource extends JsonResource
             'payments.currency',
 
             'branch.departments',
+            'workingHours',
             'branch.workingHours',
             'branch.departments.user',
             'branch.departments.supervisors',

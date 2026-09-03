@@ -298,7 +298,7 @@ class DashboardStatsWidget extends StatsOverviewWidget
     private function requiredWorkingHours(): float
     {
         $minutes = $this->studentCompaniesQuery()
-            ->with('branch.workingHours')
+            ->with(['workingHours', 'branch.workingHours'])
             ->get()
             ->sum(fn (StudentCompany $studentCompany) => $this->requiredWorkingMinutes($studentCompany));
 
@@ -307,9 +307,9 @@ class DashboardStatsWidget extends StatsOverviewWidget
 
     private function requiredWorkingMinutes(StudentCompany $studentCompany): int
     {
-        $branch = $studentCompany->branch;
+        $workingHours = $studentCompany->effectiveWorkingHours();
 
-        if (! $branch?->relationLoaded('workingHours')) {
+        if ($workingHours->isEmpty()) {
             return 0;
         }
 
@@ -319,7 +319,7 @@ class DashboardStatsWidget extends StatsOverviewWidget
         $minutes = 0;
 
         while ($date->lte($endDate)) {
-            $workingHour = $branch->workingHours->first(
+            $workingHour = $workingHours->first(
                 fn ($workingHour) => $workingHour->day?->value === $this->weekDayValue($date)
             );
 

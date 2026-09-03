@@ -214,6 +214,7 @@ class FieldVisitController extends Controller
                 'registration.course',
                 'registration.supervisor',
                 'company',
+                'workingHours',
                 'branch.workingHours',
                 'branch.departments.supervisors',
                 'branch.supervisors',

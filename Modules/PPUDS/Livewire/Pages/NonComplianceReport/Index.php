@@ -323,6 +323,7 @@ class Index extends Component implements HasActions, HasForms
         $query = StudentCompany::query()
             ->with([
                 'attendances',
+                'workingHours',
                 'branch.workingHours',
                 'company',
                 'leaveRequests',

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Modules\Branch\Entities\Branch;
@@ -152,6 +153,27 @@ class StudentCompany extends Model implements HasMedia
     public function attendances(): HasMany
     {
         return $this->hasMany(StudentAttendance::class, 'student_company_id');
+    }
+
+    public function workingHours(): HasMany
+    {
+        return $this->hasMany(StudentCompanyWorkingHour::class, 'student_company_id');
+    }
+
+    /**
+     * The weekly schedule this placement is measured against: the student's own
+     * working hours when they have been set, otherwise the working hours of the
+     * branch the student is training at.
+     */
+    public function effectiveWorkingHours(): Collection
+    {
+        $this->loadMissing(['workingHours', 'branch.workingHours']);
+
+        if ($this->workingHours->isNotEmpty()) {
+            return $this->workingHours->toBase();
+        }
+
+        return $this->branch?->workingHours?->toBase() ?? collect();
     }
 
     public function leaveRequests(): HasMany

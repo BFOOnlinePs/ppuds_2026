@@ -7,21 +7,27 @@ use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Group;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TimePicker;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Branch\Entities\Branch;
+use Modules\Branch\Enums\WeekDay;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\CompanyDepartment;
 use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Entities\StudentCompany;
+use Modules\PPUDS\Entities\StudentCompanyWorkingHour;
 use Modules\PPUDS\Enums\TrainingStatus;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
@@ -43,7 +49,18 @@ class Edit extends Component implements HasActions, HasForms
             ->findOrFail($studentCompany);
 
         // 2. تعبئة النموذج بالبيانات الحالية
-        $this->form->fill($this->record->toArray());
+        $formData = $this->record->toArray();
+
+        $formData['working_hours'] = $this->record->workingHours
+            ->map(fn (StudentCompanyWorkingHour $workingHour): array => [
+                'day' => $workingHour->day?->value,
+                'is_closed' => (bool) $workingHour->is_closed,
+                'start_time' => $workingHour->start_time?->format('H:i'),
+                'end_time' => $workingHour->end_time?->format('H:i'),
+            ])
+            ->toArray();
+
+        $this->form->fill($formData);
     }
 
     public function form(Form $form): Form
@@ -144,6 +161,56 @@ class Edit extends Component implements HasActions, HasForms
                                                 ->columnSpanFull(),
                                         ]),
                                     ]),
+
+                                Section::make(__('Student Working Hours'))
+                                    ->description(__('Leave it empty to follow the branch working hours'))
+                                    ->icon('solar-clock-circle-bold-duotone')
+                                    ->collapsible()
+                                    ->schema([
+                                        Repeater::make('working_hours')
+                                            ->label(__('Weekly Schedule'))
+                                            ->hiddenLabel()
+                                            ->schema([
+                                                Grid::make(4)->schema([
+                                                    Select::make('day')
+                                                        ->label(__('Day'))
+                                                        ->options(WeekDay::class)
+                                                        ->distinct()
+                                                        ->required()
+                                                        ->native(false)
+                                                        ->columnSpan(1),
+
+                                                    Toggle::make('is_closed')
+                                                        ->label(__('Closed?'))
+                                                        ->onColor('danger')
+                                                        ->offColor('success')
+                                                        ->inline(false)
+                                                        ->live()
+                                                        ->columnSpan(1),
+
+                                                    Group::make([
+                                                        TimePicker::make('start_time')
+                                                            ->label(__('Start'))
+                                                            ->seconds(false)
+                                                            ->default('08:00')
+                                                            ->required(fn (Get $get) => ! $get('is_closed')),
+
+                                                        TimePicker::make('end_time')
+                                                            ->label(__('End'))
+                                                            ->seconds(false)
+                                                            ->default('16:00')
+                                                            ->required(fn (Get $get) => ! $get('is_closed')),
+                                                    ])
+                                                        ->visible(fn (Get $get) => ! $get('is_closed'))
+                                                        ->columnSpan(2)
+                                                        ->columns(2),
+                                                ]),
+                                            ])
+                                            ->defaultItems(0)
+                                            ->addActionLabel(__('Add Day'))
+                                            ->reorderable(false)
+                                            ->columnSpanFull(),
+                                    ]),
                             ]),
 
                         // --- العمود الجانبي (يمين) ---
@@ -183,6 +250,9 @@ class Edit extends Component implements HasActions, HasForms
 
         $data = $this->validatedData();
 
+        $workingHoursData = $data['working_hours'] ?? [];
+        $data = Arr::except($data, ['working_hours']);
+
         // منطق هام: إذا قام المستخدم بتغيير "سجل التسجيل"، يجب تحديث "الطالب" أيضاً
         if ($data['registration_id'] != $this->record->registration_id) {
             $registration = Registration::find($data['registration_id']);
@@ -194,9 +264,33 @@ class Edit extends Component implements HasActions, HasForms
         // تحديث السجل
         $this->record->update($data);
 
+        $this->syncWorkingHours($workingHoursData);
+
         Toaster::success(__('Student company record updated successfully'));
 
         $this->redirect(route('student-companies.index'));
+    }
+
+    /**
+     * Replaces the student's weekly schedule. An empty list clears it, which
+     * makes the placement fall back to the branch working hours.
+     */
+    protected function syncWorkingHours(array $workingHoursData): void
+    {
+        $this->record->workingHours()->delete();
+
+        foreach ($workingHoursData as $workingHour) {
+            $isClosed = (bool) ($workingHour['is_closed'] ?? false);
+
+            $this->record->workingHours()->create([
+                'day' => $workingHour['day'],
+                'is_closed' => $isClosed,
+                'start_time' => $isClosed ? null : ($workingHour['start_time'] ?? null),
+                'end_time' => $isClosed ? null : ($workingHour['end_time'] ?? null),
+            ]);
+        }
+
+        $this->record->unsetRelation('workingHours');
     }
 
     protected function validatedData(): array

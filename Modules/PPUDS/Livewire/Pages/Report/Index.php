@@ -52,7 +52,7 @@ class Index extends Component implements HasForms, HasTable
         $mainTable = (new StudentCompany)->getTable();
 
         return $table
-            ->query(fn () => StudentCompany::query()->with(['registration', 'student', 'student.studentProfile', 'company', 'branch', 'branch.workingHours', 'department', 'attendances'])
+            ->query(fn () => StudentCompany::query()->with(['registration', 'student', 'student.studentProfile', 'company', 'branch', 'workingHours', 'branch.workingHours', 'department', 'attendances'])
                 ->withAttendanceDays()
                 ->withActualWorkingHours()
                 ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query)))

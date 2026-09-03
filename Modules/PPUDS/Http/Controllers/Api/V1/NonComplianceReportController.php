@@ -78,6 +78,7 @@ class NonComplianceReportController extends Controller
         $query = QueryBuilder::for(StudentCompany::class)
             ->with([
                 'attendances',
+                'workingHours',
                 'branch.workingHours',
                 'company',
                 'leaveRequests',

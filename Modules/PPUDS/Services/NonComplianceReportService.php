@@ -105,6 +105,7 @@ class NonComplianceReportService
         return $query
             ->with([
                 'attendances',
+                'workingHours',
                 'branch.workingHours',
                 'leaveRequests',
                 'registration',
@@ -136,6 +137,7 @@ class NonComplianceReportService
     {
         $studentCompany->loadMissing([
             'attendances',
+            'workingHours',
             'branch.workingHours',
             'leaveRequests',
         ]);
@@ -186,11 +188,11 @@ class NonComplianceReportService
 
     private function lateAttendances(StudentCompany $studentCompany, Carbon $periodStart, Carbon $periodEnd): Collection
     {
-        $workingHoursByDay = $studentCompany->branch?->workingHours
-            ?->filter(fn ($workingHour) => ! $workingHour->is_closed && $workingHour->day && $workingHour->start_time)
+        $workingHoursByDay = $studentCompany->effectiveWorkingHours()
+            ->filter(fn ($workingHour) => ! $workingHour->is_closed && $workingHour->day && $workingHour->start_time)
             ->keyBy(fn ($workingHour) => $workingHour->day->value);
 
-        if (! $workingHoursByDay || $workingHoursByDay->isEmpty()) {
+        if ($workingHoursByDay->isEmpty()) {
             return collect();
         }
 

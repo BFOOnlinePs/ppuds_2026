@@ -108,6 +108,7 @@ class AbsenceReportController extends Controller
             ->with([
                 'attendances',
                 'branch',
+                'workingHours',
                 'branch.workingHours',
                 'company.translations',
                 'leaveRequests',

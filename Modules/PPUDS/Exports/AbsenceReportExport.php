@@ -42,6 +42,7 @@ class AbsenceReportExport implements FromGenerator, ShouldAutoSize, WithHeadings
         $query->with([
             'attendances',
             'branch.translations',
+            'workingHours',
             'branch.workingHours',
             'company.translations',
             'leaveRequests',

@@ -33,6 +33,7 @@ class AbsenceReportService
 
         $studentCompany->loadMissing([
             'attendances',
+            'workingHours',
             'branch.workingHours',
             'leaveRequests',
         ]);
@@ -102,13 +103,7 @@ class AbsenceReportService
 
     private function workingDates(StudentCompany $studentCompany, Carbon $start, Carbon $end): Collection
     {
-        $branch = $studentCompany->branch;
-
-        if (! $branch?->relationLoaded('workingHours')) {
-            return collect();
-        }
-
-        $openDayValues = $branch->workingHours
+        $openDayValues = $studentCompany->effectiveWorkingHours()
             ->filter(fn ($workingHour) => ! $workingHour->is_closed && $workingHour->day)
             ->map(fn ($workingHour) => $workingHour->day->value)
             ->unique()

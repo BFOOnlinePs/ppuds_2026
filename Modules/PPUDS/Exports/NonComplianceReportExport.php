@@ -56,6 +56,7 @@ class NonComplianceReportExport implements FromGenerator, ShouldAutoSize, WithHe
         $query->with([
             'attendances',
             'branch.translations',
+            'workingHours',
             'branch.workingHours',
             'company.translations',
             'leaveRequests',
