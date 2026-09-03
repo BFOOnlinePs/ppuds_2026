@@ -34,6 +34,8 @@ class AuthActivitySubscriber
 
     public const EVENT_LOCKOUT = 'lockout';
 
+    public const EVENT_TOKEN_REFRESHED = 'token_refreshed';
+
     public const EVENT_PASSWORD_RESET = 'password_reset';
 
     public const EVENT_REGISTERED = 'registered';
@@ -117,6 +119,19 @@ class AuthActivitySubscriber
     public function handleRegistered(Registered $event): void
     {
         $this->record(self::EVENT_REGISTERED, 'Account registered', $event->user);
+    }
+
+    /**
+     * Records a renewed access token.
+     *
+     * Called directly instead of through an event, because the framework has
+     * none for a refresh. It gets its own event name rather than reusing
+     * Login: a renewal happens every few minutes per device, and counting it
+     * as a sign-in would bury the real ones under noise.
+     */
+    public function recordTokenRefresh(?Authenticatable $user, array $properties = []): void
+    {
+        $this->record(self::EVENT_TOKEN_REFRESHED, 'Token refreshed', $user, $properties);
     }
 
     /**

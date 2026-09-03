@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Validation\ValidationException;
+use Modules\Core\Listeners\AuthActivitySubscriber;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Actions\AuthenticateViaKeycloakAction;
 use Modules\PPUDS\Http\Requests\Auth\UniversityLoginRequest;
@@ -152,13 +153,14 @@ class UniversityLoginController extends Controller
      * Unauthenticated on purpose: it is called precisely when the access
      * token has expired, and the refresh token is the credential. No Login
      * event is raised — a refresh is not a new sign-in, and logging it as one
-     * would bury the real sign-ins under noise.
+     * would bury the real sign-ins under noise. It is recorded under its own
+     * activity-log event instead.
      */
     /**
      * @OA\Post(
      *     path="/api/v1/auth/university-refresh",
      *     summary="Renew the university token",
-     *     description="Exchanges a refresh token for a new access token against the university realm, and keeps the pair stored on the server in step. **The realm's own JSON is passed through unchanged, with its own status code**, exactly like the sign-in endpoint. Deliberately unauthenticated: it is called once the access token has expired, and the refresh token is itself the credential. A refresh is not recorded in the activity log, since it is not a new sign-in.",
+     *     description="Exchanges a refresh token for a new access token against the university realm, and keeps the pair stored on the server in step. **The realm's own JSON is passed through unchanged, with its own status code**, exactly like the sign-in endpoint. Deliberately unauthenticated: it is called once the access token has expired, and the refresh token is itself the credential. A refresh is recorded in the activity log under its own event, separate from the sign-ins.",
      *     tags={"Auth"},
      *
      *     @OA\RequestBody(
@@ -230,6 +232,8 @@ class UniversityLoginController extends Controller
 
         $refreshToken = $result['data']['refresh_token'] ?? $request->input('refresh_token');
 
+        $user = null;
+
         // Keeps the stored pair in step so server-side university calls made
         // on this user's behalf keep working.
         try {
@@ -240,6 +244,11 @@ class UniversityLoginController extends Controller
             // not be matched. Hand the token back rather than locking the app
             // out over a bookkeeping problem.
         }
+
+        // What puts the renewal into the activity log, beside the sign-ins.
+        app(AuthActivitySubscriber::class)->recordTokenRefresh($user, [
+            'guard' => $this->guardName(),
+        ]);
 
         return $this->passthrough($result['data'], 200);
     }

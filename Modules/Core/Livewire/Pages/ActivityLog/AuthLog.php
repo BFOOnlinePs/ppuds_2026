@@ -9,6 +9,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Tables\Actions\Action;
+use Filament\Tables\Actions\DeleteBulkAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
@@ -21,8 +22,10 @@ use Illuminate\Database\Eloquent\Model;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 use Maatwebsite\Excel\Excel as WriterType;
+use Masmerise\Toaster\Toaster;
 use Modules\Core\Entities\User;
 use Modules\Core\Exports\AuthActivityLogExport;
+use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\Core\Listeners\AuthActivitySubscriber;
@@ -124,7 +127,10 @@ class AuthLog extends Component implements HasForms, HasTable
             ->filtersFormColumns(4)
             ->headerActions($this->getTableHeaderActions())
             ->actions($this->getTableActions())
-            ->bulkActions([])
+            ->bulkActions([
+                DeleteBulkAction::make()
+                    ->visible(fn (): bool => auth()->user()->can('Activity Log Delete')),
+            ])
             ->defaultSort('created_at', 'desc');
     }
 
@@ -262,6 +268,15 @@ class AuthLog extends Component implements HasForms, HasTable
                         ->disabled(),
                 ])
                 ->modalSubmitAction(false),
+
+            DeleteAction::make('delete')
+                ->label('')
+                ->tooltip(__('Delete'))
+                ->action(function (Model $record): void {
+                    $record->delete();
+                    Toaster::success(__('Activity log deleted successfully'));
+                })
+                ->visible(fn (): bool => auth()->user()->can('Activity Log Delete')),
         ];
     }
 
@@ -339,6 +354,7 @@ class AuthLog extends Component implements HasForms, HasTable
             AuthActivitySubscriber::EVENT_LOGOUT => __('Logout'),
             AuthActivitySubscriber::EVENT_FAILED_LOGIN => __('Failed Login'),
             AuthActivitySubscriber::EVENT_LOCKOUT => __('Lockout'),
+            AuthActivitySubscriber::EVENT_TOKEN_REFRESHED => __('Token Refreshed'),
             AuthActivitySubscriber::EVENT_PASSWORD_RESET => __('Password Reset'),
             AuthActivitySubscriber::EVENT_REGISTERED => __('Registered'),
             default => filled($event) ? __($event) : '—',
@@ -353,6 +369,7 @@ class AuthLog extends Component implements HasForms, HasTable
             AuthActivitySubscriber::EVENT_LOGOUT => __('Logout'),
             AuthActivitySubscriber::EVENT_FAILED_LOGIN => __('Failed Login'),
             AuthActivitySubscriber::EVENT_LOCKOUT => __('Lockout'),
+            AuthActivitySubscriber::EVENT_TOKEN_REFRESHED => __('Token Refreshed'),
             AuthActivitySubscriber::EVENT_PASSWORD_RESET => __('Password Reset'),
             AuthActivitySubscriber::EVENT_REGISTERED => __('Registered'),
         ];

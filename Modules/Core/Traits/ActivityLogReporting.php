@@ -104,6 +104,7 @@ trait ActivityLogReporting
             'created', 'login' => 'success',
             'updated', 'logout' => 'warning',
             'deleted', 'failed_login', 'lockout' => 'danger',
+            'token_refreshed' => 'info',
             default => 'gray',
         };
     }

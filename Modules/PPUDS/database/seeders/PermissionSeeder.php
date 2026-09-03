@@ -730,6 +730,11 @@ class PermissionSeeder extends Seeder
                 'guard_name' => 'web',
                 'module_name' => 'Activity Log',
             ],
+            [
+                'name' => 'Activity Log Delete',
+                'guard_name' => 'web',
+                'module_name' => 'Activity Log',
+            ],
 
             // TODO Report
             [
