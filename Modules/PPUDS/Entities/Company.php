@@ -49,6 +49,8 @@ class Company extends Model implements HasMedia, TranslatableContract
         'id',
         'old_company_id',
         'website',
+        'contact_person',
+        'contact_info',
         'company_category_id',
         'status',
         'created_by',

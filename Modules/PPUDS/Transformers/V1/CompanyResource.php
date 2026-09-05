@@ -20,6 +20,8 @@ class CompanyResource extends JsonResource
             'description' => $this->description,
             'company_category_id' => $this->company_category_id,
             'website' => $this->website,
+            'contact_person' => $this->contact_person,
+            'contact_info' => $this->contact_info,
             'status' => $this->status,
             'logo_url' => $this->getImageAttribute(),
 
@@ -47,6 +49,8 @@ class CompanyResource extends JsonResource
             'description',
             'company_category_id',
             'website',
+            'contact_person',
+            'contact_info',
             'status',
             'created_at',
         ];
@@ -58,6 +62,7 @@ class CompanyResource extends JsonResource
             AllowedFilter::callback('name', fn (Builder $query, $value) => $query->whereTranslationLike('name', "%{$value}%")),
             AllowedFilter::exact('company_category_id'),
             AllowedFilter::exact('website'),
+            AllowedFilter::partial('contact_person'),
             AllowedFilter::exact('status'),
 
             AllowedFilter::callback('city_id', function (Builder $query, $value) {

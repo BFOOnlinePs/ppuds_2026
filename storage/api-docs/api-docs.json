@@ -200,6 +200,14 @@
                                                         "type": "string",
                                                         "example": "0569162687"
                                                     },
+                                                    "manager_name": {
+                                                        "type": "string",
+                                                        "example": "Mohammad Ahmad"
+                                                    },
+                                                    "manager_phone": {
+                                                        "type": "string",
+                                                        "example": "0599888777"
+                                                    },
                                                     "email": {
                                                         "type": "string",
                                                         "example": "maraqamohamad@gmail.com"
@@ -7700,6 +7708,14 @@
                                                         "type": "string",
                                                         "example": "https://example.com"
                                                     },
+                                                    "contact_person": {
+                                                        "type": "string",
+                                                        "example": "Ahmad Ali"
+                                                    },
+                                                    "contact_info": {
+                                                        "type": "string",
+                                                        "example": "0599123456 - ahmad@example.com"
+                                                    },
                                                     "status": {
                                                         "type": "integer",
                                                         "example": 1
@@ -7772,6 +7788,14 @@
                                         "type": "string",
                                         "example": "https://example.com"
                                     },
+                                    "contact_person": {
+                                        "type": "string",
+                                        "example": "Ahmad Ali"
+                                    },
+                                    "contact_info": {
+                                        "type": "string",
+                                        "example": "0599123456 - ahmad@example.com"
+                                    },
                                     "description": {
                                         "type": "string",
                                         "example": "Leading tech solutions"
@@ -7811,6 +7835,14 @@
                                                 "phone": {
                                                     "type": "string",
                                                     "example": "+970599999999"
+                                                },
+                                                "manager_name": {
+                                                    "type": "string",
+                                                    "example": "Mohammad Ahmad"
+                                                },
+                                                "manager_phone": {
+                                                    "type": "string",
+                                                    "example": "+970599888777"
                                                 },
                                                 "country_id": {
                                                     "type": "integer",
@@ -7958,6 +7990,14 @@
                                                     "type": "string",
                                                     "example": "https://example.com"
                                                 },
+                                                "contact_person": {
+                                                    "type": "string",
+                                                    "example": "Ahmad Ali"
+                                                },
+                                                "contact_info": {
+                                                    "type": "string",
+                                                    "example": "0599123456 - ahmad@example.com"
+                                                },
                                                 "status": {
                                                     "type": "integer",
                                                     "example": 1
@@ -8047,6 +8087,14 @@
                                         "type": "string",
                                         "example": "https://updated-example.com"
                                     },
+                                    "contact_person": {
+                                        "type": "string",
+                                        "example": "Ahmad Ali"
+                                    },
+                                    "contact_info": {
+                                        "type": "string",
+                                        "example": "0599123456 - ahmad@example.com"
+                                    },
                                     "description": {
                                         "type": "string",
                                         "example": "Updated description"
@@ -8073,6 +8121,14 @@
                                                 "name": {
                                                     "type": "string",
                                                     "example": "Updated Main Branch"
+                                                },
+                                                "manager_name": {
+                                                    "type": "string",
+                                                    "example": "Mohammad Ahmad"
+                                                },
+                                                "manager_phone": {
+                                                    "type": "string",
+                                                    "example": "+970599888777"
                                                 },
                                                 "country_id": {
                                                     "type": "integer",

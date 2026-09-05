@@ -15,6 +15,8 @@ class CompanyRequest extends FormRequest
         return [
             'name'                  => ['required', 'string', 'max:255', 'unique:' . config('ppuds.table_prefix') . 'company_translations,name'],
             'website'               => ['nullable', 'url', 'max:255'],
+            'contact_person'        => ['nullable', 'string', 'max:255'],
+            'contact_info'          => ['nullable', 'string', 'max:1000'],
             'description'           => ['nullable', 'string'],
             'company_category_id'   => ['required', 'integer', 'exists:ppu_ds_company_categories,id'],
             'status'                => ['required', 'integer', 'in:' . implode(',', array_column(CompanyStatus::cases(), 'value'))],
@@ -25,6 +27,8 @@ class CompanyRequest extends FormRequest
             'branches.*.name'         => ['required', 'string', 'max:255'],
             'branches.*.email'        => ['nullable', 'email', 'max:255', 'distinct', 'unique:' . config('branch.table_prefix') . 'branches,email'],
             'branches.*.phone'        => ['nullable', 'string', 'max:50'],
+            'branches.*.manager_name'  => ['nullable', 'string', 'max:255'],
+            'branches.*.manager_phone' => ['nullable', 'string', 'max:50'],
             'branches.*.country_id'   => ['required', 'integer', 'exists:geolocation_countries,id'],
             'branches.*.city_id'      => ['required', 'integer', 'exists:geolocation_cities,id'],
             'branches.*.latitude'     => ['nullable', 'numeric'],

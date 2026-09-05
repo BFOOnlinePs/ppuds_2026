@@ -36,6 +36,8 @@ class Branch extends Model implements TranslatableContract
 
     protected $fillable = [
         'phone',
+        'manager_name',
+        'manager_phone',
         'email',
         'city_id',
         'country_id',

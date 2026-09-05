@@ -100,6 +100,8 @@ class Edit extends Component implements HasActions, HasForms
                 'name' => $branch->name,
                 'email' => $branch->email,
                 'phone' => $branch->phone,
+                'manager_name' => $branch->manager_name,
+                'manager_phone' => $branch->manager_phone,
                 'country_id' => $branch->country_id,
                 'city_id' => $branch->city_id,
                 'latitude' => $branch->latitude,
@@ -165,6 +167,19 @@ class Edit extends Component implements HasActions, HasForms
                                                             ->url()
                                                             ->prefixIcon('solar-global-linear')
                                                             ->placeholder('https://example.com')
+                                                            ->columnSpan(1),
+
+                                                        TextInput::make('contact_person')
+                                                            ->label(__('Contact Person'))
+                                                            ->maxLength(255)
+                                                            ->prefixIcon('solar-user-linear')
+                                                            ->columnSpan(1),
+
+                                                        Textarea::make('contact_info')
+                                                            ->label(__('Contact Information'))
+                                                            ->maxLength(1000)
+                                                            ->rows(3)
+                                                            ->placeholder(__('Phone number, email, or any other contact details'))
                                                             ->columnSpan(1),
                                                     ]),
                                                     Textarea::make('description')
@@ -254,6 +269,17 @@ class Edit extends Component implements HasActions, HasForms
                                                                 TextInput::make('phone')
                                                                     ->label(__('Phone Number'))
                                                                     ->tel()
+                                                                    ->prefixIcon('solar-phone-calling-linear'),
+
+                                                                TextInput::make('manager_name')
+                                                                    ->label(__('Company Manager Name'))
+                                                                    ->maxLength(255)
+                                                                    ->prefixIcon('solar-user-linear'),
+
+                                                                TextInput::make('manager_phone')
+                                                                    ->label(__('Company Manager Phone'))
+                                                                    ->tel()
+                                                                    ->maxLength(50)
                                                                     ->prefixIcon('solar-phone-calling-linear'),
 
                                                                 Section::make(__('Working Hours'))

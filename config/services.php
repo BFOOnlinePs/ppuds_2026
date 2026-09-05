@@ -83,8 +83,15 @@ return [
         // العنوان الذي تستهلكه Leaflet: نسبي ⇒ نفس أصل الصفحة ⇒ لا mixed content
         'tiles_url' => env('MAP_TILES_URL', '/map/tile/{z}/{x}/{y}.png'),
 
-        // يُستخدم فقط عند فشل البلاطة (tileerror) في حقل اختيار الموقع
-        'fallback_tiles_url' => env('MAP_FALLBACK_TILES_URL', 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'),
+        /*
+         * يُستخدم فقط عند فشل البلاطة (tileerror) في حقل اختيار الموقع، وهو معطّل
+         * افتراضياً: كان يشير إلى basemaps.cartocdn.com، وCARTO صارت تطبع عبارة
+         * "API KEY REQUIRED" على كل بلاطة لمن يستهلكها بلا مفتاح، فكان خطأ بلاطة
+         * واحدة عابر يقلب الخريطة كلها إلى بلاطات مختومة بهذه العبارة. الفارغ هنا
+         * يجعل الخريطة تبقى على خادم البلاطات الذاتي وتعيد المحاولة كالمعتاد.
+         * أي بديل يوضع هنا يجب ألا يتطلب مفتاحاً وأن يُضبط معه نص الإسناد.
+         */
+        'fallback_tiles_url' => env('MAP_FALLBACK_TILES_URL', ''),
 
         'timeout' => env('MAP_TILE_TIMEOUT', 10),
         'cache_ttl' => env('MAP_TILE_CACHE_TTL', 604800),

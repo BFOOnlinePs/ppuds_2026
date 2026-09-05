@@ -29,6 +29,8 @@ class CompanyUpdateRequest extends FormRequest
                 Rule::unique($companyTranslationTable, 'name')->ignore($companyId, 'company_id')
             ],
             'website'               => ['nullable', 'url', 'max:255'],
+            'contact_person'        => ['nullable', 'string', 'max:255'],
+            'contact_info'          => ['nullable', 'string', 'max:1000'],
             'description'           => ['nullable', 'string'],
             'company_category_id'   => ['sometimes', 'required', 'integer', 'exists:ppu_ds_company_categories,id'],
             'status'                => ['sometimes', 'required', 'integer', 'in:' . implode(',', array_column(CompanyStatus::cases(), 'value'))],
@@ -58,6 +60,8 @@ class CompanyUpdateRequest extends FormRequest
                 }
             ],
             'branches.*.phone'        => ['nullable', 'string', 'max:50'],
+            'branches.*.manager_name'  => ['nullable', 'string', 'max:255'],
+            'branches.*.manager_phone' => ['nullable', 'string', 'max:50'],
             'branches.*.name'         => 'required_without:branches.*.id|string|max:255',
             'branches.*.country_id'   => 'required_without:branches.*.id|integer',
             'branches.*.city_id'      => 'required_without:branches.*.id|integer',

@@ -151,6 +151,8 @@ class BranchController extends Controller
      *                     @OA\Property(property="address", type="string", example="الخليل ،مفرق الميزان"),
      *                     @OA\Property(property="status", type="integer", example=1),
      *                     @OA\Property(property="phone", type="string", example="0569162687"),
+     *                     @OA\Property(property="manager_name", type="string", example="Mohammad Ahmad"),
+     *                     @OA\Property(property="manager_phone", type="string", example="0599888777"),
      *                     @OA\Property(property="email", type="string", example="maraqamohamad@gmail.com"),
      *                     @OA\Property(property="city_id", type="integer", example="1"),
      *                     @OA\Property(property="country_id", type="integer", example="1"),

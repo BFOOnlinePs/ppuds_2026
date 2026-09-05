@@ -1119,5 +1119,10 @@
     "You cannot delete your own account.": "لا يمكنك حذف حسابك الخاص.",
     "Student Working Hours": "ساعات دوام الطالب",
     "Leave it empty to follow the branch working hours": "اتركه فارغاً ليتبع ساعات دوام الفرع",
-    "Add Day": "إضافة يوم"
+    "Add Day": "إضافة يوم",
+    "Contact Person": "اسم المسؤول",
+    "Contact Information": "معلومات التواصل",
+    "Phone number, email, or any other contact details": "رقم الهاتف أو البريد الإلكتروني أو أي وسيلة تواصل أخرى",
+    "Company Manager Name": "اسم مدير الشركة",
+    "Company Manager Phone": "رقم هاتف مدير الشركة"
 }

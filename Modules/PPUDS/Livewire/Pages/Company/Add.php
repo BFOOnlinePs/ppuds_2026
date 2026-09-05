@@ -194,6 +194,19 @@ class Add extends Component implements HasActions, HasForms
                                                             ->prefixIcon('solar-global-linear') // Solar Icon
                                                             ->placeholder('https://example.com')
                                                             ->columnSpan(1),
+
+                                                        TextInput::make('contact_person')
+                                                            ->label(__('Contact Person'))
+                                                            ->maxLength(255)
+                                                            ->prefixIcon('solar-user-linear')
+                                                            ->columnSpan(1),
+
+                                                        Textarea::make('contact_info')
+                                                            ->label(__('Contact Information'))
+                                                            ->maxLength(1000)
+                                                            ->rows(3)
+                                                            ->placeholder(__('Phone number, email, or any other contact details'))
+                                                            ->columnSpan(1),
                                                     ]),
                                                     Textarea::make('description')
                                                         ->label(__('About Company'))
@@ -284,6 +297,17 @@ class Add extends Component implements HasActions, HasForms
                                                                     ->label(__('Phone Number'))
                                                                     ->tel()
                                                                     ->prefixIcon('solar-phone-calling-linear'), // Solar Icon
+
+                                                                TextInput::make('manager_name')
+                                                                    ->label(__('Company Manager Name'))
+                                                                    ->maxLength(255)
+                                                                    ->prefixIcon('solar-user-linear'),
+
+                                                                TextInput::make('manager_phone')
+                                                                    ->label(__('Company Manager Phone'))
+                                                                    ->tel()
+                                                                    ->maxLength(50)
+                                                                    ->prefixIcon('solar-phone-calling-linear'),
 
                                                                 // استبدل الـ Section القديم بهذا الكود الجديد
                                                                 Section::make(__('Working Hours'))
