@@ -25,7 +25,6 @@ use Modules\Core\Traits\PrintsTableReportPdf;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\SemesterType;
-use Modules\PPUDS\Enums\TrainingStatus;
 use Modules\PPUDS\Exports\FinalDeliveryReportExport;
 use Modules\PPUDS\Settings\GeneralSettings;
 use Modules\PPUDS\Support\HasSupervisorFilter;
@@ -47,7 +46,7 @@ class Index extends Component implements HasForms, HasTable
                     'branch',
                     'company',
                     'department',
-                    'registration',
+                    'registration.media',
                     'student.studentProfile',
                 ])
                 ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query)))
@@ -77,9 +76,13 @@ class Index extends Component implements HasForms, HasTable
                     ->label(__('Department'))
                     ->toggleable(),
 
-                TextColumn::make('status')
+                TextColumn::make('final_report_status')
                     ->label(__('Delivery Status'))
-                    ->badge(),
+                    ->getStateUsing(fn (StudentCompany $record): string => $record->registration?->hasMedia('final_file')
+                        ? __('Submitted')
+                        : __('Not Submitted'))
+                    ->badge()
+                    ->color(fn (string $state): string => $state === __('Submitted') ? 'success' : 'danger'),
 
                 TextColumn::make('registration.semester')
                     ->label(__('Semester'))
@@ -148,9 +151,25 @@ class Index extends Component implements HasForms, HasTable
                 ->searchable()
                 ->preload(),
 
-            SelectFilter::make('status')
+            SelectFilter::make('final_report_status')
                 ->label(__('Delivery Status'))
-                ->options(TrainingStatus::options()),
+                ->options([
+                    'submitted' => __('Submitted'),
+                    'not_submitted' => __('Not Submitted'),
+                ])
+                ->query(function (Builder $query, array $data): Builder {
+                    return match ($data['value'] ?? null) {
+                        'submitted' => $query->whereHas(
+                            'registration.media',
+                            fn (Builder $mediaQuery) => $mediaQuery->where('collection_name', 'final_file')
+                        ),
+                        'not_submitted' => $query->whereDoesntHave(
+                            'registration.media',
+                            fn (Builder $mediaQuery) => $mediaQuery->where('collection_name', 'final_file')
+                        ),
+                        default => $query,
+                    };
+                }),
 
             $this->supervisorSelectFilter('registration'),
 

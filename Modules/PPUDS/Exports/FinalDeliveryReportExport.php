@@ -7,9 +7,9 @@ use Illuminate\Database\Eloquent\Builder;
 use Maatwebsite\Excel\Concerns\FromGenerator;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
+use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\SemesterType;
-use Modules\PPUDS\Enums\TrainingStatus;
 
 class FinalDeliveryReportExport implements FromGenerator, ShouldAutoSize, WithHeadings
 {
@@ -37,7 +37,7 @@ class FinalDeliveryReportExport implements FromGenerator, ShouldAutoSize, WithHe
             'branch.translations',
             'company.translations',
             'department.translations',
-            'registration',
+            'registration.media',
             'student.studentProfile',
         ]);
 
@@ -58,23 +58,17 @@ class FinalDeliveryReportExport implements FromGenerator, ShouldAutoSize, WithHe
             (string) ($studentCompany->company?->name ?? '---'),
             (string) ($studentCompany->branch?->name ?? '---'),
             (string) ($studentCompany->department?->name ?? '---'),
-            $this->statusLabel($studentCompany->status),
+            $this->deliveryStatusLabel($registration),
             $this->semesterLabel($registration?->semester),
             (string) $registration?->year,
         ];
     }
 
-    protected function statusLabel(mixed $status): string
+    protected function deliveryStatusLabel(?Registration $registration): string
     {
-        if ($status instanceof TrainingStatus) {
-            return (string) $status->getLabel();
-        }
-
-        if (is_numeric($status)) {
-            return (string) (TrainingStatus::tryFrom((int) $status)?->getLabel() ?? $status);
-        }
-
-        return (string) ($status ?: '---');
+        return $registration?->hasMedia('final_file')
+            ? __('Submitted')
+            : __('Not Submitted');
     }
 
     protected function semesterLabel(mixed $semester): string
