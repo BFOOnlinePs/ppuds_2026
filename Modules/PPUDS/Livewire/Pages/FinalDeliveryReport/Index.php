@@ -115,6 +115,16 @@ class Index extends Component implements HasForms, HasTable
                 $this->printPdfAction()
                     ->visible(fn () => auth()->user()->can('Report View List')),
             ])
+            ->actions([
+                Action::make('view_final_report')
+                    ->label(__('View File'))
+                    ->icon('solar-eye-bold')
+                    ->color('info')
+                    ->url(fn (StudentCompany $record): ?string => $record->registration?->getFirstMediaUrl('final_file') ?: null)
+                    ->openUrlInNewTab()
+                    ->visible(fn (StudentCompany $record): bool => auth()->user()->can('Report View List')
+                        && (bool) $record->registration?->hasMedia('final_file')),
+            ])
             ->bulkActions([]);
     }
 
