@@ -107,6 +107,17 @@ class PermissionSeeder extends Seeder
             ],
 
             [
+                'name' => 'EvaluationSupervisorStudent View List',
+                'guard_name' => 'web',
+                'module_name' => 'Evaluation Supervisor Student',
+            ],
+            [
+                'name' => 'EvaluationSupervisorStudent Grade',
+                'guard_name' => 'web',
+                'module_name' => 'Evaluation Supervisor Student',
+            ],
+
+            [
                 'name' => 'WorkExperience View List',
                 'guard_name' => 'web',
                 'module_name' => 'WorkExperience',
@@ -369,6 +380,11 @@ class PermissionSeeder extends Seeder
             ],
             [
                 'name' => 'StudentCompany Details',
+                'guard_name' => 'web',
+                'module_name' => 'StudentCompany',
+            ],
+            [
+                'name' => 'StudentCompany Assign Evaluation Supervisor',
                 'guard_name' => 'web',
                 'module_name' => 'StudentCompany',
             ],

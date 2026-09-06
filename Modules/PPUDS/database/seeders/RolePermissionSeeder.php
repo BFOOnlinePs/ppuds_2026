@@ -211,6 +211,7 @@ class RolePermissionSeeder extends Seeder
                 ...$this->read('Registration'),
                 ...$this->read('StudentCompany'),
                 'StudentCompany Details',
+                'StudentCompany Assign Evaluation Supervisor',
                 ...$this->manage('FieldVisit'),
                 ...$this->read('LeaveRequest'),
                 'LeaveRequest UniversityApprove',
@@ -256,6 +257,11 @@ class RolePermissionSeeder extends Seeder
                 ...$this->read('Alumni Announcement'),
                 'Alumni Report View List',
                 ...$this->branchRead(),
+            ],
+
+            UserRole::EVALUATION_SUPERVISOR->value => [
+                'EvaluationSupervisorStudent View List',
+                'EvaluationSupervisorStudent Grade',
             ],
 
             UserRole::USER->value => [],

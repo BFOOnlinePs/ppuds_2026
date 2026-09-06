@@ -31,6 +31,10 @@ return Application::configure(basePath: dirname(__DIR__))
                 : route('login')
         );
 
+        $middleware->api(append: [
+            \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
+        ]);
+
         $middleware->alias([
             /**** OTHER MIDDLEWARE ALIASES ****/
             'localize'              => \Mcamara\LaravelLocalization\Middleware\LaravelLocalizationRoutes::class,

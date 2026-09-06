@@ -19,6 +19,7 @@ enum UserRole: string implements HasLabel, HasColor, HasIcon
     case CORPORATE_RELATIONS_OFFICER = 'Corporate Relations Officer'; // مسؤول العلاقات المؤسسية
     case PRACTICAL_TRAINING_SUPERVISOR = 'Practical Training Supervisor'; // مشرف التدريب العملي
     case COMPANY_SUPERVISOR = 'Company Supervisor'; // مشرف الشركة
+    case EVALUATION_SUPERVISOR = 'Evaluation Supervisor'; // مشرف تقييم
 
     public function getLabel(): ?string
     {
@@ -34,6 +35,7 @@ enum UserRole: string implements HasLabel, HasColor, HasIcon
             self::CORPORATE_RELATIONS_OFFICER => __('Corporate Relations Officer'),
             self::PRACTICAL_TRAINING_SUPERVISOR => __('Practical Training Supervisor'),
             self::COMPANY_SUPERVISOR => __('Company Supervisor'),
+            self::EVALUATION_SUPERVISOR => __('Evaluation Supervisor'),
         };
     }
 
@@ -44,7 +46,7 @@ enum UserRole: string implements HasLabel, HasColor, HasIcon
             self::HEAD_OF_DEPARTMENT, self::M_AND_E_OFFICER => 'info',
             self::STUDENT => 'success',
             self::COMPANY_SUPERVISOR, self::CORPORATE_RELATIONS_OFFICER => 'warning',
-            self::PRACTICAL_TRAINING_SUPERVISOR => 'primary',
+            self::PRACTICAL_TRAINING_SUPERVISOR, self::EVALUATION_SUPERVISOR => 'primary',
             default => 'gray',
         };
     }
@@ -61,6 +63,7 @@ enum UserRole: string implements HasLabel, HasColor, HasIcon
             self::CORPORATE_RELATIONS_OFFICER => 'heroicon-o-briefcase',
             self::PRACTICAL_TRAINING_SUPERVISOR => 'heroicon-o-user-group',
             self::COMPANY_SUPERVISOR => 'heroicon-o-building-office',
+            self::EVALUATION_SUPERVISOR => 'heroicon-o-star',
         };
     }
 

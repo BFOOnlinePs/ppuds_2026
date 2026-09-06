@@ -411,6 +411,7 @@
     "M&E Officer": "مسؤول المتابعة والتقييم",
     "Corporate Relations Officer": "مسؤول العلاقات مع الشركات",
     "Practical Training Supervisor": "مشرف التدريب العملي",
+    "Evaluation Supervisor": "مشرف تقييم",
     "Annual Leave": "إجازة سنوية",
     "Sick Leave": "إجازة مرضية",
     "Remote Work": "عمل عن بعد",
@@ -1135,5 +1136,17 @@
     "Contact Information": "معلومات التواصل",
     "Phone number, email, or any other contact details": "رقم الهاتف أو البريد الإلكتروني أو أي وسيلة تواصل أخرى",
     "Company Manager Name": "اسم مدير الشركة",
-    "Company Manager Phone": "رقم هاتف مدير الشركة"
+    "Company Manager Phone": "رقم هاتف مدير الشركة",
+
+    "Evaluation Supervisor Students": "طلاب مشرف التقييم",
+    "Assign Evaluation Supervisor": "تعيين مشرف تقييم",
+    "Evaluation supervisor assigned to selected placements successfully": "تم تعيين مشرف التقييم للطلاب المحددين بنجاح",
+    "Clear Evaluation Supervisor": "إلغاء تعيين مشرف التقييم",
+    "Evaluation supervisor cleared from selected placements successfully": "تم إلغاء تعيين مشرف التقييم عن الطلاب المحددين بنجاح",
+    "Grade (out of 25)": "العلامة (من 25)",
+    "The grade must be between 0 and 25.": "يجب أن تكون العلامة بين 0 و 25.",
+    "Grade saved successfully": "تم حفظ العلامة بنجاح",
+    "Evaluation Score": "علامة التقييم",
+    "Set Grade": "تسجيل العلامة",
+    "Not graded yet": "لم يتم التقييم بعد"
 }

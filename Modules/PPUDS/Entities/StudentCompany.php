@@ -46,6 +46,8 @@ class StudentCompany extends Model implements HasMedia
         'department_id',
         'status',
         'created_by',
+        'evaluation_supervisor_id',
+        'evaluation_score',
     ];
 
     protected $casts = [
@@ -148,6 +150,11 @@ class StudentCompany extends Model implements HasMedia
     public function department(): BelongsTo
     {
         return $this->belongsTo(CompanyDepartment::class, 'department_id');
+    }
+
+    public function evaluationSupervisor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'evaluation_supervisor_id');
     }
 
     public function attendances(): HasMany

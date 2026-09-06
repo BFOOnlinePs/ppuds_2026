@@ -111,6 +111,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 });
 
                 Route::group([
+                    'prefix' => 'evaluation-supervisor-students',
+                    'as' => 'evaluation-supervisor-students.',
+                    'namespace' => 'Modules\PPUDS\Livewire\Pages\EvaluationSupervisorStudent',
+                ], function () {
+                    Route::get('/', Index::class)->name('index')->can('EvaluationSupervisorStudent View List');
+                });
+
+                Route::group([
                     'prefix' => 'registrations',
                     'as' => 'registrations.',
                     'namespace' => 'Modules\PPUDS\Livewire\Pages\Registration',

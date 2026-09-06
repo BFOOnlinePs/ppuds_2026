@@ -24,6 +24,7 @@ use Illuminate\Support\HtmlString;
 use Livewire\Component;
 use Maatwebsite\Excel\Excel as WriterType;
 use Masmerise\Toaster\Toaster;
+use Modules\Core\Entities\User;
 use Modules\Core\Enums\UserRole;
 use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
@@ -370,6 +371,53 @@ class Index extends Component implements HasForms, HasTable
     {
         return [
             BulkActionGroup::make([
+                BulkAction::make('assignEvaluationSupervisor')
+                    ->label(__('Assign Evaluation Supervisor'))
+                    ->icon('heroicon-o-star')
+                    ->color('primary')
+                    ->form([
+                        Select::make('evaluation_supervisor_id')
+                            ->label(__('Evaluation Supervisor'))
+                            ->options(fn (): array => User::role(UserRole::EVALUATION_SUPERVISOR->value)
+                                ->orderBy('name')
+                                ->pluck('name', 'id')
+                                ->toArray())
+                            ->searchable()
+                            ->preload()
+                            ->required()
+                            ->native(false),
+                    ])
+                    ->modalHeading(__('Assign Evaluation Supervisor'))
+                    ->modalSubmitActionLabel(__('Assign'))
+                    ->visible(fn () => auth()->user()->can('StudentCompany Assign Evaluation Supervisor'))
+                    ->action(function (Collection $records, array $data): void {
+                        $evaluationSupervisorId = (int) $data['evaluation_supervisor_id'];
+
+                        $records->each(fn (StudentCompany $studentCompany) => $studentCompany->update([
+                            'evaluation_supervisor_id' => $evaluationSupervisorId,
+                        ]));
+
+                        Toaster::success(__('Evaluation supervisor assigned to selected placements successfully'));
+                    })
+                    ->deselectRecordsAfterCompletion(),
+
+                BulkAction::make('clearEvaluationSupervisor')
+                    ->label(__('Clear Evaluation Supervisor'))
+                    ->icon('heroicon-o-user-minus')
+                    ->color('gray')
+                    ->requiresConfirmation()
+                    ->modalHeading(__('Clear Evaluation Supervisor'))
+                    ->modalSubmitActionLabel(__('Clear'))
+                    ->visible(fn () => auth()->user()->can('StudentCompany Assign Evaluation Supervisor'))
+                    ->action(function (Collection $records): void {
+                        $records->each(fn (StudentCompany $studentCompany) => $studentCompany->update([
+                            'evaluation_supervisor_id' => null,
+                        ]));
+
+                        Toaster::success(__('Evaluation supervisor cleared from selected placements successfully'));
+                    })
+                    ->deselectRecordsAfterCompletion(),
+
                 BulkAction::make('delete')
                     ->label(__('Delete Selected'))
                     ->icon('solar-trash-bin-trash-bold-duotone')
