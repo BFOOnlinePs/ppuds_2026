@@ -15,6 +15,7 @@ use Modules\PPUDS\Http\Requests\CompanyUpdateRequest;
 use Modules\PPUDS\Http\Requests\UpdateCompanyBranchLocationRequest;
 use Modules\PPUDS\Services\PpuApiService;
 use Modules\PPUDS\Transformers\V1\CompanyResource;
+use Illuminate\Validation\ValidationException;
 use Spatie\QueryBuilder\QueryBuilder;
 
 class CompanyController extends Controller
@@ -325,7 +326,14 @@ class CompanyController extends Controller
 
                     if (isset($branchData['id']) && $branchData['id']) {
                         // تحديث فرع موجود
-                        $branch = Branch::findOrFail($branchData['id']);
+                        $branch = Branch::find($branchData['id']);
+
+                        if (! $branch || ! $this->branchBelongsToCompany($company, $branch)) {
+                            throw ValidationException::withMessages([
+                                'branches' => [__('The selected branch does not belong to this company.')],
+                            ]);
+                        }
+
                         $branch->update($branchAttributes);
                     } else {
                         // إضافة فرع جديد من شاشة التعديل
