@@ -258,6 +258,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 });
 
                 Route::group([
+                    'prefix' => 'final-delivery-reports',
+                    'as' => 'final-delivery-reports.',
+                    'namespace' => 'Modules\PPUDS\Livewire\Pages\FinalDeliveryReport',
+                ], function () {
+                    Route::get('/', Index::class)->name('index')->can('Report View List');
+                });
+
+                Route::group([
                     'prefix' => 'non-compliance-reports',
                     'as' => 'non-compliance-reports.',
                     'namespace' => 'Modules\PPUDS\Livewire\Pages\NonComplianceReport',
