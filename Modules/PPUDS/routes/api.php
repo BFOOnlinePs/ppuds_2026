@@ -203,6 +203,7 @@
                         Route::get('/', 'index')->name('index');
                         Route::post('/', 'store')->name('store');
                         Route::get('/{survey}/evaluation-students', 'evaluationStudents')->name('evaluation-students');
+                        Route::get('/{survey}/evaluation-companies', 'evaluationCompanies')->name('evaluation-companies');
                         Route::get('/{survey}', 'show')->name('show');
                     });
 

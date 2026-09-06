@@ -369,4 +369,91 @@ class SurveyController extends Controller
             'students' => SurveyEvaluationStudentResource::collection($studentCompanies)->resolve($request),
         ], __('Evaluation students retrieved successfully'));
     }
+
+    /**
+     * @OA\Get(
+     * path="/api/v1/ppuds/surveys/{survey}/evaluation-companies",
+     * summary="Get companies for a student to evaluate on this survey",
+     * description="Return company placements assigned to the authenticated student for this survey (student evaluates their training company).",
+     * tags={"Surveys"},
+     * security={{"sanctum": {}}},
+     *
+     * @OA\Parameter(
+     * name="survey",
+     * in="path",
+     * required=true,
+     * description="Survey ID",
+     *
+     * @OA\Schema(type="integer", example=1)
+     * ),
+     *
+     * @OA\Parameter(
+     * name="status",
+     * in="query",
+     * required=false,
+     * description="Filter companies by evaluation status: pending, evaluated, all",
+     *
+     * @OA\Schema(type="string", enum={"pending", "evaluated", "all"}, default="pending")
+     * ),
+     *
+     * @OA\Response(response=200, description="Evaluation companies retrieved successfully"),
+     * @OA\Response(response=403, description="Survey is not available for student company evaluation")
+     * )
+     */
+    public function evaluationCompanies(Request $request, Survey $survey)
+    {
+        $user = $request->user();
+
+        if (! $this->shouldStudentEvaluateCompaniesForSurvey($survey, $user)) {
+            return $this->errorResponse(__('This survey is not available for student company evaluation.'), 403);
+        }
+
+        $status = $request->query('status', 'pending');
+        $baseQuery = $this->currentSurveyStudentCompaniesForStudentQuery($survey, $user->id)
+            ->withExists([
+                'surveyAnswers as is_evaluated' => fn (Builder $query) => $query
+                    ->where('survey_id', $survey->id)
+                    ->where('submitted_by', $user->id),
+            ]);
+
+        $totalCompanies = (clone $baseQuery)->count();
+        $evaluatedCompanies = (clone $baseQuery)
+            ->whereHas(
+                'surveyAnswers',
+                fn (Builder $query) => $query
+                    ->where('survey_id', $survey->id)
+                    ->where('submitted_by', $user->id)
+            )
+            ->count();
+        $pendingCompanies = max($totalCompanies - $evaluatedCompanies, 0);
+
+        $studentCompanies = match ($status) {
+            'all' => $baseQuery,
+            'evaluated' => $baseQuery->whereHas(
+                'surveyAnswers',
+                fn (Builder $query) => $query
+                    ->where('survey_id', $survey->id)
+                    ->where('submitted_by', $user->id)
+            ),
+            default => $this->pendingStudentCompaniesForStudentSurveyQuery($survey, $user->id)
+                ->withExists([
+                    'surveyAnswers as is_evaluated' => fn (Builder $query) => $query
+                        ->where('survey_id', $survey->id)
+                        ->where('submitted_by', $user->id),
+                ]),
+        };
+
+        $studentCompanies = $studentCompanies
+            ->orderBy('id')
+            ->get();
+
+        return $this->successResponse([
+            'survey_id' => $survey->id,
+            'status' => $status,
+            'total_companies' => $totalCompanies,
+            'pending_companies' => $pendingCompanies,
+            'evaluated_companies' => $evaluatedCompanies,
+            'companies' => SurveyEvaluationStudentResource::collection($studentCompanies)->resolve($request),
+        ], __('Evaluation companies retrieved successfully'));
+    }
 }

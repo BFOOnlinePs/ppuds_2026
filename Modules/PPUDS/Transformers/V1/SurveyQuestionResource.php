@@ -5,6 +5,7 @@ namespace Modules\PPUDS\Transformers\V1;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Modules\PPUDS\Enums\SurveyQuestionType;
 use Modules\PPUDS\Transformers\V1\SurveyQuestionOptionResource;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
@@ -14,15 +15,23 @@ class SurveyQuestionResource extends JsonResource
 
     public function toArray(Request $request): array
     {
+        $type = SurveyQuestionType::tryFrom((int) $this->type);
+
         return [
             'id'                    => $this->id,
-            
+
             'content'               => $this->content,
             'survey_id'             => $this->survey_id,
             'type'                  => $this->type,
+            'type_label'            => $type?->getLabel(),
             'is_required'           => $this->is_required,
             'sort_order'            => $this->sort_order,
             'options'               => SurveyQuestionOptionResource::collection($this->whenLoaded('options')),
+            'rating_scale'          => $type === SurveyQuestionType::RATING
+                ? collect(SurveyQuestionType::ratingScaleOptions())
+                    ->map(fn (string $label, int $value): array => ['value' => $value, 'label' => $label])
+                    ->values()
+                : null,
 
             'created_at'            => $this->created_at,
         ];

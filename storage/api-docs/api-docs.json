@@ -12506,8 +12506,8 @@
                                                     "example": 10
                                                 },
                                                 "value": {
-                                                    "type": "string",
-                                                    "example": "Excellent"
+                                                    "description": "Depends on the question type: RATING -> integer 1 to 5. RADIO/SELECT -> the selected option id (integer). CHECKBOX/MULTI_SELECT -> array of option ids. TEXT/TEXTAREA/DATE -> string.",
+                                                    "example": "3"
                                                 }
                                             },
                                             "type": "object"
@@ -12872,6 +12872,56 @@
                     },
                     "403": {
                         "description": "Survey is not available for company supervisor evaluation"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/surveys/{survey}/evaluation-companies": {
+            "get": {
+                "tags": [
+                    "Surveys"
+                ],
+                "summary": "Get companies for a student to evaluate on this survey",
+                "description": "Return company placements assigned to the authenticated student for this survey (student evaluates their training company).",
+                "operationId": "497e324c087e9309960d611ea9694c51",
+                "parameters": [
+                    {
+                        "name": "survey",
+                        "in": "path",
+                        "description": "Survey ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "description": "Filter companies by evaluation status: pending, evaluated, all",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "pending",
+                            "enum": [
+                                "pending",
+                                "evaluated",
+                                "all"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Evaluation companies retrieved successfully"
+                    },
+                    "403": {
+                        "description": "Survey is not available for student company evaluation"
                     }
                 },
                 "security": [

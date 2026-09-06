@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\Survey;
 use Modules\PPUDS\Entities\SurveyAnswer;
+use Modules\PPUDS\Enums\SurveyQuestionType;
 use Modules\PPUDS\Http\Requests\SurveyAnswerRequest;
 use Modules\PPUDS\Support\HandlesCompanySupervisorSurveyEvaluations;
 use Modules\PPUDS\Transformers\V1\SurveyAnswerResource;
@@ -81,7 +82,11 @@ class SurveyAnswerController extends Controller
      * required={"question_id", "value"},
      *
      * @OA\Property(property="question_id", type="integer", example=10),
-     * @OA\Property(property="value", type="string", example="Excellent")
+     * @OA\Property(
+     * property="value",
+     * description="Depends on the question type: RATING -> integer 1 to 5. RADIO/SELECT -> the selected option id (integer). CHECKBOX/MULTI_SELECT -> array of option ids. TEXT/TEXTAREA/DATE -> string.",
+     * example="3"
+     * )
      * )
      * )
      * )
@@ -92,7 +97,7 @@ class SurveyAnswerController extends Controller
      */
     public function store(SurveyAnswerRequest $request)
     {
-        $survey = Survey::findOrFail($request->survey_id);
+        $survey = Survey::with('questions')->findOrFail($request->survey_id);
         $userId = auth()->id();
         $studentCompany = null;
 
@@ -157,7 +162,7 @@ class SurveyAnswerController extends Controller
             ], 403);
         }
 
-        DB::transaction(function () use ($request, $surveyId, $userId, $studentCompany) {
+        DB::transaction(function () use ($request, $survey, $surveyId, $userId, $studentCompany) {
 
             foreach ($request->answers as $answerData) {
                 $questionId = $answerData['question_id'];
@@ -167,34 +172,37 @@ class SurveyAnswerController extends Controller
                     continue;
                 }
 
+                $question = $survey->questions->firstWhere('id', $questionId);
+
+                $isOptionType = in_array((int) $question?->type, [
+                    SurveyQuestionType::RADIO->value,
+                    SurveyQuestionType::CHECKBOX->value,
+                    SurveyQuestionType::SELECT->value,
+                    SurveyQuestionType::MULTI_SELECT->value,
+                ]);
+
                 if (is_array($value)) {
-                    foreach ($value as $optionId) {
+                    foreach ($value as $optionValue) {
                         SurveyAnswer::create([
                             'survey_id' => $surveyId,
                             'survey_question_id' => $questionId,
-                            'selected_option_id' => $optionId,
+                            'selected_option_id' => $isOptionType ? $optionValue : null,
+                            'text_answer' => $isOptionType ? null : $optionValue,
                             'submitted_by' => $userId,
                             'student_company_id' => $studentCompany?->id,
                             'evaluated_student_id' => $studentCompany?->student_id,
                         ]);
                     }
                 } else {
-                    $data = [
+                    SurveyAnswer::create([
                         'survey_id' => $surveyId,
                         'survey_question_id' => $questionId,
-                    ];
-
-                    if (is_numeric($value)) {
-                        $data['selected_option_id'] = $value;
-                    } else {
-                        $data['text_answer'] = $value;
-                    }
-
-                    $data['submitted_by'] = $userId;
-                    $data['student_company_id'] = $studentCompany?->id;
-                    $data['evaluated_student_id'] = $studentCompany?->student_id;
-
-                    SurveyAnswer::create($data);
+                        'selected_option_id' => $isOptionType ? (int) $value : null,
+                        'text_answer' => $isOptionType ? null : $value,
+                        'submitted_by' => $userId,
+                        'student_company_id' => $studentCompany?->id,
+                        'evaluated_student_id' => $studentCompany?->student_id,
+                    ]);
                 }
             }
         });

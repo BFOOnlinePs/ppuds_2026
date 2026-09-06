@@ -1085,9 +1085,11 @@
     "Answers retrieved successfully": "تم جلب الإجابات بنجاح",
     "Answers submitted successfully": "تم إرسال الإجابات بنجاح",
     "Evaluation students retrieved successfully": "تم جلب طلاب التقييم بنجاح",
+    "Evaluation companies retrieved successfully": "تم جلب شركات التقييم بنجاح",
     "This company has already been evaluated for this survey": "تم تقييم هذه الشركة مسبقاً لهذا الاستبيان",
     "Selected company is not available for evaluation": "الشركة المحددة غير متاحة للتقييم",
     "This survey is not available for company supervisor evaluation.": "هذا الاستبيان غير متاح لتقييم مشرف الشركة.",
+    "This survey is not available for student company evaluation.": "هذا الاستبيان غير متاح لتقييم الطالب/ة للشركة.",
     "Authentication Required": "تسجيل الدخول مطلوب",
     "Your responses are strictly confidential.": "إجاباتك سرية تماماً.",
 
