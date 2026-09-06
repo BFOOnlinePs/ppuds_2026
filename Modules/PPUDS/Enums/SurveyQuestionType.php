@@ -61,4 +61,16 @@ enum SurveyQuestionType: int implements HasLabel, HasColor
             ->mapWithKeys(fn(self $case) => [$case->value => $case->getLabel()])
             ->toArray();
     }
+
+    // مقياس التقييم الموحّد (1 إلى 5) المستخدم في أسئلة نوع RATING عند التعبئة وعرض التسليمات
+    public static function ratingScaleOptions(): array
+    {
+        return [
+            1 => __('Very Weak'),
+            2 => __('Weak'),
+            3 => __('Neutral'),
+            4 => __('Good'),
+            5 => __('Very Good'),
+        ];
+    }
 }

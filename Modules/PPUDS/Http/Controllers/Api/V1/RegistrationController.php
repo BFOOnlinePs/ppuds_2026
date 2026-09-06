@@ -135,8 +135,8 @@ class RegistrationController extends Controller
 
         $registration = Registration::create($data);
 
-        if ($request->hasFile('final_file')) {
-            $registration->addImage($request->file('final_file'));
+        if ($request->hasFile('final_file') && ! $registration->addImage($request->file('final_file'))) {
+            return $this->errorResponse(__('Failed to upload the final report file. Please try again.'), 500);
         }
 
         return $this->successResponse(
@@ -209,8 +209,8 @@ class RegistrationController extends Controller
 
         $registration->update($request->validated());
 
-        if ($request->hasFile('final_file')) {
-            $registration->addImage($request->file('final_file'));
+        if ($request->hasFile('final_file') && ! $registration->addImage($request->file('final_file'))) {
+            return $this->errorResponse(__('Failed to upload the final report file. Please try again.'), 500);
         }
 
         return $this->successResponse(

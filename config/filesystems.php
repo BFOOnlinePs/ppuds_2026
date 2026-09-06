@@ -188,6 +188,22 @@ return [
             'visibility' => 'public',
             'throw' => false,
         ],
+
+        'registers' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public/ppuds/registers'),
+            'url' => env('APP_URL') . '/storage/ppuds/registers',
+            'visibility' => 'public',
+            'throw' => false,
+        ],
+
+        'students_companies' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public/ppuds/students_companies'),
+            'url' => env('APP_URL') . '/storage/ppuds/students_companies',
+            'visibility' => 'public',
+            'throw' => false,
+        ],
     ],
 
     /*

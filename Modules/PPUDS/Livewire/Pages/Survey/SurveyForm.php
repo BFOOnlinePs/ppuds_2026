@@ -93,7 +93,7 @@ class SurveyForm extends Component implements HasActions, HasForms
                 SurveyQuestionType::MULTI_SELECT->value => Select::make($fieldName)->options($options)->multiple(),
                 SurveyQuestionType::DATE->value => DatePicker::make($fieldName)->native(false),
                 SurveyQuestionType::FILE->value => FileUpload::make($fieldName)->directory('surveys'),
-                SurveyQuestionType::RATING->value => Radio::make($fieldName)->options([1 => '1', 2 => '2', 3 => '3', 4 => '4', 5 => '5'])->inline(),
+                SurveyQuestionType::RATING->value => Radio::make($fieldName)->options(SurveyQuestionType::ratingScaleOptions())->inline(),
                 default => TextInput::make($fieldName),
             };
 

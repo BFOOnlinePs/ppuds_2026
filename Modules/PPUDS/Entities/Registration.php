@@ -104,10 +104,12 @@ class Registration extends Model implements HasMedia
                 ->usingFileName($fileName)
                 ->toMediaCollection('final_file', 'registers');
 
-            $size = ImageSize::MEDIUM;
+            if (str_starts_with($media->mime_type, 'image/')) {
+                $size = ImageSize::MEDIUM;
 
-            ImageService::optimize($media->getPath(), ImageQuality::HIGH->value);
-            ImageService::resize($media->getPath(), $size->width(), $size->height());
+                ImageService::optimize($media->getPath(), ImageQuality::HIGH->value);
+                ImageService::resize($media->getPath(), $size->width(), $size->height());
+            }
 
             return $media;
         } catch (\Exception $e) {
