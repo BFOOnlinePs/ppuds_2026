@@ -618,8 +618,20 @@ class PpuApiService
         ?string $refreshToken = null,
     ): ?array {
         $userId = $userId ?? auth()->id();
-        $token = $this->getAccessToken($token, $refreshToken, $userId);
-        $refreshToken = $refreshToken ?? $this->getRefreshToken($userId);
+
+        try {
+            $token = $this->getAccessToken($token, $refreshToken, $userId);
+            $refreshToken = $refreshToken ?? $this->getRefreshToken($userId);
+        } catch (\Exception $e) {
+            self::logToTerminal("✗ تعذر إرسال الشركة {$company->name} إلى API الجامعة: " . $e->getMessage(), $userId);
+            Log::error('Failed to obtain university access token for add company sync', [
+                'company_id' => $company->id,
+                'exception' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+
         $company->loadMissing(['branches.supervisors', 'translations']);
 
         if (! $sendEvenIfCompanyExists && filled($company->old_company_id)) {
