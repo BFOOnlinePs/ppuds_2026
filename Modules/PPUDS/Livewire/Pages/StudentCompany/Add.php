@@ -63,14 +63,14 @@ class Add extends Component implements HasActions, HasForms
                                             ->preload()
                                             ->prefixIcon('solar-document-text-linear')
                                             ->options(function () {
-                                                return Registration::with(['student', 'course'])
+                                                return Registration::with(['student.studentProfile', 'course'])
                                                     ->where('semester', app(GeneralSettings::class)->semester_type->value)
                                                     ->where('year', app(GeneralSettings::class)->year)
                                                     ->get()
                                                     ->mapWithKeys(function ($reg) {
                                                         $semesterLabel = $reg->semester?->getLabel() ?? $reg->semester?->value;
 
-                                                        return [$reg->id => "{$reg->student->studentProfile->student_number} - {$reg->student->name} - {$reg->course->name} ({$semesterLabel}/{$reg->year})"];
+                                                        return [$reg->id => "{$reg->student?->studentProfile?->student_number} - {$reg->student?->name} - {$reg->course?->name} ({$semesterLabel}/{$reg->year})"];
                                                     });
                                             }),
                                     ]),
