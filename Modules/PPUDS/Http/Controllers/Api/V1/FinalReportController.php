@@ -245,12 +245,11 @@ class FinalReportController extends Controller
             return $error;
         }
 
-        // TEST-ONLY: تعطيل مؤقت بطلب المستخدم للسماح بالحفظ بعد التسليم — يُعاد تفعيله بعد الاختبار.
-        // $existing = $this->finalReports->reportForRegistration($registration);
-        //
-        // if ($existing && ! $existing->isEditable()) {
-        //     return $this->errorResponse(__('The final report has already been submitted and can no longer be edited.'), 422);
-        // }
+        $existing = $this->finalReports->reportForRegistration($registration);
+
+        if ($existing && ! $existing->isEditable()) {
+            return $this->errorResponse(__('The final report has already been submitted and can no longer be edited.'), 422);
+        }
 
         if (! $this->finalReports->saveAttachment($registration, $request->file('final_file'))) {
             return $this->errorResponse(__('Failed to upload the final report file. Please try again.'), 500);
@@ -387,10 +386,9 @@ class FinalReportController extends Controller
             return $denied;
         }
 
-        // TEST-ONLY: تعطيل مؤقت بطلب المستخدم للسماح بالتسليم أكثر من مرة — يُعاد تفعيله بعد الاختبار.
-        // if (! $finalReport->isEditable()) {
-        //     return $this->errorResponse(__('The final report has already been submitted and can no longer be edited.'), 422);
-        // }
+        if (! $finalReport->isEditable()) {
+            return $this->errorResponse(__('The final report has already been submitted and can no longer be edited.'), 422);
+        }
 
         $finalReport->loadMissing('registration');
 
@@ -457,10 +455,9 @@ class FinalReportController extends Controller
             return $denied;
         }
 
-        // TEST-ONLY: تعطيل مؤقت بطلب المستخدم للسماح بالتسليم أكثر من مرة — يُعاد تفعيله بعد الاختبار.
-        // if (! $finalReport->isEditable()) {
-        //     return $this->errorResponse(__('The final report has already been submitted and can no longer be edited.'), 422);
-        // }
+        if (! $finalReport->isEditable()) {
+            return $this->errorResponse(__('The final report has already been submitted and can no longer be edited.'), 422);
+        }
 
         $finalReport->loadMissing(['registration', 'tasks', 'skills', 'items']);
 
@@ -468,13 +465,12 @@ class FinalReportController extends Controller
             return $error;
         }
 
-        // TEST-ONLY: تعطيل مؤقت بطلب المستخدم للتحقق من اكتمال التقرير قبل التسليم — يُعاد تفعيله بعد الاختبار.
-        // if ($finalReport->tasks->isEmpty() || blank($finalReport->summary)) {
-        //     return $this->errorResponse(
-        //         __('Please add at least one training task and write the summary before submitting.'),
-        //         422
-        //     );
-        // }
+        if ($finalReport->tasks->isEmpty() || blank($finalReport->summary)) {
+            return $this->errorResponse(
+                __('Please add at least one training task and write the summary before submitting.'),
+                422
+            );
+        }
 
         return $this->successResponse(
             new FinalReportResource($this->finalReports->submit($finalReport)),
