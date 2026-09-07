@@ -1193,5 +1193,7 @@
     "No attachment": "لا يوجد مرفق",
     "Optional: attach a copy of the report or any supporting file.": "اختياري: أرفق نسخة من التقرير أو أي ملف داعم.",
     "Optional. Uploading a new file replaces the current one.": "اختياري. رفع ملف جديد يستبدل الملف الحالي.",
-    "Failed to upload the final report file. Please try again.": "فشل رفع ملف التقرير النهائي. الرجاء المحاولة مرة أخرى."
+    "Failed to upload the final report file. Please try again.": "فشل رفع ملف التقرير النهائي. الرجاء المحاولة مرة أخرى.",
+    "Training Tasks And Skills": "المهام والمهارات",
+    "Last Updated": "آخر تحديث"
 }

@@ -5,6 +5,7 @@ namespace Modules\PPUDS\Livewire\Pages\FinalDeliveryReport;
 use App\View\Components\AppLayout;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -26,7 +27,6 @@ use Modules\Core\Filament\Tables\Columns\UserColumn;
 use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\Core\Traits\PrintsTableReportPdf;
 use Modules\PPUDS\Entities\Company;
-use Modules\PPUDS\Entities\FinalReport;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\FinalReportStatus;
 use Modules\PPUDS\Enums\SemesterType;
@@ -55,6 +55,7 @@ class Index extends Component implements HasForms, HasTable
                     'registration.finalReport.skills',
                     'registration.finalReport.items',
                     'registration.media',
+                    'registration.supervisor',
                     'student.studentProfile',
                 ])
                 ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query)))
@@ -135,7 +136,8 @@ class Index extends Component implements HasForms, HasTable
                     ->icon('solar-eye-bold')
                     ->color('info')
                     ->modalHeading(__('Final Report'))
-                    ->form(fn (StudentCompany $record): array => $this->finalReportModalSchema($record->registration->finalReport))
+                    ->modalWidth('5xl')
+                    ->form(fn (StudentCompany $record): array => $this->finalReportModalSchema($record))
                     ->modalSubmitAction(false)
                     ->visible(fn (StudentCompany $record): bool => auth()->user()->can('Report View List')
                         && $record->registration?->finalReport !== null),
@@ -154,33 +156,57 @@ class Index extends Component implements HasForms, HasTable
     }
 
     /**
-     * محتوى نافذة عرض التقرير النهائي كما عبّأه الطالب.
+     * نافذة عرض التقرير النهائي: بيانات التسليم كاملة كما عبّأها الطالب،
+     * من معلومات الطالب وحالة التسليم والمرفق وحتى جداول المهام والمهارات.
      *
      * @return array<int, mixed>
      */
-    protected function finalReportModalSchema(FinalReport $report): array
+    protected function finalReportModalSchema(StudentCompany $record): array
     {
+        $report = $record->registration->finalReport;
+
         return [
-            RichEditor::make('role_description')
-                ->label(__('Training Role Description'))
-                ->default($report->role_description)
-                ->disabled()
-                ->toolbarButtons([])
-                ->columnSpanFull(),
+            Section::make(__('Submission Details'))
+                ->schema([
+                    Placeholder::make('submission_info')
+                        ->hiddenLabel()
+                        ->content(fn (): View => view('ppuds::livewire.pages.final-delivery-report.report-summary', [
+                            'record' => $record,
+                            'report' => $report,
+                            'attachmentUrl' => $record->registration?->getFirstMediaUrl('final_file') ?: null,
+                        ]))
+                        ->columnSpanFull(),
+                ]),
 
-            Placeholder::make('final_report_details')
-                ->hiddenLabel()
-                ->content(fn (): View => view('ppuds::livewire.pages.final-delivery-report.report-details', [
-                    'report' => $report,
-                ]))
-                ->columnSpanFull(),
+            Section::make(__('Training Role Description'))
+                ->schema([
+                    RichEditor::make('role_description')
+                        ->hiddenLabel()
+                        ->default($report->role_description)
+                        ->disabled()
+                        ->toolbarButtons([])
+                        ->columnSpanFull(),
+                ]),
 
-            RichEditor::make('summary')
-                ->label(__('Summary'))
-                ->default($report->summary)
-                ->disabled()
-                ->toolbarButtons([])
-                ->columnSpanFull(),
+            Section::make(__('Training Tasks And Skills'))
+                ->schema([
+                    Placeholder::make('final_report_details')
+                        ->hiddenLabel()
+                        ->content(fn (): View => view('ppuds::livewire.pages.final-delivery-report.report-details', [
+                            'report' => $report,
+                        ]))
+                        ->columnSpanFull(),
+                ]),
+
+            Section::make(__('Summary'))
+                ->schema([
+                    RichEditor::make('summary')
+                        ->hiddenLabel()
+                        ->default($report->summary)
+                        ->disabled()
+                        ->toolbarButtons([])
+                        ->columnSpanFull(),
+                ]),
         ];
     }
 
