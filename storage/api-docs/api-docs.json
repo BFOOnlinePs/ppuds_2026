@@ -9093,6 +9093,14 @@
                     "content": {
                         "application/json": {
                             "schema": {
+                                "required": [
+                                    "role_description",
+                                    "summary",
+                                    "tasks",
+                                    "skills",
+                                    "contributions",
+                                    "difficulties"
+                                ],
                                 "properties": {
                                     "role_description": {
                                         "description": "طبيعة دور الطالب والقسم الذي عمل فيه (نص منسّق)",
@@ -9109,7 +9117,10 @@
                                         "type": "array",
                                         "items": {
                                             "required": [
-                                                "task_name"
+                                                "task_name",
+                                                "task_details",
+                                                "work_duration",
+                                                "notes"
                                             ],
                                             "properties": {
                                                 "task_name": {
@@ -9137,7 +9148,9 @@
                                         "type": "array",
                                         "items": {
                                             "required": [
-                                                "skill"
+                                                "skill",
+                                                "mastery_percentage",
+                                                "notes"
                                             ],
                                             "properties": {
                                                 "skill": {
@@ -9373,6 +9386,14 @@
                     "content": {
                         "application/json": {
                             "schema": {
+                                "required": [
+                                    "role_description",
+                                    "summary",
+                                    "tasks",
+                                    "skills",
+                                    "contributions",
+                                    "difficulties"
+                                ],
                                 "properties": {
                                     "role_description": {
                                         "type": "string",
@@ -10861,6 +10882,16 @@
                         "required": false,
                         "schema": {
                             "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filter[final_report_status]",
+                        "in": "query",
+                        "description": "Filter by final report delivery status (submitted, not_submitted)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "submitted"
                         }
                     },
                     {
@@ -15177,6 +15208,42 @@
                     "year": {
                         "type": "integer",
                         "example": 2024
+                    },
+                    "final_report": {
+                        "description": "ملخص تسليم التقرير النهائي للطالب",
+                        "properties": {
+                            "id": {
+                                "type": "integer",
+                                "example": 5,
+                                "nullable": true
+                            },
+                            "status": {
+                                "description": "1 = draft, 2 = submitted",
+                                "type": "integer",
+                                "example": 2,
+                                "nullable": true
+                            },
+                            "status_label": {
+                                "type": "string",
+                                "example": "تم التسليم",
+                                "nullable": true
+                            },
+                            "is_submitted": {
+                                "type": "boolean",
+                                "example": true
+                            },
+                            "submitted_at": {
+                                "type": "string",
+                                "format": "date-time",
+                                "nullable": true
+                            },
+                            "final_file": {
+                                "type": "string",
+                                "example": "https://example.com/storage/ppuds/registers/report.pdf",
+                                "nullable": true
+                            }
+                        },
+                        "type": "object"
                     },
                     "created_at": {
                         "type": "string",
