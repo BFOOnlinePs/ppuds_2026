@@ -75,7 +75,8 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($e instanceof \Illuminate\Validation\ValidationException) {
                 return response()->json([
                     'status'  => false,
-                    'message' => 'Validation Error',
+                    // نعرض نص أول خطأ ليظهر مباشرة للمستخدم، والتفاصيل كاملة تبقى في data.
+                    'message' => $e->validator->errors()->first() ?: 'Validation Error',
                     'data'    => $e->errors()
                 ], 422, [], $options);
             }
