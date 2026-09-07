@@ -72,6 +72,12 @@ class RolePermissionSeeder extends Seeder
                 'WorkExperience Create',
                 'WorkExperience Update',
                 'WorkExperience Delete',
+                // تسليم التقرير النهائي مقصور على الطالب، فلا يُمنح لأي دور آخر.
+                'FinalReport View List',
+                'FinalReport View',
+                'FinalReport Create',
+                'FinalReport Update',
+                'FinalReport Submit',
                 ...$this->branchRead(),
             ],
 

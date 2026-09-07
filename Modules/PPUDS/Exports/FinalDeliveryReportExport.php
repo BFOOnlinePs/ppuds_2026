@@ -24,6 +24,7 @@ class FinalDeliveryReportExport implements FromGenerator, ShouldAutoSize, WithHe
             __('Branch'),
             __('Department'),
             __('Delivery Status'),
+            __('Submitted At'),
             __('Semester'),
             __('Year'),
         ];
@@ -37,7 +38,7 @@ class FinalDeliveryReportExport implements FromGenerator, ShouldAutoSize, WithHe
             'branch.translations',
             'company.translations',
             'department.translations',
-            'registration.media',
+            'registration.finalReport',
             'student.studentProfile',
         ]);
 
@@ -59,6 +60,7 @@ class FinalDeliveryReportExport implements FromGenerator, ShouldAutoSize, WithHe
             (string) ($studentCompany->branch?->name ?? '---'),
             (string) ($studentCompany->department?->name ?? '---'),
             $this->deliveryStatusLabel($registration),
+            (string) ($registration?->finalReport?->submitted_at?->format('Y-m-d H:i') ?? '---'),
             $this->semesterLabel($registration?->semester),
             (string) $registration?->year,
         ];
@@ -66,7 +68,7 @@ class FinalDeliveryReportExport implements FromGenerator, ShouldAutoSize, WithHe
 
     protected function deliveryStatusLabel(?Registration $registration): string
     {
-        return $registration?->hasMedia('final_file')
+        return $registration?->finalReport?->isSubmitted()
             ? __('Submitted')
             : __('Not Submitted');
     }

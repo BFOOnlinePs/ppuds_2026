@@ -110,6 +110,11 @@ class SidebarServiceProvider extends ServiceProvider
                 ->add(new SidebarItem('Supervisor Report', 'solar-user-speak-rounded-bold-duotone', ['Supervisor Report View List'], 'supervisor-reports.index'))
         );
 
+        // تسليم التقرير النهائي — تظهر للطالب وحده لأن صلاحيتها ممنوحة لدوره فقط.
+        $sidebar->add(
+            new SidebarItem('Final Report Submission', 'solar-diploma-verified-bold-duotone', ['FinalReport View'], 'final-reports.index', 125)
+        );
+
         $sidebar->add(
             (new SidebarGroup('My Notes', 'solar-notes-bold-duotone', [], 130))
                 ->add(new SidebarItem('Notes List', 'solar-notebook-bold-duotone', ['Note View List'], 'notes.index'))

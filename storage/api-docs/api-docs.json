@@ -9014,6 +9014,481 @@
                 ]
             }
         },
+        "/api/v1/ppuds/final-reports": {
+            "get": {
+                "tags": [
+                    "Final Reports"
+                ],
+                "summary": "List the authenticated student's final reports",
+                "description": "ترجع تقارير الطالب الحالي فقط. الصلاحية للطالب فقط.",
+                "operationId": "0da14b2e8710b60958eaecdb19eb0108",
+                "parameters": [
+                    {
+                        "name": "Accept-Language",
+                        "in": "header",
+                        "description": "Language header (ar or en)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "ar",
+                            "example": "ar"
+                        }
+                    },
+                    {
+                        "name": "filter[status]",
+                        "in": "query",
+                        "description": "1 = draft, 2 = submitted",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Final reports retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Final reports retrieved successfully"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/FinalReportResource"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Final Reports"
+                ],
+                "summary": "Create or update the current draft final report",
+                "description": "يحفظ التقرير كمسودة على تسجيل الطالب في الفصل الحالي. إرسال الطلب مرة أخرى يستبدل صفوف الجداول بالكامل. لا يمكن التعديل بعد التسليم.",
+                "operationId": "8dd89e74a2183c1ca13f12712c2638f0",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "role_description": {
+                                        "description": "طبيعة دور الطالب والقسم الذي عمل فيه (نص منسّق)",
+                                        "type": "string",
+                                        "example": "عملت في قسم تطوير البرمجيات"
+                                    },
+                                    "summary": {
+                                        "description": "ملخص التدريب الميداني (نص منسّق)",
+                                        "type": "string",
+                                        "example": "استفدت من التدريب في"
+                                    },
+                                    "tasks": {
+                                        "description": "جدول المهام التدريبية",
+                                        "type": "array",
+                                        "items": {
+                                            "required": [
+                                                "task_name"
+                                            ],
+                                            "properties": {
+                                                "task_name": {
+                                                    "type": "string",
+                                                    "example": "تطوير واجهات المستخدم"
+                                                },
+                                                "task_details": {
+                                                    "type": "string",
+                                                    "example": "بناء صفحات لوحة التحكم"
+                                                },
+                                                "work_duration": {
+                                                    "type": "string",
+                                                    "example": "10 أيام - 60 ساعة"
+                                                },
+                                                "notes": {
+                                                    "type": "string",
+                                                    "example": "بإشراف مهندس الفريق"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "skills": {
+                                        "description": "جدول المهارات المكتسبة من التدريب",
+                                        "type": "array",
+                                        "items": {
+                                            "required": [
+                                                "skill"
+                                            ],
+                                            "properties": {
+                                                "skill": {
+                                                    "type": "string",
+                                                    "example": "العمل ضمن فريق"
+                                                },
+                                                "mastery_percentage": {
+                                                    "type": "integer",
+                                                    "maximum": 100,
+                                                    "minimum": 0,
+                                                    "example": 80
+                                                },
+                                                "notes": {
+                                                    "type": "string",
+                                                    "example": "تحسّن ملحوظ في الشهر الأخير"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "contributions": {
+                                        "description": "أهم المساهمات",
+                                        "type": "array",
+                                        "items": {
+                                            "required": [
+                                                "content"
+                                            ],
+                                            "properties": {
+                                                "content": {
+                                                    "type": "string",
+                                                    "example": "إعداد دليل استخدام النظام"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "difficulties": {
+                                        "description": "صعوبات التدريب",
+                                        "type": "array",
+                                        "items": {
+                                            "required": [
+                                                "content"
+                                            ],
+                                            "properties": {
+                                                "content": {
+                                                    "type": "string",
+                                                    "example": "ضيق الوقت مع تزامن الامتحانات"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Final report saved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Final report saved successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/FinalReportResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation error, or the report is already submitted"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/final-reports/current": {
+            "get": {
+                "tags": [
+                    "Final Reports"
+                ],
+                "summary": "Get the final report of the current semester",
+                "description": "ترجع تقرير الطالب للفصل الحالي، و data = null إذا لم يبدأ بتعبئته بعد.",
+                "operationId": "ad2ab3e12a0c3dee32960a451914e2e8",
+                "responses": {
+                    "200": {
+                        "description": "Final report retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Final report retrieved successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/FinalReportResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "No registration in the current semester"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/final-reports/{id}": {
+            "get": {
+                "tags": [
+                    "Final Reports"
+                ],
+                "summary": "Get a final report by id",
+                "operationId": "55a79e032c6cbdf090ca010971278d7a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Final Report ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Final report retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Final report retrieved successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/FinalReportResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "Final Reports"
+                ],
+                "summary": "Update a draft final report",
+                "description": "نفس حقول الإنشاء. تعمل فقط ما دام التقرير مسودة.",
+                "operationId": "bcdf3fa47e4a312d76da7e0649253156",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Final Report ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "role_description": {
+                                        "type": "string",
+                                        "example": "عملت في قسم تطوير البرمجيات"
+                                    },
+                                    "summary": {
+                                        "type": "string",
+                                        "example": "استفدت من التدريب في"
+                                    },
+                                    "tasks": {
+                                        "type": "array",
+                                        "items": {
+                                            "$ref": "#/components/schemas/FinalReportTaskResource"
+                                        }
+                                    },
+                                    "skills": {
+                                        "type": "array",
+                                        "items": {
+                                            "$ref": "#/components/schemas/FinalReportSkillResource"
+                                        }
+                                    },
+                                    "contributions": {
+                                        "type": "array",
+                                        "items": {
+                                            "$ref": "#/components/schemas/FinalReportItemResource"
+                                        }
+                                    },
+                                    "difficulties": {
+                                        "type": "array",
+                                        "items": {
+                                            "$ref": "#/components/schemas/FinalReportItemResource"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Final report saved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Final report saved successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/FinalReportResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Validation error, or the report is already submitted"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/final-reports/{id}/submit": {
+            "post": {
+                "tags": [
+                    "Final Reports"
+                ],
+                "summary": "Submit the final report",
+                "description": "التسليم النهائي — بعده يصبح التقرير غير قابل للتعديل.",
+                "operationId": "1212607145e653f2ddcfce0d0843ce4b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Final Report ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Final report submitted successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Final report submitted successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/FinalReportResource"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "422": {
+                        "description": "Already submitted, or the report is still incomplete"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/ppuds/leave-requests": {
             "get": {
                 "tags": [
@@ -10178,11 +10653,6 @@
                                         "type": "number",
                                         "format": "float",
                                         "example": 90
-                                    },
-                                    "image": {
-                                        "description": "Upload registration file/image",
-                                        "type": "string",
-                                        "format": "binary"
                                     }
                                 },
                                 "type": "object"
@@ -10269,11 +10739,6 @@
                                         "type": "number",
                                         "format": "float",
                                         "example": 98
-                                    },
-                                    "image": {
-                                        "description": "Upload new registration file/image",
-                                        "type": "string",
-                                        "format": "binary"
                                     }
                                 },
                                 "type": "object"
@@ -14202,6 +14667,179 @@
                     "name": "FieldVisitResource"
                 }
             },
+            "FinalReportItemResource": {
+                "title": "Final Report Item Resource",
+                "description": "بند من أهم المساهمات أو من صعوبات التدريب",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "content": {
+                        "type": "string",
+                        "example": "إعداد دليل استخدام النظام"
+                    },
+                    "sort_order": {
+                        "type": "integer",
+                        "example": 0
+                    }
+                },
+                "type": "object",
+                "xml": {
+                    "name": "FinalReportItemResource"
+                }
+            },
+            "FinalReportResource": {
+                "title": "Final Report Resource",
+                "description": "التقرير النهائي للتدريب الميداني",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "registration_id": {
+                        "type": "integer",
+                        "example": 12
+                    },
+                    "student_id": {
+                        "type": "integer",
+                        "example": 44
+                    },
+                    "role_description": {
+                        "type": "string",
+                        "example": "<p>عملت في قسم التطوير...</p>",
+                        "nullable": true
+                    },
+                    "summary": {
+                        "type": "string",
+                        "example": "<p>استفدت من التدريب في...</p>",
+                        "nullable": true
+                    },
+                    "status": {
+                        "description": "1 = مسودة، 2 = تم التسليم",
+                        "type": "integer",
+                        "enum": [
+                            1,
+                            2
+                        ],
+                        "example": 1
+                    },
+                    "status_label": {
+                        "type": "string",
+                        "example": "مسودة"
+                    },
+                    "is_editable": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "submitted_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "tasks": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FinalReportTaskResource"
+                        }
+                    },
+                    "skills": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FinalReportSkillResource"
+                        }
+                    },
+                    "contributions": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FinalReportItemResource"
+                        }
+                    },
+                    "difficulties": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FinalReportItemResource"
+                        }
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object",
+                "xml": {
+                    "name": "FinalReportResource"
+                }
+            },
+            "FinalReportSkillResource": {
+                "title": "Final Report Skill Resource",
+                "description": "صف واحد من جدول المهارات المكتسبة من التدريب",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "skill": {
+                        "type": "string",
+                        "example": "العمل ضمن فريق"
+                    },
+                    "mastery_percentage": {
+                        "type": "integer",
+                        "example": 80,
+                        "nullable": true
+                    },
+                    "notes": {
+                        "type": "string",
+                        "example": "تحسّن ملحوظ في الشهر الأخير",
+                        "nullable": true
+                    },
+                    "sort_order": {
+                        "type": "integer",
+                        "example": 0
+                    }
+                },
+                "type": "object",
+                "xml": {
+                    "name": "FinalReportSkillResource"
+                }
+            },
+            "FinalReportTaskResource": {
+                "title": "Final Report Task Resource",
+                "description": "صف واحد من جدول المهام التدريبية",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "task_name": {
+                        "type": "string",
+                        "example": "تطوير واجهات المستخدم"
+                    },
+                    "task_details": {
+                        "type": "string",
+                        "example": "بناء صفحات لوحة التحكم",
+                        "nullable": true
+                    },
+                    "work_duration": {
+                        "type": "string",
+                        "example": "10 أيام - 60 ساعة",
+                        "nullable": true
+                    },
+                    "notes": {
+                        "type": "string",
+                        "example": "بإشراف مهندس الفريق",
+                        "nullable": true
+                    },
+                    "sort_order": {
+                        "type": "integer",
+                        "example": 0
+                    }
+                },
+                "type": "object",
+                "xml": {
+                    "name": "FinalReportTaskResource"
+                }
+            },
             "LeaveRequestResource": {
                 "title": "Leave Request Resource",
                 "description": "Leave Request details",
@@ -14723,6 +15361,10 @@
         {
             "name": "Field Visits",
             "description": "API Endpoints for managing student field visits"
+        },
+        {
+            "name": "Final Reports",
+            "description": "تسليم التقرير النهائي للتدريب الميداني — متاح للطالب فقط"
         },
         {
             "name": "Leave Requests",

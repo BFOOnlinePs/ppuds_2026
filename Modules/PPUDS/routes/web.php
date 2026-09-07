@@ -273,6 +273,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     Route::get('/', Index::class)->name('index')->can('Report View List');
                 });
 
+                // شاشة تسليم التقرير النهائي للطالب — الصلاحية ممنوحة لدور الطالب وحده.
+                Route::group([
+                    'prefix' => 'final-reports',
+                    'as' => 'final-reports.',
+                    'namespace' => 'Modules\PPUDS\Livewire\Pages\FinalReport',
+                ], function () {
+                    Route::get('/', Index::class)->name('index')->can('FinalReport View');
+                });
+
                 Route::group([
                     'prefix' => 'non-compliance-reports',
                     'as' => 'non-compliance-reports.',

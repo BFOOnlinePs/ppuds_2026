@@ -23,7 +23,6 @@ class RegistrationRequest extends FormRequest
             'university_score' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'company_score'    => ['nullable', 'numeric', 'min:0', 'max:100'],
 
-            'final_file'            => ['nullable', 'image', 'mimes:jpeg,png,jpg,pdf', 'max:2048'],
         ];
     }
 

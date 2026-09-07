@@ -138,6 +138,33 @@ class PermissionSeeder extends Seeder
                 'module_name' => 'WorkExperience',
             ],
 
+            // TODO Final Report — تسليم التقرير النهائي (للطالب فقط)
+            [
+                'name' => 'FinalReport View List',
+                'guard_name' => 'web',
+                'module_name' => 'FinalReport',
+            ],
+            [
+                'name' => 'FinalReport View',
+                'guard_name' => 'web',
+                'module_name' => 'FinalReport',
+            ],
+            [
+                'name' => 'FinalReport Create',
+                'guard_name' => 'web',
+                'module_name' => 'FinalReport',
+            ],
+            [
+                'name' => 'FinalReport Update',
+                'guard_name' => 'web',
+                'module_name' => 'FinalReport',
+            ],
+            [
+                'name' => 'FinalReport Submit',
+                'guard_name' => 'web',
+                'module_name' => 'FinalReport',
+            ],
+
 
             // TODO Company Category
             [

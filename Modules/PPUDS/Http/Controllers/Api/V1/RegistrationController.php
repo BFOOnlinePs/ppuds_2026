@@ -119,8 +119,7 @@ class RegistrationController extends Controller
      * @OA\Property(property="year", type="string", example="2024"),
      * @OA\Property(property="supervisor_id", type="integer", example=5),
      * @OA\Property(property="university_score", type="number", format="float", example=85.5),
-     * @OA\Property(property="company_score", type="number", format="float", example=90.0),
-     * @OA\Property(property="image", type="string", format="binary", description="Upload registration file/image")
+     * @OA\Property(property="company_score", type="number", format="float", example=90.0)
      * )
      * )
      * ),
@@ -134,10 +133,6 @@ class RegistrationController extends Controller
         $data['created_by'] = auth()->id();
 
         $registration = Registration::create($data);
-
-        if ($request->hasFile('final_file') && ! $registration->addImage($request->file('final_file'))) {
-            return $this->errorResponse(__('Failed to upload the final report file. Please try again.'), 500);
-        }
 
         return $this->successResponse(
             new RegistrationResource($registration),
@@ -192,8 +187,7 @@ class RegistrationController extends Controller
      * @OA\Property(property="_method", type="string", example="PUT"),
      * @OA\Property(property="grade", type="string", example="A+"),
      * @OA\Property(property="university_score", type="number", format="float", example=95.0),
-     * @OA\Property(property="company_score", type="number", format="float", example=98.0),
-     * @OA\Property(property="image", type="string", format="binary", description="Upload new registration file/image")
+     * @OA\Property(property="company_score", type="number", format="float", example=98.0)
      * )
      * )
      * ),
@@ -208,10 +202,6 @@ class RegistrationController extends Controller
         }
 
         $registration->update($request->validated());
-
-        if ($request->hasFile('final_file') && ! $registration->addImage($request->file('final_file'))) {
-            return $this->errorResponse(__('Failed to upload the final report file. Please try again.'), 500);
-        }
 
         return $this->successResponse(
             new RegistrationResource($registration->refresh()),

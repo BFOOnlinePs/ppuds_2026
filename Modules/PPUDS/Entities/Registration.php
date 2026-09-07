@@ -138,6 +138,11 @@ class Registration extends Model implements HasMedia
         return $this->belongsTo(User::class, 'supervisor_id');
     }
 
+    public function finalReport(): HasOne
+    {
+        return $this->hasOne(FinalReport::class, 'registration_id');
+    }
+
     public function studentCompany(): HasOne
     {
         return $this->hasOne(StudentCompany::class, 'registration_id')

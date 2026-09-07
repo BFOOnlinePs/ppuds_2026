@@ -3,6 +3,8 @@
 namespace Modules\PPUDS\Livewire\Pages\FinalDeliveryReport;
 
 use App\View\Components\AppLayout;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -16,6 +18,7 @@ use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Component;
 use Maatwebsite\Excel\Excel as WriterType;
@@ -23,7 +26,9 @@ use Modules\Core\Filament\Tables\Columns\UserColumn;
 use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\Core\Traits\PrintsTableReportPdf;
 use Modules\PPUDS\Entities\Company;
+use Modules\PPUDS\Entities\FinalReport;
 use Modules\PPUDS\Entities\StudentCompany;
+use Modules\PPUDS\Enums\FinalReportStatus;
 use Modules\PPUDS\Enums\SemesterType;
 use Modules\PPUDS\Exports\FinalDeliveryReportExport;
 use Modules\PPUDS\Settings\GeneralSettings;
@@ -46,7 +51,9 @@ class Index extends Component implements HasForms, HasTable
                     'branch',
                     'company',
                     'department',
-                    'registration.media',
+                    'registration.finalReport.tasks',
+                    'registration.finalReport.skills',
+                    'registration.finalReport.items',
                     'student.studentProfile',
                 ])
                 ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query)))
@@ -78,11 +85,17 @@ class Index extends Component implements HasForms, HasTable
 
                 TextColumn::make('final_report_status')
                     ->label(__('Delivery Status'))
-                    ->getStateUsing(fn (StudentCompany $record): string => $record->registration?->hasMedia('final_file')
+                    ->getStateUsing(fn (StudentCompany $record): string => $record->registration?->finalReport?->isSubmitted()
                         ? __('Submitted')
                         : __('Not Submitted'))
                     ->badge()
                     ->color(fn (string $state): string => $state === __('Submitted') ? 'success' : 'danger'),
+
+                TextColumn::make('final_report_submitted_at')
+                    ->label(__('Submitted At'))
+                    ->getStateUsing(fn (StudentCompany $record): ?string => $record->registration?->finalReport?->submitted_at?->format('Y-m-d H:i'))
+                    ->placeholder('---')
+                    ->toggleable(),
 
                 TextColumn::make('registration.semester')
                     ->label(__('Semester'))
@@ -117,15 +130,47 @@ class Index extends Component implements HasForms, HasTable
             ])
             ->actions([
                 Action::make('view_final_report')
-                    ->label(__('View File'))
+                    ->label(__('View Report'))
                     ->icon('solar-eye-bold')
                     ->color('info')
-                    ->url(fn (StudentCompany $record): ?string => $record->registration?->getFirstMediaUrl('final_file') ?: null)
-                    ->openUrlInNewTab()
+                    ->modalHeading(__('Final Report'))
+                    ->form(fn (StudentCompany $record): array => $this->finalReportModalSchema($record->registration->finalReport))
+                    ->modalSubmitAction(false)
                     ->visible(fn (StudentCompany $record): bool => auth()->user()->can('Report View List')
-                        && (bool) $record->registration?->hasMedia('final_file')),
+                        && $record->registration?->finalReport !== null),
             ])
             ->bulkActions([]);
+    }
+
+    /**
+     * محتوى نافذة عرض التقرير النهائي كما عبّأه الطالب.
+     *
+     * @return array<int, mixed>
+     */
+    protected function finalReportModalSchema(FinalReport $report): array
+    {
+        return [
+            RichEditor::make('role_description')
+                ->label(__('Training Role Description'))
+                ->default($report->role_description)
+                ->disabled()
+                ->toolbarButtons([])
+                ->columnSpanFull(),
+
+            Placeholder::make('final_report_details')
+                ->hiddenLabel()
+                ->content(fn (): View => view('ppuds::livewire.pages.final-delivery-report.report-details', [
+                    'report' => $report,
+                ]))
+                ->columnSpanFull(),
+
+            RichEditor::make('summary')
+                ->label(__('Summary'))
+                ->default($report->summary)
+                ->disabled()
+                ->toolbarButtons([])
+                ->columnSpanFull(),
+        ];
     }
 
     protected function getTableFilters(): array
@@ -170,12 +215,12 @@ class Index extends Component implements HasForms, HasTable
                 ->query(function (Builder $query, array $data): Builder {
                     return match ($data['value'] ?? null) {
                         'submitted' => $query->whereHas(
-                            'registration.media',
-                            fn (Builder $mediaQuery) => $mediaQuery->where('collection_name', 'final_file')
+                            'registration.finalReport',
+                            fn (Builder $reportQuery) => $reportQuery->where('status', FinalReportStatus::SUBMITTED)
                         ),
                         'not_submitted' => $query->whereDoesntHave(
-                            'registration.media',
-                            fn (Builder $mediaQuery) => $mediaQuery->where('collection_name', 'final_file')
+                            'registration.finalReport',
+                            fn (Builder $reportQuery) => $reportQuery->where('status', FinalReportStatus::SUBMITTED)
                         ),
                         default => $query,
                     };

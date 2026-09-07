@@ -11,6 +11,7 @@
     use Modules\PPUDS\Http\Controllers\Api\V1\CompanyController;
     use Modules\PPUDS\Http\Controllers\Api\V1\CompanyDepartmentController;
     use Modules\PPUDS\Http\Controllers\Api\V1\FieldVisitController;
+    use Modules\PPUDS\Http\Controllers\Api\V1\FinalReportController;
     use Modules\PPUDS\Http\Controllers\Api\V1\LeaveRequestController;
     use Modules\PPUDS\Http\Controllers\Api\V1\NoteController;
     use Modules\PPUDS\Http\Controllers\Api\V1\NonComplianceReportController;
@@ -245,6 +246,19 @@
                         Route::post('/', 'store')->name('store');
                         Route::get('/{registration}', 'show')->name('show');
                         Route::patch('/{registration}', 'update')->name('update');
+                    });
+
+                // تسليم التقرير النهائي — الصلاحيات ممنوحة لدور الطالب وحده.
+                Route::controller(FinalReportController::class)
+                    ->prefix('final-reports')
+                    ->as('final-reports.')
+                    ->group(function () {
+                        Route::get('/', 'index')->name('index');
+                        Route::post('/', 'store')->name('store');
+                        Route::get('/current', 'current')->name('current');
+                        Route::get('/{finalReport}', 'show')->name('show');
+                        Route::patch('/{finalReport}', 'update')->name('update');
+                        Route::post('/{finalReport}/submit', 'submit')->name('submit');
                     });
 
                 Route::controller(ChatController::class)
