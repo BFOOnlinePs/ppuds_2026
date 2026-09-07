@@ -38,6 +38,7 @@ class ReportController extends Controller
      * @OA\Parameter(name="filter[company_id]", in="query", required=false, description="Filter by company ID", @OA\Schema(type="integer")),
      * @OA\Parameter(name="filter[year]", in="query", required=false, description="Filter by academic year", @OA\Schema(type="integer")),
      * @OA\Parameter(name="filter[semester_type]", in="query", required=false, description="Filter by semester type", @OA\Schema(type="string")),
+     * @OA\Parameter(name="filter[final_report_status]", in="query", required=false, description="Filter by final report delivery status (submitted, not_submitted)", @OA\Schema(type="string", example="submitted")),
      * @OA\Parameter(name="filter[attendance_days_from]", in="query", required=false, description="Filter attendance days from", @OA\Schema(type="integer")),
      * @OA\Parameter(name="filter[attendance_days_to]", in="query", required=false, description="Filter attendance days to", @OA\Schema(type="integer")),
      * @OA\Parameter(name="filter[non_compliance]", in="query", required=false, description="When true, return students with absence or late attendance in the current semester period", @OA\Schema(type="boolean", example=true)),
@@ -75,6 +76,8 @@ class ReportController extends Controller
             ->allowedIncludes(ReportResource::allowedIncludes())
             ->with([
                 'registration',
+                'registration.finalReport',
+                'registration.media',
                 'student',
                 'student.studentProfile',
                 'company',
@@ -147,6 +150,8 @@ class ReportController extends Controller
             ->allowedIncludes(ReportResource::allowedIncludes())
             ->with([
                 'registration',
+                'registration.finalReport',
+                'registration.media',
                 'student',
                 'student.studentProfile',
                 'company',

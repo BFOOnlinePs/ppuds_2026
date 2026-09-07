@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Modules\Core\Transformers\V1\UserResource;
+use Modules\PPUDS\Enums\FinalReportStatus;
 use Modules\PPUDS\Services\NonComplianceReportService;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
@@ -56,6 +57,17 @@ use Spatie\QueryBuilder\AllowedSort;
  * ),
  * @OA\Property(property="semester", type="string", example="First Semester"),
  * @OA\Property(property="year", type="integer", example=2024),
+ * @OA\Property(
+ * property="final_report",
+ * type="object",
+ * description="ملخص تسليم التقرير النهائي للطالب",
+ * @OA\Property(property="id", type="integer", nullable=true, example=5),
+ * @OA\Property(property="status", type="integer", nullable=true, description="1 = draft, 2 = submitted", example=2),
+ * @OA\Property(property="status_label", type="string", nullable=true, example="تم التسليم"),
+ * @OA\Property(property="is_submitted", type="boolean", example=true),
+ * @OA\Property(property="submitted_at", type="string", format="date-time", nullable=true),
+ * @OA\Property(property="final_file", type="string", nullable=true, example="https://example.com/storage/ppuds/registers/report.pdf")
+ * ),
  * @OA\Property(property="created_at", type="string", format="date-time")
  * )
  */
@@ -93,6 +105,9 @@ class ReportResource extends JsonResource
             'total_payment_summary' => $this->totalPaymentSummary(),
             'total_attendance_leaves_days' => $this->total_attendance_leaves_days,
 
+            // حالة تسليم التقرير النهائي كما تظهر في تقرير التسليم النهائي للطلاب.
+            'final_report' => $this->finalReportSummary(),
+
             // Registration Details
             'semester' => $this->registration?->semester->getLabel(),
             'year' => $this->registration?->year,
@@ -101,6 +116,27 @@ class ReportResource extends JsonResource
 
             'student' => new UserResource($this->whenLoaded('student')),
             'company' => new CompanyResource($this->whenLoaded('company')),
+        ];
+    }
+
+    /**
+     * ملخص تسليم التقرير النهائي: الحالة وتاريخ التسليم والمرفق الاختياري.
+     *
+     * @return array<string, mixed>
+     */
+    private function finalReportSummary(): array
+    {
+        $report = $this->registration?->finalReport;
+
+        return [
+            'id' => $report?->id,
+            'status' => $report?->status?->value,
+            'status_label' => $report?->status?->getLabel(),
+            'is_submitted' => (bool) $report?->isSubmitted(),
+            'submitted_at' => $report?->submitted_at,
+            'final_file' => $this->registration?->hasMedia('final_file')
+                ? $this->registration->getFirstMediaUrl('final_file')
+                : null,
         ];
     }
 
@@ -148,6 +184,21 @@ class ReportResource extends JsonResource
             AllowedFilter::exact('company_id', 'company_id'),
             AllowedFilter::exact('year', 'registration.year'),
             AllowedFilter::exact('semester_type', 'registration.semester'),
+
+            // نفس منطق فلتر حالة التسليم في شاشة تقرير التسليم النهائي للطلاب.
+            AllowedFilter::callback('final_report_status', function (Builder $query, $value) {
+                match (self::filterValue($value)) {
+                    'submitted' => $query->whereHas(
+                        'registration.finalReport',
+                        fn (Builder $reportQuery) => $reportQuery->where('status', FinalReportStatus::SUBMITTED)
+                    ),
+                    'not_submitted' => $query->whereDoesntHave(
+                        'registration.finalReport',
+                        fn (Builder $reportQuery) => $reportQuery->where('status', FinalReportStatus::SUBMITTED)
+                    ),
+                    default => $query,
+                };
+            }),
 
             // فلتر أيام الحضور (من - إلى)
             AllowedFilter::callback('attendance_days_from', function (Builder $query, $value) {
