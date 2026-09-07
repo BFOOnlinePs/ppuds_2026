@@ -121,7 +121,9 @@ class UniversityLoginController extends Controller
         }
 
         // Maps the realm's identity onto the local account, applying the same
-        // blocked-role and student-number rules the browser sign-in uses.
+        // student-number rules the browser sign-in uses. Whether the sign-in
+        // itself is allowed is the realm's call alone, so nothing is rejected
+        // here beyond an identity that matches no local account.
         try {
             $user = $action->resolveUserFromToken($accessToken);
         } catch (ValidationException $e) {

@@ -14,10 +14,6 @@ use Modules\PPUDS\Services\PpuApiService;
 
 class AuthenticateViaKeycloakAction
 {
-    private const TEMPORARILY_BLOCKED_ROLE = 'role-19';
-
-    private const TEMPORARILY_BLOCKED_MESSAGE = 'لا يمكنك الدخول لحسابك مؤقتا يرجى مراجعة مركز الحاسوب رمز الخطا role-19';
-
     public function execute(KeycloakUser $keycloakUser): User
     {
         $user = $this->resolveUserFromToken(
@@ -45,8 +41,8 @@ class AuthenticateViaKeycloakAction
 
     /**
      * Maps a Keycloak access token onto the local user, applying the same
-     * rules the browser flow uses: the blocked-role check, the username /
-     * email lookup, and the student-identity sync.
+     * rules the browser flow uses: the username / email lookup and the
+     * student-identity sync.
      *
      * It deliberately does not sign anyone in or touch the session, so the
      * stateless mobile flow can reuse it and raise its own Login event.
@@ -58,8 +54,6 @@ class AuthenticateViaKeycloakAction
         ?string $name = null,
     ): User {
         $payload = $this->decodeTokenPayload($accessToken);
-
-        $this->ensureUserIsAllowedByKeycloakRoles($payload);
 
         return DB::transaction(function () use ($payload, $username, $email, $name) {
             $username = $this->cleanIdentifier($payload['preferred_username'] ?? $username);
@@ -220,21 +214,6 @@ class AuthenticateViaKeycloakAction
         $value = strtolower(trim((string) $value));
 
         return filter_var($value, FILTER_VALIDATE_EMAIL) ? $value : null;
-    }
-
-    private function ensureUserIsAllowedByKeycloakRoles(array $payload): void
-    {
-        $roles = data_get($payload, 'realm_access.roles', []);
-
-        if (! is_array($roles)) {
-            return;
-        }
-
-        if (in_array(self::TEMPORARILY_BLOCKED_ROLE, $roles, true)) {
-            throw ValidationException::withMessages([
-                'auth' => self::TEMPORARILY_BLOCKED_MESSAGE,
-            ]);
-        }
     }
 
     private function decodeTokenPayload(string $token): array
