@@ -199,6 +199,16 @@ class FinalReportController extends Controller
      * )
      * )
      * )
+     * ),
+     *
+     * @OA\MediaType(
+     * mediaType="multipart/form-data",
+     *
+     * @OA\Schema(
+     * @OA\Property(property="role_description", type="string"),
+     * @OA\Property(property="summary", type="string"),
+     * @OA\Property(property="final_file", type="string", format="binary", description="مرفق اختياري: jpeg, png, jpg أو pdf بحد أقصى 2 ميجابايت. رفع ملف جديد يستبدل السابق. عند استخدام multipart تُرسل الجداول بصيغة الأقواس مثل tasks[0][task_name].")
+     * )
      * )
      * ),
      *
@@ -215,13 +225,17 @@ class FinalReportController extends Controller
      * )
      * ),
      * @OA\Response(response=403, description="Forbidden"),
-     * @OA\Response(response=422, description="Validation error, or the report is already submitted")
+     * @OA\Response(response=422, description="Validation error, the report is already submitted, or submission is closed in settings")
      * )
      */
     public function store(FinalReportRequest $request)
     {
         if ($denied = $this->denyUnlessStudentCan('FinalReport Create')) {
             return $denied;
+        }
+
+        if ($closed = $this->denyWhenSubmissionClosed()) {
+            return $closed;
         }
 
         $registration = $this->finalReports->currentRegistrationFor(auth()->id());
@@ -234,6 +248,10 @@ class FinalReportController extends Controller
 
         if ($existing && ! $existing->isEditable()) {
             return $this->errorResponse(__('The final report has already been submitted and can no longer be edited.'), 422);
+        }
+
+        if (! $this->finalReports->saveAttachment($registration, $request->file('final_file'))) {
+            return $this->errorResponse(__('Failed to upload the final report file. Please try again.'), 500);
         }
 
         $report = $this->finalReports->save($registration, $request->validated(), auth()->user());
@@ -322,6 +340,17 @@ class FinalReportController extends Controller
      * @OA\Property(property="contributions", type="array", @OA\Items(ref="#/components/schemas/FinalReportItemResource")),
      * @OA\Property(property="difficulties", type="array", @OA\Items(ref="#/components/schemas/FinalReportItemResource"))
      * )
+     * ),
+     *
+     * @OA\MediaType(
+     * mediaType="multipart/form-data",
+     *
+     * @OA\Schema(
+     * @OA\Property(property="_method", type="string", example="PATCH"),
+     * @OA\Property(property="role_description", type="string"),
+     * @OA\Property(property="summary", type="string"),
+     * @OA\Property(property="final_file", type="string", format="binary", description="مرفق اختياري: jpeg, png, jpg أو pdf بحد أقصى 2 ميجابايت. رفع ملف جديد يستبدل السابق. عند استخدام multipart تُرسل الجداول بصيغة الأقواس مثل tasks[0][task_name].")
+     * )
      * )
      * ),
      *
@@ -338,13 +367,17 @@ class FinalReportController extends Controller
      * )
      * ),
      * @OA\Response(response=403, description="Forbidden"),
-     * @OA\Response(response=422, description="Validation error, or the report is already submitted")
+     * @OA\Response(response=422, description="Validation error, the report is already submitted, or submission is closed in settings")
      * )
      */
     public function update(FinalReportRequest $request, FinalReport $finalReport)
     {
         if ($denied = $this->denyUnlessStudentCan('FinalReport Update')) {
             return $denied;
+        }
+
+        if ($closed = $this->denyWhenSubmissionClosed()) {
+            return $closed;
         }
 
         if ($denied = $this->denyUnlessOwned($finalReport)) {
@@ -359,6 +392,10 @@ class FinalReportController extends Controller
 
         if ($error = $this->ensureRegistrationInCurrentSemester($finalReport->registration)) {
             return $error;
+        }
+
+        if (! $this->finalReports->saveAttachment($finalReport->registration, $request->file('final_file'))) {
+            return $this->errorResponse(__('Failed to upload the final report file. Please try again.'), 500);
         }
 
         $report = $this->finalReports->save($finalReport->registration, $request->validated(), auth()->user());
@@ -399,13 +436,17 @@ class FinalReportController extends Controller
      * )
      * ),
      * @OA\Response(response=403, description="Forbidden"),
-     * @OA\Response(response=422, description="Already submitted, or the report is still incomplete")
+     * @OA\Response(response=422, description="Already submitted, still incomplete, or submission is closed in settings")
      * )
      */
     public function submit(FinalReport $finalReport)
     {
         if ($denied = $this->denyUnlessStudentCan('FinalReport Submit')) {
             return $denied;
+        }
+
+        if ($closed = $this->denyWhenSubmissionClosed()) {
+            return $closed;
         }
 
         if ($denied = $this->denyUnlessOwned($finalReport)) {
@@ -445,6 +486,18 @@ class FinalReportController extends Controller
         }
 
         return $this->errorResponse(__('You are not authorized to perform this action'), 403);
+    }
+
+    /**
+     * القراءة تبقى متاحة بعد الإغلاق ليرى الطالب ما سلّمه، أما الكتابة فتُمنع.
+     */
+    private function denyWhenSubmissionClosed(): ?JsonResponse
+    {
+        if ($this->finalReports->submissionIsOpen()) {
+            return null;
+        }
+
+        return $this->errorResponse(__('Final report submission is currently closed.'), 422);
     }
 
     private function denyUnlessOwned(FinalReport $finalReport): ?JsonResponse

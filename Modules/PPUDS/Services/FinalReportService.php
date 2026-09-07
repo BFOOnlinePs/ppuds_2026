@@ -9,6 +9,7 @@ use Modules\PPUDS\Entities\FinalReport;
 use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Enums\FinalReportItemType;
 use Modules\PPUDS\Enums\FinalReportStatus;
+use Modules\PPUDS\Enums\ReportStatus;
 use Modules\PPUDS\Settings\GeneralSettings;
 
 /**
@@ -16,6 +17,15 @@ use Modules\PPUDS\Settings\GeneralSettings;
  */
 class FinalReportService
 {
+    /**
+     * حالة التقارير في إعدادات النظام. عند الإغلاق يختفي العنصر من القائمة
+     * الجانبية ويُمنع الحفظ والتسليم من الشاشة والـ API معاً.
+     */
+    public function submissionIsOpen(): bool
+    {
+        return app(GeneralSettings::class)->report_status === ReportStatus::OPEN;
+    }
+
     /**
      * تسجيل الطالب في الفصل الحالي، وهو المرساة التي يُعلَّق عليها التقرير.
      */
@@ -37,9 +47,29 @@ class FinalReportService
         $registrationId = $registration instanceof Registration ? $registration->id : $registration;
 
         return FinalReport::query()
-            ->with(['tasks', 'skills', 'items'])
+            ->with(['tasks', 'skills', 'items', 'registration.media'])
             ->where('registration_id', $registrationId)
             ->first();
+    }
+
+    /**
+     * المرفق اختياري ويُخزَّن في مجموعة final_file الموجودة أصلاً على التسجيل،
+     * حتى تبقى الملفات المرفوعة سابقاً ظاهرة كما هي.
+     */
+    public function saveAttachment(Registration $registration, mixed $file): bool
+    {
+        if (blank($file)) {
+            return true;
+        }
+
+        return $registration->addImage($file) !== null;
+    }
+
+    public function attachmentUrl(?Registration $registration): ?string
+    {
+        return $registration?->hasMedia('final_file')
+            ? $registration->getFirstMediaUrl('final_file')
+            : null;
     }
 
     /**
@@ -95,7 +125,7 @@ class FinalReportService
                 $this->syncItems($report, FinalReportItemType::DIFFICULTY, $data['difficulties'] ?? []);
             }
 
-            return $report->load(['tasks', 'skills', 'items']);
+            return $report->load(['tasks', 'skills', 'items', 'registration.media']);
         });
     }
 
@@ -106,7 +136,7 @@ class FinalReportService
             'submitted_at' => now(),
         ])->save();
 
-        return $report->load(['tasks', 'skills', 'items']);
+        return $report->load(['tasks', 'skills', 'items', 'registration.media']);
     }
 
     /**

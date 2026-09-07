@@ -5,6 +5,7 @@ namespace Modules\PPUDS\Livewire\Pages\FinalReport;
 use App\View\Components\AppLayout;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
@@ -38,6 +39,9 @@ class Index extends Component implements HasForms, HasActions
     {
         $this->authorize('FinalReport View');
 
+        // إخفاء العنصر من القائمة الجانبية وحده ليس حماية، فنمنع الوصول المباشر أيضاً.
+        abort_unless($finalReports->submissionIsOpen(), 403);
+
         $this->registration = $finalReports->currentRegistrationFor(auth()->id());
         $this->report = $this->registration
             ? $finalReports->reportForRegistration($this->registration)
@@ -59,10 +63,12 @@ class Index extends Component implements HasForms, HasActions
                 'skills' => [],
                 'contributions' => [],
                 'difficulties' => [],
+                'final_file' => null,
             ];
         }
 
         return [
+            'final_file' => null,
             'role_description' => $this->report->role_description,
             'summary' => $this->report->summary,
             'tasks' => $this->report->tasks
@@ -100,6 +106,23 @@ class Index extends Component implements HasForms, HasActions
     public function isLocked(): bool
     {
         return (bool) $this->report?->isSubmitted();
+    }
+
+    /**
+     * رابط المرفق الحالي إن وُجد، والمرفق يبقى اختيارياً.
+     */
+    protected function attachmentLink(): HtmlString
+    {
+        $url = app(FinalReportService::class)->attachmentUrl($this->registration);
+
+        if ($url === null) {
+            return new HtmlString('<span class="text-sm text-gray-500">'.e(__('No attachment')).'</span>');
+        }
+
+        return new HtmlString(
+            '<a href="'.e($url).'" target="_blank" rel="noopener noreferrer" class="text-sm text-primary-600">'
+            .e(__('View File')).'</a>'
+        );
     }
 
     public function hasRegistration(): bool
@@ -252,6 +275,26 @@ class Index extends Component implements HasForms, HasActions
                             ))
                             ->visible(fn (): bool => $this->isLocked()),
                     ]),
+
+                Section::make(__('Attachment'))
+                    ->description(__('Optional: attach a copy of the report or any supporting file.'))
+                    ->icon('solar-paperclip-2-bold-duotone')
+                    ->schema([
+                        Placeholder::make('current_attachment')
+                            ->label(__('Current Attachment'))
+                            ->content(fn (): HtmlString => $this->attachmentLink())
+                            ->columnSpanFull(),
+
+                        FileUpload::make('final_file')
+                            ->label(__('Attachment'))
+                            ->helperText(__('Optional. Uploading a new file replaces the current one.'))
+                            ->storeFiles(false)
+                            ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])
+                            ->rules(['mimes:jpeg,png,jpg,pdf'])
+                            ->maxSize(2048)
+                            ->visible(fn (): bool => ! $locked)
+                            ->columnSpanFull(),
+                    ]),
             ])
             ->statePath('data');
     }
@@ -260,13 +303,19 @@ class Index extends Component implements HasForms, HasActions
     {
         $this->authorize('FinalReport Create');
 
-        if (! $this->guardEditable()) {
+        if (! $this->guardEditable($finalReports)) {
             return;
         }
 
         $this->validate();
 
+        if (! $this->storeAttachment($finalReports)) {
+            return;
+        }
+
         $this->report = $finalReports->save($this->registration, $this->data, auth()->user());
+
+        $this->form->fill($this->reportFormState());
 
         Toaster::success(__('Final report saved successfully'));
     }
@@ -275,11 +324,15 @@ class Index extends Component implements HasForms, HasActions
     {
         $this->authorize('FinalReport Submit');
 
-        if (! $this->guardEditable()) {
+        if (! $this->guardEditable($finalReports)) {
             return;
         }
 
         $this->validate();
+
+        if (! $this->storeAttachment($finalReports)) {
+            return;
+        }
 
         $report = $finalReports->save($this->registration, $this->data, auth()->user());
 
@@ -299,10 +352,44 @@ class Index extends Component implements HasForms, HasActions
     }
 
     /**
+     * المرفق اختياري: نسحبه من حالة النموذج ونرفعه فقط إذا اختار الطالب ملفاً،
+     * حتى لا يمسح الحفظُ العاديُّ المرفقَ الموجود.
+     */
+    protected function storeAttachment(FinalReportService $finalReports): bool
+    {
+        $file = $this->data['final_file'] ?? null;
+
+        unset($this->data['final_file']);
+
+        if (is_array($file)) {
+            $file = reset($file) ?: null;
+        }
+
+        if (blank($file)) {
+            return true;
+        }
+
+        if ($finalReports->saveAttachment($this->registration, $file)) {
+            return true;
+        }
+
+        Toaster::error(__('Failed to upload the final report file. Please try again.'));
+
+        return false;
+    }
+
+    /**
      * التسليم النهائي يقفل التقرير، والحارس هنا هو الحارس الفعلي وليس إخفاء الزر.
      */
-    protected function guardEditable(): bool
+    protected function guardEditable(FinalReportService $finalReports): bool
     {
+        // القائمة قد تكون مفتوحة في المتصفح لحظة إغلاق التقارير من الإعدادات.
+        if (! $finalReports->submissionIsOpen()) {
+            Toaster::error(__('Final report submission is currently closed.'));
+
+            return false;
+        }
+
         if (! $this->registration) {
             Toaster::error(__('You do not have a registration in the current semester.'));
 

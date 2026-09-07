@@ -24,6 +24,7 @@ use Spatie\QueryBuilder\AllowedSort;
  * @OA\Property(property="status_label", type="string", example="مسودة"),
  * @OA\Property(property="is_editable", type="boolean", example=true),
  * @OA\Property(property="submitted_at", type="string", format="date-time", nullable=true),
+ * @OA\Property(property="final_file", type="string", nullable=true, description="رابط المرفق الاختياري، و null إذا لم يرفع الطالب ملفاً", example="https://example.com/storage/ppuds/registers/report.pdf"),
  * @OA\Property(property="tasks", type="array", @OA\Items(ref="#/components/schemas/FinalReportTaskResource")),
  * @OA\Property(property="skills", type="array", @OA\Items(ref="#/components/schemas/FinalReportSkillResource")),
  * @OA\Property(property="contributions", type="array", @OA\Items(ref="#/components/schemas/FinalReportItemResource")),
@@ -45,6 +46,7 @@ class FinalReportResource extends JsonResource
             'status_label'     => $this->status?->getLabel(),
             'is_editable'      => $this->isEditable(),
             'submitted_at'     => $this->submitted_at,
+            'final_file'       => $this->attachmentUrl(),
             'tasks'            => FinalReportTaskResource::collection($this->whenLoaded('tasks')),
             'skills'           => FinalReportSkillResource::collection($this->whenLoaded('skills')),
             'contributions'    => FinalReportItemResource::collection(
@@ -57,6 +59,20 @@ class FinalReportResource extends JsonResource
 
             'student'          => UserResource::make($this->whenLoaded('student')),
         ];
+    }
+
+    /**
+     * المرفق الاختياري محفوظ في مجموعة final_file على التسجيل.
+     */
+    protected function attachmentUrl(): ?string
+    {
+        if (! $this->resource->relationLoaded('registration')) {
+            return null;
+        }
+
+        return $this->registration?->hasMedia('final_file')
+            ? $this->registration->getFirstMediaUrl('final_file')
+            : null;
     }
 
     /**

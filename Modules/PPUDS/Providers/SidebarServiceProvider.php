@@ -7,6 +7,7 @@ use Modules\Core\Enums\UserRole;
 use Modules\Core\Services\SidebarGroup;
 use Modules\Core\Services\SidebarItem;
 use Modules\Core\Services\SidebarService;
+use Modules\PPUDS\Services\FinalReportService;
 
 class SidebarServiceProvider extends ServiceProvider
 {
@@ -110,9 +111,11 @@ class SidebarServiceProvider extends ServiceProvider
                 ->add(new SidebarItem('Supervisor Report', 'solar-user-speak-rounded-bold-duotone', ['Supervisor Report View List'], 'supervisor-reports.index'))
         );
 
-        // تسليم التقرير النهائي — تظهر للطالب وحده لأن صلاحيتها ممنوحة لدوره فقط.
+        // تسليم التقرير النهائي — تظهر للطالب وحده لأن صلاحيتها ممنوحة لدوره فقط،
+        // وتختفي إذا كانت حالة التقارير في الإعدادات مغلقة.
         $sidebar->add(
-            new SidebarItem('Final Report Submission', 'solar-diploma-verified-bold-duotone', ['FinalReport View'], 'final-reports.index', 125)
+            (new SidebarItem('Final Report Submission', 'solar-diploma-verified-bold-duotone', ['FinalReport View'], 'final-reports.index', 125))
+                ->visible(fn (): bool => app(FinalReportService::class)->submissionIsOpen())
         );
 
         $sidebar->add(

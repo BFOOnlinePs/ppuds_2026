@@ -2,6 +2,7 @@
 
 namespace Modules\Core\Services;
 
+use Closure;
 use Modules\Core\Interfaces\SidebarItemsInterface;
 
 class SidebarItem implements SidebarItemsInterface
@@ -13,6 +14,7 @@ class SidebarItem implements SidebarItemsInterface
     protected array $hiddenRoles = [];
     protected ?string $badge = null;
     protected int $sort = 0;
+    protected ?Closure $visibleCallback = null;
 
     public function __construct(
         string $title,
@@ -41,6 +43,17 @@ class SidebarItem implements SidebarItemsInterface
         return $this;
     }
 
+    /**
+     * شرط إضافي يُقيَّم وقت بناء القائمة، لإخفاء عنصر تحكمه إعدادات النظام
+     * وليس صلاحيات المستخدم.
+     */
+    public function visible(Closure $callback): static
+    {
+        $this->visibleCallback = $callback;
+
+        return $this;
+    }
+
     public function isActive() {
         return request()->routeIs($this->route);
     }
@@ -51,6 +64,10 @@ class SidebarItem implements SidebarItemsInterface
     }
 
     public function canSee() {
+        if ($this->visibleCallback !== null && ! ($this->visibleCallback)()) {
+            return false;
+        }
+
         if (! empty($this->hiddenRoles) && auth()->check() && auth()->user()->hasAnyRole($this->hiddenRoles)) {
             return false;
         }

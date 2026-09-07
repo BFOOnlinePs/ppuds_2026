@@ -9193,6 +9193,24 @@
                                 },
                                 "type": "object"
                             }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "role_description": {
+                                        "type": "string"
+                                    },
+                                    "summary": {
+                                        "type": "string"
+                                    },
+                                    "final_file": {
+                                        "description": "مرفق اختياري: jpeg, png, jpg أو pdf بحد أقصى 2 ميجابايت. رفع ملف جديد يستبدل السابق. عند استخدام multipart تُرسل الجداول بصيغة الأقواس مثل tasks[0][task_name].",
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
                         }
                     }
                 },
@@ -9224,7 +9242,7 @@
                         "description": "Forbidden"
                     },
                     "422": {
-                        "description": "Validation error, or the report is already submitted"
+                        "description": "Validation error, the report is already submitted, or submission is closed in settings"
                     }
                 },
                 "security": [
@@ -9391,6 +9409,28 @@
                                 },
                                 "type": "object"
                             }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "_method": {
+                                        "type": "string",
+                                        "example": "PATCH"
+                                    },
+                                    "role_description": {
+                                        "type": "string"
+                                    },
+                                    "summary": {
+                                        "type": "string"
+                                    },
+                                    "final_file": {
+                                        "description": "مرفق اختياري: jpeg, png, jpg أو pdf بحد أقصى 2 ميجابايت. رفع ملف جديد يستبدل السابق. عند استخدام multipart تُرسل الجداول بصيغة الأقواس مثل tasks[0][task_name].",
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
                         }
                     }
                 },
@@ -9422,7 +9462,7 @@
                         "description": "Forbidden"
                     },
                     "422": {
-                        "description": "Validation error, or the report is already submitted"
+                        "description": "Validation error, the report is already submitted, or submission is closed in settings"
                     }
                 },
                 "security": [
@@ -9479,7 +9519,7 @@
                         "description": "Forbidden"
                     },
                     "422": {
-                        "description": "Already submitted, or the report is still incomplete"
+                        "description": "Already submitted, still incomplete, or submission is closed in settings"
                     }
                 },
                 "security": [
@@ -14735,6 +14775,12 @@
                     "submitted_at": {
                         "type": "string",
                         "format": "date-time",
+                        "nullable": true
+                    },
+                    "final_file": {
+                        "description": "رابط المرفق الاختياري، و null إذا لم يرفع الطالب ملفاً",
+                        "type": "string",
+                        "example": "https://example.com/storage/ppuds/registers/report.pdf",
                         "nullable": true
                     },
                     "tasks": {

@@ -15,6 +15,9 @@ class FinalReportRequest extends FormRequest
             'role_description'             => ['nullable', 'string', 'max:20000'],
             'summary'                      => ['nullable', 'string', 'max:20000'],
 
+            // مرفق اختياري يُخزَّن في مجموعة final_file الموجودة على التسجيل.
+            'final_file'                   => ['nullable', 'file', 'mimes:jpeg,png,jpg,pdf', 'max:2048'],
+
             'tasks'                        => ['nullable', 'array', 'max:100'],
             'tasks.*.task_name'            => ['required', 'string', 'max:255'],
             'tasks.*.task_details'         => ['nullable', 'string', 'max:2000'],
@@ -39,6 +42,7 @@ class FinalReportRequest extends FormRequest
         return [
             'role_description'            => __('Training Role Description'),
             'summary'                     => __('Summary'),
+            'final_file'                  => __('Attachment'),
             'tasks'                       => __('Training Tasks'),
             'tasks.*.task_name'           => __('Training Task'),
             'tasks.*.task_details'        => __('Task Details'),

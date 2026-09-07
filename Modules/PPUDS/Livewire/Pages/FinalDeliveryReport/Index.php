@@ -54,6 +54,7 @@ class Index extends Component implements HasForms, HasTable
                     'registration.finalReport.tasks',
                     'registration.finalReport.skills',
                     'registration.finalReport.items',
+                    'registration.media',
                     'student.studentProfile',
                 ])
                 ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query)))
@@ -138,6 +139,16 @@ class Index extends Component implements HasForms, HasTable
                     ->modalSubmitAction(false)
                     ->visible(fn (StudentCompany $record): bool => auth()->user()->can('Report View List')
                         && $record->registration?->finalReport !== null),
+
+                // المرفق اختياري، فلا يظهر الزر إلا إذا رفع الطالب ملفاً.
+                Action::make('view_final_file')
+                    ->label(__('View File'))
+                    ->icon('solar-paperclip-2-bold-duotone')
+                    ->color('gray')
+                    ->url(fn (StudentCompany $record): ?string => $record->registration?->getFirstMediaUrl('final_file') ?: null)
+                    ->openUrlInNewTab()
+                    ->visible(fn (StudentCompany $record): bool => auth()->user()->can('Report View List')
+                        && (bool) $record->registration?->hasMedia('final_file')),
             ])
             ->bulkActions([]);
     }
