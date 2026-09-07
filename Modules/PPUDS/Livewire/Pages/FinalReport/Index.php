@@ -335,12 +335,10 @@ class Index extends Component implements HasForms, HasActions
         }
 
         $report = $finalReports->save($this->registration, $this->data, auth()->user());
+        $this->report = $report;
 
-        if ($report->tasks->isEmpty() || blank($report->summary)) {
-            $this->report = $report;
-
-            Toaster::error(__('Please add at least one training task and write the summary before submitting.'));
-
+        // البيانات محفوظة كمسودة، والنواقص تظهر بالأحمر داخل النموذج.
+        if (! $this->validateReadyForSubmission($report)) {
             return;
         }
 
@@ -349,6 +347,31 @@ class Index extends Component implements HasForms, HasActions
         $this->form->fill($this->reportFormState());
 
         Toaster::success(__('Final report submitted successfully'));
+    }
+
+    /**
+     * الحقول المطلوبة للتسليم النهائي فقط، وليس للمسودة. تُضاف الأخطاء على
+     * مسار الحقل نفسه ليظهر باللون الأحمر في مكانه وفي ملخص الأخطاء أعلى الصفحة.
+     */
+    protected function validateReadyForSubmission(FinalReport $report): bool
+    {
+        if ($report->tasks->isEmpty()) {
+            $this->addError('data.tasks', __('Please add at least one training task.'));
+        }
+
+        if ($this->isRichTextEmpty($report->summary)) {
+            $this->addError('data.summary', __('Please write the training summary.'));
+        }
+
+        return $this->getErrorBag()->isEmpty();
+    }
+
+    /**
+     * محرر النصوص قد يُرجع وسوماً فارغة مثل <p></p>، فلا تكفي blank() وحدها.
+     */
+    protected function isRichTextEmpty(?string $value): bool
+    {
+        return blank(trim(str_replace('&nbsp;', ' ', strip_tags((string) $value))));
     }
 
     /**

@@ -1,4 +1,18 @@
 <div>
+    @if ($errors->any())
+        <div class="mb-4 rounded-lg bg-danger-50 p-4 text-danger-700 ring-1 ring-danger-600/20 dark:text-danger-400">
+            <div class="mb-2 flex items-center gap-2 text-sm font-medium">
+                <x-icon name="solar-danger-triangle-bold" class="w-5 h-5" />
+                {{ __('Please fix the following errors') }}
+            </div>
+            <ul class="list-disc list-inside text-sm space-y-1">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     @unless ($this->hasRegistration())
         <div class="mb-4 rounded-md bg-warning p-4 text-sm text-white">
             {{ __('You do not have a registration in the current semester.') }}

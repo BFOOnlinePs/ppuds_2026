@@ -478,10 +478,12 @@ class FinalReportController extends Controller
 
     /**
      * الشاشة والـ API مقصورتان على الطالب، والصلاحيات ممنوحة لدور الطالب وحده.
+     * صلاحيات المشروع مسجَّلة على حارس web، بينما تعمل طلبات الـ API على حارس api،
+     * فنتحقق من حارس web صراحةً وإلا رُفض الطالب صاحب الصلاحية.
      */
     private function denyUnlessStudentCan(string $permission): ?JsonResponse
     {
-        if (auth()->user()?->can($permission)) {
+        if (auth()->user()?->checkPermissionTo($permission, 'web')) {
             return null;
         }
 

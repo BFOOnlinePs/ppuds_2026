@@ -1195,5 +1195,7 @@
     "Optional. Uploading a new file replaces the current one.": "اختياري. رفع ملف جديد يستبدل الملف الحالي.",
     "Failed to upload the final report file. Please try again.": "فشل رفع ملف التقرير النهائي. الرجاء المحاولة مرة أخرى.",
     "Training Tasks And Skills": "المهام والمهارات",
-    "Last Updated": "آخر تحديث"
+    "Last Updated": "آخر تحديث",
+    "Please add at least one training task.": "الرجاء إضافة مهمة تدريبية واحدة على الأقل.",
+    "Please write the training summary.": "الرجاء كتابة ملخص التدريب."
 }
