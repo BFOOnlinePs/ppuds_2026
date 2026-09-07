@@ -249,6 +249,8 @@ class Index extends Component implements HasForms, HasTable
                     'submitted' => __('Submitted'),
                     'not_submitted' => __('Not Submitted'),
                 ])
+                // التقرير لمتابعة من سلّم تقريره، فالافتراضي هو حالة تم التسليم.
+                ->default('submitted')
                 ->query(function (Builder $query, array $data): Builder {
                     return match ($data['value'] ?? null) {
                         'submitted' => $query->whereHas(
