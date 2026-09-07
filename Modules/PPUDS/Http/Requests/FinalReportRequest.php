@@ -12,27 +12,27 @@ class FinalReportRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'role_description'             => ['nullable', 'string', 'max:20000'],
-            'summary'                      => ['nullable', 'string', 'max:20000'],
+            'role_description'             => ['required', 'string', 'max:20000'],
+            'summary'                      => ['required', 'string', 'max:20000'],
 
             // مرفق اختياري يُخزَّن في مجموعة final_file الموجودة على التسجيل.
             'final_file'                   => ['nullable', 'file', 'mimes:jpeg,png,jpg,pdf', 'max:2048'],
 
-            'tasks'                        => ['nullable', 'array', 'max:100'],
+            'tasks'                        => ['required', 'array', 'max:100'],
             'tasks.*.task_name'            => ['required', 'string', 'max:255'],
-            'tasks.*.task_details'         => ['nullable', 'string', 'max:2000'],
-            'tasks.*.work_duration'        => ['nullable', 'string', 'max:255'],
-            'tasks.*.notes'                => ['nullable', 'string', 'max:2000'],
+            'tasks.*.task_details'         => ['required', 'string', 'max:2000'],
+            'tasks.*.work_duration'        => ['required', 'string', 'max:255'],
+            'tasks.*.notes'                => ['required', 'string', 'max:2000'],
 
-            'skills'                       => ['nullable', 'array', 'max:100'],
+            'skills'                       => ['required', 'array', 'max:100'],
             'skills.*.skill'               => ['required', 'string', 'max:255'],
-            'skills.*.mastery_percentage'  => ['nullable', 'integer', 'min:0', 'max:100'],
-            'skills.*.notes'               => ['nullable', 'string', 'max:2000'],
+            'skills.*.mastery_percentage'  => ['required', 'integer', 'min:0', 'max:100'],
+            'skills.*.notes'               => ['required', 'string', 'max:2000'],
 
-            'contributions'                => ['nullable', 'array', 'max:100'],
+            'contributions'                => ['required', 'array', 'max:100'],
             'contributions.*.content'      => ['required', 'string', 'max:2000'],
 
-            'difficulties'                 => ['nullable', 'array', 'max:100'],
+            'difficulties'                 => ['required', 'array', 'max:100'],
             'difficulties.*.content'       => ['required', 'string', 'max:2000'],
         ];
     }

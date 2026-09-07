@@ -151,6 +151,7 @@ class FinalReportController extends Controller
      * mediaType="application/json",
      *
      * @OA\Schema(
+     * required={"role_description","summary","tasks","skills","contributions","difficulties"},
      * @OA\Property(property="role_description", type="string", description="طبيعة دور الطالب والقسم الذي عمل فيه (نص منسّق)", example="عملت في قسم تطوير البرمجيات"),
      * @OA\Property(property="summary", type="string", description="ملخص التدريب الميداني (نص منسّق)", example="استفدت من التدريب في"),
      * @OA\Property(
@@ -159,7 +160,7 @@ class FinalReportController extends Controller
      * description="جدول المهام التدريبية",
      * @OA\Items(
      * type="object",
-     * required={"task_name"},
+     * required={"task_name","task_details","work_duration","notes"},
      * @OA\Property(property="task_name", type="string", example="تطوير واجهات المستخدم"),
      * @OA\Property(property="task_details", type="string", example="بناء صفحات لوحة التحكم"),
      * @OA\Property(property="work_duration", type="string", example="10 أيام - 60 ساعة"),
@@ -172,7 +173,7 @@ class FinalReportController extends Controller
      * description="جدول المهارات المكتسبة من التدريب",
      * @OA\Items(
      * type="object",
-     * required={"skill"},
+     * required={"skill","mastery_percentage","notes"},
      * @OA\Property(property="skill", type="string", example="العمل ضمن فريق"),
      * @OA\Property(property="mastery_percentage", type="integer", minimum=0, maximum=100, example=80),
      * @OA\Property(property="notes", type="string", example="تحسّن ملحوظ في الشهر الأخير")
@@ -333,6 +334,7 @@ class FinalReportController extends Controller
      * mediaType="application/json",
      *
      * @OA\Schema(
+     * required={"role_description","summary","tasks","skills","contributions","difficulties"},
      * @OA\Property(property="role_description", type="string", example="عملت في قسم تطوير البرمجيات"),
      * @OA\Property(property="summary", type="string", example="استفدت من التدريب في"),
      * @OA\Property(property="tasks", type="array", @OA\Items(ref="#/components/schemas/FinalReportTaskResource")),
