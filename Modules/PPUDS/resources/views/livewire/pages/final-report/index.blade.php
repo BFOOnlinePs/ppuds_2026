@@ -27,19 +27,27 @@
 
     {{ $this->form }}
 
-    @if ($this->hasRegistration() && ! $this->isLocked())
+    @if ($this->hasRegistration())
         <div class="flex flex-wrap items-center gap-3">
-            <x-core::button.primary wire:click="save" wire:loading.attr="disabled">
-                {{ __('Save Draft') }}
-            </x-core::button.primary>
+            @unless ($this->isLocked())
+                <x-core::button.primary wire:click="save" wire:loading.attr="disabled">
+                    {{ __('Save Draft') }}
+                </x-core::button.primary>
 
-            <x-core::button.primary
-                wire:click="submit"
-                wire:loading.attr="disabled"
-                wire:confirm="{{ __('Once submitted, the final report can no longer be edited. Do you want to continue?') }}"
-            >
-                {{ __('Submit Final Report') }}
-            </x-core::button.primary>
+                <x-core::button.primary
+                    wire:click="submit"
+                    wire:loading.attr="disabled"
+                    wire:confirm="{{ __('Once submitted, the final report can no longer be edited. Do you want to continue?') }}"
+                >
+                    {{ __('Submit Final Report') }}
+                </x-core::button.primary>
+            @endunless
+
+            @if ($this->report)
+                <x-core::button.primary wire:click="printPdf" wire:loading.attr="disabled">
+                    {{ __('Print PDF') }}
+                </x-core::button.primary>
+            @endif
         </div>
     @endif
 

@@ -19,6 +19,7 @@ use Filament\Forms\Form;
 use Illuminate\Support\HtmlString;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
+use Modules\Core\Services\PdfService;
 use Modules\PPUDS\Entities\FinalReport;
 use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Enums\FinalReportItemType;
@@ -347,6 +348,33 @@ class Index extends Component implements HasForms, HasActions
         $this->form->fill($this->reportFormState());
 
         Toaster::success(__('Final report submitted successfully'));
+    }
+
+    /**
+     * الطباعة عرض فقط ولا تغيّر الحالة، فهي متاحة للمسودة وللتقرير المسلَّم معاً.
+     */
+    public function printPdf(FinalReportService $finalReports)
+    {
+        $this->authorize('FinalReport View');
+
+        $report = $this->registration
+            ? $finalReports->reportForRegistration($this->registration)
+            : null;
+
+        if (! $report) {
+            Toaster::error(__('No records found.'));
+
+            return null;
+        }
+
+        return app(PdfService::class)->streamPdf(
+            'ppuds::pdf.final-report.report',
+            [
+                'report' => $report,
+                'registration' => $this->registration,
+            ],
+            'final-report-'.now()->format('Y-m-d-His').'.pdf',
+        );
     }
 
     /**
