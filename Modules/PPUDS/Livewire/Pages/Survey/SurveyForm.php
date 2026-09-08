@@ -21,6 +21,7 @@ use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Entities\Survey;
 use Modules\PPUDS\Entities\SurveyAnswer;
 use Modules\PPUDS\Enums\SurveyQuestionType;
+use Modules\PPUDS\Services\CompanyEvaluationGradeService;
 use Modules\PPUDS\Support\HandlesCompanySupervisorSurveyEvaluations;
 
 class SurveyForm extends Component implements HasActions, HasForms
@@ -183,6 +184,17 @@ class SurveyForm extends Component implements HasActions, HasForms
         }
 
         Toaster::success(__('Survey submitted successfully'));
+
+        // علامة الشركة تُشتق من إجابات التقييم، فتُحدَّث فور تسليمها وتُعرض على
+        // المشرف ليرى أثر تقييمه مباشرة.
+        if ($studentCompany && $this->isCompanySupervisorEvaluation()) {
+            $grades = app(CompanyEvaluationGradeService::class);
+            $grade = $grades->refreshFor($studentCompany);
+
+            if ($grade !== null) {
+                Toaster::success(__('Company Grade').': '.$grade.' / '.$grades->maxGrade());
+            }
+        }
 
         $this->data = [];
         $this->form->fill();

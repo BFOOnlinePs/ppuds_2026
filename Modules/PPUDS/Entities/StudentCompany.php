@@ -49,10 +49,12 @@ class StudentCompany extends Model implements HasMedia
         'evaluation_supervisor_id',
         'evaluation_score',
         'supervisor_score',
+        'company_survey_score',
     ];
 
     protected $casts = [
         'status' => TrainingStatus::class,
+        'company_survey_score' => 'float',
     ];
 
     public function getActivitylogOptions(): LogOptions

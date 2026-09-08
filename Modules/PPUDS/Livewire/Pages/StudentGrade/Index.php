@@ -107,8 +107,9 @@ class Index extends Component implements HasForms, HasTable
                 TextColumn::make('registration.company_score')
                     ->label(__('Company Grade'))
                     ->badge()
-                    ->color(fn (?float $state): string => $state === null ? 'gray' : 'success')
-                    ->formatStateUsing(fn (?float $state): string => $this->formatGrade($state, $this->companyMaxGrade())),
+                    ->getStateUsing(fn (StudentCompany $record): int|float|null => $this->companyGrade($record))
+                    ->color(fn (int|float|null $state): string => $state === null ? 'gray' : 'success')
+                    ->formatStateUsing(fn (int|float|null $state): string => $this->formatGrade($state, $this->companyMaxGrade())),
 
                 TextColumn::make('total_grade')
                     ->label(__('Total Grade'))
@@ -210,12 +211,22 @@ class Index extends Component implements HasForms, HasTable
      * مجموع العلامات الثلاث. يبقى فارغاً ما لم تُرصد علامة واحدة على الأقل،
      * حتى لا يظهر صفر لطالب لم يُقيَّم بعد.
      */
+    /**
+     * علامة الشركة: المحسوبة من استبيان مشرف الشركة هي المصدر متى وُجدت، وإلا
+     * فالقيمة المستوردة من مزامنة نظام الجامعة حتى لا تختفي علامات من سبقوا
+     * تفعيل الاستبيان.
+     */
+    protected function companyGrade(StudentCompany $record): int|float|null
+    {
+        return $record->company_survey_score ?? $record->registration?->company_score;
+    }
+
     protected function totalGrade(StudentCompany $record): int|float|null
     {
         $scores = [
             $record->evaluation_score,
             $record->supervisor_score,
-            $record->registration?->company_score,
+            $this->companyGrade($record),
         ];
 
         $recorded = array_filter($scores, fn ($score): bool => $score !== null);

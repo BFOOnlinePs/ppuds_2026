@@ -25,6 +25,7 @@
     use Modules\PPUDS\Http\Controllers\Api\V1\StudentAttendanceReportController;
     use Modules\PPUDS\Http\Controllers\Api\V1\StudentCompanyAssistantController;
     use Modules\PPUDS\Http\Controllers\Api\V1\StudentCompanyController;
+    use Modules\PPUDS\Http\Controllers\Api\V1\StudentGradeController;
     use Modules\PPUDS\Http\Controllers\Api\V1\StudentStatisticsController;
     use Modules\PPUDS\Http\Controllers\Api\V1\SupervisorStatisticsController;
     use Modules\PPUDS\Http\Controllers\Api\V1\SurveyAnswerController;
@@ -139,6 +140,19 @@
                         Route::post('/companies/search', 'searchCompanies')->name('companies.search');
                         Route::post('/link', 'linkCompany')->name('link');
                         Route::post('/link-all', 'linkAllCompanies')->name('link-all');
+                    });
+
+                // علامات الطلاب — العرض للجميع حسب الدور، والرصد محكوم بالصلاحيات.
+                // المسار الثابت evaluation-students يسبق {studentCompany} حتى لا يبتلعه.
+                Route::controller(StudentGradeController::class)
+                    ->prefix('student-grades')
+                    ->as('student-grades.')
+                    ->group(function () {
+                        Route::get('/', 'index')->name('index');
+                        Route::get('/evaluation-students', 'evaluationStudents')->name('evaluation-students');
+                        Route::get('/{studentCompany}', 'show')->name('show');
+                        Route::patch('/{studentCompany}/evaluation', 'updateEvaluationGrade')->name('evaluation.update');
+                        Route::patch('/{studentCompany}/supervisor', 'updateSupervisorGrade')->name('supervisor.update');
                     });
 
                 Route::controller(StudentAttendanceController::class)

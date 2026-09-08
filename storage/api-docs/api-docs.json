@@ -12695,6 +12695,503 @@
                 ]
             }
         },
+        "/api/v1/ppuds/student-grades": {
+            "get": {
+                "tags": [
+                    "Student Grades"
+                ],
+                "summary": "List student grades",
+                "description": "ترجع علامات الطلاب الثلاث (مشرف التقييم، مشرف الجامعة، الشركة) والمجموع. مشرف التقييم يرى الطلاب المسندين إليه وحدهم، ومشرف الجامعة يرى طلابه، والأدمن ومسؤول العلاقات المؤسسية يرون الجميع.",
+                "operationId": "f19331115004ee2396525872c1203957",
+                "parameters": [
+                    {
+                        "name": "Accept-Language",
+                        "in": "header",
+                        "description": "Language header (ar or en)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "ar",
+                            "example": "ar"
+                        }
+                    },
+                    {
+                        "name": "filter[search]",
+                        "in": "query",
+                        "description": "بحث بالاسم أو البريد أو الرقم الجامعي",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filter[student_number]",
+                        "in": "query",
+                        "description": "الرقم الجامعي للطالب",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filter[evaluation_supervisor_id]",
+                        "in": "query",
+                        "description": "تصفية بمشرف التقييم (للأدمن؛ مشرف التقييم مقيَّد بطلابه أصلاً)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "filter[university_supervisor_id]",
+                        "in": "query",
+                        "description": "تصفية بمشرف الجامعة",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "filter[evaluation_graded]",
+                        "in": "query",
+                        "description": "true = رُصدت علامة مشرف التقييم، false = لم تُرصد بعد",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "filter[supervisor_graded]",
+                        "in": "query",
+                        "description": "true = رُصدت علامة مشرف الجامعة، false = لم تُرصد بعد",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean"
+                        }
+                    },
+                    {
+                        "name": "filter[year]",
+                        "in": "query",
+                        "description": "السنة الدراسية",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 2026
+                        }
+                    },
+                    {
+                        "name": "filter[semester]",
+                        "in": "query",
+                        "description": "الفصل الدراسي",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "الترتيب: id, created_at, evaluation_score, supervisor_score (سابقة - للتنازلي)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "-id"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "عدد السجلات في الصفحة",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10,
+                            "example": 15
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Student grades retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Student grades retrieved successfully"
+                                        },
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/StudentGrade"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/student-grades/evaluation-students": {
+            "get": {
+                "tags": [
+                    "Student Grades"
+                ],
+                "summary": "List the students assigned to the authenticated evaluation supervisor",
+                "description": "ترجع الطلاب المسندين لمشرف التقييم الحالي مع علامته وحالة الرصد، إضافةً إلى ملخص (المجموع، المرصود، المتبقي). الأدمن يستطيع تمرير evaluation_supervisor_id لعرض طلاب مشرف معيّن.",
+                "operationId": "b1f27dc64eeda3d62d332509a6d5f6dc",
+                "parameters": [
+                    {
+                        "name": "Accept-Language",
+                        "in": "header",
+                        "description": "Language header (ar or en)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "ar",
+                            "example": "ar"
+                        }
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "description": "تصفية حسب حالة الرصد: pending (لم تُرصد)، graded (مرصودة)، all",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "all",
+                            "enum": [
+                                "pending",
+                                "graded",
+                                "all"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "evaluation_supervisor_id",
+                        "in": "query",
+                        "description": "للأدمن فقط: عرض طلاب مشرف تقييم محدد",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 5
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Evaluation supervisor students retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Evaluation supervisor students retrieved successfully"
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "evaluation_supervisor_id": {
+                                                    "type": "integer",
+                                                    "example": 5
+                                                },
+                                                "status": {
+                                                    "type": "string",
+                                                    "example": "all"
+                                                },
+                                                "total_students": {
+                                                    "type": "integer",
+                                                    "example": 12
+                                                },
+                                                "graded_students": {
+                                                    "type": "integer",
+                                                    "example": 7
+                                                },
+                                                "pending_students": {
+                                                    "type": "integer",
+                                                    "example": 5
+                                                },
+                                                "max_evaluation_score": {
+                                                    "type": "integer",
+                                                    "example": 25
+                                                },
+                                                "students": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/StudentGrade"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "You are not authorized to perform this action"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/student-grades/{studentCompany}": {
+            "get": {
+                "tags": [
+                    "Student Grades"
+                ],
+                "summary": "Get a single student's grades",
+                "description": "ترجع علامات طالب واحد (مشرف التقييم، مشرف الجامعة، الشركة) والمجموع.",
+                "operationId": "5dceb3e996285902f3e25638518518d4",
+                "parameters": [
+                    {
+                        "name": "studentCompany",
+                        "in": "path",
+                        "description": "Student Company ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "Accept-Language",
+                        "in": "header",
+                        "description": "Language header (ar or en)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "default": "ar",
+                            "example": "ar"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Student grade retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Student grade retrieved successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/StudentGrade"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Student grade not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/student-grades/{studentCompany}/evaluation": {
+            "patch": {
+                "tags": [
+                    "Student Grades"
+                ],
+                "summary": "Set the evaluation supervisor grade",
+                "description": "يضع علامة مشرف التقييم للطالب. الصلاحية المطلوبة EvaluationSupervisorStudent Grade، ولا يُسمح إلا لمشرف التقييم المسند لهذا الطالب أو للأدمن. الحد الأقصى مأخوذ من الإعدادات.",
+                "operationId": "d9448beab476440bba53d84835362656",
+                "parameters": [
+                    {
+                        "name": "studentCompany",
+                        "in": "path",
+                        "description": "Student Company ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "evaluation_score"
+                                ],
+                                "properties": {
+                                    "evaluation_score": {
+                                        "description": "العلامة، بحد أقصى القيمة المحددة في الإعدادات (افتراضياً 25)",
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "example": 20
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Grade saved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Grade saved successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/StudentGrade"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "You are not authorized to perform this action"
+                    },
+                    "404": {
+                        "description": "Student grade not found"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/student-grades/{studentCompany}/supervisor": {
+            "patch": {
+                "tags": [
+                    "Student Grades"
+                ],
+                "summary": "Set the university supervisor grade",
+                "description": "يضع علامة مشرف الجامعة للطالب. الصلاحية المطلوبة PracticalSupervisorStudent Grade، ولا يُسمح إلا لمشرف الجامعة المسؤول عن تسجيل الطالب أو للأدمن. الحد الأقصى مأخوذ من الإعدادات.",
+                "operationId": "3741b72f38238d8b4dab7e6c6c492559",
+                "parameters": [
+                    {
+                        "name": "studentCompany",
+                        "in": "path",
+                        "description": "Student Company ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "supervisor_score"
+                                ],
+                                "properties": {
+                                    "supervisor_score": {
+                                        "description": "العلامة، بحد أقصى القيمة المحددة في الإعدادات (افتراضياً 35)",
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "example": 30
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Grade saved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "status": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Grade saved successfully"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/StudentGrade"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "You are not authorized to perform this action"
+                    },
+                    "404": {
+                        "description": "Student grade not found"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
         "/api/v1/ppuds/students/statistics": {
             "get": {
                 "tags": [
@@ -15388,6 +15885,146 @@
                     "name": "StudentAttendanceReportResource"
                 }
             },
+            "StudentGrade": {
+                "title": "Student Grade",
+                "description": "علامات الطالب الثلاث ومجموعها",
+                "properties": {
+                    "student_company_id": {
+                        "description": "علامات الطالب الثلاث ومجموعها. علامة مشرف التقييم وعلامة مشرف الجامعة\nمخزَّنتان على students_companies، أما علامة الشركة فتُقرأ من التسجيل\n(registrations.company_score) وهي للعرض فقط.",
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "registration_id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "student_id": {
+                        "type": "integer",
+                        "example": 12
+                    },
+                    "student_name": {
+                        "type": "string",
+                        "example": "أحمد محمد"
+                    },
+                    "student_number": {
+                        "type": "string",
+                        "example": "202012345",
+                        "nullable": true
+                    },
+                    "major": {
+                        "type": "string",
+                        "example": "هندسة الحاسوب",
+                        "nullable": true
+                    },
+                    "company_id": {
+                        "type": "integer",
+                        "example": 3,
+                        "nullable": true
+                    },
+                    "company_name": {
+                        "type": "string",
+                        "example": "شركة التقنية",
+                        "nullable": true
+                    },
+                    "branch_id": {
+                        "type": "integer",
+                        "example": 2,
+                        "nullable": true
+                    },
+                    "branch_name": {
+                        "type": "string",
+                        "example": "الفرع الرئيسي",
+                        "nullable": true
+                    },
+                    "department_id": {
+                        "type": "integer",
+                        "example": 4,
+                        "nullable": true
+                    },
+                    "department_name": {
+                        "type": "string",
+                        "example": "التطوير",
+                        "nullable": true
+                    },
+                    "evaluation_supervisor_id": {
+                        "type": "integer",
+                        "example": 5,
+                        "nullable": true
+                    },
+                    "evaluation_supervisor_name": {
+                        "type": "string",
+                        "example": "مشرف التقييم",
+                        "nullable": true
+                    },
+                    "university_supervisor_id": {
+                        "type": "integer",
+                        "example": 6,
+                        "nullable": true
+                    },
+                    "university_supervisor_name": {
+                        "type": "string",
+                        "example": "مشرف الجامعة",
+                        "nullable": true
+                    },
+                    "evaluation_score": {
+                        "description": "علامة مشرف التقييم، null إذا لم تُرصد",
+                        "type": "integer",
+                        "example": 20,
+                        "nullable": true
+                    },
+                    "supervisor_score": {
+                        "description": "علامة مشرف الجامعة، null إذا لم تُرصد",
+                        "type": "integer",
+                        "example": 30,
+                        "nullable": true
+                    },
+                    "company_score": {
+                        "description": "علامة الشركة (للعرض فقط، مزامَنة من نظام الجامعة)",
+                        "type": "number",
+                        "format": "float",
+                        "example": 36,
+                        "nullable": true
+                    },
+                    "total_score": {
+                        "description": "مجموع العلامات المرصودة، null إذا لم تُرصد أي علامة",
+                        "type": "number",
+                        "format": "float",
+                        "example": 86,
+                        "nullable": true
+                    },
+                    "max_evaluation_score": {
+                        "type": "integer",
+                        "example": 25
+                    },
+                    "max_supervisor_score": {
+                        "type": "integer",
+                        "example": 35
+                    },
+                    "max_company_score": {
+                        "type": "integer",
+                        "example": 40
+                    },
+                    "max_total_score": {
+                        "type": "integer",
+                        "example": 100
+                    },
+                    "is_fully_graded": {
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "semester": {
+                        "type": "integer",
+                        "example": 1,
+                        "nullable": true
+                    },
+                    "year": {
+                        "type": "integer",
+                        "example": 2026,
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
             "WorkExperienceResource": {
                 "title": "Work Experience Resource",
                 "description": "Alumni work experience details",
@@ -15502,6 +16139,10 @@
         {
             "name": "Student Reports",
             "description": "API Endpoints for managing student daily reports"
+        },
+        {
+            "name": "Student Grades",
+            "description": "علامات الطلاب — عرض العلامات الثلاث ومجموعها، ووضع علامة مشرف التقييم وعلامة مشرف الجامعة"
         },
         {
             "name": "Student Statistics",

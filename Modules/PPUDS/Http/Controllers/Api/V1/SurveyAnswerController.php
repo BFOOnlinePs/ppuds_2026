@@ -9,6 +9,7 @@ use Modules\PPUDS\Entities\Survey;
 use Modules\PPUDS\Entities\SurveyAnswer;
 use Modules\PPUDS\Enums\SurveyQuestionType;
 use Modules\PPUDS\Http\Requests\SurveyAnswerRequest;
+use Modules\PPUDS\Services\CompanyEvaluationGradeService;
 use Modules\PPUDS\Support\HandlesCompanySupervisorSurveyEvaluations;
 use Modules\PPUDS\Transformers\V1\SurveyAnswerResource;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -206,6 +207,11 @@ class SurveyAnswerController extends Controller
                 }
             }
         });
+
+        // علامة الشركة تُشتق من إجابات التقييم، فتُحدَّث فور تسليمها.
+        if ($studentCompany && $this->shouldEvaluateStudentsForSurvey($survey, auth()->user())) {
+            app(CompanyEvaluationGradeService::class)->refreshFor($studentCompany);
+        }
 
         return $this->successResponse(
             null,
