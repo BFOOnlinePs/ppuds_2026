@@ -1,4 +1,4 @@
-    <?php
+<?php
 
     use Illuminate\Support\Facades\Route;
     use Modules\PPUDS\Http\Controllers\Api\V1\AbsenceReportController;

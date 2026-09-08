@@ -22,8 +22,13 @@ use Masmerise\Toaster\Toaster;
 use Modules\Core\Services\PdfService;
 use Modules\PPUDS\Entities\FinalReport;
 use Modules\PPUDS\Entities\Registration;
+use Modules\PPUDS\Entities\StudentAttendance;
+use Modules\PPUDS\Entities\StudentCompany;
+use Modules\PPUDS\Enums\AttendanceStatus;
 use Modules\PPUDS\Enums\FinalReportItemType;
+use Modules\PPUDS\Services\AbsenceReportService;
 use Modules\PPUDS\Services\FinalReportService;
+use Modules\PPUDS\Settings\GeneralSettings;
 
 class Index extends Component implements HasForms, HasActions
 {
@@ -369,12 +374,66 @@ class Index extends Component implements HasForms, HasActions
 
         return app(PdfService::class)->streamPdf(
             'ppuds::pdf.final-report.report',
-            [
-                'report' => $report,
-                'registration' => $this->registration,
-            ],
+            $this->reportPdfData($report),
             'final-report-'.now()->format('Y-m-d-His').'.pdf',
         );
+    }
+
+    /**
+     * بيانات النموذج الرسمي. ما يعرفه النظام يُملأ، وما لا يخزّنه يبقى خانة
+     * فارغة في الورقة ليُكتب بخط اليد كما في النموذج المعتمد.
+     *
+     * @return array<string, mixed>
+     */
+    protected function reportPdfData(FinalReport $report): array
+    {
+        $studentCompany = $this->registration?->studentCompany;
+        $company = $studentCompany?->company;
+        $settings = app(GeneralSettings::class);
+
+        return [
+            'report' => $report,
+            'registration' => $this->registration,
+            'student' => $this->registration?->student,
+            'company' => $company,
+            'branch' => $studentCompany?->branch,
+            // بلا fallback، وإلا ظهر الاسم العربي في خانة الاسم الإنجليزي.
+            'companyNameAr' => $company?->translate('ar')?->name,
+            'companyNameEn' => $company?->translate('en')?->name,
+            'contributions' => $report->items->where('type', FinalReportItemType::CONTRIBUTION)->values(),
+            'difficulties' => $report->items->where('type', FinalReportItemType::DIFFICULTY)->values(),
+            'stats' => $this->trainingStats($studentCompany),
+            'trainingPeriod' => $settings->start_semester->format('j/n/Y').' – '.$settings->end_semester->format('j/n/Y'),
+            'academicYear' => $settings->year.'/'.($settings->year + 1),
+        ];
+    }
+
+    /**
+     * إحصائية التدريب كما تحتسبها شاشة الغياب، والساعات من بصمات الحضور نفسها.
+     *
+     * @return array<string, int|float|string>
+     */
+    protected function trainingStats(?StudentCompany $studentCompany): array
+    {
+        if (! $studentCompany) {
+            return ['days' => '', 'hours' => '', 'leaves' => ''];
+        }
+
+        $summary = app(AbsenceReportService::class)->summary($studentCompany);
+
+        $minutes = StudentAttendance::query()
+            ->where('student_company_id', $studentCompany->id)
+            ->whereNotNull('check_in')
+            ->whereNotNull('check_out')
+            ->where('status', '!=', AttendanceStatus::DISCREPANCY->value)
+            ->get(['check_in', 'check_out'])
+            ->sum(fn (StudentAttendance $attendance): int => $attendance->check_in->diffInMinutes($attendance->check_out));
+
+        return [
+            'days' => $summary['attendance_days'] ?? 0,
+            'hours' => round($minutes / 60, 2),
+            'leaves' => $summary['excused_absence_days'] ?? 0,
+        ];
     }
 
     /**

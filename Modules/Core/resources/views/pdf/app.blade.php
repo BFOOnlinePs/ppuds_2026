@@ -1,6 +1,11 @@
 @php
     $settings = \Modules\Core\Entities\Settings::first();
     $generalSettings = app(\Modules\Core\Settings\GeneralSettings::class);
+
+    // mPDF يجلب الروابط عبر الشبكة مع كل طباعة؛ قرص الوسائط محلي فنمرّر
+    // مسار الملف مباشرة، ونعود إلى الرابط فقط إذا تعذّر إيجاده.
+    $logoPath = $settings?->getFirstMedia('logo')?->getPath();
+    $logoSrc = ($logoPath && is_file($logoPath)) ? $logoPath : $settings?->getLogoUrl();
 @endphp
     <!doctype html>
 <html lang="ar">
@@ -91,7 +96,7 @@
 <htmlpageheader name="page-header">
     <div class="pdf-header">
         <div class="logo">
-            <img style="width:60px; height:60px;" src="{{ $settings->getLogoUrl() }}" alt="logo">
+            <img style="width:60px; height:60px;" src="{{ $logoSrc }}" alt="logo">
         </div>
         <div class="company">
             <p class="name">{{ $generalSettings->site_name }}</p>

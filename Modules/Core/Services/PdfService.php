@@ -139,7 +139,9 @@ class PdfService
      */
     public function streamPdf(string $view, array $data, string $filename = 'file.pdf', array $config = [])
     {
-        return PDF::loadView($view, $data, [], $config)->stream($filename);
+        // إخراج mPDF المباشر يطبع الملف ويضبط الترويسات بنفسه، فتختلط بايتات
+        // الملف باستجابة Livewire؛ والاستجابة المتدفقة هي ما يسلّمه Livewire كملف.
+        return $this->generatePdf($view, $data, $filename, $config);
     }
 
     public function generateDirectPdf(string $view, array $data, string $filename, array $customPaperSize, string $orientation = 'P')
