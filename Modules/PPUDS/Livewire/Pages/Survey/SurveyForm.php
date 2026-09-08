@@ -155,10 +155,20 @@ class SurveyForm extends Component implements HasActions, HasForms
 
                 return;
             }
-        } elseif ($this->survey->hasBeenSubmittedBy($user->id)) {
-            Toaster::error(__('You have already submitted this survey.'));
+        } else {
+            // إخفاء الزر من القائمة ليس حماية، فنمنع التسليم من الرابط المباشر
+            // أيضاً حتى لا يُسلّم أحد استبياناً موجَّهاً لفئة غير فئته.
+            if (filled($this->survey->serve_group) && ! $user->hasRole($this->survey->serve_group)) {
+                Toaster::error(__('This survey is not addressed to your group'));
 
-            return;
+                return;
+            }
+
+            if ($this->survey->hasBeenSubmittedBy($user->id)) {
+                Toaster::error(__('You have already submitted this survey.'));
+
+                return;
+            }
         }
 
         $answers = [];

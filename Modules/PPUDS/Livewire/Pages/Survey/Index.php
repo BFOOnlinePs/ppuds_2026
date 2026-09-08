@@ -271,6 +271,11 @@ class Index extends Component implements HasForms, HasTable
                         return $this->pendingStudentCompaniesForStudentSurveyQuery($record, $user->id)->exists();
                     }
 
+                    // الاستبيان موجَّه لفئة بعينها، فلا يُعرض زر التسليم لغيرها.
+                    if (filled($record->serve_group) && ! $user->hasRole($record->serve_group)) {
+                        return false;
+                    }
+
                     $hasSubmitted = SurveyAnswer::where('survey_id', $record->id)
                         ->where('submitted_by', $user->id)
                         ->exists();
