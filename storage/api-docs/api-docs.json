@@ -7502,6 +7502,107 @@
                                             "example": "General settings retrieved successfully"
                                         },
                                         "data": {
+                                            "properties": {
+                                                "semester_type": {
+                                                    "type": "integer",
+                                                    "example": 2
+                                                },
+                                                "year": {
+                                                    "type": "integer",
+                                                    "example": 2025
+                                                },
+                                                "report_status": {
+                                                    "description": "حالة تسليم التقارير: مفتوحة أم مغلقة",
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "login_method": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "giz_evaluation_status": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "start_semester": {
+                                                    "type": "string",
+                                                    "format": "date",
+                                                    "example": "2026-06-24"
+                                                },
+                                                "end_semester": {
+                                                    "type": "string",
+                                                    "format": "date",
+                                                    "example": "2026-09-24"
+                                                },
+                                                "evaluation": {
+                                                    "description": "توزيع العلامات ومقياس التقييم. اقرأ السقوف من هنا ولا تُثبّتها في كود الواجهة، فهي قابلة للتغيير من الإعدادات.",
+                                                    "properties": {
+                                                        "evaluation_supervisor_max_grade": {
+                                                            "description": "سقف علامة مشرف التقييم، تُرصد يدوياً",
+                                                            "type": "integer",
+                                                            "example": 25
+                                                        },
+                                                        "university_supervisor_max_grade": {
+                                                            "description": "سقف علامة المشرف الجامعي، تُرصد يدوياً",
+                                                            "type": "integer",
+                                                            "example": 35
+                                                        },
+                                                        "company_max_grade": {
+                                                            "description": "سقف علامة الشركة، تُحسب آلياً من استبيان مشرف الشركة",
+                                                            "type": "integer",
+                                                            "example": 40
+                                                        },
+                                                        "total_max_grade": {
+                                                            "description": "مجموع الثلاثة",
+                                                            "type": "integer",
+                                                            "example": 100
+                                                        },
+                                                        "rating_scale": {
+                                                            "description": "مقياس أسئلة التقييم في الاستبيان. علامة الشركة مشتقة منه.",
+                                                            "properties": {
+                                                                "min": {
+                                                                    "type": "integer",
+                                                                    "example": 1
+                                                                },
+                                                                "max": {
+                                                                    "type": "integer",
+                                                                    "example": 5
+                                                                },
+                                                                "options": {
+                                                                    "type": "array",
+                                                                    "items": {
+                                                                        "properties": {
+                                                                            "value": {
+                                                                                "type": "integer",
+                                                                                "example": 5
+                                                                            },
+                                                                            "label": {
+                                                                                "type": "string",
+                                                                                "example": "جيد جداً"
+                                                                            }
+                                                                        },
+                                                                        "type": "object"
+                                                                    }
+                                                                }
+                                                            },
+                                                            "type": "object"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                },
+                                                "facebook_url": {
+                                                    "type": "string"
+                                                },
+                                                "linkedin_url": {
+                                                    "type": "string"
+                                                },
+                                                "x_url": {
+                                                    "type": "string"
+                                                },
+                                                "instagram_url": {
+                                                    "type": "string"
+                                                }
+                                            },
                                             "type": "object"
                                         }
                                     },

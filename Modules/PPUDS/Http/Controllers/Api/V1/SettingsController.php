@@ -38,7 +38,42 @@ class SettingsController extends Controller
      * type="object",
      * @OA\Property(property="status", type="boolean", example=true),
      * @OA\Property(property="message", type="string", example="General settings retrieved successfully"),
-     * @OA\Property(property="data", type="object")
+     * @OA\Property(
+     * property="data", type="object",
+     * @OA\Property(property="semester_type", type="integer", example=2),
+     * @OA\Property(property="year", type="integer", example=2025),
+     * @OA\Property(property="report_status", type="integer", example=1, description="حالة تسليم التقارير: مفتوحة أم مغلقة"),
+     * @OA\Property(property="login_method", type="integer", example=1),
+     * @OA\Property(property="giz_evaluation_status", type="integer", example=1),
+     * @OA\Property(property="start_semester", type="string", format="date", example="2026-06-24"),
+     * @OA\Property(property="end_semester", type="string", format="date", example="2026-09-24"),
+     * @OA\Property(
+     * property="evaluation", type="object",
+     * description="توزيع العلامات ومقياس التقييم. اقرأ السقوف من هنا ولا تُثبّتها في كود الواجهة، فهي قابلة للتغيير من الإعدادات.",
+     * @OA\Property(property="evaluation_supervisor_max_grade", type="integer", example=25, description="سقف علامة مشرف التقييم، تُرصد يدوياً"),
+     * @OA\Property(property="university_supervisor_max_grade", type="integer", example=35, description="سقف علامة المشرف الجامعي، تُرصد يدوياً"),
+     * @OA\Property(property="company_max_grade", type="integer", example=40, description="سقف علامة الشركة، تُحسب آلياً من استبيان مشرف الشركة"),
+     * @OA\Property(property="total_max_grade", type="integer", example=100, description="مجموع الثلاثة"),
+     * @OA\Property(
+     * property="rating_scale", type="object",
+     * description="مقياس أسئلة التقييم في الاستبيان. علامة الشركة مشتقة منه.",
+     * @OA\Property(property="min", type="integer", example=1),
+     * @OA\Property(property="max", type="integer", example=5),
+     * @OA\Property(
+     * property="options", type="array",
+     * @OA\Items(
+     * type="object",
+     * @OA\Property(property="value", type="integer", example=5),
+     * @OA\Property(property="label", type="string", example="جيد جداً")
+     * )
+     * )
+     * )
+     * ),
+     * @OA\Property(property="facebook_url", type="string"),
+     * @OA\Property(property="linkedin_url", type="string"),
+     * @OA\Property(property="x_url", type="string"),
+     * @OA\Property(property="instagram_url", type="string")
+     * )
      * )
      * )
      * )
