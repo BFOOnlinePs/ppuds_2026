@@ -105,6 +105,11 @@ class PermissionSeeder extends Seeder
                 'guard_name' => 'web',
                 'module_name' => 'Practical Supervisor Student',
             ],
+            [
+                'name' => 'PracticalSupervisorStudent Grade',
+                'guard_name' => 'web',
+                'module_name' => 'Practical Supervisor Student',
+            ],
 
             [
                 'name' => 'EvaluationSupervisorStudent View List',
@@ -115,6 +120,13 @@ class PermissionSeeder extends Seeder
                 'name' => 'EvaluationSupervisorStudent Grade',
                 'guard_name' => 'web',
                 'module_name' => 'Evaluation Supervisor Student',
+            ],
+
+            // TODO Student Grade — شاشة عرض العلامات مجتمعة (عرض فقط)
+            [
+                'name' => 'StudentGrade View List',
+                'guard_name' => 'web',
+                'module_name' => 'Student Grade',
             ],
 
             [

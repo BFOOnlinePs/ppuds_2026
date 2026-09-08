@@ -49,6 +49,14 @@ class SidebarServiceProvider extends ServiceProvider
                 ->add(new SidebarItem('Evaluation Supervisor Students', 'solar-star-bold-duotone', ['EvaluationSupervisorStudent View List'], 'evaluation-supervisor-students.index'))
         );
 
+        // العلامات: شاشة عرض مجمّعة (بدون تعديل) وشاشة وضع علامة مشرف الجامعة.
+        // وضع علامة مشرف التقييم يبقى في شاشة "طلاب مشرف التقييم" أعلاه.
+        $sidebar->add(
+            (new SidebarGroup('Grades', 'solar-ranking-bold-duotone', [], 52))
+                ->add(new SidebarItem('Student Grades', 'solar-diploma-verified-bold-duotone', ['StudentGrade View List'], 'student-grades.index'))
+                ->add(new SidebarItem('University Supervisor Grades', 'solar-star-bold-duotone', ['PracticalSupervisorStudent Grade'], 'practical-supervisor-grades.index'))
+        );
+
         $sidebar->add(
             (new SidebarGroup('University Supervisors', 'solar-user-speak-rounded-bold-duotone', [], 55))
                 ->add(new SidebarItem('University Supervisors List', 'solar-user-id-bold-duotone', ['Supervisor View List'], 'supervisors.index'))

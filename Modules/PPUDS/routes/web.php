@@ -118,6 +118,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     Route::get('/', Index::class)->name('index')->can('EvaluationSupervisorStudent View List');
                 });
 
+                // وضع علامة مشرف الجامعة
+                Route::group([
+                    'prefix' => 'practical-supervisor-grades',
+                    'as' => 'practical-supervisor-grades.',
+                    'namespace' => 'Modules\PPUDS\Livewire\Pages\PracticalSupervisorGrade',
+                ], function () {
+                    Route::get('/', Index::class)->name('index')->can('PracticalSupervisorStudent Grade');
+                });
+
+                // عرض علامات الطلاب مجتمعة — للعرض فقط
+                Route::group([
+                    'prefix' => 'student-grades',
+                    'as' => 'student-grades.',
+                    'namespace' => 'Modules\PPUDS\Livewire\Pages\StudentGrade',
+                ], function () {
+                    Route::get('/', Index::class)->name('index')->can('StudentGrade View List');
+                });
+
                 Route::group([
                     'prefix' => 'registrations',
                     'as' => 'registrations.',

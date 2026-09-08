@@ -177,6 +177,7 @@ class RolePermissionSeeder extends Seeder
 
             UserRole::CORPORATE_RELATIONS_OFFICER->value => [
                 'Dashboard Statistics Verification View',
+                'StudentGrade View List',
                 ...$this->read('Student'),
                 'Student Details List',
                 'Student Export Companies',
@@ -210,6 +211,7 @@ class RolePermissionSeeder extends Seeder
                 'Student Details List',
                 'Student Export Companies',
                 ...$this->read('PracticalSupervisorStudent'),
+                'PracticalSupervisorStudent Grade',
                 ...$this->read('Supervisor'),
                 'Supervisor Details List',
                 ...$this->read('Company'),

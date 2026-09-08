@@ -1,8 +1,9 @@
 <?php
 
-namespace Modules\PPUDS\Livewire\Pages\EvaluationSupervisorStudent;
+namespace Modules\PPUDS\Livewire\Pages\PracticalSupervisorGrade;
 
 use App\View\Components\AppLayout;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -19,20 +20,29 @@ use Masmerise\Toaster\Toaster;
 use Modules\Core\Enums\UserRole;
 use Modules\Core\Filament\Tables\Columns\UserColumn;
 use Modules\PPUDS\Entities\StudentCompany;
+use Modules\PPUDS\Enums\SemesterType;
 use Modules\PPUDS\Settings\GeneralSettings;
+use Modules\PPUDS\Support\HasSupervisorFilter;
+use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
+/**
+ * شاشة وضع علامة مشرف الجامعة. تعمل بنفس منطق شاشة طلاب مشرف التقييم،
+ * لكنها تكتب في supervisor_score وتُقصَر على طلاب المشرف نفسه.
+ */
 class Index extends Component implements HasForms, HasTable
 {
+    use HasSupervisorFilter;
     use InteractsWithForms;
     use InteractsWithTable;
+    use ScopesStudentCompanyVisibility;
 
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn () => $this->evaluationAssignedQuery()
+            ->query(fn () => $this->supervisedPlacementsQuery()
                 ->with([
                     'student.studentProfile.major',
-                    'evaluationSupervisor',
+                    'registration.supervisor',
                     'company',
                     'branch',
                     'department',
@@ -68,14 +78,14 @@ class Index extends Component implements HasForms, HasTable
                     ->placeholder('---')
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                UserColumn::make('evaluationSupervisor.name')
-                    ->label(__('Evaluation Supervisor'))
-                    ->user(fn (StudentCompany $record) => $record->evaluationSupervisor)
+                UserColumn::make('registration.supervisor.name')
+                    ->label(__('Practical Training Supervisor'))
+                    ->user(fn (StudentCompany $record) => $record->registration?->supervisor)
                     ->linksToSupervisor()
                     ->toggleable()
-                    ->visible(fn (): bool => ! $this->shouldScopeToAuthenticatedSupervisor()),
+                    ->visible(fn (): bool => ! $this->shouldScopeUniversitySupervisorStudentCompanies()),
 
-                TextColumn::make('evaluation_score')
+                TextColumn::make('supervisor_score')
                     ->label(fn (): string => __('Grade (out of :max)', ['max' => $this->maxGrade()]))
                     ->badge()
                     ->color(fn (?int $state): string => $state === null ? 'gray' : 'success')
@@ -84,6 +94,7 @@ class Index extends Component implements HasForms, HasTable
                         : $state.' / '.$this->maxGrade()),
             ])
             ->filters($this->getTableFilters(), layout: FiltersLayout::AboveContent)
+            ->filtersFormColumns(4)
             ->actions($this->getTableActions())
             ->bulkActions([]);
     }
@@ -108,6 +119,46 @@ class Index extends Component implements HasForms, HasTable
                         )
                     );
                 }),
+
+            $this->supervisorSelectFilter('registration')
+                ->label(__('Practical Training Supervisor'))
+                ->visible(fn (): bool => ! $this->shouldScopeUniversitySupervisorStudentCompanies()),
+
+            Filter::make('year')
+                ->form([
+                    TextInput::make('year')
+                        ->label(__('Academic Year'))
+                        ->prefixIcon('solar-calendar-search-bold-duotone')
+                        ->numeric()
+                        ->default(app(GeneralSettings::class)->year)
+                        ->placeholder(date('Y')),
+                ])
+                ->query(function (Builder $query, array $data): Builder {
+                    return $query->when(
+                        $data['year'],
+                        fn (Builder $query, int|string $year): Builder => $query->whereHas(
+                            'registration',
+                            fn (Builder $query): Builder => $query->where('year', $year)
+                        )
+                    );
+                }),
+
+            Filter::make('semester_type')
+                ->form([
+                    Select::make('semester_type')
+                        ->label(__('Semester Type'))
+                        ->options(SemesterType::options())
+                        ->default(app(GeneralSettings::class)->semester_type->value),
+                ])
+                ->query(function (Builder $query, array $data): Builder {
+                    return $query->when(
+                        $data['semester_type'],
+                        fn (Builder $query, int|string $semesterType): Builder => $query->whereHas(
+                            'registration',
+                            fn (Builder $query): Builder => $query->where('semester', $semesterType)
+                        )
+                    );
+                }),
         ];
     }
 
@@ -115,11 +166,11 @@ class Index extends Component implements HasForms, HasTable
     {
         return [
             Action::make('grade')
-                ->label(fn (StudentCompany $record): string => $record->evaluation_score === null ? __('Set Grade') : __('Grade'))
+                ->label(fn (StudentCompany $record): string => $record->supervisor_score === null ? __('Set Grade') : __('Grade'))
                 ->icon('heroicon-o-star')
                 ->color('primary')
                 ->form(fn (): array => [
-                    TextInput::make('evaluation_score')
+                    TextInput::make('supervisor_score')
                         ->label(__('Grade (out of :max)', ['max' => $this->maxGrade()]))
                         ->numeric()
                         ->minValue(0)
@@ -127,14 +178,16 @@ class Index extends Component implements HasForms, HasTable
                         ->required(),
                 ])
                 ->fillForm(fn (StudentCompany $record): array => [
-                    'evaluation_score' => $record->evaluation_score,
+                    'supervisor_score' => $record->supervisor_score,
                 ])
                 ->modalHeading(fn (): string => __('Grade (out of :max)', ['max' => $this->maxGrade()]))
                 ->modalSubmitActionLabel(__('Save'))
-                ->visible(fn (): bool => auth()->user()->can('EvaluationSupervisorStudent Grade'))
+                ->visible(fn (): bool => auth()->user()->can('PracticalSupervisorStudent Grade'))
                 ->action(function (StudentCompany $record, array $data): void {
+                    abort_unless(auth()->user()?->can('PracticalSupervisorStudent Grade'), 403);
+
                     $record->update([
-                        'evaluation_score' => min((int) $data['evaluation_score'], $this->maxGrade()),
+                        'supervisor_score' => min((int) $data['supervisor_score'], $this->maxGrade()),
                     ]);
 
                     Toaster::success(__('Grade saved successfully'));
@@ -142,41 +195,28 @@ class Index extends Component implements HasForms, HasTable
         ];
     }
 
-    /** العلامة القصوى لمشرف التقييم كما هي محددة في الإعدادات. */
+    /** العلامة القصوى لمشرف الجامعة كما هي محددة في الإعدادات. */
     protected function maxGrade(): int
     {
-        return app(GeneralSettings::class)->evaluation_supervisor_max_grade;
+        return app(GeneralSettings::class)->university_supervisor_max_grade;
     }
 
-    protected function evaluationAssignedQuery(): Builder
+    protected function supervisedPlacementsQuery(): Builder
     {
         return StudentCompany::query()
-            ->whereNotNull('evaluation_supervisor_id')
-            ->when(
-                $this->shouldScopeToAuthenticatedSupervisor(),
-                fn (Builder $query): Builder => $query->where('evaluation_supervisor_id', auth()->id())
-            );
-    }
-
-    protected function shouldScopeToAuthenticatedSupervisor(): bool
-    {
-        $user = auth()->user();
-
-        return (bool) (
-            $user?->hasRole(UserRole::EVALUATION_SUPERVISOR->value)
-            && ! $user?->hasAnyRole([
-                UserRole::SUPER_ADMIN->value,
-                UserRole::ADMIN->value,
-            ])
-        );
+            ->whereHas(
+                'registration.supervisor.roles',
+                fn (Builder $query): Builder => $query->where('name', UserRole::PRACTICAL_TRAINING_SUPERVISOR->value)
+            )
+            ->tap(fn (Builder $query) => $this->applyUniversitySupervisorStudentCompanyScope($query));
     }
 
     public function render()
     {
-        return view('ppuds::livewire.pages.evaluation-supervisor-student.index')->layout(AppLayout::class, [
+        return view('ppuds::livewire.pages.practical-supervisor-grade.index')->layout(AppLayout::class, [
             'breadcrumbs' => [
                 ['title' => __('Home'), 'url' => route('home')],
-                ['title' => __('Evaluation Supervisor Students'), 'url' => route('evaluation-supervisor-students.index')],
+                ['title' => __('University Supervisor Grades'), 'url' => route('practical-supervisor-grades.index')],
             ],
         ]);
     }

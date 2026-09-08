@@ -65,6 +65,10 @@ class Index extends Component implements HasForms
             'start_semester' => $ppudsSettings->start_semester,
             'end_semester' => $ppudsSettings->end_semester,
 
+            'evaluation_supervisor_max_grade' => $ppudsSettings->evaluation_supervisor_max_grade,
+            'university_supervisor_max_grade' => $ppudsSettings->university_supervisor_max_grade,
+            'company_max_grade' => $ppudsSettings->company_max_grade,
+
             'facebook_url' => $ppudsSettings->facebook_url,
             'linkedin_url' => $ppudsSettings->linkedin_url,
             'x_url' => $ppudsSettings->x_url,
@@ -193,6 +197,39 @@ class Index extends Component implements HasForms
                                         ->options(GigEvaluationStatus::options())
                                         ->required(),
                                 ]),
+
+                                // توزيع العلامات: مجموع الحدود الثلاثة هو العلامة الكلية
+                                // التي تظهر في شاشة علامات الطلاب.
+                                Section::make(__('Grade Distribution'))
+                                    ->description(__('The maximum grade each side can award. The student total is the sum of the three.'))
+                                    ->icon('solar-ranking-bold-duotone')
+                                    ->schema([
+                                        Grid::make(3)->schema([
+                                            TextInput::make('evaluation_supervisor_max_grade')
+                                                ->label(__('Evaluation Supervisor Grade'))
+                                                ->prefixIcon('solar-star-bold-duotone')
+                                                ->numeric()
+                                                ->minValue(0)
+                                                ->maxValue(255)
+                                                ->required(),
+
+                                            TextInput::make('university_supervisor_max_grade')
+                                                ->label(__('University Supervisor Grade'))
+                                                ->prefixIcon('solar-user-speak-rounded-bold-duotone')
+                                                ->numeric()
+                                                ->minValue(0)
+                                                ->maxValue(255)
+                                                ->required(),
+
+                                            TextInput::make('company_max_grade')
+                                                ->label(__('Company Grade'))
+                                                ->prefixIcon('solar-city-bold-duotone')
+                                                ->numeric()
+                                                ->minValue(0)
+                                                ->maxValue(255)
+                                                ->required(),
+                                        ]),
+                                    ]),
                             ]),
 
                         Tabs\Tab::make(__('University Connection'))
@@ -424,6 +461,10 @@ class Index extends Component implements HasForms
         $ppudsSettings->giz_evaluation_status = GigEvaluationStatus::from($data['giz_evaluation_status']);
         $ppudsSettings->start_semester = Carbon::parse($data['start_semester']);
         $ppudsSettings->end_semester = Carbon::parse($data['end_semester']);
+
+        $ppudsSettings->evaluation_supervisor_max_grade = (int) $data['evaluation_supervisor_max_grade'];
+        $ppudsSettings->university_supervisor_max_grade = (int) $data['university_supervisor_max_grade'];
+        $ppudsSettings->company_max_grade = (int) $data['company_max_grade'];
 
         $ppudsSettings->facebook_url = $data['facebook_url'];
         $ppudsSettings->linkedin_url = $data['linkedin_url'];

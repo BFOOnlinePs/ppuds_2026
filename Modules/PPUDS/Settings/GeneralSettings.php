@@ -44,6 +44,13 @@ class GeneralSettings extends Settings
     // Whether check-out is held to the same rule as check-in.
     public bool $work_location_enforce_on_check_out;
 
+    // أقصى علامة يمنحها كل طرف، ومجموع الثلاثة هو العلامة الكلية للطالب.
+    public int $evaluation_supervisor_max_grade;
+
+    public int $university_supervisor_max_grade;
+
+    public int $company_max_grade;
+
     public string $facebook_url = 'https://www.facebook.com/ppu.edu';
     public string $linkedin_url = 'https://www.linkedin.com/school/palestine-polytechnic-university/';
     public string $x_url = 'https://x.com/PPU_edu';

@@ -48,6 +48,7 @@ class StudentCompany extends Model implements HasMedia
         'created_by',
         'evaluation_supervisor_id',
         'evaluation_score',
+        'supervisor_score',
     ];
 
     protected $casts = [

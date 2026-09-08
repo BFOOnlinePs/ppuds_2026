@@ -183,6 +183,8 @@
     "Report Status": "حالة التقارير",
     "Login Method": "طريقة تسجيل الدخول",
     "GIZ Evaluation Status": "حالة تقييم GIZ",
+    "Grade Distribution": "توزيع العلامات",
+    "The maximum grade each side can award. The student total is the sum of the three.": "أقصى علامة يمنحها كل طرف، ومجموع الثلاثة هو العلامة الكلية للطالب.",
     "Saved Successfully": "تم الحفظ بنجاح",
     "Settings Updated": "تم تحديث الإعدادات",
     "System settings have been updated successfully": "تم تحديث إعدادات النظام بنجاح",
