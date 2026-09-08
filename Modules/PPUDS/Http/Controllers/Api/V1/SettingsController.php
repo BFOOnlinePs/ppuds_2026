@@ -53,7 +53,7 @@ class SettingsController extends Controller
 
 
     /**
-     * @OA\Put(
+     * @OA\Patch(
      * path="/api/v1/ppuds/settings",
      * summary="Update general settings",
      * description="Update the global system settings. Use PUT to update the settings object.",

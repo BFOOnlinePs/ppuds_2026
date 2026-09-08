@@ -15,7 +15,7 @@ class ActivityLogController extends Controller
 
     /**
      * @OA\Get(
-     * path="/api/v1/activities",
+     * path="/api/v1/activity-logs",
      * summary="Get all activity logs",
      * description="Retrieve a paginated list of all system activity logs with advanced filtering, sorting, and including relations.",
      * tags={"Activity Logs"},
@@ -135,7 +135,7 @@ class ActivityLogController extends Controller
 
     /**
      * @OA\Get(
-     * path="/api/v1/activities/{id}",
+     * path="/api/v1/activity-logs/{id}",
      * summary="Get a single activity log",
      * description="Retrieve details of a specific activity log by its ID",
      * tags={"Activity Logs"},

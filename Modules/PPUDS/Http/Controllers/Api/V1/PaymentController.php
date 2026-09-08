@@ -153,7 +153,7 @@ class PaymentController extends Controller
     }
 
     /**
-     * @OA\Post(
+     * @OA\Patch(
      * path="/api/v1/ppuds/payments/{payment}",
      * summary="Update an existing payment",
      * description="Update payment details including receipt image.

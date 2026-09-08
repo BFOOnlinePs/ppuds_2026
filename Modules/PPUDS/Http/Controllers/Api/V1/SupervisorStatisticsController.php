@@ -59,6 +59,25 @@ class SupervisorStatisticsController extends Controller
         return $this->statisticsResponse($request);
     }
 
+    /**
+     * @OA\Get(
+     * path="/api/v1/ppuds/supervisors/{supervisor}/statistics",
+     * summary="Statistics for one supervisor",
+     * description="نفس إحصائيات القائمة لكن لمشرف بعينه يُمرَّر في المسار، فلا حاجة لـ filter[supervisor_id].",
+     * tags={"Supervisor Statistics"},
+     * security={{"sanctum": {}}},
+     *
+     * @OA\Parameter(name="supervisor", in="path", required=true, description="معرّف المستخدم المشرف", @OA\Schema(type="integer", example=3)),
+     * @OA\Parameter(name="filter[semester]", in="query", required=false, description="الافتراضي: الفصل الحالي من الإعدادات", @OA\Schema(type="integer", example=1)),
+     * @OA\Parameter(name="filter[year]", in="query", required=false, description="الافتراضي: السنة الحالية من الإعدادات", @OA\Schema(type="integer", example=2026)),
+     * @OA\Parameter(name="filter[date_from]", in="query", required=false, @OA\Schema(type="string", format="date", example="2026-07-01")),
+     * @OA\Parameter(name="filter[date_to]", in="query", required=false, @OA\Schema(type="string", format="date", example="2026-07-31")),
+     *
+     * @OA\Response(response=200, description="Supervisor statistics retrieved successfully"),
+     * @OA\Response(response=401, description="Unauthenticated"),
+     * @OA\Response(response=404, description="Supervisor not found")
+     * )
+     */
     public function show(SupervisorStatisticsRequest $request, User $supervisor)
     {
         return $this->statisticsResponse($request, (int) $supervisor->id);

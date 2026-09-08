@@ -93,6 +93,20 @@ class ChatController extends Controller
         );
     }
 
+    /**
+     * @OA\Get(
+     * path="/api/v1/ppuds/chats/contacts",
+     * summary="List the people this user may chat with",
+     * description="جهات الاتصال المسموح للمستخدم مراسلتها، محسوبة من دوره وارتباطاته: الطالب يرى مشرفيه، ومشرف الشركة يرى طلاب أقسامه. استخدمها لملء شاشة اختيار المستقبِل قبل إنشاء محادثة.",
+     * tags={"Chat"},
+     * security={{"sanctum": {}}},
+     *
+     * @OA\Parameter(name="search", in="query", required=false, description="بحث بالاسم؛ يقبل أيضاً filter[search]", @OA\Schema(type="string", example="محمد")),
+     *
+     * @OA\Response(response=200, description="Chat contacts retrieved successfully"),
+     * @OA\Response(response=401, description="Unauthenticated")
+     * )
+     */
     public function contacts(Request $request)
     {
         $contacts = app(ChatContactService::class)->contactsFor(

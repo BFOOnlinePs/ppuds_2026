@@ -42,11 +42,31 @@ return [
 
                 /*
                  * Absolute paths to directory containing the swagger annotations are stored.
+                 *
+                 * الوحدات المعطّلة لا تُسجَّل مساراتها، فلو مُسحت مجلداتها لظهرت
+                 * في التوثيق نقاطٌ تعطي 404 عند استدعائها. لذلك نقرأ حالة
+                 * الوحدات ونمسح المفعَّلة منها فقط.
                  */
-                'annotations' => [
-                    base_path('app'),
-                    base_path('Modules'),
-                ],
+                'annotations' => array_merge(
+                    [base_path('app')],
+                    (function (): array {
+                        $statusesFile = base_path('modules_statuses.json');
+
+                        if (! is_file($statusesFile)) {
+                            return [base_path('Modules')];
+                        }
+
+                        $statuses = json_decode((string) file_get_contents($statusesFile), true) ?: [];
+
+                        return collect($statuses)
+                            ->filter()
+                            ->keys()
+                            ->map(fn (string $module): string => base_path('Modules/'.$module))
+                            ->filter(fn (string $path): bool => is_dir($path))
+                            ->values()
+                            ->all();
+                    })(),
+                ),
             ],
         ],
     ],

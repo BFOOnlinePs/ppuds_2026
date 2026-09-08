@@ -21,6 +21,29 @@ use Modules\Items\Transformers\V1\ProductResource;
 
 class SyncController extends Controller
 {
+    /**
+     * @OA\Get(
+     * path="/api/v1/branches/sync/branches",
+     * summary="Delta sync of branches",
+     * description="مزامنة تفاضلية للتطبيقات التي تحتفظ بنسخة محلية. أرسل since بآخر قيمة استلمتها في meta.timestamp، فتعود الفروع المعدَّلة بعدها فقط. أول مزامنة: اترك since فارغاً لتحصل على كل شيء. احفظ meta.timestamp العائد لاستخدامه في الطلب التالي.",
+     * tags={"Sync"},
+     * security={{"sanctum": {}}},
+     *
+     * @OA\Parameter(name="since", in="query", required=false, description="التاريخ والوقت بصيغة Y-m-d H:i:s. الافتراضي 1970-01-01 00:00:00 أي كل السجلات", @OA\Schema(type="string", example="2026-09-01 12:00:00")),
+     *
+     * @OA\Response(
+     * response=200,
+     * description="Branches updated since the given timestamp",
+     *
+     * @OA\JsonContent(
+     * @OA\Property(property="data", type="array", @OA\Items(type="object")),
+     * @OA\Property(property="meta", type="object", @OA\Property(property="timestamp", type="string", example="2026-09-08 10:30:00", description="مرّره كـ since في المزامنة القادمة"))
+     * )
+     * ),
+     *
+     * @OA\Response(response=401, description="Unauthenticated")
+     * )
+     */
     public function syncBranches(Request $request)
     {
         $since = $request->input('since', '1970-01-01 00:00:00');

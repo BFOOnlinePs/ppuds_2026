@@ -166,10 +166,10 @@ class NoteController extends Controller
     }
 
     /**
-     * @OA\Post(
+     * @OA\Patch(
      * path="/api/v1/ppuds/notes/{id}",
      * summary="Update an existing note",
-     * description="Update note details. Use _method=PUT in form-data if uploading a new image.",
+     * description="تعديل ملاحظة. المستخدم لا يعدّل إلا ملاحظاته هو وإلا عاد 403. عند رفع صورة جديدة أرسل POST مع _method=PATCH في الـ form-data، لأن multipart لا يعمل مع PATCH مباشرة.",
      * tags={"Notes"},
      * security={{"sanctum": {}}},
      *

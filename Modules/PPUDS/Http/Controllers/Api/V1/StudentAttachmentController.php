@@ -269,7 +269,7 @@ class StudentAttachmentController extends Controller
     }
 
     /**
-     * @OA\Post(
+     * @OA\Patch(
      * path="/api/v1/ppuds/student-attachments/{studentAttachment}",
      * summary="Update student attachment",
      * description="Rename an attachment and/or replace its file. Use _method=PATCH for multipart support.",

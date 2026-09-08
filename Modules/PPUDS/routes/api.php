@@ -294,6 +294,8 @@
                         Route::get('/', 'index')->name('index');
                         Route::post('/', 'store')->name('store');
                         Route::get('/{note}', 'show')->name('show');
+                        // كان NoteController::update موجوداً وموثّقاً بلا مسار يصله.
+                        Route::patch('/{note}', 'update')->name('update');
                     });
 
                 Route::controller(ReportController::class)

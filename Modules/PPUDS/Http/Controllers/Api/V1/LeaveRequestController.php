@@ -226,7 +226,7 @@ class LeaveRequestController extends Controller
     }
 
     /**
-     * @OA\Post(
+     * @OA\Patch(
      * path="/api/v1/ppuds/leave-requests/{leaveRequest}",
      * summary="Update leave request",
      * description="Update details. Use _method=PUT for multipart support.",

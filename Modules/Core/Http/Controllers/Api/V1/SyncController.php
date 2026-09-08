@@ -20,6 +20,29 @@ use Spatie\Permission\Models\Role;
 
 class SyncController extends Controller
 {
+    /**
+     * @OA\Get(
+     * path="/api/v1/sync/users",
+     * summary="Delta sync of users",
+     * description="مزامنة تفاضلية للمستخدمين مع صورهم وأدوارهم. أرسل since بآخر قيمة من meta.timestamp لتستلم المعدَّل فقط، واتركه فارغاً في أول مزامنة.",
+     * tags={"Sync"},
+     * security={{"sanctum": {}}},
+     *
+     * @OA\Parameter(name="since", in="query", required=false, description="التاريخ والوقت بصيغة Y-m-d H:i:s", @OA\Schema(type="string", example="2026-09-01 12:00:00")),
+     *
+     * @OA\Response(
+     * response=200,
+     * description="Users updated since the given timestamp",
+     *
+     * @OA\JsonContent(
+     * @OA\Property(property="data", type="array", @OA\Items(type="object")),
+     * @OA\Property(property="meta", type="object", @OA\Property(property="timestamp", type="string", example="2026-09-08 10:30:00"))
+     * )
+     * ),
+     *
+     * @OA\Response(response=401, description="Unauthenticated")
+     * )
+     */
     public function syncUsers(Request $request)
     {
         $since = $request->input('since', '1970-01-01 00:00:00');
@@ -34,6 +57,29 @@ class SyncController extends Controller
             ]);
     }
 
+    /**
+     * @OA\Get(
+     * path="/api/v1/sync/roles",
+     * summary="Delta sync of roles",
+     * description="مزامنة تفاضلية للأدوار. تُستخدم مع /sync/users لبناء صلاحيات المستخدم محلياً في التطبيق.",
+     * tags={"Sync"},
+     * security={{"sanctum": {}}},
+     *
+     * @OA\Parameter(name="since", in="query", required=false, description="التاريخ والوقت بصيغة Y-m-d H:i:s", @OA\Schema(type="string", example="2026-09-01 12:00:00")),
+     *
+     * @OA\Response(
+     * response=200,
+     * description="Roles updated since the given timestamp",
+     *
+     * @OA\JsonContent(
+     * @OA\Property(property="data", type="array", @OA\Items(type="object")),
+     * @OA\Property(property="meta", type="object", @OA\Property(property="timestamp", type="string", example="2026-09-08 10:30:00"))
+     * )
+     * ),
+     *
+     * @OA\Response(response=401, description="Unauthenticated")
+     * )
+     */
     public function syncRoles(Request $request)
     {
         $since = $request->input('since', '1970-01-01 00:00:00');

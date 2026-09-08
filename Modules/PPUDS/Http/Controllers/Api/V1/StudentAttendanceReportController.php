@@ -26,6 +26,24 @@ class StudentAttendanceReportController extends Controller
     use EnsuresCurrentRegistration;
     use ScopesStudentCompanyVisibility;
 
+    /**
+     * @OA\Get(
+     * path="/api/v1/ppuds/attendances/reports",
+     * summary="List student daily reports",
+     * description="قائمة التقارير اليومية، مُقيَّدة تلقائياً بصلاحية المستخدم: الطالب يرى تقاريره، مشرف الشركة يرى طلاب أقسامه، والمشرف الجامعي يرى طلابه، والمدير يرى الكل. لا حاجة لإرسال أي فلتر للتقييد — يحدث في الخادم.",
+     * tags={"Student Reports"},
+     * security={{"sanctum": {}}},
+     *
+     * @OA\Parameter(name="per_page", in="query", required=false, description="عدد العناصر في الصفحة، الافتراضي 15", @OA\Schema(type="integer", example=15)),
+     * @OA\Parameter(name="page", in="query", required=false, @OA\Schema(type="integer", example=1)),
+     * @OA\Parameter(name="filter[...]", in="query", required=false, description="الفلاتر المسموحة معرّفة في StudentAttendanceReportResource::allowedFilters()", @OA\Schema(type="string")),
+     * @OA\Parameter(name="sort", in="query", required=false, description="الترتيب، وسبقه بـ - للتنازلي", @OA\Schema(type="string", example="-created_at")),
+     * @OA\Parameter(name="include", in="query", required=false, description="علاقات إضافية مفصولة بفواصل", @OA\Schema(type="string")),
+     *
+     * @OA\Response(response=200, description="Student Attendance Reports retrieved successfully"),
+     * @OA\Response(response=401, description="Unauthenticated")
+     * )
+     */
     public function index()
     {
         $report = QueryBuilder::for(StudentReport::query()

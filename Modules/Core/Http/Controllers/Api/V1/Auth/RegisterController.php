@@ -16,7 +16,7 @@ class RegisterController extends Controller
 
     /**
      * @OA\Post(
-     *     path="/api/v1/auth/registration",
+     *     path="/api/v1/auth/register",
      *     summary="Registration a new user",
      *     description="Create a new user account",
      *     security={{"sanctum": {}}},

@@ -363,7 +363,7 @@ class FieldVisitController extends Controller
     }
 
     /**
-     * @OA\Post(
+     * @OA\Patch(
      * path="/api/v1/ppuds/field-visits/{fieldVisit}",
      * summary="Update field visit",
      * description="Update field visit details. Use _method=PATCH for multipart support.",
