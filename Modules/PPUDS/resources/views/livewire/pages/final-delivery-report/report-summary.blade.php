@@ -36,6 +36,32 @@
                 @endforeach
 
                 <tr>
+                    <td class="border px-3 py-2 text-xs font-semibold">{{ __('Presentation File') }}</td>
+                    <td class="border px-3 py-2">
+                        @if ($presentationUrl)
+                            <a href="{{ $presentationUrl }}" target="_blank" rel="noopener noreferrer" class="text-primary-600">
+                                {{ __('View File') }}
+                            </a>
+                        @else
+                            <span class="text-gray-500">{{ __('No presentation file uploaded yet') }}</span>
+                        @endif
+                    </td>
+                </tr>
+
+                <tr>
+                    <td class="border px-3 py-2 text-xs font-semibold">{{ __('Python File') }}</td>
+                    <td class="border px-3 py-2">
+                        @if ($codeUrl)
+                            <a href="{{ $codeUrl }}" target="_blank" rel="noopener noreferrer" class="text-primary-600">
+                                {{ __('View File') }}
+                            </a>
+                        @else
+                            <span class="text-gray-500">{{ __('No Python file uploaded yet') }}</span>
+                        @endif
+                    </td>
+                </tr>
+
+                <tr>
                     <td class="border px-3 py-2 text-xs font-semibold">{{ __('Attachment') }}</td>
                     <td class="border px-3 py-2">
                         @if ($attachmentUrl)

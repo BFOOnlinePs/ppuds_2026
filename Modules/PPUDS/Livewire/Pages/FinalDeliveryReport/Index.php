@@ -27,6 +27,7 @@ use Modules\Core\Filament\Tables\Columns\UserColumn;
 use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\Core\Traits\PrintsTableReportPdf;
 use Modules\PPUDS\Entities\Company;
+use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\FinalReportStatus;
 use Modules\PPUDS\Enums\SemesterType;
@@ -142,6 +143,27 @@ class Index extends Component implements HasForms, HasTable
                     ->visible(fn (StudentCompany $record): bool => auth()->user()->can('Report View List')
                         && $record->registration?->finalReport !== null),
 
+                // العرض التقديمي إجباري على الطالب، لكن التسليمات القديمة قد لا
+                // تحتويه، فيبقى الزر مشروطاً بوجود الملف كبقية المرفقات.
+                Action::make('view_final_presentation')
+                    ->label(__('Presentation File'))
+                    ->icon('solar-projector-bold-duotone')
+                    ->color('primary')
+                    ->url(fn (StudentCompany $record): ?string => $record->registration?->getFirstMediaUrl(Registration::PRESENTATION_COLLECTION) ?: null)
+                    ->openUrlInNewTab()
+                    ->visible(fn (StudentCompany $record): bool => auth()->user()->can('Report View List')
+                        && (bool) $record->registration?->hasMedia(Registration::PRESENTATION_COLLECTION)),
+
+                // ملف بايثون اختياري أصلاً.
+                Action::make('view_final_code')
+                    ->label(__('Python File'))
+                    ->icon('solar-code-bold-duotone')
+                    ->color('success')
+                    ->url(fn (StudentCompany $record): ?string => $record->registration?->getFirstMediaUrl(Registration::CODE_COLLECTION) ?: null)
+                    ->openUrlInNewTab()
+                    ->visible(fn (StudentCompany $record): bool => auth()->user()->can('Report View List')
+                        && (bool) $record->registration?->hasMedia(Registration::CODE_COLLECTION)),
+
                 // المرفق اختياري، فلا يظهر الزر إلا إذا رفع الطالب ملفاً.
                 Action::make('view_final_file')
                     ->label(__('View File'))
@@ -174,6 +196,8 @@ class Index extends Component implements HasForms, HasTable
                             'record' => $record,
                             'report' => $report,
                             'attachmentUrl' => $record->registration?->getFirstMediaUrl('final_file') ?: null,
+                            'presentationUrl' => $record->registration?->getFirstMediaUrl(Registration::PRESENTATION_COLLECTION) ?: null,
+                            'codeUrl' => $record->registration?->getFirstMediaUrl(Registration::CODE_COLLECTION) ?: null,
                         ]))
                         ->columnSpanFull(),
                 ]),
