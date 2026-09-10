@@ -39,6 +39,9 @@
 /* dragndrop */
 @import './dragndrop.css';
 
+/* perfect scrollbar */
+@import './perfect-scrollbar.min.css';
+
 /* @import './custom.css'; */
 
 @font-face {

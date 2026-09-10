@@ -11,6 +11,9 @@
     //  The result is stored in the $settings variable
     $settingsModel = app(\Modules\Core\Entities\Settings::class)->first();
 
+    //  Resolve the logo URL once; it is an empty string when no logo has been uploaded
+    $logoUrl = $settingsModel?->getLogoUrl();
+
     //  Initialize $activeGroupKey to null, which is the default value indicating no active group
     $activeGroupKey = null;
 @endphp
@@ -44,7 +47,9 @@
             <div class="flex items-center justify-between px-4 py-3">
                 <a href="index.html" class="main-logo flex shrink-0 items-center">
                     {{--  Display the site logo --}}
-                    <img class="ml-[5px] w-8 flex-none" src="{{ $settingsModel?->getLogoUrl() }}" alt="image" />
+                    @if($logoUrl)
+                        <img class="ml-[5px] w-8 flex-none" src="{{ $logoUrl }}" alt="image" />
+                    @endif
                     {{--  Display the site name --}}
                     <span class="align-middle text-lg font-semibold ltr:ml-1.5 rtl:mr-1.5 dark:text-white-light lg:inline">{{ $settings->site_name ?? '' }}</span>
                 </a>
