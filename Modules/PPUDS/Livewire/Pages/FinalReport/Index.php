@@ -26,6 +26,7 @@ use Modules\PPUDS\Entities\StudentAttendance;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\AttendanceStatus;
 use Modules\PPUDS\Enums\FinalReportItemType;
+use Modules\PPUDS\Http\Requests\FinalReportRequest;
 use Modules\PPUDS\Services\AbsenceReportService;
 use Modules\PPUDS\Services\FinalReportService;
 use Modules\PPUDS\Settings\GeneralSettings;
@@ -70,11 +71,15 @@ class Index extends Component implements HasForms, HasActions
                 'contributions' => [],
                 'difficulties' => [],
                 'final_file' => null,
+                'final_presentation' => null,
+                'final_code' => null,
             ];
         }
 
         return [
             'final_file' => null,
+            'final_presentation' => null,
+            'final_code' => null,
             'role_description' => $this->report->role_description,
             'summary' => $this->report->summary,
             'tasks' => $this->report->tasks
@@ -129,6 +134,51 @@ class Index extends Component implements HasForms, HasActions
             '<a href="'.e($url).'" target="_blank" rel="noopener noreferrer" class="text-sm text-primary-600">'
             .e(__('View File')).'</a>'
         );
+    }
+
+    /**
+     * رابط العرض التقديمي الحالي إن وُجد.
+     */
+    protected function presentationLink(): HtmlString
+    {
+        return $this->fileLink(
+            app(FinalReportService::class)->presentationUrl($this->registration),
+            __('No presentation file uploaded yet')
+        );
+    }
+
+    /**
+     * رابط ملف بايثون الحالي إن وُجد.
+     */
+    protected function codeLink(): HtmlString
+    {
+        return $this->fileLink(
+            app(FinalReportService::class)->codeUrl($this->registration),
+            __('No Python file uploaded yet')
+        );
+    }
+
+    /**
+     * نفس شكل رابط المرفق حتى تتطابق الخانات الثلاث في الشاشة.
+     */
+    protected function fileLink(?string $url, string $emptyLabel): HtmlString
+    {
+        if ($url === null) {
+            return new HtmlString('<span class="text-sm text-gray-500">'.e($emptyLabel).'</span>');
+        }
+
+        return new HtmlString(
+            '<a href="'.e($url).'" target="_blank" rel="noopener noreferrer" class="text-sm text-primary-600">'
+            .e(__('View File')).'</a>'
+        );
+    }
+
+    /**
+     * يستخدمها الحقل ليعرف هل ما زال إجبارياً، والتسليم ليمنع الإرسال بدونه.
+     */
+    public function hasPresentation(): bool
+    {
+        return app(FinalReportService::class)->hasPresentation($this->registration);
     }
 
     public function hasRegistration(): bool
@@ -301,6 +351,51 @@ class Index extends Component implements HasForms, HasActions
                             ->visible(fn (): bool => ! $locked)
                             ->columnSpanFull(),
                     ]),
+
+                Section::make(__('Project Files'))
+                    ->description(__('The presentation is required. The Python file is optional.'))
+                    ->icon('solar-folder-2-bold-duotone')
+                    ->schema([
+                        Placeholder::make('current_presentation')
+                            ->label(__('Current Presentation File'))
+                            ->content(fn (): HtmlString => $this->presentationLink())
+                            ->columnSpanFull(),
+
+                        FileUpload::make('final_presentation')
+                            ->label(__('Presentation File'))
+                            ->helperText(__('Required. PowerPoint (ppt or pptx), up to 10 MB. Uploading a new file replaces the current one.'))
+                            ->storeFiles(false)
+                            ->acceptedFileTypes([
+                                'application/vnd.ms-powerpoint',
+                                'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                            ])
+                            ->rules(['mimes:' . implode(',', FinalReportRequest::ALLOWED_PRESENTATION_MIMES)])
+                            ->maxSize(FinalReportRequest::MAX_PRESENTATION_SIZE)
+                            // مطلوب مرة واحدة: بعد رفعه لا يُطلب مجدداً عند تعديل بقية الحقول.
+                            ->required(fn (): bool => ! $this->hasPresentation())
+                            ->visible(fn (): bool => ! $locked)
+                            ->columnSpanFull(),
+
+                        Placeholder::make('current_code')
+                            ->label(__('Current Python File'))
+                            ->content(fn (): HtmlString => $this->codeLink())
+                            ->columnSpanFull(),
+
+                        // بلا acceptedFileTypes لأن المتصفح يبلّغ عن ملف بايثون بنوع
+                        // text/plain أو بلا نوع، فكان منتقي الملفات يرفض ملفات سليمة.
+                        // التحقق الحقيقي يجري على الخادم بقاعدتَي extensions و mimetypes.
+                        FileUpload::make('final_code')
+                            ->label(__('Python File'))
+                            ->helperText(__('Optional. A .py source file, up to 2 MB. Uploading a new file replaces the current one.'))
+                            ->storeFiles(false)
+                            ->rules([
+                                'extensions:' . implode(',', FinalReportRequest::ALLOWED_CODE_EXTENSIONS),
+                                'mimetypes:' . implode(',', FinalReportRequest::ALLOWED_CODE_MIMETYPES),
+                            ])
+                            ->maxSize(FinalReportRequest::MAX_CODE_SIZE)
+                            ->visible(fn (): bool => ! $locked)
+                            ->columnSpanFull(),
+                    ]),
             ])
             ->statePath('data');
     }
@@ -316,6 +411,10 @@ class Index extends Component implements HasForms, HasActions
         $this->validate();
 
         if (! $this->storeAttachment($finalReports)) {
+            return;
+        }
+
+        if (! $this->storeProjectFiles($finalReports)) {
             return;
         }
 
@@ -337,6 +436,10 @@ class Index extends Component implements HasForms, HasActions
         $this->validate();
 
         if (! $this->storeAttachment($finalReports)) {
+            return;
+        }
+
+        if (! $this->storeProjectFiles($finalReports)) {
             return;
         }
 
@@ -450,6 +553,11 @@ class Index extends Component implements HasForms, HasActions
             $this->addError('data.summary', __('Please write the training summary.'));
         }
 
+        // العرض التقديمي شرط للتسليم لا للحفظ كمسودة.
+        if (! $this->hasPresentation()) {
+            $this->addError('data.final_presentation', __('Please upload the presentation file before submitting.'));
+        }
+
         return $this->getErrorBag()->isEmpty();
     }
 
@@ -486,6 +594,46 @@ class Index extends Component implements HasForms, HasActions
         Toaster::error(__('Failed to upload the final report file. Please try again.'));
 
         return false;
+    }
+
+    /**
+     * العرض التقديمي وملف بايثون. الحقل الفارغ يعني «لا تغيير»، فيبقى الملف
+     * المرفوع سابقاً كما هو بدل أن يُمحى عند حفظ بقية الحقول.
+     */
+    protected function storeProjectFiles(FinalReportService $finalReports): bool
+    {
+        $presentation = $this->pullFile('final_presentation');
+        $code = $this->pullFile('final_code');
+
+        if (filled($presentation) && ! $finalReports->savePresentation($this->registration, $presentation)) {
+            Toaster::error(__('Failed to upload the presentation file. Please try again.'));
+
+            return false;
+        }
+
+        if (filled($code) && ! $finalReports->saveCode($this->registration, $code)) {
+            Toaster::error(__('Failed to upload the Python file. Please try again.'));
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * حقول FileUpload تصل كمصفوفة، وتُنزع من data لأن الملف لا يُخزَّن في التقرير.
+     */
+    protected function pullFile(string $key): mixed
+    {
+        $file = $this->data[$key] ?? null;
+
+        unset($this->data[$key]);
+
+        if (is_array($file)) {
+            $file = reset($file) ?: null;
+        }
+
+        return $file;
     }
 
     /**

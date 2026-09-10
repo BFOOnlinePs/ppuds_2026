@@ -1211,5 +1211,20 @@
     "Training Tasks And Skills": "المهام والمهارات",
     "Last Updated": "آخر تحديث",
     "Please add at least one training task.": "الرجاء إضافة مهمة تدريبية واحدة على الأقل.",
-    "Please write the training summary.": "الرجاء كتابة ملخص التدريب."
+    "Please write the training summary.": "الرجاء كتابة ملخص التدريب.",
+    "Project Files": "ملفات المشروع",
+    "The presentation is required. The Python file is optional.": "العرض التقديمي إجباري، وملف بايثون اختياري.",
+    "Presentation File": "ملف العرض التقديمي",
+    "Current Presentation File": "ملف العرض التقديمي الحالي",
+    "No presentation file uploaded yet": "لم يتم رفع ملف عرض تقديمي بعد",
+    "Required. PowerPoint (ppt or pptx), up to 10 MB. Uploading a new file replaces the current one.": "إجباري. ملف باوربوينت بصيغة ppt أو pptx وبحد أقصى 10 ميجابايت. رفع ملف جديد يستبدل الملف الحالي.",
+    "Please upload the presentation file before submitting.": "الرجاء رفع ملف العرض التقديمي قبل التسليم.",
+    "Failed to upload the presentation file. Please try again.": "فشل رفع ملف العرض التقديمي. الرجاء المحاولة مرة أخرى.",
+    "Python File": "ملف بايثون",
+    "Current Python File": "ملف بايثون الحالي",
+    "No Python file uploaded yet": "لم يتم رفع ملف بايثون بعد",
+    "Optional. A .py source file, up to 2 MB. Uploading a new file replaces the current one.": "اختياري. ملف شيفرة بامتداد ‎.py وبحد أقصى 2 ميجابايت. رفع ملف جديد يستبدل الملف الحالي.",
+    "Failed to upload the Python file. Please try again.": "فشل رفع ملف بايثون. الرجاء المحاولة مرة أخرى.",
+    "The Python file must have a .py extension.": "يجب أن يكون امتداد ملف بايثون ‎.py",
+    "The Python file must be a plain text source file.": "يجب أن يكون ملف بايثون ملف شيفرة نصياً."
 }

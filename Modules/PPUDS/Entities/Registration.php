@@ -29,6 +29,16 @@ class Registration extends Model implements HasMedia
     use softDeletes;
     use InteractsWithMedia;
 
+    /**
+     * ملفا التقرير النهائي. العرض التقديمي إجباري وملف بايثون اختياري،
+     * وكلاهما ملف واحد يُستبدل عند رفع نسخة جديدة كما هو حال final_file.
+     */
+    public const PRESENTATION_COLLECTION = 'final_presentation';
+
+    public const CODE_COLLECTION = 'final_code';
+
+    public const FINAL_FILES_DISK = 'registers';
+
 
     public function __construct(array $attributes = [])
     {
@@ -121,6 +131,60 @@ class Registration extends Model implements HasMedia
     public function getImageAttribute()
     {
         return $this->getFirstMediaUrl('final_file');
+    }
+
+    /**
+     * العرض التقديمي الإجباري للتقرير النهائي (ppt / pptx).
+     */
+    public function addPresentation($file): ?Media
+    {
+        return $this->addFinalReportFile($file, self::PRESENTATION_COLLECTION, 'presentation');
+    }
+
+    /**
+     * ملف بايثون الاختياري المرافق للتقرير النهائي.
+     */
+    public function addCode($file): ?Media
+    {
+        return $this->addFinalReportFile($file, self::CODE_COLLECTION, 'code');
+    }
+
+    /**
+     * منطق مشترك للملفين: ملف واحد لكل مجموعة يُستبدل عند الرفع، وبلا تحويلات
+     * صور لأن العرض التقديمي وملف الشيفرة ليسا صوراً.
+     */
+    protected function addFinalReportFile($file, string $collection, string $label): ?Media
+    {
+        if (is_array($file)) {
+            $file = reset($file);
+        }
+
+        if (
+            ! $file instanceof \Illuminate\Http\UploadedFile &&
+            ! ($file instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile)
+        ) {
+            return null;
+        }
+
+        $this->clearMediaCollection($collection);
+
+        try {
+            $originalName = $file->getClientOriginalName();
+            $extension = strtolower($file->getClientOriginalExtension());
+            $baseName = Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) ?: $label;
+            $fileName = now()->format('YmdHis') . '_' . Str::random(8) . '_' . $baseName . '.' . $extension;
+
+            return $this
+                ->addMedia($file)
+                ->usingFileName($fileName)
+                ->toMediaCollection($collection, self::FINAL_FILES_DISK);
+        } catch (\Exception $e) {
+            Log::error('Error uploading final report ' . $label . ': ' . $e->getMessage(), [
+                'registration_id' => $this->getKey(),
+            ]);
+
+            return null;
+        }
     }
 
     public function student(): BelongsTo

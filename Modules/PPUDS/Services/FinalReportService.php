@@ -73,6 +73,54 @@ class FinalReportService
     }
 
     /**
+     * العرض التقديمي إجباري، لكن الحفظ هنا يتجاهل الطلب الخالي من ملف جديد
+     * حتى لا يفقد الطالب العرض الذي رفعه سابقاً عند تعديل بقية الحقول.
+     */
+    public function savePresentation(Registration $registration, mixed $file): bool
+    {
+        if (blank($file)) {
+            return true;
+        }
+
+        return $registration->addPresentation($file) !== null;
+    }
+
+    /**
+     * ملف بايثون اختياري بالكامل.
+     */
+    public function saveCode(Registration $registration, mixed $file): bool
+    {
+        if (blank($file)) {
+            return true;
+        }
+
+        return $registration->addCode($file) !== null;
+    }
+
+    public function presentationUrl(?Registration $registration): ?string
+    {
+        return $registration?->hasMedia(Registration::PRESENTATION_COLLECTION)
+            ? $registration->getFirstMediaUrl(Registration::PRESENTATION_COLLECTION)
+            : null;
+    }
+
+    public function codeUrl(?Registration $registration): ?string
+    {
+        return $registration?->hasMedia(Registration::CODE_COLLECTION)
+            ? $registration->getFirstMediaUrl(Registration::CODE_COLLECTION)
+            : null;
+    }
+
+    /**
+     * يستخدمها التحقق والتسليم معاً: العرض التقديمي مطلوب مرة واحدة فقط،
+     * فإن كان مرفوعاً من قبل لا يُطلب من الطالب رفعه في كل حفظ.
+     */
+    public function hasPresentation(?Registration $registration): bool
+    {
+        return (bool) $registration?->hasMedia(Registration::PRESENTATION_COLLECTION);
+    }
+
+    /**
      * تقرير الطالب في الفصل الحالي إن وُجد.
      */
     public function currentReportFor(User|int $student): ?FinalReport

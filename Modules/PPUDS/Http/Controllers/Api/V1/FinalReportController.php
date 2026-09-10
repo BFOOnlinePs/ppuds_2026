@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\FinalReport;
+use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Http\Controllers\Api\V1\Concerns\EnsuresCurrentRegistration;
 use Modules\PPUDS\Http\Requests\FinalReportRequest;
 use Modules\PPUDS\Services\FinalReportService;
@@ -206,9 +207,12 @@ class FinalReportController extends Controller
      * mediaType="multipart/form-data",
      *
      * @OA\Schema(
+     * required={"final_presentation"},
      * @OA\Property(property="role_description", type="string"),
      * @OA\Property(property="summary", type="string"),
-     * @OA\Property(property="final_file", type="string", format="binary", description="مرفق اختياري: jpeg, png, jpg أو pdf بحد أقصى 2 ميجابايت. رفع ملف جديد يستبدل السابق. عند استخدام multipart تُرسل الجداول بصيغة الأقواس مثل tasks[0][task_name].")
+     * @OA\Property(property="final_file", type="string", format="binary", description="مرفق اختياري: jpeg, png, jpg أو pdf بحد أقصى 2 ميجابايت. رفع ملف جديد يستبدل السابق. عند استخدام multipart تُرسل الجداول بصيغة الأقواس مثل tasks[0][task_name]."),
+     * @OA\Property(property="final_presentation", type="string", format="binary", description="العرض التقديمي — إجباري: ppt أو pptx بحد أقصى 10 ميجابايت. مطلوب في أول حفظ فقط، وبعد رفعه يصبح اختيارياً في الطلبات التالية ورفع ملف جديد يستبدل السابق."),
+     * @OA\Property(property="final_code", type="string", format="binary", description="ملف بايثون — اختياري: امتداد ‎.py فقط بحد أقصى 2 ميجابايت، ويجب أن يكون ملفاً نصياً. رفع ملف جديد يستبدل السابق.")
      * )
      * )
      * ),
@@ -226,7 +230,7 @@ class FinalReportController extends Controller
      * )
      * ),
      * @OA\Response(response=403, description="Forbidden"),
-     * @OA\Response(response=422, description="Validation error, the report is already submitted, or submission is closed in settings")
+     * @OA\Response(response=422, description="Validation error, the presentation file is missing, the report is already submitted, or submission is closed in settings")
      * )
      */
     public function store(FinalReportRequest $request)
@@ -251,8 +255,8 @@ class FinalReportController extends Controller
             return $this->errorResponse(__('The final report has already been submitted and can no longer be edited.'), 422);
         }
 
-        if (! $this->finalReports->saveAttachment($registration, $request->file('final_file'))) {
-            return $this->errorResponse(__('Failed to upload the final report file. Please try again.'), 500);
+        if ($failed = $this->storeReportFiles($request, $registration)) {
+            return $failed;
         }
 
         $report = $this->finalReports->save($registration, $request->validated(), auth()->user());
@@ -351,7 +355,9 @@ class FinalReportController extends Controller
      * @OA\Property(property="_method", type="string", example="PATCH"),
      * @OA\Property(property="role_description", type="string"),
      * @OA\Property(property="summary", type="string"),
-     * @OA\Property(property="final_file", type="string", format="binary", description="مرفق اختياري: jpeg, png, jpg أو pdf بحد أقصى 2 ميجابايت. رفع ملف جديد يستبدل السابق. عند استخدام multipart تُرسل الجداول بصيغة الأقواس مثل tasks[0][task_name].")
+     * @OA\Property(property="final_file", type="string", format="binary", description="مرفق اختياري: jpeg, png, jpg أو pdf بحد أقصى 2 ميجابايت. رفع ملف جديد يستبدل السابق. عند استخدام multipart تُرسل الجداول بصيغة الأقواس مثل tasks[0][task_name]."),
+     * @OA\Property(property="final_presentation", type="string", format="binary", description="العرض التقديمي: ppt أو pptx بحد أقصى 10 ميجابايت. إجباري ما لم يكن مرفوعاً من قبل، ورفع ملف جديد يستبدل السابق."),
+     * @OA\Property(property="final_code", type="string", format="binary", description="ملف بايثون — اختياري: امتداد ‎.py فقط بحد أقصى 2 ميجابايت، ويجب أن يكون ملفاً نصياً. رفع ملف جديد يستبدل السابق.")
      * )
      * )
      * ),
@@ -396,8 +402,8 @@ class FinalReportController extends Controller
             return $error;
         }
 
-        if (! $this->finalReports->saveAttachment($finalReport->registration, $request->file('final_file'))) {
-            return $this->errorResponse(__('Failed to upload the final report file. Please try again.'), 500);
+        if ($failed = $this->storeReportFiles($request, $finalReport->registration)) {
+            return $failed;
         }
 
         $report = $this->finalReports->save($finalReport->registration, $request->validated(), auth()->user());
@@ -438,7 +444,7 @@ class FinalReportController extends Controller
      * )
      * ),
      * @OA\Response(response=403, description="Forbidden"),
-     * @OA\Response(response=422, description="Already submitted, still incomplete, or submission is closed in settings")
+     * @OA\Response(response=422, description="Already submitted, still incomplete, the presentation file is missing, or submission is closed in settings")
      * )
      */
     public function submit(FinalReport $finalReport)
@@ -472,10 +478,40 @@ class FinalReportController extends Controller
             );
         }
 
+        // العرض التقديمي شرط للتسليم، فقد يكون التقرير حُفظ كمسودة قبل رفعه.
+        if (! $this->finalReports->hasPresentation($finalReport->registration)) {
+            return $this->errorResponse(
+                __('Please upload the presentation file before submitting.'),
+                422
+            );
+        }
+
         return $this->successResponse(
             new FinalReportResource($this->finalReports->submit($finalReport)),
             __('Final report submitted successfully')
         );
+    }
+
+    /**
+     * ملفات التقرير الثلاثة تُحفظ معاً: المرفق العام الاختياري، العرض التقديمي
+     * الإجباري، وملف بايثون الاختياري. الطلب الخالي من ملف جديد لا يمسّ الملف
+     * المرفوع سابقاً، فيبقى العرض التقديمي محفوظاً عند تعديل بقية الحقول.
+     */
+    private function storeReportFiles(FinalReportRequest $request, Registration $registration): ?JsonResponse
+    {
+        if (! $this->finalReports->saveAttachment($registration, $request->file('final_file'))) {
+            return $this->errorResponse(__('Failed to upload the final report file. Please try again.'), 500);
+        }
+
+        if (! $this->finalReports->savePresentation($registration, $request->file('final_presentation'))) {
+            return $this->errorResponse(__('Failed to upload the presentation file. Please try again.'), 500);
+        }
+
+        if (! $this->finalReports->saveCode($registration, $request->file('final_code'))) {
+            return $this->errorResponse(__('Failed to upload the Python file. Please try again.'), 500);
+        }
+
+        return null;
     }
 
     /**
