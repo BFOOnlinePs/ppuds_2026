@@ -5622,6 +5622,9 @@
                         },
                         "multipart/form-data": {
                             "schema": {
+                                "required": [
+                                    "final_presentation"
+                                ],
                                 "properties": {
                                     "role_description": {
                                         "type": "string"
@@ -5631,6 +5634,16 @@
                                     },
                                     "final_file": {
                                         "description": "مرفق اختياري: jpeg, png, jpg أو pdf بحد أقصى 2 ميجابايت. رفع ملف جديد يستبدل السابق. عند استخدام multipart تُرسل الجداول بصيغة الأقواس مثل tasks[0][task_name].",
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "final_presentation": {
+                                        "description": "العرض التقديمي — إجباري: ppt أو pptx بحد أقصى 10 ميجابايت. مطلوب في أول حفظ فقط، وبعد رفعه يصبح اختيارياً في الطلبات التالية ورفع ملف جديد يستبدل السابق.",
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "final_code": {
+                                        "description": "ملف بايثون — اختياري: امتداد ‎.py فقط بحد أقصى 2 ميجابايت، ويجب أن يكون ملفاً نصياً. رفع ملف جديد يستبدل السابق.",
                                         "type": "string",
                                         "format": "binary"
                                     }
@@ -5668,7 +5681,7 @@
                         "description": "Forbidden"
                     },
                     "422": {
-                        "description": "Validation error, the report is already submitted, or submission is closed in settings"
+                        "description": "Validation error, the presentation file is missing, the report is already submitted, or submission is closed in settings"
                     }
                 },
                 "security": [
@@ -5861,6 +5874,16 @@
                                         "description": "مرفق اختياري: jpeg, png, jpg أو pdf بحد أقصى 2 ميجابايت. رفع ملف جديد يستبدل السابق. عند استخدام multipart تُرسل الجداول بصيغة الأقواس مثل tasks[0][task_name].",
                                         "type": "string",
                                         "format": "binary"
+                                    },
+                                    "final_presentation": {
+                                        "description": "العرض التقديمي: ppt أو pptx بحد أقصى 10 ميجابايت. إجباري ما لم يكن مرفوعاً من قبل، ورفع ملف جديد يستبدل السابق.",
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "final_code": {
+                                        "description": "ملف بايثون — اختياري: امتداد ‎.py فقط بحد أقصى 2 ميجابايت، ويجب أن يكون ملفاً نصياً. رفع ملف جديد يستبدل السابق.",
+                                        "type": "string",
+                                        "format": "binary"
                                     }
                                 },
                                 "type": "object"
@@ -5953,7 +5976,7 @@
                         "description": "Forbidden"
                     },
                     "422": {
-                        "description": "Already submitted, still incomplete, or submission is closed in settings"
+                        "description": "Already submitted, still incomplete, the presentation file is missing, or submission is closed in settings"
                     }
                 },
                 "security": [
@@ -12427,6 +12450,18 @@
                         "description": "رابط المرفق الاختياري، و null إذا لم يرفع الطالب ملفاً",
                         "type": "string",
                         "example": "https://example.com/storage/ppuds/registers/report.pdf",
+                        "nullable": true
+                    },
+                    "final_presentation": {
+                        "description": "رابط العرض التقديمي الإجباري، و null إذا لم يُرفع بعد أو لم تُحمَّل علاقة التسجيل",
+                        "type": "string",
+                        "example": "https://example.com/storage/ppuds/registers/20260910_ab12cd34_deck.pptx",
+                        "nullable": true
+                    },
+                    "final_code": {
+                        "description": "رابط ملف بايثون الاختياري، و null إذا لم يرفعه الطالب",
+                        "type": "string",
+                        "example": "https://example.com/storage/ppuds/registers/20260910_ef56gh78_main.py",
                         "nullable": true
                     },
                     "tasks": {
