@@ -1,9 +1,53 @@
 @php
     $company = $company ?? null;
     $supervisors = collect($supervisors ?? []);
+    $unassignedDepartments = collect($unassignedDepartments ?? []);
 @endphp
 
 <div class="space-y-4">
+    {{--  تدريبات فقدت مقعد المشرف: لا يراها أي مشرف حتى يُسند لها أحد.  --}}
+    @if ($unassignedDepartments->isNotEmpty())
+        <div class="overflow-hidden rounded-lg border border-amber-300 bg-amber-50">
+            <div class="border-b border-amber-200 px-4 py-3">
+                <p class="text-sm font-semibold text-amber-900">{{ __('Departments Without A Supervisor') }}</p>
+                <p class="mt-1 text-xs text-amber-800">
+                    {{ __('These placements are not visible to any company supervisor. Assign a supervisor to restore access.') }}
+                </p>
+            </div>
+
+            <table class="min-w-full divide-y divide-amber-200 text-right">
+                <thead>
+                    <tr>
+                        <th class="px-4 py-2 text-xs font-semibold text-amber-900">{{ __('Branch') }}</th>
+                        <th class="px-4 py-2 text-xs font-semibold text-amber-900">{{ __('Department') }}</th>
+                        <th class="px-4 py-2 text-xs font-semibold text-amber-900">{{ __('Students') }}</th>
+                        <th class="px-4 py-2"></th>
+                    </tr>
+                </thead>
+
+                <tbody class="divide-y divide-amber-200">
+                    @foreach ($unassignedDepartments as $row)
+                        <tr>
+                            <td class="px-4 py-2 text-sm text-amber-900">{{ $row['branch'] }}</td>
+                            <td class="px-4 py-2 text-sm text-amber-900">{{ $row['department'] }}</td>
+                            <td class="px-4 py-2 text-sm font-semibold text-amber-900">{{ $row['students_count'] }}</td>
+                            <td class="px-4 py-2 text-left">
+                                @can('Company Update')
+                                    <button
+                                        type="button"
+                                        wire:click="mountAction('editDepartmentSupervisor', { branchId: {{ $row['branch_id'] }}, departmentId: {{ $row['department_id'] }}, userId: null })"
+                                        class="inline-flex items-center rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1"
+                                    >
+                                        {{ __('Assign Supervisor') }}
+                                    </button>
+                                @endcan
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endif
     @if ($company)
         <div class="flex justify-end">
             @can('Company Update')

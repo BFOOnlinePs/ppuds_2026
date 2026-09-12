@@ -14,8 +14,10 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Enums\FiltersLayout; // ✅ تم استيراد الـ Layout
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -92,6 +94,18 @@ class Index extends Component implements HasTable, HasForms
     protected function getTableFilters(): array
     {
         return [
+            // المحذوفون مخفيون افتراضياً، ويظهرون عند طلبهم لاستعادتهم.
+            TernaryFilter::make('deleted_at')
+                ->label(__('Deleted Users'))
+                ->placeholder(__('Without Deleted'))
+                ->trueLabel(__('Deleted Only'))
+                ->falseLabel(__('With Deleted'))
+                ->queries(
+                    true: fn (Builder $query): Builder => $query->onlyTrashed(),
+                    false: fn (Builder $query): Builder => $query->withTrashed(),
+                    blank: fn (Builder $query): Builder => $query->withoutTrashed(),
+                ),
+
             // 1. فلتر الأدوار
             SelectFilter::make('roles')
                 ->label(__('Roles'))
@@ -176,8 +190,44 @@ class Index extends Component implements HasTable, HasForms
 
             DeleteAction::make('delete')
                 ->action(fn (User $record) => $this->deleteUser($record))
-                ->visible(fn() => auth()->user()->can('User Delete'))
+                ->visible(fn (User $record) => auth()->user()->can('User Delete') && ! $record->trashed()),
+
+            Action::make('restore')
+                ->label(__('Restore'))
+                ->icon('solar-history-bold-duotone')
+                ->color('success')
+                ->requiresConfirmation()
+                ->modalHeading(__('Restore User'))
+                ->modalDescription(__('The user will regain access with the same roles and links they had before deletion.'))
+                ->modalSubmitActionLabel(__('Restore'))
+                ->action(fn (User $record) => $this->restoreUser($record))
+                ->visible(fn (User $record) => auth()->user()->can('User Delete') && $record->trashed()),
         ];
+    }
+
+    protected function restoreUser(User $user): void
+    {
+        abort_unless(auth()->user()->can('User Delete'), 403);
+
+        if (! $user->trashed()) {
+            return;
+        }
+
+        try {
+            $user->restore();
+
+            Notification::make()
+                ->title(__('User restored successfully.'))
+                ->success()
+                ->send();
+        } catch (Throwable $exception) {
+            report($exception);
+
+            Notification::make()
+                ->title(__('Failed to restore the user. Please try again.'))
+                ->danger()
+                ->send();
+        }
     }
 
     protected function deleteUser(User $user): void
@@ -195,7 +245,8 @@ class Index extends Component implements HasTable, HasForms
 
         try {
             DB::transaction(function () use ($user): void {
-                $user->syncRoles([]);
+                // الأدوار تبقى كما هي: الحذف ناعم، ومسحها هنا كان يعيد المستخدم
+                // بلا صلاحيات عند الاستعادة. أما الجلسات فتُبطَل فوراً لمنع الدخول.
                 $user->tokens()->delete();
                 $user->delete();
             });

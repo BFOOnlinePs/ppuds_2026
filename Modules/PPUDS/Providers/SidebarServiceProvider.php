@@ -38,6 +38,8 @@ class SidebarServiceProvider extends ServiceProvider
                 ->add((new SidebarItem('Companies List', 'solar-buildings-3-bold-duotone', ['Company View List'], 'companies.index'))
                     ->hiddenForRoles($this->companyRoles()))
                 ->add(new SidebarItem('Add Company', 'solar-add-square-bold-duotone', ['Company Create'], 'companies.add'))
+                ->add((new SidebarItem('Company Supervisors', 'solar-users-group-rounded-bold-duotone', ['Company View List'], 'company-supervisors.index'))
+                    ->hiddenForRoles($this->companyRoles()))
                 ->add(new SidebarItem('Companies Category List', 'solar-widget-4-bold-duotone', ['Company Category View List'], 'company-category.index'))
                 ->add(new SidebarItem('Companies Department List', 'solar-structure-bold-duotone', ['Company Department View List'], 'company-department.index'))
         );

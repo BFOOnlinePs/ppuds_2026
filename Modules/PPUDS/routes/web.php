@@ -86,6 +86,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     Route::get('/{company}/details', Details\Details::class)->name('details')->can('Company Details List');
                 });
 
+                // كل ما يخص مشرفي الشركات في شاشة واحدة: إضافة وتعديل وإسناد أقسام.
+                Route::get(
+                    'company-supervisors',
+                    \Modules\PPUDS\Livewire\Pages\CompanySupervisor\Index::class
+                )->name('company-supervisors.index')->can('Company View List');
+
                 Route::group([
                     'prefix' => 'majors',
                     'as' => 'majors.',

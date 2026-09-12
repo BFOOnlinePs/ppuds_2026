@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Intervention\Image\Encoders\PngEncoder;
@@ -83,6 +84,10 @@ class User extends Authenticatable implements HasMedia, WirechatUser
     use InteractsWithMedia;
     use InteractsWithWirechat;
     use Notifiable;
+
+    // الحذف يُخفي المستخدم ولا يمسحه، فيمكن استعادته بأدواره وارتباطاته كاملة.
+    // نطاق SoftDeletes العام يمنع المحذوف من تسجيل الدخول تلقائياً.
+    use SoftDeletes;
     use TwoFactorAuthenticatable;
 
     /**

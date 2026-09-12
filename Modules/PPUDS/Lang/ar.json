@@ -1226,5 +1226,56 @@
     "Optional. A .py source file, up to 2 MB. Uploading a new file replaces the current one.": "اختياري. ملف شيفرة بامتداد ‎.py وبحد أقصى 2 ميجابايت. رفع ملف جديد يستبدل الملف الحالي.",
     "Failed to upload the Python file. Please try again.": "فشل رفع ملف بايثون. الرجاء المحاولة مرة أخرى.",
     "The Python file must have a .py extension.": "يجب أن يكون امتداد ملف بايثون ‎.py",
-    "The Python file must be a plain text source file.": "يجب أن يكون ملف بايثون ملف شيفرة نصياً."
+    "The Python file must be a plain text source file.": "يجب أن يكون ملف بايثون ملف شيفرة نصياً.",
+    "Departments Without A Supervisor": "أقسام بلا مشرف",
+    "These placements are not visible to any company supervisor. Assign a supervisor to restore access.": "هذه التدريبات لا تظهر لأي مشرف شركة. أسنِد مشرفاً لإعادة ظهورها.",
+
+    "Company Supervisors": "مشرفو الشركات",
+    "Add Company Supervisor": "إضافة مشرف شركة",
+    "Enter the supervisor details, then choose the department they will supervise.": "أدخل بيانات المشرف، ثم اختر القسم الذي سيشرف عليه.",
+    "It will also be the initial password.": "سيكون أيضاً كلمة المرور الأولى.",
+    "If the email is rejected, a deleted user may still hold it — check the deleted filter and restore them.": "إذا رُفض البريد فقد يكون محجوزاً لمستخدم محذوف — افتح فلتر المحذوفين واستعده.",
+    "Company supervisor added and assigned successfully": "تمت إضافة مشرف الشركة وإسناده بنجاح",
+    "Failed to add the supervisor. Please try again.": "تعذّرت إضافة المشرف. الرجاء المحاولة مرة أخرى.",
+
+    "Assign Department": "إسناد قسم",
+    "Assign": "إسناد",
+    "Assign Department To :name": "إسناد قسم إلى :name",
+    "The supervisor will immediately see every student in this department, with their full history.": "سيرى المشرف فوراً كل طلاب هذا القسم ببياناتهم كاملة.",
+    "Department assigned successfully": "تم إسناد القسم بنجاح",
+
+    "Remove Assignment": "إلغاء الإسناد",
+    "Remove Assignment From :name": "إلغاء إسناد قسم من :name",
+    "The seat becomes vacant and its students will not be visible to any company supervisor until someone else is assigned.": "سيصبح المقعد شاغراً ولن يرى طلابَه أي مشرف شركة حتى تُسنِد غيره.",
+    "Remove": "إلغاء",
+    "Assignment removed successfully": "تم إلغاء الإسناد بنجاح",
+
+    "Assigned Departments": "الأقسام المسندة",
+    "Not assigned to any department": "غير مسند لأي قسم",
+    "Current Supervisor Of This Department": "المشرف الحالي على هذا القسم",
+    "Vacant — no supervisor assigned": "شاغر — لا مشرف عليه",
+    ":name is currently assigned and will be replaced.": ":name مسند حالياً وسيتم استبداله.",
+
+    "Edit Company Supervisor": "تعديل مشرف شركة",
+    "Company supervisor updated successfully": "تم تحديث مشرف الشركة بنجاح",
+    "New Password": "كلمة مرور جديدة",
+    "Leave it empty to keep the current password.": "اتركها فارغة للإبقاء على كلمة المرور الحالية.",
+
+    "Delete Company Supervisor": "حذف مشرف شركة",
+    "The supervisor is hidden, not erased, and can be restored later. Their departments stay in place and their field visits are kept.": "يُخفى المشرف ولا يُمحى، ويمكن استعادته لاحقاً. أقسامه تبقى كما هي وزياراته الميدانية محفوظة.",
+    "Company supervisor deleted successfully": "تم حذف مشرف الشركة بنجاح",
+
+    "Restore Company Supervisor": "استعادة مشرف شركة",
+    "The supervisor will regain access with the same roles and departments they had before deletion.": "سيستعيد المشرف صلاحياته بنفس الأدوار والأقسام التي كانت له قبل الحذف.",
+    "Company supervisor restored successfully": "تمت استعادة مشرف الشركة بنجاح",
+
+    "No company supervisors yet": "لا يوجد مشرفو شركات بعد",
+    "Add a supervisor and assign them to a department so they can see their students.": "أضف مشرفاً وأسنِد له قسماً ليتمكن من رؤية طلابه.",
+
+    "Save": "حفظ",
+    "Restore": "استعادة",
+    "Deleted Users": "المستخدمون المحذوفون",
+    "Without Deleted": "بدون المحذوفين",
+    "Deleted Only": "المحذوفون فقط",
+    "With Deleted": "مع المحذوفين"
 }

@@ -44,6 +44,7 @@ use Modules\GeoLocation\Entities\Country;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\CompanyCategory;
 use Modules\PPUDS\Entities\CompanyDepartment;
+use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Services\PpuApiService;
 use Spatie\MediaLibrary\MediaCollections\Models\Media as SpatieMedia;
 
@@ -519,6 +520,7 @@ class Details extends Component implements HasForms, HasInfolists, HasActions
                                             ->viewData(fn () => [
                                                 'company' => $this->company,
                                                 'supervisors' => $this->companySupervisorRows(),
+                                                'unassignedDepartments' => $this->unassignedDepartmentRows(),
                                             ]),
                                     ]),
 
@@ -542,6 +544,48 @@ class Details extends Component implements HasForms, HasInfolists, HasActions
                     ]),
             ])
             ->statePath('data');
+    }
+
+    /**
+     * تدريبات بلا مقعد مشرف: طلاب فرعهم وقسمهم لا يقابلهما صف في branch_department،
+     * فلا يراهم أي مشرف شركة. تحدث حين يُحذف المشرف، إذ يُسقط الحذف صف الربط
+     * بالكامل (CASCADE) — و user_id لا يقبل NULL أصلاً، فالصف يختفي ولا يفرغ.
+     * جدول المشرفين مجمَّع حسب المشرف، فهذه الحالة تختفي منه ولا يبقى زر لإصلاحها.
+     *
+     * @return Collection<int, array<string, mixed>>
+     */
+    protected function unassignedDepartmentRows(): Collection
+    {
+        $pivotTable = config('ppuds.table_prefix').'branch_department';
+        $studentCompanyTable = (new StudentCompany)->getTable();
+
+        return StudentCompany::query()
+            ->where('company_id', $this->company->getKey())
+            ->whereNotNull('branch_id')
+            ->whereNotNull('department_id')
+            // whereNotNull يغطي الحالتين معاً: صف ربط مفقود (حذف قديم قبل تحويل
+            // القيد إلى SET NULL)، وصف باقٍ بمشرف فارغ (الحذف بعد التحويل).
+            ->whereNotExists(fn ($subQuery) => $subQuery
+                ->select(DB::raw(1))
+                ->from($pivotTable)
+                ->whereColumn("{$pivotTable}.branch_id", "{$studentCompanyTable}.branch_id")
+                ->whereColumn("{$pivotTable}.company_department_id", "{$studentCompanyTable}.department_id")
+                ->whereNotNull("{$pivotTable}.user_id"))
+            ->with(['branch', 'department'])
+            ->get()
+            ->groupBy(fn (StudentCompany $placement): string => $placement->branch_id.'-'.$placement->department_id)
+            ->map(function (Collection $placements): array {
+                $first = $placements->first();
+
+                return [
+                    'branch_id' => $first->branch_id,
+                    'branch' => $first->branch?->name,
+                    'department_id' => $first->department_id,
+                    'department' => $first->department?->name,
+                    'students_count' => $placements->count(),
+                ];
+            })
+            ->values();
     }
 
     protected function companySupervisorRows(): Collection
@@ -624,9 +668,24 @@ class Details extends Component implements HasForms, HasInfolists, HasActions
 
                 abort_unless($branch, 404);
 
-                $branch->departments()->updateExistingPivot($arguments['departmentId'] ?? null, [
-                    'user_id' => $data['user_id'],
-                ]);
+                $departmentId = $arguments['departmentId'] ?? null;
+
+                abort_unless($departmentId, 404);
+
+                // حذف مستخدم يُسقط صف branch_department بالكامل (CASCADE) لا يفرّغه،
+                // و updateExistingPivot لا يُنشئ صفاً — فكان الإسناد يفشل بصمت ويعرض
+                // رسالة نجاح. لذلك نفحص الارتباط أولاً ونُنشئه إن كان مفقوداً.
+                $isAttached = $branch->departments()->whereKey($departmentId)->exists();
+
+                if ($isAttached) {
+                    $branch->departments()->updateExistingPivot($departmentId, [
+                        'user_id' => $data['user_id'],
+                    ]);
+                } else {
+                    $branch->departments()->attach($departmentId, [
+                        'user_id' => $data['user_id'],
+                    ]);
+                }
 
                 Toaster::success(__('Supervisor updated successfully'));
             })
