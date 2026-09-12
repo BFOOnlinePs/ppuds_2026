@@ -16,6 +16,8 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Enums\FiltersLayout;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -87,18 +89,8 @@ class Index extends Component implements HasTable, HasForms
                     ->getStateUsing(fn (User $record): string => $record->trashed() ? __('Deleted') : __('Active'))
                     ->color(fn (User $record): string => $record->trashed() ? 'danger' : 'success'),
             ])
-            ->filters([
-                TernaryFilter::make('deleted_at')
-                    ->label(__('Deleted Users'))
-                    ->placeholder(__('Without Deleted'))
-                    ->trueLabel(__('Deleted Only'))
-                    ->falseLabel(__('With Deleted'))
-                    ->queries(
-                        true: fn (Builder $query): Builder => $query->onlyTrashed(),
-                        false: fn (Builder $query): Builder => $query->withTrashed(),
-                        blank: fn (Builder $query): Builder => $query->withoutTrashed(),
-                    ),
-            ], layout: FiltersLayout::AboveContent)
+            ->filters($this->getTableFilters(), layout: FiltersLayout::AboveContent)
+            ->filtersFormColumns(3)
             ->headerActions([$this->createAction()])
             ->actions([
                 $this->assignAction(),
@@ -110,6 +102,111 @@ class Index extends Component implements HasTable, HasForms
             ->bulkActions([])
             ->emptyStateHeading(__('No company supervisors yet'))
             ->emptyStateDescription(__('Add a supervisor and assign them to a department so they can see their students.'));
+    }
+
+    // ===================== الفلاتر =====================
+
+    /**
+     * الشركة والفرع والقسم ليست حقولاً على المستخدم بل مقاعد في جدول الربط،
+     * فكل فلتر منها يُترجم إلى EXISTS على branch_department.
+     *
+     * @return array<int, mixed>
+     */
+    protected function getTableFilters(): array
+    {
+        return [
+            Filter::make('supervisor_details')
+                ->label(__('Search Details'))
+                ->form([
+                    TextInput::make('name')
+                        ->label(__('Name'))
+                        ->live(debounce: 500)
+                        ->prefixIcon('solar-user-linear'),
+
+                    TextInput::make('email')
+                        ->label(__('Email'))
+                        ->live(debounce: 500)
+                        ->prefixIcon('solar-letter-linear'),
+
+                    TextInput::make('phone')
+                        ->label(__('Phone'))
+                        ->live(debounce: 500)
+                        ->prefixIcon('solar-phone-linear'),
+                ])
+                ->columns(3)
+                ->query(fn (Builder $query, array $data): Builder => $query
+                    ->when($data['name'] ?? null, fn (Builder $q, string $v) => $q->where('users.name', 'like', "%{$v}%"))
+                    ->when($data['email'] ?? null, fn (Builder $q, string $v) => $q->where('users.email', 'like', "%{$v}%"))
+                    ->when($data['phone'] ?? null, fn (Builder $q, string $v) => $q->where('users.phone', 'like', "%{$v}%"))),
+
+            SelectFilter::make('company')
+                ->label(__('Company'))
+                ->options(fn (): array => Company::query()->get()->pluck('name', 'id')->toArray())
+                ->searchable()
+                ->preload()
+                ->query(fn (Builder $query, array $data): Builder => $query->when(
+                    $data['value'] ?? null,
+                    fn (Builder $q, $companyId) => $q->whereExists(fn ($sub) => $this->seatSubQuery($sub)
+                        ->join(config('ppuds.table_prefix').'branch_company as bc', 'bc.branch_id', '=', 'bd.branch_id')
+                        ->where('bc.company_id', $companyId))
+                )),
+
+            SelectFilter::make('branch')
+                ->label(__('Branch'))
+                ->options(fn (): array => Branch::query()->get()->pluck('name', 'id')->toArray())
+                ->searchable()
+                ->preload()
+                ->query(fn (Builder $query, array $data): Builder => $query->when(
+                    $data['value'] ?? null,
+                    fn (Builder $q, $branchId) => $q->whereExists(fn ($sub) => $this->seatSubQuery($sub)
+                        ->where('bd.branch_id', $branchId))
+                )),
+
+            SelectFilter::make('department')
+                ->label(__('Department'))
+                ->options(fn (): array => CompanyDepartment::query()->get()->pluck('name', 'id')->toArray())
+                ->searchable()
+                ->preload()
+                ->query(fn (Builder $query, array $data): Builder => $query->when(
+                    $data['value'] ?? null,
+                    fn (Builder $q, $departmentId) => $q->whereExists(fn ($sub) => $this->seatSubQuery($sub)
+                        ->where('bd.company_department_id', $departmentId))
+                )),
+
+            // المشرف بلا قسم لا يرى أي طالب، فهذا الفلتر يكشف الحسابات المعلّقة.
+            TernaryFilter::make('has_assignment')
+                ->label(__('Assignment Status'))
+                ->placeholder(__('All'))
+                ->trueLabel(__('Assigned To A Department'))
+                ->falseLabel(__('Without Any Department'))
+                ->queries(
+                    true: fn (Builder $query): Builder => $query->whereExists(fn ($sub) => $this->seatSubQuery($sub)),
+                    false: fn (Builder $query): Builder => $query->whereNotExists(fn ($sub) => $this->seatSubQuery($sub)),
+                    blank: fn (Builder $query): Builder => $query,
+                ),
+
+            TernaryFilter::make('deleted_at')
+                ->label(__('Deleted Users'))
+                ->placeholder(__('Without Deleted'))
+                ->trueLabel(__('Deleted Only'))
+                ->falseLabel(__('With Deleted'))
+                ->queries(
+                    true: fn (Builder $query): Builder => $query->onlyTrashed(),
+                    false: fn (Builder $query): Builder => $query->withTrashed(),
+                    blank: fn (Builder $query): Builder => $query->withoutTrashed(),
+                ),
+        ];
+    }
+
+    /**
+     * مقاعد المستخدم الحالي في جدول الربط، أساساً لكل فلاتر الإسناد.
+     */
+    protected function seatSubQuery(mixed $subQuery): mixed
+    {
+        return $subQuery
+            ->select(DB::raw(1))
+            ->from(config('ppuds.table_prefix').'branch_department as bd')
+            ->whereColumn('bd.user_id', 'users.id');
     }
 
     // ===================== الإجراءات =====================

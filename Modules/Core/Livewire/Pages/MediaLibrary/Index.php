@@ -19,6 +19,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Number;
 use Illuminate\Support\Str;
 use Livewire\Component;
@@ -47,7 +48,13 @@ class Index extends Component implements HasTable, HasForms
     public function table(Table $table): Table
     {
         return $table
-            ->query(fn () => Media::query()->latest('id'))
+            // العلاقة المتعددة الأشكال تُحمَّل مسبقاً، ومعها رافع الملف في ملفات
+            // المكتبة، وإلا لأُطلق استعلام لكل بطاقة في الشبكة.
+            ->query(fn () => Media::query()
+                ->with(['model' => fn (MorphTo $morphTo) => $morphTo->morphWith([
+                    MediaAsset::class => ['createdBy'],
+                ])])
+                ->latest('id'))
             ->heading(__('Media Library'))
             ->description(fn (): string => $this->storageSummary())
             ->emptyStateHeading(__('No files found'))
@@ -68,6 +75,15 @@ class Index extends Component implements HasTable, HasForms
                         ->weight('bold')
                         ->limit(32)
                         ->searchable(query: fn (Builder $query, string $search): Builder => $this->applySearch($query, $search)),
+
+                    TextColumn::make('owner')
+                        ->label(__('Owner'))
+                        ->getStateUsing(fn (Media $record): ?string => $this->ownerName($record))
+                        ->placeholder(__('Unknown'))
+                        ->icon('solar-user-circle-bold-duotone')
+                        ->size('xs')
+                        ->color('primary')
+                        ->limit(32),
 
                     TextColumn::make('details')
                         ->label('')
@@ -154,6 +170,36 @@ class Index extends Component implements HasTable, HasForms
     }
 
     /** Where the file came from: the library itself, or the record that owns it. */
+    /**
+     * صاحب الملف كما يفهمه المستخدم:
+     * - صورة مرفوعة على مستخدم  → اسمه
+     * - ملف في المكتبة          → اسم من رفعه
+     * - أي نموذج آخر            → اسمه إن كان له اسم
+     *
+     * تعتمد على العلاقة المحمَّلة مسبقاً، فلا تُطلق استعلاماً إضافياً.
+     */
+    protected function ownerName(Media $media): ?string
+    {
+        $model = $media->model;
+
+        if (! $model) {
+            return null;
+        }
+
+        if ($model instanceof User) {
+            return $model->name;
+        }
+
+        if ($model instanceof MediaAsset) {
+            return $model->createdBy?->name;
+        }
+
+        // الشركات والأقسام وغيرها مترجمة، و name يصل إليها عبر سمة الترجمة
+        $name = $model->name ?? null;
+
+        return filled($name) ? (string) $name : null;
+    }
+
     protected function source(Media $media): string
     {
         return $media->model_type === MediaAsset::class
@@ -180,6 +226,16 @@ class Index extends Component implements HasTable, HasForms
                 ->whereIn('model_id', User::query()
                     ->where('name', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%")
+                    ->select('id')))
+            // ملفات المكتبة تُنسب لرافعها لا لنموذج شخص، فنبحث فيه أيضاً
+            // حتى يجد البحث بالاسم كل ما يخص الشخص في الشاشة.
+            ->orWhere(fn (Builder $uploader): Builder => $uploader
+                ->where('model_type', MediaAsset::class)
+                ->whereIn('model_id', MediaAsset::query()
+                    ->whereIn('created_by', User::query()
+                        ->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->select('id'))
                     ->select('id'))));
     }
 

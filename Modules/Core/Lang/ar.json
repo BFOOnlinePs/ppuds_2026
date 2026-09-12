@@ -365,6 +365,8 @@
     "User could not be deleted.": "تعذّر حذف المستخدم.",
     "This user may be linked to records that must be removed first.": "قد يكون هذا المستخدم مرتبطاً بسجلات يجب حذفها أولاً.",
     "You cannot delete your own account.": "لا يمكنك حذف حسابك الخاص.",
+    "Owner": "صاحب الملف",
+    "Unknown": "غير معروف",
     "Restore": "استعادة",
     "Restore User": "استعادة المستخدم",
     "The user will regain access with the same roles and links they had before deletion.": "سيستعيد المستخدم صلاحياته بنفس الأدوار والارتباطات التي كانت له قبل الحذف.",

@@ -1277,5 +1277,10 @@
     "Deleted Users": "المستخدمون المحذوفون",
     "Without Deleted": "بدون المحذوفين",
     "Deleted Only": "المحذوفون فقط",
-    "With Deleted": "مع المحذوفين"
+    "With Deleted": "مع المحذوفين",
+
+    "Assignment Status": "حالة الإسناد",
+    "All": "الكل",
+    "Assigned To A Department": "مسند لقسم",
+    "Without Any Department": "بلا أي قسم"
 }
