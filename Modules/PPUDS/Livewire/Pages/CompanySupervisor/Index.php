@@ -69,6 +69,13 @@ class Index extends Component implements HasTable, HasForms
                     ->searchable()
                     ->placeholder('—'),
 
+                TextColumn::make('company')
+                    ->label(__('Company'))
+                    ->badge()
+                    ->color('info')
+                    ->getStateUsing(fn (User $record): array => $this->companyLabels($record))
+                    ->placeholder(__('Not assigned to any department')),
+
                 TextColumn::make('assignments')
                     ->label(__('Assigned Departments'))
                     ->badge()
@@ -641,6 +648,22 @@ class Index extends Component implements HasTable, HasForms
     }
 
     /**
+     * الشركات التي يشرف فيها، بلا تكرار — قد يكون مسنداً لعدة أقسام
+     * في الشركة نفسها.
+     *
+     * @return array<int, string>
+     */
+    protected function companyLabels(User $supervisor): array
+    {
+        return $this->assignmentRows($supervisor)
+            ->pluck('company_name')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
      * @return array<int, string>
      */
     protected function assignmentLabels(User $supervisor): array
@@ -681,11 +704,18 @@ class Index extends Component implements HasTable, HasForms
             ->leftJoin($prefix.'company_department_translations as dt', function ($join) use ($locale): void {
                 $join->on('dt.department_id', '=', 'bd.company_department_id')->where('dt.locale', '=', $locale);
             })
+            // الشركة تصل للمقعد عبر الفرع، لا مباشرةً
+            ->leftJoin($prefix.'branch_company as bc', 'bc.branch_id', '=', 'bd.branch_id')
+            ->leftJoin($prefix.'company_translations as ct', function ($join) use ($locale): void {
+                $join->on('ct.company_id', '=', 'bc.company_id')->where('ct.locale', '=', $locale);
+            })
             ->select([
                 'bd.branch_id',
                 'bd.company_department_id',
                 'bt.name as branch_name',
                 'dt.name as department_name',
+                'bc.company_id',
+                'ct.name as company_name',
             ])
             ->get();
     }
