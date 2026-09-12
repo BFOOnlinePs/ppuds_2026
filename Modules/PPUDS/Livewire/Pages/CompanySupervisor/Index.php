@@ -57,6 +57,13 @@ class Index extends Component implements HasTable, HasForms
                 ->with(['media', 'roles'])
                 ->whereHas('roles', fn (Builder $query) => $query->where('name', UserRole::COMPANY_SUPERVISOR->value)))
             ->columns([
+                TextColumn::make('company')
+                    ->label(__('Company'))
+                    ->badge()
+                    ->color('info')
+                    ->getStateUsing(fn (User $record): array => $this->companyLabels($record))
+                    ->placeholder(__('Not assigned to any department')),
+
                 UserColumn::make('name')
                     ->label(__('Name'))
                     ->user(fn (User $record) => $record)
@@ -68,13 +75,6 @@ class Index extends Component implements HasTable, HasForms
                     ->label(__('Phone'))
                     ->searchable()
                     ->placeholder('—'),
-
-                TextColumn::make('company')
-                    ->label(__('Company'))
-                    ->badge()
-                    ->color('info')
-                    ->getStateUsing(fn (User $record): array => $this->companyLabels($record))
-                    ->placeholder(__('Not assigned to any department')),
 
                 TextColumn::make('assignments')
                     ->label(__('Assigned Departments'))
