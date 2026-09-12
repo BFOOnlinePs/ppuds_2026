@@ -31,6 +31,7 @@ use Modules\Core\Filament\Tables\Columns\UserColumn;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\CompanyDepartment;
 use Modules\PPUDS\Entities\StudentCompany;
+use Modules\PPUDS\Services\PpuApiService;
 use Spatie\Permission\Models\Role;
 use Throwable;
 
@@ -160,7 +161,7 @@ class Index extends Component implements HasTable, HasForms
                 abort_unless($this->canManage(), 403);
 
                 try {
-                    DB::transaction(function () use ($data): void {
+                    $user = DB::transaction(function () use ($data): User {
                         $user = User::create([
                             'name' => $data['name'],
                             'email' => $data['email'],
@@ -172,6 +173,8 @@ class Index extends Component implements HasTable, HasForms
                         $user->generateAvatar();
 
                         $this->seatSupervisor((int) $data['branch_id'], (int) $data['department_id'], $user->id);
+
+                        return $user;
                     });
                 } catch (Throwable $exception) {
                     report($exception);
@@ -182,6 +185,14 @@ class Index extends Component implements HasTable, HasForms
                 }
 
                 Toaster::success(__('Company supervisor added and assigned successfully'));
+
+                // خارج المعاملة عمداً: نداء شبكي للجامعة، وفشله يجب ألا يُلغي
+                // إنشاء الحساب محلياً. كلمة المرور الأولى هي رقم الهاتف.
+                $this->sendSupervisorToUniversity(
+                    (int) $data['company_id'],
+                    $user->id,
+                    (string) $data['phone'],
+                );
             });
     }
 
@@ -203,6 +214,11 @@ class Index extends Component implements HasTable, HasForms
                 $this->seatSupervisor((int) $data['branch_id'], (int) $data['department_id'], $record->id);
 
                 Toaster::success(__('Department assigned successfully'));
+
+                // المشرف قد يكون جديداً على هذه الشركة في نظام الجامعة أيضاً،
+                // فنُرسله عند الإسناد لا عند الإنشاء فقط. كلمة المرور تُترك
+                // فارغة ليستعمل النظام رقم الهاتف كما يفعل في المزامنة العامة.
+                $this->sendSupervisorToUniversity((int) $data['company_id'], $record->id, null);
             });
     }
 
@@ -263,8 +279,11 @@ class Index extends Component implements HasTable, HasForms
                         ->required()
                         ->maxLength(255),
 
+                    // إجباري: نظام الجامعة يبني رقم الجوال من هذا الحقل،
+                    // وفراغه يُسقط إرسال المشرف إليه بصمت.
                     TextInput::make('phone')
                         ->label(__('Phone'))
+                        ->required()
                         ->maxLength(255),
 
                     TextInput::make('email')
@@ -444,6 +463,54 @@ class Index extends Component implements HasTable, HasForms
     }
 
     // ===================== مساعدات =====================
+
+    /**
+     * إرسال المشرف إلى نظام الجامعة عبر نقطة إضافة الشركة، وهي نفس الطريقة
+     * التي تستخدمها شاشة تفاصيل الشركة.
+     *
+     * الـ payload يبني رقم الجوال من هاتف المشرف ويسقط الإرسال كلياً إن كان
+     * فارغاً، ولذلك الهاتف إجباري عند الإضافة. وكلمة المرور إن لم تُمرَّر
+     * يستعمل النظام رقم الهاتف بدلاً منها.
+     */
+    protected function sendSupervisorToUniversity(int $companyId, int $supervisorId, ?string $plainPassword): void
+    {
+        $company = Company::query()
+            ->with(['branches.supervisors', 'translations'])
+            ->find($companyId);
+
+        if (! $company) {
+            return;
+        }
+
+        try {
+            $result = app(PpuApiService::class)->addCompanyToUniversity(
+                $company,
+                $plainPassword,
+                $supervisorId,
+                sendEvenIfCompanyExists: true,
+            );
+        } catch (Throwable $exception) {
+            report($exception);
+
+            Toaster::error(__('Unable to send company supervisor to university system'));
+
+            return;
+        }
+
+        if (($result['operation'] ?? null) === 'already_exists') {
+            Toaster::success(__('Company supervisor already exists in university system'));
+
+            return;
+        }
+
+        if ($result === null || ($result['success'] ?? null) === false) {
+            Toaster::error(__('Unable to send company supervisor to university system'));
+
+            return;
+        }
+
+        Toaster::success(__('Company supervisor sent to university successfully'));
+    }
 
     /**
      * المقعد واحد لكل (فرع + قسم): نُحدِّث الصف إن وُجد وننشئه إن كان مفقوداً.
