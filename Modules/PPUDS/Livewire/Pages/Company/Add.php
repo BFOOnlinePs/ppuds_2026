@@ -128,64 +128,55 @@ class Add extends Component implements HasActions, HasForms
                                                             ->prefixIcon('solar-pen-new-square-linear')
                                                             ->placeholder(__('e.g. Acme Corporation'))
                                                             ->live(debounce: 500)
-                                                            ->datalist(fn () => Company::get()->pluck('name'))
+                                                            ->datalist(fn () => Company::with('translations')->get()->pluck('name'))
                                                             ->columnSpan(1)
                                                             ->unique(CompanyTranslation::class, 'name', ignoreRecord: true),
                                                         Placeholder::make('company_suggestions')
                                                             ->label(__('Suggestions & Similar Companies'))
                                                             ->hidden(fn (Get $get) => blank($get('name')))
-                                                            ->content(function (Get $get) {
+                                                            ->content(function (Get $get): HtmlString {
                                                                 $search = $get('name');
 
-                                                                $similarCompanies = Company::whereTranslationLike('name', "%{$search}%")
+                                                                // category.translations محمّلة مسبقاً لأن البطاقة تقرأ اسم
+                                                                // التصنيف لكل شركة، وهذا الحقل live فيتكرر النداء مع كل حرف.
+                                                                $similarCompanies = Company::with(['translations', 'category.translations'])
+                                                                    ->whereTranslationLike('name', "%{$search}%")
                                                                     ->limit(5)
                                                                     ->get();
 
-                                                                if ($similarCompanies->isEmpty()) {
-                                                                    return new HtmlString('
-                <div class="p-3 rounded-lg bg-success-50 dark:bg-success-500/10 text-success-600 dark:text-success-400 border border-success-200 dark:border-success-500/20">
-                    <span class="flex items-center gap-2 text-sm font-medium">
-                        <x-icon name="solar-check-circle-bold" class="w-100" />
-                        هذا الاسم متاح ولا يوجد شركات مشابهة في النظام.
-                    </span>
-                </div>
-            ');
-                                                                }
+                                                                return new HtmlString(Blade::render(<<<'HTML'
+                                                                    @if ($companies->isEmpty())
+                                                                        <div class="p-3 rounded-lg bg-success-50 dark:bg-success-500/10 text-success-600 dark:text-success-400 border border-success-200 dark:border-success-500/20">
+                                                                            <span class="flex items-center gap-2 text-sm font-medium">
+                                                                                <x-icon name="solar-check-circle-bold" class="w-5 h-5 shrink-0" />
+                                                                                {{ __('This name is available, and there are no similar companies in the system.') }}
+                                                                            </span>
+                                                                        </div>
+                                                                    @else
+                                                                        <div class="flex flex-col gap-3 mt-1">
+                                                                            <span class="text-sm font-medium text-warning-600 dark:text-warning-400 flex items-center gap-2">
+                                                                                <x-icon name="solar-info-circle-bold" class="w-5 h-5 shrink-0" />
+                                                                                {{ __('Careful, we found companies with similar names:') }}
+                                                                            </span>
 
-                                                                $categoryLabel = __('Category');
-                                                                $statusLabel = __('Status');
-
-                                                                $html = '<div class="flex flex-col gap-3 mt-1">';
-                                                                $html .= '  <span class="text-sm font-medium text-warning-600 dark:text-warning-400 flex items-center gap-2">
-                        <x-icon name="solar-info-circle-bold" class="w-100" />
-                        انتبه، وجدنا شركات بأسماء مشابهة:
-                    </span>';
-                                                                $html .= '  <div class="grid gap-2">';
-
-                                                                foreach ($similarCompanies as $company) {
-                                                                    $categoryName = $company->category?->name ?? '-';
-
-                                                                    $statusName = $company->status?->getLabel() ?? $company->status->value;
-
-                                                                    $html .= '
-                <div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                    <div>
-                        <strong class="text-sm text-gray-900 dark:text-white">'.$company->name.'</strong>
-                        <div class="text-xs text-gray-500 mt-1">
-                            '.$categoryLabel.': '.$categoryName.'
-                        </div>
-                    </div>
-                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-500/20">
-                        '.$statusLabel.': '.$statusName.'
-                    </span>
-                </div>
-            ';
-                                                                }
-
-                                                                $html .= '  </div>';
-                                                                $html .= '</div>';
-
-                                                                return new HtmlString($html);
+                                                                            <div class="grid gap-2">
+                                                                                @foreach ($companies as $company)
+                                                                                    <div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex justify-between items-center gap-3">
+                                                                                        <div class="min-w-0">
+                                                                                            <strong class="text-sm text-gray-900 dark:text-white">{{ $company->name }}</strong>
+                                                                                            <div class="text-xs text-gray-500 mt-1">
+                                                                                                {{ __('Category') }}: {{ $company->category?->name ?? '-' }}
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <span class="shrink-0 px-2 py-1 text-xs font-medium rounded-full bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-500/20">
+                                                                                            {{ __('Status') }}: {{ $company->status?->getLabel() ?? '-' }}
+                                                                                        </span>
+                                                                                    </div>
+                                                                                @endforeach
+                                                                            </div>
+                                                                        </div>
+                                                                    @endif
+                                                                    HTML, ['companies' => $similarCompanies]));
                                                             })
                                                             ->columnSpan(1),
                                                         TextInput::make('website')
@@ -236,7 +227,7 @@ class Add extends Component implements HasActions, HasForms
                                                         ->label(__('Category'))
                                                         ->prefixIcon('solar-tag-price-linear') // Solar Icon
                                                         ->required()
-                                                        ->options(CompanyCategory::get()->pluck('name', 'id'))
+                                                        ->options(CompanyCategory::with('translations')->get()->pluck('name', 'id'))
                                                         ->searchable()
                                                         ->preload(),
 
@@ -387,7 +378,7 @@ class Add extends Component implements HasActions, HasForms
                                                             Grid::make(2)->schema([
                                                                 Select::make('country_id')
                                                                     ->label(__('Country'))
-                                                                    ->options(Country::all()->pluck('name', 'id'))
+                                                                    ->options(Country::with('translations')->get()->pluck('name', 'id'))
                                                                     ->default(fn () => Country::whereTranslation('name', 'فلسطين')->orWhereTranslation('name', 'Palestine')->first()?->id)
                                                                     ->searchable()
                                                                     ->required()
@@ -403,7 +394,7 @@ class Add extends Component implements HasActions, HasForms
                                                                             return [];
                                                                         }
 
-                                                                        return City::whereHas('governorate', function (Builder $query) use ($countryId) {
+                                                                        return City::with('translations')->whereHas('governorate', function (Builder $query) use ($countryId) {
                                                                             $query->where('country_id', $countryId);
                                                                         })->get()->pluck('name', 'id');
                                                                     })
@@ -443,7 +434,7 @@ class Add extends Component implements HasActions, HasForms
                                                                             ->prefixIcon('solar-case-minimalistic-linear') // Solar Icon
                                                                             ->disableOptionsWhenSelectedInSiblingRepeaterItems()
                                                                             ->options(function () {
-                                                                                return CompanyDepartment::get()
+                                                                                return CompanyDepartment::with('translations')->get()
                                                                                     ->pluck('name', 'name')
                                                                                     ->unique()
                                                                                     ->toArray();
@@ -685,61 +676,72 @@ class Add extends Component implements HasActions, HasForms
         $this->data = $this->form->getState();
         $this->mergePendingCreatedSupervisorAssignmentsIntoFormData();
 
-        // 1. فصل بيانات الشركة الأساسية عن الفروع والشعار
-        $companyData = Arr::except($this->data, ['branches', 'logo']);
-        $companyData['description'] = blank($companyData['description'] ?? null) ? null : $companyData['description'];
+        // الشركة وفروعها وأقسامها وحدة واحدة: فشل أي فرع في المنتصف كان يترك
+        // شركة نصف منشأة بلا فروع، والاسم محجوزاً فلا يُعاد إدخالها. نفس ما
+        // يفعله store() في CompanyController.
+        $company = DB::transaction(function (): Company {
+            // 1. فصل بيانات الشركة الأساسية عن الفروع والشعار
+            $companyData = Arr::except($this->data, ['branches', 'logo']);
+            $companyData['description'] = blank($companyData['description'] ?? null) ? null : $companyData['description'];
 
-        if (auth()->user()->hasRole('Student')) {
-            $companyData['status'] = CompanyStatus::PENDING->value;
-        }
-
-        $companyData['created_by'] = auth()->id();
-
-        // 2. إنشاء الشركة
-        $company = Company::create($companyData);
-
-        // 3. رفع الشعار
-        if (isset($this->data['logo'])) {
-            $company->addImage($this->data['logo']);
-        }
-
-        // 4. معالجة الفروع
-        if (! empty($this->data['branches'])) {
-
-            foreach ($this->data['branches'] as $branchData) {
-
-                // فصل بيانات الأقسام وساعات العمل عن بيانات الفرع
-                $departmentsData = $branchData['departments'] ?? [];
-                $workingHoursData = $branchData['working_hours'] ?? []; // المصفوفة الجديدة لساعات العمل
-
-                // تنظيف بيانات الفرع
-                $branchCleanData = Arr::except($branchData, ['departments', 'working_hours', 'location']);
-                $branchCleanData = $this->nullifyBranchCoordinates($branchCleanData);
-                $branchCleanData['created_by'] = auth()->id();
-
-                // إنشاء الفرع
-                $branch = Branch::create($branchCleanData);
-
-                // ربط الفرع بالشركة
-                $company->branches()->attach($branch->id, ['is_main' => false]);
-
-                // --- أ. حفظ ساعات العمل (الجديد) ---
-                if (! empty($workingHoursData)) {
-                    foreach ($workingHoursData as $wh) {
-                        $branch->workingHours()->create([
-                            'day' => $wh['day'],
-                            'is_closed' => $wh['is_closed'],
-                            'start_time' => $wh['is_closed'] ? null : $wh['start_time'],
-                            'end_time' => $wh['is_closed'] ? null : $wh['end_time'],
-                        ]);
-                    }
-                }
-
-                // --- ب. حفظ الأقسام ---
-                $this->syncDepartmentsForBranch($branch, $departmentsData);
+            if (auth()->user()->hasRole('Student')) {
+                $companyData['status'] = CompanyStatus::PENDING->value;
             }
-        }
 
+            $companyData['created_by'] = auth()->id();
+
+            // 2. إنشاء الشركة
+            $company = Company::create($companyData);
+
+            // 3. رفع الشعار
+            if (isset($this->data['logo'])) {
+                $company->addImage($this->data['logo']);
+            }
+
+            // 4. معالجة الفروع
+            if (! empty($this->data['branches'])) {
+
+                foreach ($this->data['branches'] as $branchData) {
+
+                    // فصل بيانات الأقسام وساعات العمل عن بيانات الفرع
+                    $departmentsData = $branchData['departments'] ?? [];
+                    $workingHoursData = $branchData['working_hours'] ?? []; // المصفوفة الجديدة لساعات العمل
+
+                    // تنظيف بيانات الفرع
+                    $branchCleanData = Arr::except($branchData, ['departments', 'working_hours', 'location']);
+                    $branchCleanData = $this->nullifyBranchCoordinates($branchCleanData);
+                    $branchCleanData['created_by'] = auth()->id();
+
+                    // إنشاء الفرع
+                    $branch = Branch::create($branchCleanData);
+
+                    // ربط الفرع بالشركة
+                    $company->branches()->attach($branch->id, ['is_main' => false]);
+
+                    // --- أ. حفظ ساعات العمل (الجديد) ---
+                    if (! empty($workingHoursData)) {
+                        foreach ($workingHoursData as $wh) {
+                            $isClosed = (bool) ($wh['is_closed'] ?? false);
+
+                            $branch->workingHours()->create([
+                                'day' => $wh['day'],
+                                'is_closed' => $isClosed,
+                                'start_time' => $isClosed ? null : ($wh['start_time'] ?? null),
+                                'end_time' => $isClosed ? null : ($wh['end_time'] ?? null),
+                            ]);
+                        }
+                    }
+
+                    // --- ب. حفظ الأقسام ---
+                    $this->syncDepartmentsForBranch($branch, $departmentsData);
+                }
+            }
+
+            return $company;
+        });
+
+        // خارج المعاملة عمداً: نداء شبكي للجامعة، وفشله يجب ألا يُلغي إنشاء
+        // الشركة محلياً — نفس ما يفعله CompanyController وصفحة مشرفي الشركات.
         $this->syncCompanyToUniversity($company);
 
         Toaster::success(__('Created successfully'));

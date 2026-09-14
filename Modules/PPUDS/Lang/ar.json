@@ -1282,5 +1282,7 @@
     "Assignment Status": "حالة الإسناد",
     "All": "الكل",
     "Assigned To A Department": "مسند لقسم",
-    "Without Any Department": "بلا أي قسم"
+    "Without Any Department": "بلا أي قسم",
+    "This name is available, and there are no similar companies in the system.": "هذا الاسم متاح ولا توجد شركات مشابهة في النظام.",
+    "Careful, we found companies with similar names:": "انتبه، وجدنا شركات بأسماء مشابهة:"
 }
