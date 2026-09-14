@@ -7,6 +7,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
@@ -16,12 +17,15 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Component;
+use Maatwebsite\Excel\Excel as WriterType;
 use Modules\Core\Entities\User;
 use Modules\Core\Enums\UserRole;
 use Modules\Core\Filament\Tables\Columns\UserColumn;
+use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\SemesterType;
+use Modules\PPUDS\Exports\StudentGradesExport;
 use Modules\PPUDS\Settings\GeneralSettings;
 use Modules\PPUDS\Support\HasSupervisorFilter;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
@@ -123,8 +127,27 @@ class Index extends Component implements HasForms, HasTable
             ])
             ->filters($this->getTableFilters(), layout: FiltersLayout::AboveContent)
             ->filtersFormColumns(4)
+            ->headerActions([
+                Action::make('export_student_grades')
+                    ->label(__('Export Grades'))
+                    ->icon('heroicon-m-arrow-down-tray')
+                    ->color('success')
+                    ->action(fn () => app(ExcelServiceInterface::class)->download(
+                        // getTableQueryForExport يحمل نطاق الرؤية والفلاتر معاً،
+                        // فيخرج الأدمن بكل العلامات والمشرف بعلامات طلابه فقط.
+                        new StudentGradesExport($this->getTableQueryForExport()),
+                        $this->exportFilename(),
+                        WriterType::XLSX
+                    ))
+                    ->visible(fn (): bool => auth()->user()?->can('StudentGrade View List') ?? false),
+            ])
             ->actions([])
             ->bulkActions([]);
+    }
+
+    protected function exportFilename(): string
+    {
+        return 'student-grades-'.now()->format('Y-m-d-His').'.xlsx';
     }
 
     protected function getTableFilters(): array

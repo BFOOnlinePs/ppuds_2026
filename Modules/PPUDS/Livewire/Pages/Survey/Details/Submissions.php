@@ -9,6 +9,7 @@ use Filament\Tables\Actions\Action as TablesAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
@@ -18,6 +19,7 @@ use Modules\Core\Entities\User;
 use Modules\Core\Enums\UserRole;
 use Modules\Core\Filament\Tables\Columns\UserColumn;
 use Modules\Core\Interfaces\ExcelServiceInterface;
+use Modules\PPUDS\Entities\Major;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Entities\Survey;
 use Modules\PPUDS\Entities\SurveyAnswer;
@@ -127,13 +129,28 @@ class Submissions extends Component implements HasForms, HasTable
                     ->dateTime('Y-m-d H:i')
                     ->sortable(),
             ])
+            ->filters([
+                SelectFilter::make('major_id')
+                    ->label(__('Major'))
+                    ->options(fn (): array => Major::with('translations')->get()->pluck('name', 'id')->toArray())
+                    ->searchable()
+                    ->preload()
+                    ->native(false)
+                    ->query(fn (Builder $query, array $data): Builder => $query->when(
+                        filled($data['value'] ?? null),
+                        fn (Builder $query): Builder => $query->whereHas(
+                            'studentProfile',
+                            fn (Builder $profileQuery): Builder => $profileQuery->where('major_id', (int) $data['value'])
+                        )
+                    )),
+            ])
             ->headerActions([
                 TablesAction::make('export_submissions')
                     ->label(__('Export Submissions'))
                     ->icon('heroicon-m-arrow-down-tray')
                     ->color('success')
                     ->action(fn () => app(ExcelServiceInterface::class)->download(
-                        new SurveySubmissionsExport($this->survey),
+                        new SurveySubmissionsExport($this->survey, $this->selectedMajorId()),
                         $this->exportFilename(),
                         WriterType::XLSX
                     ))
@@ -214,6 +231,11 @@ class Submissions extends Component implements HasForms, HasTable
                     ->toggleable()
                     ->placeholder('-'),
 
+                TextColumn::make('student.studentProfile.major.name')
+                    ->label(__('Major'))
+                    ->toggleable()
+                    ->placeholder('-'),
+
                 TextColumn::make('company.name')
                     ->label(__('Company'))
                     ->toggleable()
@@ -244,13 +266,28 @@ class Submissions extends Component implements HasForms, HasTable
                     ->dateTime('Y-m-d H:i')
                     ->sortable(),
             ])
+            ->filters([
+                SelectFilter::make('major_id')
+                    ->label(__('Major'))
+                    ->options(fn (): array => Major::with('translations')->get()->pluck('name', 'id')->toArray())
+                    ->searchable()
+                    ->preload()
+                    ->native(false)
+                    ->query(fn (Builder $query, array $data): Builder => $query->when(
+                        filled($data['value'] ?? null),
+                        fn (Builder $query): Builder => $query->whereHas(
+                            'student.studentProfile',
+                            fn (Builder $profileQuery): Builder => $profileQuery->where('major_id', (int) $data['value'])
+                        )
+                    )),
+            ])
             ->headerActions([
                 TablesAction::make('export_submissions')
                     ->label(__('Export Submissions'))
                     ->icon('heroicon-m-arrow-down-tray')
                     ->color('success')
                     ->action(fn () => app(ExcelServiceInterface::class)->download(
-                        new SurveySubmissionsExport($this->survey),
+                        new SurveySubmissionsExport($this->survey, $this->selectedMajorId()),
                         $this->exportFilename(),
                         WriterType::XLSX
                     ))
@@ -266,6 +303,17 @@ class Submissions extends Component implements HasForms, HasTable
         return $role
             ? UserRole::tryFrom($role)?->getLabel() ?? $role
             : '-';
+    }
+
+    /**
+     * التخصص المختار في فلتر الجدول، يُمرَّر للتصدير ليخرج الملف مطابقاً
+     * لما يُعرض على الشاشة لا لكل التسليمات.
+     */
+    protected function selectedMajorId(): ?int
+    {
+        $value = $this->getTableFilterState('major_id')['value'] ?? null;
+
+        return filled($value) ? (int) $value : null;
     }
 
     protected function exportFilename(): string

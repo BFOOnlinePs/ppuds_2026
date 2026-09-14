@@ -22,7 +22,11 @@ class SurveySubmissionsExport implements FromGenerator, ShouldAutoSize, WithHead
 
     protected Collection $questions;
 
-    public function __construct(protected Survey $survey)
+    /**
+     * $majorId يأتي من فلتر التخصص في جدول التسليمات، فيخرج الملف مطابقاً
+     * لما يراه المستخدم على الشاشة بدل تصدير الجميع دائماً.
+     */
+    public function __construct(protected Survey $survey, protected ?int $majorId = null)
     {
         $this->survey->loadMissing([
             'questions' => fn ($query) => $query->orderBy('sort_order'),
@@ -40,8 +44,8 @@ class SurveySubmissionsExport implements FromGenerator, ShouldAutoSize, WithHead
     {
         return array_merge(
             $this->isCompanySupervisorSurvey($this->survey)
-                ? [__('Submitted By'), __('Evaluated Student'), __('Student Number'), __('Company')]
-                : [__('Submitted By')],
+                ? [__('Submitted By'), __('Evaluated Student'), __('Student Number'), __('Major'), __('Company')]
+                : [__('Submitted By'), __('Major')],
             $this->questions
                 ->map(fn (SurveyQuestion $question): string => $this->questionHeading($question))
                 ->all()
@@ -80,6 +84,11 @@ class SurveySubmissionsExport implements FromGenerator, ShouldAutoSize, WithHead
         $studentCompaniesTable = (new StudentCompany)->getTable();
 
         $studentCompanies = $this->currentSurveyStudentCompaniesQuery($this->survey)
+            ->with('student.studentProfile.major.translations')
+            ->when($this->majorId, fn (Builder $query, int $majorId): Builder => $query->whereHas(
+                'student.studentProfile',
+                fn (Builder $profileQuery): Builder => $profileQuery->where('major_id', $majorId)
+            ))
             ->whereIn("{$studentCompaniesTable}.id", SurveyAnswer::query()
                 ->select('student_company_id')
                 ->where('survey_id', $this->survey->id)
@@ -109,7 +118,7 @@ class SurveySubmissionsExport implements FromGenerator, ShouldAutoSize, WithHead
     protected function submittedUsersQuery(): Builder
     {
         return User::query()
-            ->with(['roles', 'studentProfile.major'])
+            ->with(['roles', 'studentProfile.major.translations'])
             ->select('users.*')
             ->when($this->survey->serve_group, fn (Builder $query, string $role) => $query->role($role))
             ->when(
@@ -119,6 +128,10 @@ class SurveySubmissionsExport implements FromGenerator, ShouldAutoSize, WithHead
                     fn (Builder $profileQuery) => $profileQuery->where('major_id', $majorId)
                 )
             )
+            ->when($this->majorId, fn (Builder $query, int $majorId): Builder => $query->whereHas(
+                'studentProfile',
+                fn (Builder $profileQuery): Builder => $profileQuery->where('major_id', $majorId)
+            ))
             ->whereIn('users.id', SurveyAnswer::query()
                 ->select('submitted_by')
                 ->where('survey_id', $this->survey->id)
@@ -130,7 +143,10 @@ class SurveySubmissionsExport implements FromGenerator, ShouldAutoSize, WithHead
 
     protected function rowFor(User $user, Collection $answersByQuestion): array
     {
-        $row = [$this->submittedPerson($user)];
+        $row = [
+            $this->submittedPerson($user),
+            $this->majorNameFor($user),
+        ];
 
         foreach ($this->questions as $question) {
             $row[] = $this->answerText($question, $answersByQuestion->get($question->id, collect()));
@@ -149,6 +165,7 @@ class SurveySubmissionsExport implements FromGenerator, ShouldAutoSize, WithHead
             $firstAnswer instanceof SurveyAnswer ? $this->submittedPerson($firstAnswer->submittedBy) : '',
             $this->studentPerson($studentCompany),
             (string) $studentCompany->student?->studentProfile?->student_number,
+            $this->majorNameFor($studentCompany->student),
             (string) $studentCompany->company?->name,
         ];
 
@@ -157,6 +174,15 @@ class SurveySubmissionsExport implements FromGenerator, ShouldAutoSize, WithHead
         }
 
         return $row;
+    }
+
+    /**
+     * تخصص الطالب. المشرفون وغير الطلبة لا ملف طالب لهم، فتبقى الخانة فارغة
+     * بدل أن تُسقط الصف.
+     */
+    protected function majorNameFor(?User $user): string
+    {
+        return (string) ($user?->studentProfile?->major?->name ?? '');
     }
 
     protected function answerText(SurveyQuestion $question, Collection $answers): string
