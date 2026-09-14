@@ -27,7 +27,6 @@ use Spatie\QueryBuilder\AllowedSort;
  * @OA\Property(property="submitted_at", type="string", format="date-time", nullable=true),
  * @OA\Property(property="final_file", type="string", nullable=true, description="رابط المرفق الاختياري، و null إذا لم يرفع الطالب ملفاً", example="https://example.com/storage/ppuds/registers/report.pdf"),
  * @OA\Property(property="final_presentation", type="string", nullable=true, description="رابط العرض التقديمي الإجباري، و null إذا لم يُرفع بعد أو لم تُحمَّل علاقة التسجيل", example="https://example.com/storage/ppuds/registers/20260910_ab12cd34_deck.pptx"),
- * @OA\Property(property="final_code", type="string", nullable=true, description="رابط ملف بايثون الاختياري، و null إذا لم يرفعه الطالب", example="https://example.com/storage/ppuds/registers/20260910_ef56gh78_main.py"),
  * @OA\Property(property="tasks", type="array", @OA\Items(ref="#/components/schemas/FinalReportTaskResource")),
  * @OA\Property(property="skills", type="array", @OA\Items(ref="#/components/schemas/FinalReportSkillResource")),
  * @OA\Property(property="contributions", type="array", @OA\Items(ref="#/components/schemas/FinalReportItemResource")),
@@ -51,7 +50,6 @@ class FinalReportResource extends JsonResource
             'submitted_at'     => $this->submitted_at,
             'final_file'       => $this->attachmentUrl(),
             'final_presentation' => $this->mediaUrl(Registration::PRESENTATION_COLLECTION),
-            'final_code'       => $this->mediaUrl(Registration::CODE_COLLECTION),
             'tasks'            => FinalReportTaskResource::collection($this->whenLoaded('tasks')),
             'skills'           => FinalReportSkillResource::collection($this->whenLoaded('skills')),
             'contributions'    => FinalReportItemResource::collection(

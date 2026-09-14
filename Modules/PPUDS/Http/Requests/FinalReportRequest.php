@@ -17,28 +17,7 @@ class FinalReportRequest extends FormRequest
         'pptx',
     ];
 
-    /**
-     * ملف بايثون يُتحقَّق منه بقاعدة extensions لا mimes، لأن finfo يعيد له
-     * text/x-script.python أو text/plain وكلاهما لا يُترجم إلى الامتداد py،
-     * فقاعدة mimes:py كانت سترفض كل ملف بايثون سليم.
-     */
-    public const ALLOWED_CODE_EXTENSIONS = [
-        'py',
-    ];
-
-    /**
-     * ومع ذلك نقيّد المحتوى بأنواع نصية حتى لا يُرفع ملف تنفيذي بامتداد py.
-     */
-    public const ALLOWED_CODE_MIMETYPES = [
-        'text/x-script.python',
-        'text/x-python',
-        'text/x-python3',
-        'text/plain',
-    ];
-
     public const MAX_PRESENTATION_SIZE = 10240;
-
-    public const MAX_CODE_SIZE = 2048;
 
     /**
      * Get the validation rules that apply to the request.
@@ -60,15 +39,6 @@ class FinalReportRequest extends FormRequest
                 'file',
                 'mimes:' . implode(',', self::ALLOWED_PRESENTATION_MIMES),
                 'max:' . self::MAX_PRESENTATION_SIZE,
-            ],
-
-            // ملف بايثون اختياري دائماً.
-            'final_code'                   => [
-                'nullable',
-                'file',
-                'extensions:' . implode(',', self::ALLOWED_CODE_EXTENSIONS),
-                'mimetypes:' . implode(',', self::ALLOWED_CODE_MIMETYPES),
-                'max:' . self::MAX_CODE_SIZE,
             ],
 
             'tasks'                        => ['required', 'array', 'max:100'],
@@ -108,14 +78,6 @@ class FinalReportRequest extends FormRequest
         );
     }
 
-    public function messages(): array
-    {
-        return [
-            'final_code.extensions' => __('The Python file must have a .py extension.'),
-            'final_code.mimetypes'  => __('The Python file must be a plain text source file.'),
-        ];
-    }
-
     public function attributes(): array
     {
         return [
@@ -123,7 +85,6 @@ class FinalReportRequest extends FormRequest
             'summary'                     => __('Summary'),
             'final_file'                  => __('Attachment'),
             'final_presentation'          => __('Presentation File'),
-            'final_code'                  => __('Python File'),
             'tasks'                       => __('Training Tasks'),
             'tasks.*.task_name'           => __('Training Task'),
             'tasks.*.task_details'        => __('Task Details'),

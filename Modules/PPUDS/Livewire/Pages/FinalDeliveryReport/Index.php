@@ -154,16 +154,6 @@ class Index extends Component implements HasForms, HasTable
                     ->visible(fn (StudentCompany $record): bool => auth()->user()->can('Report View List')
                         && (bool) $record->registration?->hasMedia(Registration::PRESENTATION_COLLECTION)),
 
-                // ملف بايثون اختياري أصلاً.
-                Action::make('view_final_code')
-                    ->label(__('Python File'))
-                    ->icon('solar-code-bold-duotone')
-                    ->color('success')
-                    ->url(fn (StudentCompany $record): ?string => $record->registration?->getFirstMediaUrl(Registration::CODE_COLLECTION) ?: null)
-                    ->openUrlInNewTab()
-                    ->visible(fn (StudentCompany $record): bool => auth()->user()->can('Report View List')
-                        && (bool) $record->registration?->hasMedia(Registration::CODE_COLLECTION)),
-
                 // المرفق اختياري، فلا يظهر الزر إلا إذا رفع الطالب ملفاً.
                 Action::make('view_final_file')
                     ->label(__('View File'))
@@ -197,7 +187,6 @@ class Index extends Component implements HasForms, HasTable
                             'report' => $report,
                             'attachmentUrl' => $record->registration?->getFirstMediaUrl('final_file') ?: null,
                             'presentationUrl' => $record->registration?->getFirstMediaUrl(Registration::PRESENTATION_COLLECTION) ?: null,
-                            'codeUrl' => $record->registration?->getFirstMediaUrl(Registration::CODE_COLLECTION) ?: null,
                         ]))
                         ->columnSpanFull(),
                 ]),

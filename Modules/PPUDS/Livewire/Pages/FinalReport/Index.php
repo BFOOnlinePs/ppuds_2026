@@ -72,14 +72,12 @@ class Index extends Component implements HasForms, HasActions
                 'difficulties' => [],
                 'final_file' => null,
                 'final_presentation' => null,
-                'final_code' => null,
             ];
         }
 
         return [
             'final_file' => null,
             'final_presentation' => null,
-            'final_code' => null,
             'role_description' => $this->report->role_description,
             'summary' => $this->report->summary,
             'tasks' => $this->report->tasks
@@ -148,18 +146,7 @@ class Index extends Component implements HasForms, HasActions
     }
 
     /**
-     * رابط ملف بايثون الحالي إن وُجد.
-     */
-    protected function codeLink(): HtmlString
-    {
-        return $this->fileLink(
-            app(FinalReportService::class)->codeUrl($this->registration),
-            __('No Python file uploaded yet')
-        );
-    }
-
-    /**
-     * نفس شكل رابط المرفق حتى تتطابق الخانات الثلاث في الشاشة.
+     * نفس شكل رابط المرفق حتى تتطابق الخانتان في الشاشة.
      */
     protected function fileLink(?string $url, string $emptyLabel): HtmlString
     {
@@ -353,7 +340,7 @@ class Index extends Component implements HasForms, HasActions
                     ]),
 
                 Section::make(__('Project Files'))
-                    ->description(__('The presentation is required. The Python file is optional.'))
+                    ->description(__('The presentation is required.'))
                     ->icon('solar-folder-2-bold-duotone')
                     ->schema([
                         Placeholder::make('current_presentation')
@@ -373,26 +360,6 @@ class Index extends Component implements HasForms, HasActions
                             ->maxSize(FinalReportRequest::MAX_PRESENTATION_SIZE)
                             // مطلوب مرة واحدة: بعد رفعه لا يُطلب مجدداً عند تعديل بقية الحقول.
                             ->required(fn (): bool => ! $this->hasPresentation())
-                            ->visible(fn (): bool => ! $locked)
-                            ->columnSpanFull(),
-
-                        Placeholder::make('current_code')
-                            ->label(__('Current Python File'))
-                            ->content(fn (): HtmlString => $this->codeLink())
-                            ->columnSpanFull(),
-
-                        // بلا acceptedFileTypes لأن المتصفح يبلّغ عن ملف بايثون بنوع
-                        // text/plain أو بلا نوع، فكان منتقي الملفات يرفض ملفات سليمة.
-                        // التحقق الحقيقي يجري على الخادم بقاعدتَي extensions و mimetypes.
-                        FileUpload::make('final_code')
-                            ->label(__('Python File'))
-                            ->helperText(__('Optional. A .py source file, up to 2 MB. Uploading a new file replaces the current one.'))
-                            ->storeFiles(false)
-                            ->rules([
-                                'extensions:' . implode(',', FinalReportRequest::ALLOWED_CODE_EXTENSIONS),
-                                'mimetypes:' . implode(',', FinalReportRequest::ALLOWED_CODE_MIMETYPES),
-                            ])
-                            ->maxSize(FinalReportRequest::MAX_CODE_SIZE)
                             ->visible(fn (): bool => ! $locked)
                             ->columnSpanFull(),
                     ]),
@@ -597,13 +564,12 @@ class Index extends Component implements HasForms, HasActions
     }
 
     /**
-     * العرض التقديمي وملف بايثون. الحقل الفارغ يعني «لا تغيير»، فيبقى الملف
-     * المرفوع سابقاً كما هو بدل أن يُمحى عند حفظ بقية الحقول.
+     * العرض التقديمي. الحقل الفارغ يعني «لا تغيير»، فيبقى الملف المرفوع سابقاً
+     * كما هو بدل أن يُمحى عند حفظ بقية الحقول.
      */
     protected function storeProjectFiles(FinalReportService $finalReports): bool
     {
         $presentation = $this->pullFile('final_presentation');
-        $code = $this->pullFile('final_code');
 
         if (filled($presentation) && ! $finalReports->savePresentation($this->registration, $presentation)) {
             Toaster::error(__('Failed to upload the presentation file. Please try again.'));
@@ -611,12 +577,7 @@ class Index extends Component implements HasForms, HasActions
             return false;
         }
 
-        if (filled($code) && ! $finalReports->saveCode($this->registration, $code)) {
-            Toaster::error(__('Failed to upload the Python file. Please try again.'));
-
-            return false;
-        }
-
+        return true;
         return true;
     }
 

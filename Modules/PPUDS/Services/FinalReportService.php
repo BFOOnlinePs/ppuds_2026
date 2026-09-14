@@ -85,29 +85,10 @@ class FinalReportService
         return $registration->addPresentation($file) !== null;
     }
 
-    /**
-     * ملف بايثون اختياري بالكامل.
-     */
-    public function saveCode(Registration $registration, mixed $file): bool
-    {
-        if (blank($file)) {
-            return true;
-        }
-
-        return $registration->addCode($file) !== null;
-    }
-
     public function presentationUrl(?Registration $registration): ?string
     {
         return $registration?->hasMedia(Registration::PRESENTATION_COLLECTION)
             ? $registration->getFirstMediaUrl(Registration::PRESENTATION_COLLECTION)
-            : null;
-    }
-
-    public function codeUrl(?Registration $registration): ?string
-    {
-        return $registration?->hasMedia(Registration::CODE_COLLECTION)
-            ? $registration->getFirstMediaUrl(Registration::CODE_COLLECTION)
             : null;
     }
 

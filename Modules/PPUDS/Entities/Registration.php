@@ -30,12 +30,10 @@ class Registration extends Model implements HasMedia
     use InteractsWithMedia;
 
     /**
-     * ملفا التقرير النهائي. العرض التقديمي إجباري وملف بايثون اختياري،
-     * وكلاهما ملف واحد يُستبدل عند رفع نسخة جديدة كما هو حال final_file.
+     * العرض التقديمي للتقرير النهائي: ملف واحد إجباري يُستبدل عند رفع
+     * نسخة جديدة كما هو حال final_file.
      */
     public const PRESENTATION_COLLECTION = 'final_presentation';
-
-    public const CODE_COLLECTION = 'final_code';
 
     public const FINAL_FILES_DISK = 'registers';
 
@@ -142,16 +140,8 @@ class Registration extends Model implements HasMedia
     }
 
     /**
-     * ملف بايثون الاختياري المرافق للتقرير النهائي.
-     */
-    public function addCode($file): ?Media
-    {
-        return $this->addFinalReportFile($file, self::CODE_COLLECTION, 'code');
-    }
-
-    /**
-     * منطق مشترك للملفين: ملف واحد لكل مجموعة يُستبدل عند الرفع، وبلا تحويلات
-     * صور لأن العرض التقديمي وملف الشيفرة ليسا صوراً.
+     * ملف واحد لكل مجموعة يُستبدل عند الرفع، وبلا تحويلات صور لأن العرض
+     * التقديمي ليس صورة.
      */
     protected function addFinalReportFile($file, string $collection, string $label): ?Media
     {

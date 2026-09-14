@@ -211,8 +211,7 @@ class FinalReportController extends Controller
      * @OA\Property(property="role_description", type="string"),
      * @OA\Property(property="summary", type="string"),
      * @OA\Property(property="final_file", type="string", format="binary", description="مرفق اختياري: jpeg, png, jpg أو pdf بحد أقصى 2 ميجابايت. رفع ملف جديد يستبدل السابق. عند استخدام multipart تُرسل الجداول بصيغة الأقواس مثل tasks[0][task_name]."),
-     * @OA\Property(property="final_presentation", type="string", format="binary", description="العرض التقديمي — إجباري: ppt أو pptx بحد أقصى 10 ميجابايت. مطلوب في أول حفظ فقط، وبعد رفعه يصبح اختيارياً في الطلبات التالية ورفع ملف جديد يستبدل السابق."),
-     * @OA\Property(property="final_code", type="string", format="binary", description="ملف بايثون — اختياري: امتداد ‎.py فقط بحد أقصى 2 ميجابايت، ويجب أن يكون ملفاً نصياً. رفع ملف جديد يستبدل السابق.")
+     * @OA\Property(property="final_presentation", type="string", format="binary", description="العرض التقديمي — إجباري: ppt أو pptx بحد أقصى 10 ميجابايت. مطلوب في أول حفظ فقط، وبعد رفعه يصبح اختيارياً في الطلبات التالية ورفع ملف جديد يستبدل السابق.")
      * )
      * )
      * ),
@@ -356,8 +355,7 @@ class FinalReportController extends Controller
      * @OA\Property(property="role_description", type="string"),
      * @OA\Property(property="summary", type="string"),
      * @OA\Property(property="final_file", type="string", format="binary", description="مرفق اختياري: jpeg, png, jpg أو pdf بحد أقصى 2 ميجابايت. رفع ملف جديد يستبدل السابق. عند استخدام multipart تُرسل الجداول بصيغة الأقواس مثل tasks[0][task_name]."),
-     * @OA\Property(property="final_presentation", type="string", format="binary", description="العرض التقديمي: ppt أو pptx بحد أقصى 10 ميجابايت. إجباري ما لم يكن مرفوعاً من قبل، ورفع ملف جديد يستبدل السابق."),
-     * @OA\Property(property="final_code", type="string", format="binary", description="ملف بايثون — اختياري: امتداد ‎.py فقط بحد أقصى 2 ميجابايت، ويجب أن يكون ملفاً نصياً. رفع ملف جديد يستبدل السابق.")
+     * @OA\Property(property="final_presentation", type="string", format="binary", description="العرض التقديمي: ppt أو pptx بحد أقصى 10 ميجابايت. إجباري ما لم يكن مرفوعاً من قبل، ورفع ملف جديد يستبدل السابق.")
      * )
      * )
      * ),
@@ -493,9 +491,9 @@ class FinalReportController extends Controller
     }
 
     /**
-     * ملفات التقرير الثلاثة تُحفظ معاً: المرفق العام الاختياري، العرض التقديمي
-     * الإجباري، وملف بايثون الاختياري. الطلب الخالي من ملف جديد لا يمسّ الملف
-     * المرفوع سابقاً، فيبقى العرض التقديمي محفوظاً عند تعديل بقية الحقول.
+     * ملفا التقرير يُحفظان معاً: المرفق العام الاختياري والعرض التقديمي
+     * الإجباري. الطلب الخالي من ملف جديد لا يمسّ الملف المرفوع سابقاً،
+     * فيبقى العرض التقديمي محفوظاً عند تعديل بقية الحقول.
      */
     private function storeReportFiles(FinalReportRequest $request, Registration $registration): ?JsonResponse
     {
@@ -505,10 +503,6 @@ class FinalReportController extends Controller
 
         if (! $this->finalReports->savePresentation($registration, $request->file('final_presentation'))) {
             return $this->errorResponse(__('Failed to upload the presentation file. Please try again.'), 500);
-        }
-
-        if (! $this->finalReports->saveCode($registration, $request->file('final_code'))) {
-            return $this->errorResponse(__('Failed to upload the Python file. Please try again.'), 500);
         }
 
         return null;
