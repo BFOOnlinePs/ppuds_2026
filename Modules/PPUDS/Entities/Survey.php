@@ -89,7 +89,7 @@ class Survey extends Model implements HasMedia, TranslatableContract
 
     public function questions(): HasMany
     {
-        return $this->hasMany(SurveyQuestion::class, 'survey_id');
+        return $this->hasMany(SurveyQuestion::class, 'survey_id')->orderBy('sort_order');
     }
 
     public function major(): BelongsTo

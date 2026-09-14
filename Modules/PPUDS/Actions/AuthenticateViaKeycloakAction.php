@@ -106,7 +106,7 @@ class AuthenticateViaKeycloakAction
                 return $user;
             }
 
-            $user = User::whereIn('phone', $this->candidatePhones($username))->first();
+            $user = $this->findUserByPhone($username);
 
             if ($user) {
                 return $user;
@@ -120,6 +120,26 @@ class AuthenticateViaKeycloakAction
         }
 
         return User::whereIn('email', $candidateEmails)->first();
+    }
+
+    /**
+     * رقم الهاتف هو بيانات دخول مشرف الشركة؛ الطالب يدخل برقمه الجامعي وقد
+     * عولج قبل هذا. فحين يحمل الرقم نفسه حسابان لنفس الشخص — طالب ومشرف
+     * شركة — كان `first()` يعيد الأقدم رقماً، فيدخل بحساب الطالبة بدل حساب
+     * المشرفة. لذا يُقدَّم الحساب غير الطالبي، ويبقى الرجوع إلى أي حساب
+     * مطابق حتى لا يُغلق الباب أمام من لا حساب آخر له.
+     */
+    private function findUserByPhone(string $username): ?User
+    {
+        $phones = $this->candidatePhones($username);
+
+        $user = User::query()
+            ->whereIn('phone', $phones)
+            ->whereDoesntHave('roles', fn ($query) => $query->where('name', UserRole::STUDENT->value))
+            ->whereDoesntHave('studentProfile')
+            ->first();
+
+        return $user ?? User::whereIn('phone', $phones)->first();
     }
 
     private function syncStudentIdentity(User $user, ?string $username): void

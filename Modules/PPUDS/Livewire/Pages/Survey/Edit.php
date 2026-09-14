@@ -164,6 +164,7 @@ class Edit extends Component implements HasActions, HasForms
                             ])
                             ->cloneable()
                             ->collapsible()
+                            ->reorderableWithButtons()
                             ->orderColumn('sort_order')
                             ->itemLabel(fn (array $state): ?string => $state['content'] ?? __('New Question'))
                             ->addActionLabel(__('Add New Question')),
