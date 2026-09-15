@@ -1,5 +1,9 @@
 <div>
     @if ($this->canViewCharts())
+        <div class="mb-4 flex flex-wrap items-center justify-end gap-2">
+            {{ $this->exportStatisticsAction }}
+        </div>
+
         @if (count($chartWidgets = $this->chartWidgets()))
             <x-filament-widgets::widgets
                 :widgets="$chartWidgets"
@@ -12,5 +16,7 @@
                 </div>
             </x-filament::section>
         @endif
+
+        <x-filament-actions::modals />
     @endif
 </div>
