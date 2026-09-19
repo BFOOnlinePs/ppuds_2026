@@ -17,9 +17,11 @@ use Illuminate\Support\Collection;
 use Livewire\Component;
 use Modules\Core\Entities\User;
 use Modules\Core\Enums\UserRole;
+use Modules\Core\Services\PdfService;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Entities\Survey;
 use Modules\PPUDS\Entities\SurveyAnswer;
+use Modules\PPUDS\Entities\SurveyQuestion;
 use Modules\PPUDS\Enums\SurveyQuestionType;
 
 class SubmissionDetails extends Component implements HasForms
@@ -151,6 +153,69 @@ class SubmissionDetails extends Component implements HasForms
             ->first()
             ?->created_at
             ?->format('Y-m-d H:i');
+    }
+
+    /**
+     * الطباعة عرض فقط لنفس الإجابات المعروضة على الشاشة، بلا أي تعديل عليها.
+     */
+    public function printPdf()
+    {
+        abort_unless($this->canViewSurveyDetails(), 403);
+
+        return app(PdfService::class)->streamPdf(
+            'ppuds::pdf.survey.submission',
+            [
+                'survey' => $this->survey,
+                'user' => $this->user,
+                'studentCompany' => $this->studentCompany,
+                'submittedAt' => $this->submittedAt(),
+                'rows' => $this->answerRows(),
+            ],
+            'survey-submission-'.$this->survey->id.'-'.$this->user->id.'-'.now()->format('Y-m-d-His').'.pdf',
+        );
+    }
+
+    /**
+     * الأسئلة وإجاباتها كنص جاهز للطباعة، مقروءة من نفس حالة النموذج المعروضة.
+     *
+     * @return Collection<int, array{question: string, answer: string}>
+     */
+    protected function answerRows(): Collection
+    {
+        $state = $this->answerState();
+
+        return $this->survey->questions->map(fn (SurveyQuestion $question): array => [
+            'question' => trim((string) $question->content) ?: __('Question').' #'.$question->id,
+            'answer' => $this->answerTextFor($question, $state["question_{$question->id}"] ?? null),
+        ]);
+    }
+
+    protected function answerTextFor(SurveyQuestion $question, mixed $value): string
+    {
+        $values = collect(is_array($value) ? $value : [$value])
+            ->filter(fn ($item): bool => filled($item));
+
+        if ($values->isEmpty()) {
+            return '';
+        }
+
+        return match ((int) $question->type) {
+            SurveyQuestionType::RADIO->value,
+            SurveyQuestionType::SELECT->value,
+            SurveyQuestionType::CHECKBOX->value,
+            SurveyQuestionType::MULTI_SELECT->value => $values
+                ->map(fn ($optionId): ?string => $question->options
+                    ->first(fn ($option): bool => (int) $option->id === (int) $optionId)
+                    ?->text)
+                ->filter(fn (?string $text): bool => filled($text))
+                ->implode(', '),
+
+            SurveyQuestionType::RATING->value => (string) (
+                SurveyQuestionType::ratingScaleOptions()[(int) $values->first()] ?? $values->first()
+            ),
+
+            default => $values->implode(', '),
+        };
     }
 
     protected function hasSubmission(): bool

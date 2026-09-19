@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withCommands([
         \App\Console\Commands\CheckCompanySupervisorsUniversityRegistration::class,
         \App\Console\Commands\FillBranchLocationsFromStudentAttendance::class,
+        \App\Console\Commands\RoundCompanySurveyScores::class,
     ])
     ->withMiddleware(function (Middleware $middleware): void {
 

@@ -30,6 +30,11 @@
                 <p>{{ __('Submitted At') }}: {{ $this->submittedAt() }}</p>
             </div>
 
+            <x-core::button.primary wire:click="printPdf" wire:loading.attr="disabled">
+                <x-icon name="solar-printer-bold" class="w-5 h-5" />
+                {{ __('Print PDF') }}
+            </x-core::button.primary>
+
             @if($survey->description)
                 <div class="text-lg leading-relaxed text-gray-600 dark:text-gray-400 border-r-4 border-primary-500 pr-4 prose dark:prose-invert [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg [&_img]:my-4 overflow-hidden break-words">
                     {!! $survey->description !!}

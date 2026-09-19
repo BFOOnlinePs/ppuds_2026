@@ -330,11 +330,19 @@ class Index extends Component implements HasForms, HasActions
 
                         FileUpload::make('final_file')
                             ->label(__('Attachment'))
-                            ->helperText(__('Optional. Uploading a new file replaces the current one.'))
+                            ->helperText(__('Optional. PDF, image (jpg or png) or ZIP archive, up to 10 MB. Uploading a new file replaces the current one.'))
                             ->storeFiles(false)
-                            ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])
-                            ->rules(['mimes:jpeg,png,jpg,pdf'])
-                            ->maxSize(2048)
+                            // نوع ملف الـ zip يختلف بين المتصفحات (application/x-zip-compressed
+                            // على ويندوز)، فيُذكر النوعان حتى لا يرفض منتقي الملفات أرشيفاً سليماً.
+                            ->acceptedFileTypes([
+                                'application/pdf',
+                                'image/jpeg',
+                                'image/png',
+                                'application/zip',
+                                'application/x-zip-compressed',
+                            ])
+                            ->rules(['mimes:' . implode(',', FinalReportRequest::ALLOWED_ATTACHMENT_MIMES)])
+                            ->maxSize(FinalReportRequest::MAX_ATTACHMENT_SIZE)
                             ->visible(fn (): bool => ! $locked)
                             ->columnSpanFull(),
                     ]),

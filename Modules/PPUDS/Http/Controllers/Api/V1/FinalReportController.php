@@ -210,7 +210,7 @@ class FinalReportController extends Controller
      * required={"final_presentation"},
      * @OA\Property(property="role_description", type="string"),
      * @OA\Property(property="summary", type="string"),
-     * @OA\Property(property="final_file", type="string", format="binary", description="مرفق اختياري: jpeg, png, jpg أو pdf بحد أقصى 2 ميجابايت. رفع ملف جديد يستبدل السابق. عند استخدام multipart تُرسل الجداول بصيغة الأقواس مثل tasks[0][task_name]."),
+     * @OA\Property(property="final_file", type="string", format="binary", description="مرفق اختياري: jpeg, png, jpg, pdf أو zip بحد أقصى 10 ميجابايت. رفع ملف جديد يستبدل السابق. عند استخدام multipart تُرسل الجداول بصيغة الأقواس مثل tasks[0][task_name]."),
      * @OA\Property(property="final_presentation", type="string", format="binary", description="العرض التقديمي — إجباري: ppt أو pptx بحد أقصى 10 ميجابايت. مطلوب في أول حفظ فقط، وبعد رفعه يصبح اختيارياً في الطلبات التالية ورفع ملف جديد يستبدل السابق.")
      * )
      * )
@@ -354,7 +354,7 @@ class FinalReportController extends Controller
      * @OA\Property(property="_method", type="string", example="PATCH"),
      * @OA\Property(property="role_description", type="string"),
      * @OA\Property(property="summary", type="string"),
-     * @OA\Property(property="final_file", type="string", format="binary", description="مرفق اختياري: jpeg, png, jpg أو pdf بحد أقصى 2 ميجابايت. رفع ملف جديد يستبدل السابق. عند استخدام multipart تُرسل الجداول بصيغة الأقواس مثل tasks[0][task_name]."),
+     * @OA\Property(property="final_file", type="string", format="binary", description="مرفق اختياري: jpeg, png, jpg, pdf أو zip بحد أقصى 10 ميجابايت. رفع ملف جديد يستبدل السابق. عند استخدام multipart تُرسل الجداول بصيغة الأقواس مثل tasks[0][task_name]."),
      * @OA\Property(property="final_presentation", type="string", format="binary", description="العرض التقديمي: ppt أو pptx بحد أقصى 10 ميجابايت. إجباري ما لم يكن مرفوعاً من قبل، ورفع ملف جديد يستبدل السابق.")
      * )
      * )

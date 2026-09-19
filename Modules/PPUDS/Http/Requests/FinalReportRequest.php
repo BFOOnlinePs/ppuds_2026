@@ -9,6 +9,20 @@ use Modules\PPUDS\Services\FinalReportService;
 class FinalReportRequest extends FormRequest
 {
     /**
+     * صيغ المرفق الاختياري. أرشيف zip مسموح لملفات المشروع، والتحقق بقاعدة
+     * mimes يعتمد على نوع الملف الحقيقي لا على امتداده.
+     */
+    public const ALLOWED_ATTACHMENT_MIMES = [
+        'jpeg',
+        'png',
+        'jpg',
+        'pdf',
+        'zip',
+    ];
+
+    public const MAX_ATTACHMENT_SIZE = 10240;
+
+    /**
      * صيغ العرض التقديمي. يُتحقَّق منها بقاعدة mimes لأن finfo يتعرّف على
      * ملفات OOXML بنوعها الحقيقي، فلا يمكن تمرير ملف آخر بتغيير الامتداد.
      */
@@ -29,7 +43,12 @@ class FinalReportRequest extends FormRequest
             'summary'                      => ['required', 'string', 'max:20000'],
 
             // مرفق اختياري يُخزَّن في مجموعة final_file الموجودة على التسجيل.
-            'final_file'                   => ['nullable', 'file', 'mimes:jpeg,png,jpg,pdf', 'max:2048'],
+            'final_file'                   => [
+                'nullable',
+                'file',
+                'mimes:' . implode(',', self::ALLOWED_ATTACHMENT_MIMES),
+                'max:' . self::MAX_ATTACHMENT_SIZE,
+            ],
 
             // العرض التقديمي إجباري، ويُطلب مرة واحدة فقط: إن كان مرفوعاً من
             // قبل يبقى الحقل اختيارياً حتى لا يُعاد رفعه مع كل تعديل.

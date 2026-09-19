@@ -20,6 +20,7 @@ class FinalDeliveryReportExport implements FromGenerator, ShouldAutoSize, WithHe
         return [
             __('Student Number'),
             __('Student Name'),
+            __('Major'),
             __('Company'),
             __('Branch'),
             __('Department'),
@@ -39,7 +40,7 @@ class FinalDeliveryReportExport implements FromGenerator, ShouldAutoSize, WithHe
             'company.translations',
             'department.translations',
             'registration.finalReport',
-            'student.studentProfile',
+            'student.studentProfile.major.translations',
         ]);
 
         foreach ($query->lazy(500) as $studentCompany) {
@@ -56,6 +57,7 @@ class FinalDeliveryReportExport implements FromGenerator, ShouldAutoSize, WithHe
         return [
             (string) ($studentProfile?->student_number ?? '---'),
             (string) ($student?->name ?? '---'),
+            (string) ($studentProfile?->major?->name ?? '---'),
             (string) ($studentCompany->company?->name ?? '---'),
             (string) ($studentCompany->branch?->name ?? '---'),
             (string) ($studentCompany->department?->name ?? '---'),

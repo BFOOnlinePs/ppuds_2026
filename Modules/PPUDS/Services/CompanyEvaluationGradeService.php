@@ -13,7 +13,8 @@ use Modules\PPUDS\Settings\GeneralSettings;
 /**
  * علامة الشركة محسوبة من استبيان مشرف الشركة: مجموع إجابات أسئلة التقييم
  * منسوباً إلى أعلى مجموع ممكن (عدد الأسئلة المُجابة × أعلى درجة في المقياس)،
- * مضروباً في علامة الشركة المقرّرة في إعدادات توزيع العلامات.
+ * مضروباً في علامة الشركة المقرّرة في إعدادات توزيع العلامات. ثم
+ * مقرَّباً لأقرب عدد صحيح، فالعلامات المرصودة بلا كسور.
  */
 class CompanyEvaluationGradeService
 {
@@ -78,7 +79,7 @@ class CompanyEvaluationGradeService
 
                 $sum = $answers->sum(fn (SurveyAnswer $answer): int => (int) $answer->text_answer);
 
-                return round($sum / $highestPossible * $maxGrade, 2);
+                return round($sum / $highestPossible * $maxGrade);
             })
             ->all();
     }
