@@ -1211,7 +1211,7 @@
     "No attachment": "لا يوجد مرفق",
     "Optional: attach a copy of the report or any supporting file.": "اختياري: أرفق نسخة من التقرير أو أي ملف داعم.",
     "Optional. Uploading a new file replaces the current one.": "اختياري. رفع ملف جديد يستبدل الملف الحالي.",
-    "Optional. PDF, image (jpg or png) or ZIP archive, up to 10 MB. Uploading a new file replaces the current one.": "اختياري. ملف pdf أو صورة بصيغة jpg أو png أو أرشيف zip وبحد أقصى 10 ميجابايت. رفع ملف جديد يستبدل الملف الحالي.",
+    "Optional. PDF, image (jpg or png) or compressed archive (zip or rar), up to 10 MB. Uploading a new file replaces the current one.": "اختياري. ملف pdf أو صورة بصيغة jpg أو png أو ملف مضغوط بصيغة zip أو rar وبحد أقصى 10 ميجابايت. رفع ملف جديد يستبدل الملف الحالي.",
     "Failed to upload the final report file. Please try again.": "فشل رفع ملف التقرير النهائي. الرجاء المحاولة مرة أخرى.",
     "Training Tasks And Skills": "المهام والمهارات",
     "Last Updated": "آخر تحديث",
