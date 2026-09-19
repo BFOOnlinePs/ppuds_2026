@@ -5,6 +5,7 @@ namespace Modules\Core\Providers;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use Modules\Core\Events\AbstractNotificationEvent;
 use Modules\Core\Listeners\AuthActivitySubscriber;
+use Modules\Core\Listeners\AutoTranslationSubscriber;
 use Modules\Core\Listeners\StoreAbstractNotificationListener;
 use Modules\Core\Livewire\HeaderNotification;
 
@@ -28,6 +29,7 @@ class EventServiceProvider extends ServiceProvider
      */
     protected $subscribe = [
         AuthActivitySubscriber::class,
+        AutoTranslationSubscriber::class,
     ];
 
     /**

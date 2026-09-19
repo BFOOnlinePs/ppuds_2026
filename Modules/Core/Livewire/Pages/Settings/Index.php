@@ -6,6 +6,7 @@ use App\View\Components\AppLayout;
 use Carbon\Carbon;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -18,9 +19,12 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Jantinnerezo\LivewireAlert\Facades\LivewireAlert;
 use Livewire\Component;
 use Modules\Core\Entities\Settings;
+use Modules\Core\Services\AutoTranslationService;
+use Modules\Core\Settings\AutoTranslationSettings;
 use Modules\Core\Settings\GeneralSettings;
 use Modules\PPUDS\Entities\Major;
 use Modules\PPUDS\Enums\GigEvaluationStatus;
@@ -47,6 +51,7 @@ class Index extends Component implements HasForms
         $generalSettings = app(GeneralSettings::class);
         $ppudsSettings = app(PPUDSGeneralSettings::class);
         $keycloakSettings = app(KeycloakSettings::class);
+        $autoTranslationSettings = app(AutoTranslationSettings::class);
 
         $appVersions = DB::table('app_versions')->get()->map(function ($item) {
             return (array) $item;
@@ -90,6 +95,14 @@ class Index extends Component implements HasForms
             'work_location_allowed_distance_meters' => $ppudsSettings->work_location_allowed_distance_meters,
             'work_location_required_major_ids' => $ppudsSettings->work_location_required_major_ids,
             'work_location_enforce_on_check_out' => $ppudsSettings->work_location_enforce_on_check_out,
+
+            'auto_translation_enabled' => $autoTranslationSettings->enabled,
+            'auto_translation_target_locales' => $autoTranslationSettings->target_locales,
+            'auto_translation_detect_source_language' => $autoTranslationSettings->detect_source_language,
+            'auto_translation_update_machine_translations' => $autoTranslationSettings->update_machine_translations,
+            'auto_translation_translate_background_saves' => $autoTranslationSettings->translate_background_saves,
+            'auto_translation_provider' => $autoTranslationSettings->provider,
+            'auto_translation_model' => $autoTranslationSettings->model,
 
             'app_versions' => $appVersions,
 
@@ -384,6 +397,75 @@ class Index extends Component implements HasForms
                                         ]),
                                     ]),
                             ]),
+                        Tabs\Tab::make(__('Auto Translation'))
+                            ->icon('solar-magic-stick-3-bold-duotone')
+                            ->schema([
+                                Section::make(__('AI Auto Translation'))
+                                    ->description(__('When a name or description is saved in one language, AI fills in the other languages in the background. Text typed by a person is never overwritten.'))
+                                    ->schema([
+                                        Grid::make(2)->schema([
+                                            Toggle::make('auto_translation_enabled')
+                                                ->label(__('Enable Auto Translation'))
+                                                ->live()
+                                                ->columnSpanFull(),
+
+                                            Select::make('auto_translation_target_locales')
+                                                ->label(__('Translate Into'))
+                                                ->prefixIcon('solar-global-bold-duotone')
+                                                ->options(fn (): array => app(AutoTranslationService::class)->localeOptions())
+                                                ->multiple()
+                                                ->required()
+                                                ->columnSpanFull()
+                                                ->visible(fn (callable $get): bool => (bool) $get('auto_translation_enabled')),
+
+                                            Toggle::make('auto_translation_detect_source_language')
+                                                ->label(__('Detect The Language Of Typed Text'))
+                                                ->helperText(__('A name typed in English on the Arabic screen is kept as the English name, and its Arabic name is translated.'))
+                                                ->visible(fn (callable $get): bool => (bool) $get('auto_translation_enabled')),
+
+                                            Toggle::make('auto_translation_update_machine_translations')
+                                                ->label(__('Update AI Translations When The Original Changes'))
+                                                ->helperText(__('Translations edited by a person are never replaced.'))
+                                                ->visible(fn (callable $get): bool => (bool) $get('auto_translation_enabled')),
+
+                                            Toggle::make('auto_translation_translate_background_saves')
+                                                ->label(__('Translate Records Saved By Background Sync'))
+                                                ->helperText(__('Covers the university sync and imports. It can translate thousands of records at once, which increases AI usage.'))
+                                                ->columnSpanFull()
+                                                ->visible(fn (callable $get): bool => (bool) $get('auto_translation_enabled')),
+                                        ]),
+                                    ]),
+
+                                Section::make(__('AI Provider'))
+                                    ->description(__('Leave blank to use the provider and model set on the server.'))
+                                    ->icon('solar-cpu-bolt-bold-duotone')
+                                    ->collapsible()
+                                    ->visible(fn (callable $get): bool => (bool) $get('auto_translation_enabled'))
+                                    ->schema([
+                                        Grid::make(2)->schema([
+                                            Select::make('auto_translation_provider')
+                                                ->label(__('Provider'))
+                                                ->prefixIcon('solar-cpu-bolt-bold-duotone')
+                                                ->options(fn (): array => collect(array_keys((array) config('ai.providers', [])))
+                                                    ->mapWithKeys(fn (string $provider): array => [$provider => Str::headline($provider)])
+                                                    ->all())
+                                                ->placeholder(__('Server Default'))
+                                                ->live(),
+
+                                            TextInput::make('auto_translation_model')
+                                                ->label(__('Model'))
+                                                ->prefixIcon('solar-code-bold-duotone')
+                                                ->placeholder(__('Provider Default')),
+
+                                            Placeholder::make('auto_translation_status')
+                                                ->label(__('Status'))
+                                                ->content(fn (callable $get): string => app(AutoTranslationService::class)->isReady($get('auto_translation_provider'))
+                                                    ? __('Ready: an API key was found for this provider.')
+                                                    : __('Not configured: add this provider\'s API key to the server .env file, e.g. OPENAI_API_KEY.'))
+                                                ->columnSpanFull(),
+                                        ]),
+                                    ]),
+                            ]),
                         Tabs\Tab::make(__('App Versions'))
                             ->icon('solar-smartphone-linear')
                             ->schema([
@@ -515,6 +597,36 @@ class Index extends Component implements HasForms
         }
 
         $keycloakSettings->save();
+
+        // Everything but the switch is hidden while it is off, so keep what
+        // was stored — same as the workplace rule above.
+        $autoTranslationSettings = app(AutoTranslationSettings::class);
+        $autoTranslationSettings->enabled = (bool) $data['auto_translation_enabled'];
+
+        if (array_key_exists('auto_translation_target_locales', $data)) {
+            $autoTranslationSettings->target_locales = array_values((array) $data['auto_translation_target_locales']);
+        }
+
+        foreach ([
+            'detect_source_language' => 'auto_translation_detect_source_language',
+            'update_machine_translations' => 'auto_translation_update_machine_translations',
+            'translate_background_saves' => 'auto_translation_translate_background_saves',
+        ] as $property => $field) {
+            if (array_key_exists($field, $data)) {
+                $autoTranslationSettings->{$property} = (bool) $data[$field];
+            }
+        }
+
+        foreach ([
+            'provider' => 'auto_translation_provider',
+            'model' => 'auto_translation_model',
+        ] as $property => $field) {
+            if (array_key_exists($field, $data)) {
+                $autoTranslationSettings->{$property} = trim((string) ($data[$field] ?? ''));
+            }
+        }
+
+        $autoTranslationSettings->save();
 
         if (isset($data['app_versions'])) {
             $platformsToKeep = [];

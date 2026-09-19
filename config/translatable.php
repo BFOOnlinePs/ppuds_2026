@@ -13,6 +13,9 @@ return [
     'locales' => [
         'en',
         'ar',
+        // Stored content only (filled by AI auto translation). The interface
+        // itself is not offered in Hebrew — see laravellocalization.php.
+        'he',
         // 'es' => [
         //     'MX', // mexican spanish
         //     'CO', // colombian spanish

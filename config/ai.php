@@ -38,6 +38,28 @@ return [
         'timeout' => (int) env('AI_STUDENT_TRAINING_CHAT_TIMEOUT', 60),
     ],
 
+    // Fills the other languages of a translatable record after it is saved.
+    // The provider and model chosen on the settings screen win over these.
+    'auto_translation' => [
+        'provider' => env('AI_AUTO_TRANSLATION_PROVIDER'),
+        'model' => env('AI_AUTO_TRANSLATION_MODEL'),
+        'timeout' => (int) env('AI_AUTO_TRANSLATION_TIMEOUT', 60),
+
+        // null keeps QUEUE_CONNECTION (needs `php artisan queue:work`). "sync"
+        // translates right after the response is sent, with no worker at all.
+        'queue_connection' => env('AI_AUTO_TRANSLATION_QUEUE_CONNECTION'),
+        'queue' => env('AI_AUTO_TRANSLATION_QUEUE'),
+
+        // Longer texts are left untranslated to keep a single save from
+        // turning into a very large AI request.
+        'max_characters' => (int) env('AI_AUTO_TRANSLATION_MAX_CHARACTERS', 10000),
+
+        // Model classes that must never be auto-translated.
+        'except' => [
+            //
+        ],
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Caching
