@@ -1143,6 +1143,19 @@ class PpuApiService
             return 'تعذر الاتصال أو لم يرجع API الجامعة نتيجة صالحة.';
         }
 
+        $message = $this->universityResponseMessage($result) ?? 'رفض API الجامعة الطلب.';
+
+        return isset($result['status'])
+            ? "كود {$result['status']}: {$message}"
+            : $message;
+    }
+
+    /**
+     * نص الرد كما أرسلته الجامعة في نتيجة addCompanyToUniversity، ليُعرض
+     * للمستخدم بدل رسالة عامة. null إن لم يرجع الرد نصاً.
+     */
+    public function universityResponseMessage(?array $result): ?string
+    {
         $message = data_get($result, 'response.message')
             ?? data_get($result, 'response.msg')
             ?? data_get($result, 'response.error')
@@ -1159,13 +1172,7 @@ class PpuApiService
             }
         }
 
-        $message = is_string($message) && $message !== ''
-            ? $message
-            : 'رفض API الجامعة الطلب.';
-
-        return isset($result['status'])
-            ? "كود {$result['status']}: {$message}"
-            : $message;
+        return is_string($message) && $message !== '' ? $message : null;
     }
 
     private function universityCompanyPayload(Company $company, ?string $password = null, ?int $supervisorId = null): ?array

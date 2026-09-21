@@ -133,10 +133,28 @@ class Edit extends Component implements HasActions, HasForms
                                                 ->prefixIcon('solar-map-point-linear')
                                                 ->placeholder(fn (Get $get) => $get('company_id') ? __('Select Branch') : __('Select Company First'))
                                                 ->disabled(fn (Get $get) => ! $get('company_id'))
-                                                ->options(fn (Get $get) => Branch::whereHas('companies', function ($query) use ($get) {
-                                                    $query->where('company_id', $get('company_id'));
-                                                })->get()->pluck('name', 'id')
-                                                ),
+                                                ->options(function (Get $get): array {
+                                                    $options = Branch::whereHas('companies', function ($query) use ($get) {
+                                                        $query->where('company_id', $get('company_id'));
+                                                    })->get()->pluck('name', 'id');
+
+                                                    // قد يكون فرع التدريب مفصولاً عن الشركة بعد تعديل سابق
+                                                    // عليها، فيُضاف باسمه حتى تعرض القائمة اسم الفرع لا رقمه.
+                                                    $currentBranchId = $get('branch_id');
+
+                                                    if (filled($currentBranchId) && ! $options->has($currentBranchId)) {
+                                                        $branch = Branch::find($currentBranchId);
+
+                                                        if ($branch) {
+                                                            $options->put(
+                                                                $branch->id,
+                                                                ($branch->name ?: __('Branch')).' ('.__('Not linked to this company').')'
+                                                            );
+                                                        }
+                                                    }
+
+                                                    return $options->all();
+                                                }),
 
                                             Select::make('department_id')
                                                 ->label(__('Department'))

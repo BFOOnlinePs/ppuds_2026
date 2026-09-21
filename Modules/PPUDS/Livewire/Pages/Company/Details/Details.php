@@ -830,12 +830,48 @@ class Details extends Component implements HasForms, HasInfolists, HasActions
         $currentCompanyBranchIds = $this->company->branches()->pluck('branch_branches.id')->toArray();
 
         // الفروع التي يجب فصلها هي الموجودة في الداتابيز ولكن غير موجودة في الـ processedBranchIds
-        $branchesToDetach = array_diff($currentCompanyBranchIds, $processedBranchIds);
+        $branchesToDetach = $this->branchesSafeToDetach(
+            array_diff($currentCompanyBranchIds, $processedBranchIds)
+        );
 
         if (! empty($branchesToDetach)) {
             $this->company->branches()->detach($branchesToDetach);
             // Branch::destroy($branchesToDetach); // اختياري: إذا أردت الحذف النهائي
         }
+    }
+
+    /**
+     * الفرع الذي عليه تدريبات طلاب لا يُفصل عن الشركة: التدريب يخزّن
+     * company_id و branch_id معاً، وفصل الفرع يترك التدريب معلّقاً على فرع
+     * لم تعد الشركة تملكه، فتفقد قائمة الفروع في شاشة التدريب اسمه.
+     *
+     * @param  array<int, int>  $branchIds
+     * @return array<int, int>
+     */
+    protected function branchesSafeToDetach(array $branchIds): array
+    {
+        if (empty($branchIds)) {
+            return [];
+        }
+
+        $usedBranchIds = StudentCompany::query()
+            ->where('company_id', $this->company->id)
+            ->whereIn('branch_id', $branchIds)
+            ->distinct()
+            ->pluck('branch_id')
+            ->all();
+
+        if (empty($usedBranchIds)) {
+            return $branchIds;
+        }
+
+        $names = Branch::whereKey($usedBranchIds)->get()->pluck('name')->filter();
+
+        Toaster::warning(__('These branches were kept because student placements are recorded on them: :branches', [
+            'branches' => $names->isNotEmpty() ? $names->implode(', ') : implode(', ', $usedBranchIds),
+        ]));
+
+        return array_values(array_diff($branchIds, $usedBranchIds));
     }
 
     protected function syncDepartmentsForBranch(Branch $branch, array $departmentsData)

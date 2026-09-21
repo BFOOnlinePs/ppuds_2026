@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\HtmlString;
+use Illuminate\Support\Str;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Branch\Entities\Branch;
@@ -578,6 +579,14 @@ class Index extends Component implements HasTable, HasForms
      */
     protected function sendSupervisorToUniversity(int $companyId, int $supervisorId, ?string $plainPassword): void
     {
+        // بلا هاتف يُرسل الـ payload هاتف الفرع بدلاً منه، فيُسجَّل في الجامعة
+        // رقم ليس للمشرف. نوقف الإرسال ونطلب الرقم بدل تسجيل رقم خاطئ.
+        if (blank(User::query()->whereKey($supervisorId)->value('phone'))) {
+            Toaster::error(__('The supervisor has no phone number, so they were not sent to the university system. Add their phone number, then assign the department again.'));
+
+            return;
+        }
+
         $company = Company::query()
             ->with(['branches.supervisors', 'translations'])
             ->find($companyId);
@@ -586,8 +595,10 @@ class Index extends Component implements HasTable, HasForms
             return;
         }
 
+        $apiService = app(PpuApiService::class);
+
         try {
-            $result = app(PpuApiService::class)->addCompanyToUniversity(
+            $result = $apiService->addCompanyToUniversity(
                 $company,
                 $plainPassword,
                 $supervisorId,
@@ -601,19 +612,34 @@ class Index extends Component implements HasTable, HasForms
             return;
         }
 
+        // ردّ الجامعة يُعرض كما هو: «مضاف مسبقاً» قد يخص الشركة لا المشرف،
+        // فلا نحوّله إلى رسالة نجاح عامة تُخفي أن رقم المشرف لم يُضف.
+        $universityMessage = $apiService->universityResponseMessage($result);
+        $universityMessage = filled($universityMessage)
+            ? Str::limit(Str::squish(strip_tags($universityMessage)), 300)
+            : null;
+
         if (($result['operation'] ?? null) === 'already_exists') {
-            Toaster::success(__('Company supervisor already exists in university system'));
+            filled($universityMessage)
+                ? Toaster::warning(__('University system response: :message', ['message' => $universityMessage]))
+                : Toaster::success(__('Company supervisor already exists in university system'));
 
             return;
         }
 
         if ($result === null || ($result['success'] ?? null) === false) {
-            Toaster::error(__('Unable to send company supervisor to university system'));
+            Toaster::error(filled($universityMessage)
+                ? __('The university system rejected the supervisor: :message', ['message' => $universityMessage])
+                : __('Unable to send company supervisor to university system'));
 
             return;
         }
 
         Toaster::success(__('Company supervisor sent to university successfully'));
+
+        if (filled($universityMessage)) {
+            Toaster::info(__('University system response: :message', ['message' => $universityMessage]));
+        }
     }
 
     /**
