@@ -1161,6 +1161,16 @@ class PpuApiService
             ?? data_get($result, 'response.error')
             ?? data_get($result, 'response.title');
 
+        // ردود DualStudies تحمل نصها في msgCode و exception لا في message.
+        if (! is_string($message) || $message === '') {
+            $message = collect([
+                data_get($result, 'response.msgCode'),
+                data_get($result, 'response.exception'),
+            ])
+                ->filter(fn ($value): bool => is_string($value) && trim($value) !== '')
+                ->implode(' — ');
+        }
+
         if (! is_string($message) || $message === '') {
             $errors = data_get($result, 'response.errors');
 

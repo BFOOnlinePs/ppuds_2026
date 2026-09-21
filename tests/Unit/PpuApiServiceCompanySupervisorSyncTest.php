@@ -56,6 +56,36 @@ class PpuApiServiceCompanySupervisorSyncTest extends TestCase
         $this->assertSame('Invalid supervisor mobile', $result['response']['message']);
     }
 
+    public function test_university_response_message_reads_dual_studies_msg_code_and_exception(): void
+    {
+        config(['services.ppu_api.base_url' => 'https://ppu.example.test']);
+
+        Http::fake([
+            'https://ppu.example.test/api/DualStudies/Company/Add' => Http::response([
+                'success' => false,
+                'data' => null,
+                'msgCode' => 'INVALID_MOBILE',
+                'traceID' => 'abc-123',
+                'exception' => 'Mobile number format is not valid',
+            ], 200),
+        ]);
+
+        $service = new PpuApiService;
+        $result = $service->addCompanyToUniversity(
+            $this->companyWithSupervisor(),
+            token: 'token',
+            refreshToken: 'refresh-token',
+            sendEvenIfCompanyExists: true,
+        );
+
+        $this->assertFalse($result['success']);
+        $this->assertSame('failed', $result['operation']);
+        $this->assertSame(
+            'INVALID_MOBILE — Mobile number format is not valid',
+            $service->universityResponseMessage($result)
+        );
+    }
+
     private function companyWithSupervisor(): Company
     {
         $supervisor = new User([
