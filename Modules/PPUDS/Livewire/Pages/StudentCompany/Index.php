@@ -30,6 +30,7 @@ use Modules\Core\Filament\Forms\Components\DeleteAction;
 use Modules\Core\Filament\Forms\Components\EditAction;
 use Modules\Core\Filament\Forms\Components\InfoAction;
 use Modules\Core\Filament\Forms\Components\ViewAction;
+use Modules\Core\Filament\Tables\Columns\UserColumn;
 use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\Core\Services\PdfService;
 use Modules\PPUDS\Entities\Company;
@@ -55,8 +56,21 @@ class Index extends Component implements HasForms, HasTable
     {
         return $table
             ->query(fn () => StudentCompany::query()
-                ->with(['student.media', 'student.studentProfile', 'registration.student.studentProfile', 'registration', 'registration.course', 'company', 'branch'])
+                ->with([
+                    'student.media',
+                    'student.studentProfile.major',
+                    'registration.student.studentProfile',
+                    'registration',
+                    'registration.course',
+                    'registration.supervisor.media',
+                    'company',
+                    'branch.supervisors.media',
+                    'department',
+                    'evaluationSupervisor.media',
+                ])
                 ->withFieldVisitDays()
+                ->withAttendanceDays()
+                ->withActualWorkingHours()
                 ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query)))
             ->columns([
                 TextColumn::make('registration.student.studentProfile.student_number')
@@ -85,6 +99,11 @@ class Index extends Component implements HasForms, HasTable
                     ))
                     ->placeholder('---'),
 
+                TextColumn::make('student.studentProfile.major.name')
+                    ->label(__('Major'))
+                    ->placeholder('—')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 TextColumn::make('company.name')
                     ->label(__('Company'))
                     ->url(fn (StudentCompany $record): ?string => $record->company_id && auth()->user()->can('Company Details List') ? route('companies.details', $record->company_id) : null)
@@ -97,6 +116,15 @@ class Index extends Component implements HasForms, HasTable
 
                 TextColumn::make('branch.name')
                     ->label(__('Branch'))
+                    ->toggleable()
+                    ->placeholder('—'),
+
+                TextColumn::make('department.name')
+                    ->label(__('Department'))
+                    ->searchable(query: fn (Builder $query, string $search): Builder => $query->whereHas(
+                        'department.translations',
+                        fn (Builder $query) => $query->where('name', 'like', "%{$search}%")
+                    ))
                     ->toggleable()
                     ->placeholder('—'),
 
@@ -119,10 +147,50 @@ class Index extends Component implements HasForms, HasTable
                     ->label(__('Semester'))
                     ->toggleable(),
 
+                // من يرى جدوله يعرف مشرفه، فلا يُكرَّر اسمه في كل صف.
+                UserColumn::make('registration.supervisor.name')
+                    ->label(__('University Supervisor'))
+                    ->user(fn (StudentCompany $record) => $record->registration?->supervisor)
+                    ->linksToSupervisor()
+                    ->searchable()
+                    ->toggleable()
+                    ->visible(fn (): bool => ! $this->shouldScopeUniversitySupervisorStudentCompanies()),
+
+                UserColumn::make('company_supervisor')
+                    ->label(__('Company Supervisor'))
+                    ->user(fn (StudentCompany $record) => $this->companySupervisorFor($record))
+                    ->withoutLink()
+                    ->toggleable()
+                    ->visible(fn (): bool => ! $this->shouldScopeCompanySupervisorStudentCompanies()),
+
+                UserColumn::make('evaluationSupervisor.name')
+                    ->label(__('Evaluation Supervisor'))
+                    ->user(fn (StudentCompany $record) => $record->evaluationSupervisor)
+                    ->linksToEvaluationSupervisor()
+                    ->searchable()
+                    ->toggleable()
+                    // يظهر لمن يُسند مشرفي التقييم أو يديرهم، لا للطالب ولا لمشرف الشركة.
+                    ->visible(fn (): bool => auth()->user()->can('StudentCompany Assign Evaluation Supervisor')
+                        || auth()->user()->can('EvaluationSupervisor View List')),
+
                 TextColumn::make('created_at')
                     ->label(__('Created At'))
                     ->dateTime('Y-m-d')
                     ->icon('solar-clock-circle-bold-duotone')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('attendance_days')
+                    ->label(__('Attendance Days'))
+                    ->badge()
+                    ->color('info')
+                    ->alignCenter()
+                    ->sortable()
+                    ->toggleable(),
+
+                TextColumn::make('actual_working_hours')
+                    ->label(__('Actual Working Hours'))
+                    ->alignCenter()
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('field_visit_days')
@@ -181,6 +249,20 @@ class Index extends Component implements HasForms, HasTable
     protected function studentDisplayColumnState(StudentCompany $record): HtmlString|string
     {
         return ($record->student ?? $record->registration?->student)?->getUserDisplayHtmlAttribute() ?? '---';
+    }
+
+    /**
+     * مشرف الشركة لا يُخزَّن على التدريب، بل هو من يشغل مقعد (الفرع + القسم)
+     * في جدول branch_department — نفس القاعدة التي تحدد ما يراه مشرف الشركة.
+     */
+    protected function companySupervisorFor(StudentCompany $record): ?User
+    {
+        if (! $record->department_id) {
+            return null;
+        }
+
+        return $record->branch?->supervisors
+            ->first(fn (User $supervisor): bool => (int) $supervisor->pivot->company_department_id === (int) $record->department_id);
     }
 
     protected function studentDetailsUrl(StudentCompany $record): ?string
