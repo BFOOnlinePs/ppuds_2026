@@ -9,14 +9,16 @@ use Modules\PPUDS\Services\FinalReportService;
 class FinalReportRequest extends FormRequest
 {
     /**
-     * صيغ المرفق الاختياري. أرشيف zip أو rar مسموح لملفات المشروع، والتحقق بقاعدة
-     * mimes يعتمد على نوع الملف الحقيقي لا على امتداده.
+     * صيغ المرفق الاختياري. نسخة التقرير بصيغة pdf أو Word (docx)، وأرشيف zip أو
+     * rar مسموح لملفات المشروع، والتحقق بقاعدة mimes يعتمد على نوع الملف الحقيقي
+     * لا على امتداده.
      */
     public const ALLOWED_ATTACHMENT_MIMES = [
         'jpeg',
         'png',
         'jpg',
         'pdf',
+        'docx',
         'zip',
         'rar',
     ];

@@ -330,13 +330,14 @@ class Index extends Component implements HasForms, HasActions
 
                         FileUpload::make('final_file')
                             ->label(__('Attachment'))
-                            ->helperText(__('Optional. PDF, image (jpg or png) or compressed archive (zip or rar), up to 10 MB. Uploading a new file replaces the current one.'))
+                            ->helperText(__('Optional. PDF, Word (docx), image (jpg or png) or compressed archive (zip or rar), up to 10 MB. Uploading a new file replaces the current one.'))
                             ->storeFiles(false)
                             // نوع الملف المضغوط يختلف بين المتصفحات وإصدارات finfo على الخادم
                             // (zip: x-zip-compressed على ويندوز، rar: x-rar أو vnd.rar أو
                             // x-rar-compressed)، فتُذكر كلها حتى لا يُرفض أرشيف سليم.
                             ->acceptedFileTypes([
                                 'application/pdf',
+                                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                                 'image/jpeg',
                                 'image/png',
                                 'application/zip',
