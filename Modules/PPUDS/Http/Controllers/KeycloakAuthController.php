@@ -40,22 +40,23 @@ class KeycloakAuthController extends Controller
             // TODO: مؤقت للتست — يعرض كل ما يرجع من Keycloak عند الدخول من الويب. احذفه قبل الرفع.
             // الكود يُستبدل مرة واحدة فقط، لذلك يتم التبادل هنا يدوياً بدل user() حتى
             // يظهر رد Keycloak كاملاً (Socialite يحتفظ ببعض حقوله فقط).
-            $driver = Socialite::driver('keycloak');
-            $tokenResponse = $driver->getAccessTokenResponse($request->input('code'));
-            $claims = fn ($jwt) => is_string($jwt) && substr_count($jwt, '.') === 2
-                ? json_decode(base64_decode(strtr(explode('.', $jwt)[1], '-_', '+/')), true)
-                : null;
-
-            dd([
-                'callback_query' => $request->query(),
-                'token_response' => $tokenResponse,
-                'access_token_claims' => $claims($tokenResponse['access_token'] ?? null),
-                'id_token_claims' => $claims($tokenResponse['id_token'] ?? null),
-                'refresh_token_claims' => $claims($tokenResponse['refresh_token'] ?? null),
-                'userinfo' => isset($tokenResponse['access_token'])
-                    ? $driver->userFromToken($tokenResponse['access_token'])->getRaw()
-                    : null,
-            ]);
+            // للتفعيل: أزل التعليق عن الأسطر التالية حتى نهاية dd.
+            // $driver = Socialite::driver('keycloak');
+            // $tokenResponse = $driver->getAccessTokenResponse($request->input('code'));
+            // $claims = fn ($jwt) => is_string($jwt) && substr_count($jwt, '.') === 2
+            //     ? json_decode(base64_decode(strtr(explode('.', $jwt)[1], '-_', '+/')), true)
+            //     : null;
+            //
+            // dd([
+            //     'callback_query' => $request->query(),
+            //     'token_response' => $tokenResponse,
+            //     'access_token_claims' => $claims($tokenResponse['access_token'] ?? null),
+            //     'id_token_claims' => $claims($tokenResponse['id_token'] ?? null),
+            //     'refresh_token_claims' => $claims($tokenResponse['refresh_token'] ?? null),
+            //     'userinfo' => isset($tokenResponse['access_token'])
+            //         ? $driver->userFromToken($tokenResponse['access_token'])->getRaw()
+            //         : null,
+            // ]);
 
             $keycloakUser = Socialite::driver('keycloak')->user();
             $user = $authAction->execute($keycloakUser);
