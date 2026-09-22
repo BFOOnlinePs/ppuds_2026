@@ -26,8 +26,8 @@ class UserColumn extends TextColumn
     protected string $placeholderText = '---';
 
     /**
-     * Which details page the cell links to: 'student', 'supervisor' or null
-     * for a cell that should not be a link at all.
+     * Which details page the cell links to: 'student', 'supervisor',
+     * 'evaluation-supervisor' or null for a cell that should not be a link at all.
      */
     protected ?string $linkTarget = 'student';
 
@@ -73,6 +73,13 @@ class UserColumn extends TextColumn
     public function linksToSupervisor(): static
     {
         $this->linkTarget = 'supervisor';
+
+        return $this;
+    }
+
+    public function linksToEvaluationSupervisor(): static
+    {
+        $this->linkTarget = 'evaluation-supervisor';
 
         return $this;
     }
@@ -127,9 +134,11 @@ class UserColumn extends TextColumn
             return null;
         }
 
-        [$route, $permission] = $this->linkTarget === 'supervisor'
-            ? ['supervisors.details', 'Supervisor Details List']
-            : ['students.details', 'Student Details List'];
+        [$route, $permission] = match ($this->linkTarget) {
+            'supervisor' => ['supervisors.details', 'Supervisor Details List'],
+            'evaluation-supervisor' => ['evaluation-supervisors.details', 'EvaluationSupervisor Details List'],
+            default => ['students.details', 'Student Details List'],
+        };
 
         if (! auth()->user()?->can($permission)) {
             return null;

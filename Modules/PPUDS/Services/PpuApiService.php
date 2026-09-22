@@ -1352,6 +1352,10 @@ class PpuApiService
 
     private function ppuApiUrl(string $path): string
     {
-        return rtrim(config('services.ppu_api.base_url', 'https://api-core.ppu.edu'), '/') . '/' . ltrim($path, '/');
+        // PPU_API_BASE_URL= فارغة في .env تُرجع '' لا القيمة الافتراضية، فيخرج
+        // الطلب بلا عنوان. نفس العنوان المستخدم في بقية طلبات الجامعة هنا.
+        $baseUrl = config('services.ppu_api.base_url') ?: 'https://api-core.ppu.edu';
+
+        return rtrim($baseUrl, '/') . '/' . ltrim($path, '/');
     }
 }

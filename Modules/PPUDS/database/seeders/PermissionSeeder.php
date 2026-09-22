@@ -90,6 +90,33 @@ class PermissionSeeder extends Seeder
                 'module_name' => 'Supervisor',
             ],
 
+            // TODO Evaluation Supervisors — حسابات مشرفي التقييم وسجلاتهم
+            [
+                'name' => 'EvaluationSupervisor View List',
+                'guard_name' => 'web',
+                'module_name' => 'Evaluation Supervisor',
+            ],
+            [
+                'name' => 'EvaluationSupervisor Create',
+                'guard_name' => 'web',
+                'module_name' => 'Evaluation Supervisor',
+            ],
+            [
+                'name' => 'EvaluationSupervisor Update',
+                'guard_name' => 'web',
+                'module_name' => 'Evaluation Supervisor',
+            ],
+            [
+                'name' => 'EvaluationSupervisor Delete',
+                'guard_name' => 'web',
+                'module_name' => 'Evaluation Supervisor',
+            ],
+            [
+                'name' => 'EvaluationSupervisor Details List',
+                'guard_name' => 'web',
+                'module_name' => 'Evaluation Supervisor',
+            ],
+
             [
                 'name' => 'PracticalSupervisorStudent View List',
                 'guard_name' => 'web',

@@ -360,6 +360,7 @@ class Index extends Component implements HasTable, HasForms
             'Delivery Zone' => 'مناطق التوصيل',
             'Disease' => 'الأمراض',
             'District' => 'المناطق',
+            'EvaluationSupervisor' => 'مشرفو التقييم',
             'Faq' => 'الأسئلة الشائعة',
             'FieldVisit' => 'الزيارات الميدانية',
             'Food' => 'الأطعمة',

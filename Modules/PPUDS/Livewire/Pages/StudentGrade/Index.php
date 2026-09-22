@@ -87,7 +87,7 @@ class Index extends Component implements HasForms, HasTable
                 UserColumn::make('evaluationSupervisor.name')
                     ->label(__('Evaluation Supervisor'))
                     ->user(fn (StudentCompany $record) => $record->evaluationSupervisor)
-                    ->linksToSupervisor()
+                    ->linksToEvaluationSupervisor()
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 UserColumn::make('registration.supervisor.name')

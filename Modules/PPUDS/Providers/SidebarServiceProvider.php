@@ -65,6 +65,11 @@ class SidebarServiceProvider extends ServiceProvider
         );
 
         $sidebar->add(
+            (new SidebarGroup('Evaluation Supervisors', 'solar-medal-star-bold-duotone', [], 56))
+                ->add(new SidebarItem('Evaluation Supervisors List', 'solar-user-check-rounded-bold-duotone', ['EvaluationSupervisor View List'], 'evaluation-supervisors.index'))
+        );
+
+        $sidebar->add(
             (new SidebarGroup('Registration', 'solar-clipboard-check-bold-duotone', [], 60))
                 ->add(new SidebarItem('Registration List', 'solar-list-check-bold-duotone', ['Registration View List'], 'registrations.index'))
             // ->add(new SidebarItem('Add Registration', 'solar-users-group-rounded-bold-duotone', ['Registration Create'], 'registrations.add'))

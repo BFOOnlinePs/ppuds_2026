@@ -59,6 +59,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     Route::get('/supervisors/{user}/details', Details\Details::class)->name('supervisors.details')->can('Supervisor Details List');
                 });
 
+                // مشرفو التقييم: الحسابات في القائمة، والسجل يعرض طلابه وتقدّمه في رصد العلامات.
+                Route::group([
+                    'prefix' => 'evaluation-supervisors',
+                    'as' => 'evaluation-supervisors.',
+                    'namespace' => 'Modules\PPUDS\Livewire\Pages\EvaluationSupervisor',
+                ], function () {
+                    Route::get('/', Index::class)->name('index')->can('EvaluationSupervisor View List');
+                    Route::get('/{user}/details', Details\Details::class)->name('details')->can('EvaluationSupervisor Details List')->withTrashed();
+                });
+
                 Route::group([
                     'prefix' => '',
                     'as' => '',
