@@ -18,6 +18,7 @@ use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Core\Enums\UserRole;
 use Modules\Core\Filament\Tables\Columns\UserColumn;
+use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Settings\GeneralSettings;
 
@@ -34,10 +35,18 @@ class Index extends Component implements HasForms, HasTable
                     'student.studentProfile.major',
                     'evaluationSupervisor',
                     'company',
-                    'branch',
                     'department',
-                ]))
+                    'registration.finalReport',
+                    'registration.media',
+                ])
+                ->withAttendanceDays()
+                ->withActualWorkingHours())
             ->columns([
+                TextColumn::make('student.studentProfile.student_number')
+                    ->label(__('Student Number'))
+                    ->searchable()
+                    ->placeholder('---'),
+
                 UserColumn::make('student.name')
                     ->label(__('Student'))
                     ->user(fn (StudentCompany $record) => $record->student)
@@ -58,11 +67,6 @@ class Index extends Component implements HasForms, HasTable
                     ))
                     ->placeholder('---'),
 
-                TextColumn::make('branch.name')
-                    ->label(__('Branch'))
-                    ->placeholder('---')
-                    ->toggleable(),
-
                 TextColumn::make('department.name')
                     ->label(__('Department'))
                     ->placeholder('---')
@@ -74,6 +78,16 @@ class Index extends Component implements HasForms, HasTable
                     ->linksToEvaluationSupervisor()
                     ->toggleable()
                     ->visible(fn (): bool => ! $this->shouldScopeToAuthenticatedSupervisor()),
+
+                TextColumn::make('attendance_days')
+                    ->label(__('Attendance Days'))
+                    ->badge()
+                    ->color('info'),
+
+                TextColumn::make('actual_working_hours')
+                    ->label(__('Attendance Hours'))
+                    ->badge()
+                    ->color('info'),
 
                 TextColumn::make('evaluation_score')
                     ->label(fn (): string => __('Grade (out of :max)', ['max' => $this->maxGrade()]))
@@ -116,8 +130,7 @@ class Index extends Component implements HasForms, HasTable
         return [
             // السجل يُفتح على الطالب لا على التدريب، ليظهر مساره في كل الشركات معاً.
             Action::make('details')
-                ->label('')
-                ->tooltip(__('View Details'))
+                ->label(__('Student Training Details'))
                 ->icon('solar-eye-bold-duotone')
                 ->color('gray')
                 ->size('xl')
@@ -126,6 +139,36 @@ class Index extends Component implements HasForms, HasTable
                     : null)
                 ->visible(fn (StudentCompany $record): bool => $record->student_id !== null
                     && auth()->user()->can('EvaluationSupervisorStudent Details')),
+
+            // التقرير النهائي كاملاً في تبويبه داخل سجل الطالب.
+            Action::make('final_report')
+                ->label(__('Final Report'))
+                ->icon('solar-document-text-bold-duotone')
+                ->color('info')
+                ->url(fn (StudentCompany $record): ?string => $record->student_id
+                    ? route('evaluation-supervisor-students.details', ['user' => $record->student_id, 'tab' => 'final-report'])
+                    : null)
+                ->visible(fn (StudentCompany $record): bool => $record->student_id !== null
+                    && $record->registration?->finalReport !== null
+                    && auth()->user()->can('EvaluationSupervisorStudent Details')),
+
+            Action::make('view_final_presentation')
+                ->label(__('Presentation File'))
+                ->icon('solar-projector-bold-duotone')
+                ->color('primary')
+                ->url(fn (StudentCompany $record): ?string => $record->registration?->getFirstMediaUrl(Registration::PRESENTATION_COLLECTION) ?: null)
+                ->openUrlInNewTab()
+                ->visible(fn (StudentCompany $record): bool => auth()->user()->can('EvaluationSupervisorStudent Details')
+                    && (bool) $record->registration?->hasMedia(Registration::PRESENTATION_COLLECTION)),
+
+            Action::make('view_final_file')
+                ->label(__('View File'))
+                ->icon('solar-paperclip-2-bold-duotone')
+                ->color('gray')
+                ->url(fn (StudentCompany $record): ?string => $record->registration?->getFirstMediaUrl('final_file') ?: null)
+                ->openUrlInNewTab()
+                ->visible(fn (StudentCompany $record): bool => auth()->user()->can('EvaluationSupervisorStudent Details')
+                    && (bool) $record->registration?->hasMedia('final_file')),
 
             Action::make('grade')
                 ->label(fn (StudentCompany $record): string => $record->evaluation_score === null ? __('Set Grade') : __('Grade'))

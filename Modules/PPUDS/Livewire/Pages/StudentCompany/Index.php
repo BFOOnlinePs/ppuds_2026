@@ -35,6 +35,7 @@ use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\Core\Services\PdfService;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\Course;
+use Modules\PPUDS\Entities\Major;
 use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\SemesterType;
@@ -293,6 +294,22 @@ class Index extends Component implements HasForms, HasTable
                         fn (Builder $query, string $studentNumber) => $query->whereHas(
                             'registration.student.studentProfile',
                             fn (Builder $studentProfileQuery) => $studentProfileQuery->where('student_number', 'like', "%{$studentNumber}%")
+                        )
+                    );
+                }),
+
+            SelectFilter::make('major_id')
+                ->label(__('Major'))
+                ->options(fn (): array => Major::get()->pluck('name', 'id')->toArray())
+                ->searchable()
+                ->preload()
+                ->native(false)
+                ->query(function (Builder $query, array $data): Builder {
+                    return $query->when(
+                        filled($data['value'] ?? null),
+                        fn (Builder $query) => $query->whereHas(
+                            'registration.student.studentProfile',
+                            fn (Builder $profileQuery) => $profileQuery->where('major_id', (int) $data['value'])
                         )
                     );
                 }),

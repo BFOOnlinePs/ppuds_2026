@@ -3,6 +3,7 @@
 namespace Modules\Core\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Modules\Core\Enums\UserRole;
 use Modules\Core\Services\SidebarGroup;
 use Modules\Core\Services\SidebarItem;
 use Modules\Core\Services\SidebarService;
@@ -25,6 +26,7 @@ class SidebarServiceProvider extends ServiceProvider
 
         $sidebar->add(
             (new SidebarItem('Home', 'solar-home-2-bold-duotone', [],  'home', 10))
+                ->hiddenForRoles([UserRole::EVALUATION_SUPERVISOR->value])
         );
 
         $sidebar->add(

@@ -30,7 +30,8 @@ class SidebarServiceProvider extends ServiceProvider
         // );
 
         $sidebar->add(
-            new SidebarItem('Messages', 'solar-chat-round-dots-bold-duotone', [], 'chat-messages.index', 20)
+            (new SidebarItem('Messages', 'solar-chat-round-dots-bold-duotone', [], 'chat-messages.index', 20))
+                ->hiddenForRoles([UserRole::EVALUATION_SUPERVISOR->value])
         );
 
         $sidebar->add(
