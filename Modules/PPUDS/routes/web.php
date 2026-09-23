@@ -132,6 +132,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     'namespace' => 'Modules\PPUDS\Livewire\Pages\EvaluationSupervisorStudent',
                 ], function () {
                     Route::get('/', Index::class)->name('index')->can('EvaluationSupervisorStudent View List');
+                    // سجل الطالب كاملاً: تدريباته في كل الشركات وأيام دوامه وإجازاته وتقريره النهائي.
+                    Route::get('/{user}/details', Details\Details::class)->name('details')->can('EvaluationSupervisorStudent Details');
                 });
 
                 // وضع علامة مشرف الجامعة

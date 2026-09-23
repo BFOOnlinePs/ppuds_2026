@@ -114,6 +114,19 @@ class Index extends Component implements HasForms, HasTable
     protected function getTableActions(): array
     {
         return [
+            // السجل يُفتح على الطالب لا على التدريب، ليظهر مساره في كل الشركات معاً.
+            Action::make('details')
+                ->label('')
+                ->tooltip(__('View Details'))
+                ->icon('solar-eye-bold-duotone')
+                ->color('gray')
+                ->size('xl')
+                ->url(fn (StudentCompany $record): ?string => $record->student_id
+                    ? route('evaluation-supervisor-students.details', $record->student_id)
+                    : null)
+                ->visible(fn (StudentCompany $record): bool => $record->student_id !== null
+                    && auth()->user()->can('EvaluationSupervisorStudent Details')),
+
             Action::make('grade')
                 ->label(fn (StudentCompany $record): string => $record->evaluation_score === null ? __('Set Grade') : __('Grade'))
                 ->icon('heroicon-o-star')

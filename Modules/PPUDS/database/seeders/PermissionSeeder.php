@@ -148,6 +148,11 @@ class PermissionSeeder extends Seeder
                 'guard_name' => 'web',
                 'module_name' => 'Evaluation Supervisor Student',
             ],
+            [
+                'name' => 'EvaluationSupervisorStudent Details',
+                'guard_name' => 'web',
+                'module_name' => 'Evaluation Supervisor Student',
+            ],
 
             // TODO Student Grade — شاشة عرض العلامات مجتمعة (عرض فقط)
             [

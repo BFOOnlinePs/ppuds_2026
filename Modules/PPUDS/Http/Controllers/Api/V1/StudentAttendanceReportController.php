@@ -282,6 +282,10 @@ class StudentAttendanceReportController extends Controller
 
         abort_unless($this->canAccessStudentCompanyRecord($report->studentAttendance?->studentCompany), 403);
 
+        if ($response = $this->ensureStudentCompanyNotFinished($report->studentAttendance?->studentCompany)) {
+            return $response;
+        }
+
         $report->update($request->validated());
 
         return $this->successResponse(

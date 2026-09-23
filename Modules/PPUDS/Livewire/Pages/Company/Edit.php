@@ -5,6 +5,7 @@ namespace Modules\PPUDS\Livewire\Pages\Company;
 use App\View\Components\AppLayout;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
+use Filament\Forms\Components\Actions\Action as FormAction;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Group;
 use Filament\Forms\Components\Repeater;
@@ -56,6 +57,8 @@ class Edit extends Component implements HasActions, HasForms
     public array $pendingCreatedSupervisorAssignments = [];
 
     public Company $company;
+
+    protected ?array $linkedDepartmentIdsCache = null;
 
     public function mount(Company $company)
     {
@@ -240,6 +243,9 @@ class Edit extends Component implements HasActions, HasForms
                                 ->minItems(1)
                                 ->collapsible()
                                 ->cloneable()
+                                ->deleteAction(fn (FormAction $action) => $action->visible(
+                                    fn (array $arguments, Repeater $component): bool => ! $this->isBranchLinked($component->getRawItemState($arguments['item'])['id'] ?? null)
+                                ))
                                 ->grid(1)
                                 ->extraAttributes(['class' => 'gap-6 company-structure-repeater'])
                                 ->schema([
@@ -486,6 +492,9 @@ class Edit extends Component implements HasActions, HasForms
                                                                 ->collapsible()
                                                                 ->itemLabel(__('Department Assignment'))
                                                                 ->addActionLabel(__('Add Department'))
+                                                                ->deleteAction(fn (FormAction $action) => $action->visible(
+                                                                    fn (array $arguments, Repeater $component, Get $get): bool => ! $this->isDepartmentLinked($get('id'), $component->getRawItemState($arguments['item'])['name'] ?? null)
+                                                                ))
                                                                 ->reorderableWithButtons()
                                                                 ->extraAttributes(['class' => 'company-departments-repeater border-l-4 border-primary-500 pl-4']),
                                                         ]),
@@ -544,6 +553,11 @@ class Edit extends Component implements HasActions, HasForms
         $this->validate();
         $this->data = $this->form->getState();
         $this->mergePendingCreatedSupervisorAssignmentsIntoFormData();
+
+        // لا يُحفظ شيء إذا أُزيل فرع أو قسم عليه تدريبات طلاب
+        if (! $this->linkedStructureIsKept()) {
+            return;
+        }
 
         // 2. تحديث بيانات الشركة الأساسية (مع استبعاد الفروع والشعار)
         $companyData = Arr::except($this->data, ['branches', 'logo']);
@@ -721,6 +735,130 @@ class Edit extends Component implements HasActions, HasForms
         ]));
 
         return array_values(array_diff($branchIds, $usedBranchIds));
+    }
+
+    /**
+     * الفروع والأقسام الحالية للشركة التي عليها تدريبات طلاب:
+     * branch id => ids الأقسام المربوطة بصف في branch_department.
+     * حذف صف القسم يُخفي الطلاب عن مشرف الشركة، وفصل الفرع يترك التدريب معلّقاً.
+     *
+     * @return array<int, array<int, int>>
+     */
+    protected function linkedDepartmentIdsByBranch(): array
+    {
+        if ($this->linkedDepartmentIdsCache !== null) {
+            return $this->linkedDepartmentIdsCache;
+        }
+
+        $companyBranches = $this->company->branches()->with('departments')->get()->keyBy('id');
+
+        $placements = StudentCompany::query()
+            ->where('company_id', $this->company->id)
+            ->whereIn('branch_id', $companyBranches->keys())
+            ->select(['branch_id', 'department_id'])
+            ->distinct()
+            ->get();
+
+        $linked = [];
+
+        foreach ($placements as $placement) {
+            $branchId = (int) $placement->branch_id;
+            $linked[$branchId] ??= [];
+
+            $seatedDepartmentIds = $companyBranches->get($branchId)->departments->pluck('id')->map(fn ($id): int => (int) $id)->all();
+
+            if ($placement->department_id && in_array((int) $placement->department_id, $seatedDepartmentIds, true)) {
+                $linked[$branchId][] = (int) $placement->department_id;
+            }
+        }
+
+        return $this->linkedDepartmentIdsCache = array_map(fn (array $ids): array => array_values(array_unique($ids)), $linked);
+    }
+
+    protected function isBranchLinked(mixed $branchId): bool
+    {
+        return filled($branchId) && array_key_exists((int) $branchId, $this->linkedDepartmentIdsByBranch());
+    }
+
+    protected function isDepartmentLinked(mixed $branchId, mixed $departmentName): bool
+    {
+        if (blank($branchId) || blank($departmentName)) {
+            return false;
+        }
+
+        $linkedIds = $this->linkedDepartmentIdsByBranch()[(int) $branchId] ?? [];
+
+        if ($linkedIds === []) {
+            return false;
+        }
+
+        $departmentId = CompanyDepartment::whereTranslation('name', trim((string) $departmentName))->value('id');
+
+        return $departmentId && in_array((int) $departmentId, $linkedIds, true);
+    }
+
+    /**
+     * يمنع الحفظ إذا حُذف (أو أُعيدت تسميته) فرع أو قسم عليه تدريبات طلاب.
+     */
+    protected function linkedStructureIsKept(): bool
+    {
+        $linked = $this->linkedDepartmentIdsByBranch();
+
+        if ($linked === []) {
+            return true;
+        }
+
+        $formBranches = collect($this->data['branches'] ?? [])
+            ->filter(fn (mixed $branch): bool => is_array($branch) && filled($branch['id'] ?? null))
+            ->keyBy(fn (array $branch): int => (int) $branch['id']);
+
+        $removedBranchIds = [];
+        $removedDepartments = [];
+
+        foreach ($linked as $branchId => $departmentIds) {
+            $branchData = $formBranches->get($branchId);
+
+            if (! $branchData) {
+                $removedBranchIds[] = $branchId;
+
+                continue;
+            }
+
+            $keptDepartmentIds = collect($branchData['departments'] ?? [])
+                ->pluck('name')
+                ->filter()
+                ->map(fn (mixed $name) => CompanyDepartment::whereTranslation('name', trim((string) $name))->value('id'))
+                ->filter()
+                ->map(fn (mixed $id): int => (int) $id)
+                ->all();
+
+            foreach (array_diff($departmentIds, $keptDepartmentIds) as $departmentId) {
+                $removedDepartments[] = [$branchId, $departmentId];
+            }
+        }
+
+        if ($removedBranchIds === [] && $removedDepartments === []) {
+            return true;
+        }
+
+        if ($removedBranchIds !== []) {
+            Toaster::error(__('These branches cannot be deleted because student placements are recorded on them: :branches', [
+                'branches' => Branch::whereKey($removedBranchIds)->get()->pluck('name')->filter()->implode(', ') ?: implode(', ', $removedBranchIds),
+            ]));
+        }
+
+        if ($removedDepartments !== []) {
+            $branchNames = Branch::whereKey(array_column($removedDepartments, 0))->get()->pluck('name', 'id');
+            $departmentNames = CompanyDepartment::whereKey(array_column($removedDepartments, 1))->get()->pluck('name', 'id');
+
+            Toaster::error(__('These departments cannot be deleted because student placements are recorded on them: :departments', [
+                'departments' => collect($removedDepartments)
+                    ->map(fn (array $pair): string => ($branchNames[$pair[0]] ?? $pair[0]).' / '.($departmentNames[$pair[1]] ?? $pair[1]))
+                    ->implode(', '),
+            ]));
+        }
+
+        return false;
     }
 
     protected function syncDepartmentsForBranch(Branch $branch, array $departmentsData): void

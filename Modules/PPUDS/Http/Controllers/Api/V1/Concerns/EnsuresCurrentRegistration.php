@@ -7,6 +7,7 @@ use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Entities\StudentAttendance;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\SemesterType;
+use Modules\PPUDS\Enums\TrainingStatus;
 use Modules\PPUDS\Settings\GeneralSettings;
 
 trait EnsuresCurrentRegistration
@@ -31,7 +32,7 @@ trait EnsuresCurrentRegistration
         }
 
         if ($studentCompany && $this->registrationIsInCurrentSemester($studentCompany->registration)) {
-            return null;
+            return $this->ensureStudentCompanyNotFinished($studentCompany);
         }
 
         return $this->currentRegistrationErrorResponse();
@@ -48,7 +49,7 @@ trait EnsuresCurrentRegistration
         }
 
         if ($studentAttendance && $this->registrationIsInCurrentSemester($studentAttendance->studentCompany?->registration)) {
-            return null;
+            return $this->ensureStudentCompanyNotFinished($studentAttendance->studentCompany);
         }
 
         return $this->currentRegistrationErrorResponse();
@@ -59,6 +60,16 @@ trait EnsuresCurrentRegistration
         $model->loadMissing('studentCompany.registration');
 
         return $this->ensureStudentCompanyInCurrentSemester($model->studentCompany);
+    }
+
+    // التدريب المنتهي في الشركة يبقى للعرض فقط ولا يُعدَّل عليه من التطبيق.
+    protected function ensureStudentCompanyNotFinished(?StudentCompany $studentCompany): ?JsonResponse
+    {
+        if ($studentCompany?->status !== TrainingStatus::FINISHED) {
+            return null;
+        }
+
+        return $this->errorResponse(__('Training at this company has been finished.'), 422);
     }
 
     protected function registrationIsInCurrentSemester(?Registration $registration): bool

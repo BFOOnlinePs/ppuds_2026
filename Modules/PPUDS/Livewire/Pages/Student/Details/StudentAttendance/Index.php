@@ -236,8 +236,9 @@ class Index extends Component implements HasForms, HasTable
             SelectFilter::make('company_id')
                 ->label(__('Company'))
                 ->options(function () {
+                    // التدريب بلا شركة يعطي خياراً بلا اسم فيسقط الجدول، فيُستثنى.
                     return $this->applyStudentCompanyVisibilityScope(
-                        StudentCompany::where('student_id', $this->studentId)->with('company')
+                        StudentCompany::where('student_id', $this->studentId)->whereNotNull('company_id')->with('company')
                     )->get()->pluck('company.name', 'company.id');
                 })
                 ->searchable()

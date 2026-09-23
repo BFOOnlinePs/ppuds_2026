@@ -270,6 +270,7 @@ class RolePermissionSeeder extends Seeder
             UserRole::EVALUATION_SUPERVISOR->value => [
                 'EvaluationSupervisorStudent View List',
                 'EvaluationSupervisorStudent Grade',
+                'EvaluationSupervisorStudent Details',
             ],
 
             UserRole::USER->value => [],

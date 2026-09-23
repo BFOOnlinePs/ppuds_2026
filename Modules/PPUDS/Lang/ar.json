@@ -320,6 +320,8 @@
     "Branch": "الفرع",
     "Not linked to this company": "غير مرتبط بهذه الشركة",
     "These branches were kept because student placements are recorded on them: :branches": "أُبقيت هذه الفروع لأن عليها تدريبات طلاب: :branches",
+    "These branches cannot be deleted because student placements are recorded on them: :branches": "لا يمكن حذف هذه الفروع لأن عليها تدريبات طلاب: :branches",
+    "These departments cannot be deleted because student placements are recorded on them: :departments": "لا يمكن حذف هذه الأقسام لأن عليها تدريبات طلاب: :departments",
     "Select Branch": "اختر الفرع",
     "Select Company First": "اختر الشركة أولاً",
     "Status & Settings": "الحالة والإعدادات",
@@ -918,6 +920,7 @@
     "Choose either present students today or absent students today, not both.": "اختر إما الطلاب الحاضرين اليوم أو الغائبين اليوم، وليس كليهما.",
     "The attendance date to must be after or equal to attendance date from.": "يجب أن يكون تاريخ الحضور (إلى) بعد أو يساوي تاريخ الحضور (من).",
     "This record does not belong to the current registration semester.": "هذا السجل لا يعود للفصل الدراسي الحالي.",
+    "Training at this company has been finished.": "تم إنهاء التدريب في هذه الشركة.",
 
     "Announcement retrieved successfully": "تم جلب الإعلان بنجاح",
     "Announcements retrieved successfully": "تم جلب الإعلانات بنجاح",
@@ -1325,5 +1328,12 @@
     "With Assigned Students": "لديه طلاب مسندون",
     "Without Assigned Students": "بلا طلاب مسندين",
     "No students assigned yet": "لا يوجد طلاب مسندون بعد",
-    "Assign students to this supervisor from the Student Companies list using “Assign Evaluation Supervisor”.": "أسنِد الطلاب لهذا المشرف من قائمة تدريب الطلاب عبر إجراء «تعيين مشرف تقييم»."
+    "Assign students to this supervisor from the Student Companies list using “Assign Evaluation Supervisor”.": "أسنِد الطلاب لهذا المشرف من قائمة تدريب الطلاب عبر إجراء «تعيين مشرف تقييم».",
+    "Training Period": "فترة التدريب",
+    "Assigned to you": "مُسند إليك",
+    "View Details": "عرض التفاصيل",
+    "Unexcused Absence Dates": "تواريخ الغياب غير المبرر",
+    "Excused Absence Dates": "تواريخ الغياب المبرر",
+    "No trainings recorded yet": "لا توجد تدريبات مسجلة بعد",
+    "No final report submitted yet": "لم يُسلَّم تقرير نهائي بعد"
 }
