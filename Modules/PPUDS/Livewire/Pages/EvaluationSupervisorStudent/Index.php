@@ -3,6 +3,8 @@
 namespace Modules\PPUDS\Livewire\Pages\EvaluationSupervisorStudent;
 
 use App\View\Components\AppLayout;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Section;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -174,7 +176,20 @@ class Index extends Component implements HasForms, HasTable
                 ->label(fn (StudentCompany $record): string => $record->evaluation_score === null ? __('Set Grade') : __('Grade'))
                 ->icon('heroicon-o-star')
                 ->color('primary')
-                ->form(fn (): array => [
+                ->form(fn (StudentCompany $record): array => [
+                    // مجموع دوام الطالب في كل تدريباته، بنفس حساب سجل الطالب.
+                    Section::make(__('Attendance across all companies'))
+                        ->columns(2)
+                        ->schema([
+                            Placeholder::make('attendance_days')
+                                ->label(__('Attendance Days'))
+                                ->content(fn (): int => $this->studentAttendanceTotals($record)['days']),
+
+                            Placeholder::make('actual_working_hours')
+                                ->label(__('Actual Working Hours'))
+                                ->content(fn (): float => $this->studentAttendanceTotals($record)['hours']),
+                        ]),
+
                     TextInput::make('evaluation_score')
                         ->label(__('Grade (out of :max)', ['max' => $this->maxGrade()]))
                         ->numeric()
@@ -195,6 +210,25 @@ class Index extends Component implements HasForms, HasTable
 
                     Toaster::success(__('Grade saved successfully'));
                 }),
+        ];
+    }
+
+    /**
+     * أيام الحضور والساعات الفعلية للطالب في كل الشركات التي تدرّب فيها.
+     *
+     * @return array{days: int, hours: float}
+     */
+    protected function studentAttendanceTotals(StudentCompany $record): array
+    {
+        $placements = StudentCompany::query()
+            ->where('student_id', $record->student_id)
+            ->withAttendanceDays()
+            ->withActualWorkingHours()
+            ->get();
+
+        return [
+            'days' => (int) $placements->sum('attendance_days'),
+            'hours' => round((float) $placements->sum('actual_working_hours'), 2),
         ];
     }
 

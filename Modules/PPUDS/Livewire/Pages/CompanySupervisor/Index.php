@@ -21,6 +21,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\HtmlString;
@@ -202,7 +203,10 @@ class Index extends Component implements HasTable, HasForms
                     true: fn (Builder $query): Builder => $query->onlyTrashed(),
                     false: fn (Builder $query): Builder => $query->withTrashed(),
                     blank: fn (Builder $query): Builder => $query->withoutTrashed(),
-                ),
+                )
+                // الفلاتر تُطبَّق داخل where متداخل لا يستطيع إلغاء نطاق الحذف الناعم،
+                // فيُرفع النطاق من الاستعلام الأساسي كما يفعل TrashedFilter في Filament.
+                ->baseQuery(fn (Builder $query): Builder => $query->withoutGlobalScopes([SoftDeletingScope::class])),
         ];
     }
 
