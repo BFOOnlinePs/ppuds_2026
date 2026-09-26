@@ -273,6 +273,7 @@
                         Route::get('/{finalReport}', 'show')->name('show');
                         Route::patch('/{finalReport}', 'update')->name('update');
                         Route::post('/{finalReport}/submit', 'submit')->name('submit');
+                        Route::get('/{finalReport}/pdf', 'pdf')->name('pdf');
                     });
 
                 Route::controller(ChatController::class)

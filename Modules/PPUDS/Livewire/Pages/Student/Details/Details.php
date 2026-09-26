@@ -410,6 +410,25 @@ class Details extends Component implements HasForms, HasInfolists
                                             ]),
                                     ]),
 
+                                // نفس صلاحية شاشة تسليم التقارير النهائية.
+                                Tabs\Tab::make('final-report')
+                                    ->label(__('Final Report'))
+                                    ->icon('heroicon-o-document-check')
+                                    ->visible(fn (): bool => auth()->user()->can('Report View List'))
+                                    ->schema([
+                                        Grid::make(2)
+                                            ->schema([
+                                                Livewire::make(
+                                                    \Modules\PPUDS\Livewire\Pages\Student\Details\FinalReport\Index::class,
+                                                    [
+                                                        'studentId' => $this->userId,
+                                                    ]
+                                                )
+                                                    ->columnSpanFull()
+                                                    ->lazy(),
+                                            ]),
+                                    ]),
+
                                 Tabs\Tab::make('payment')
                                     ->label(__('Payment'))
                                     ->icon('heroicon-o-academic-cap')

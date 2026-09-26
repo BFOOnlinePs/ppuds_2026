@@ -5,8 +5,12 @@ namespace Modules\PPUDS\Services;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Modules\Core\Entities\User;
+use Modules\Core\Services\PdfService;
 use Modules\PPUDS\Entities\FinalReport;
 use Modules\PPUDS\Entities\Registration;
+use Modules\PPUDS\Entities\StudentAttendance;
+use Modules\PPUDS\Entities\StudentCompany;
+use Modules\PPUDS\Enums\AttendanceStatus;
 use Modules\PPUDS\Enums\FinalReportItemType;
 use Modules\PPUDS\Enums\FinalReportStatus;
 use Modules\PPUDS\Enums\ReportStatus;
@@ -166,6 +170,79 @@ class FinalReportService
         ])->save();
 
         return $report->load(['tasks', 'skills', 'items', 'registration.media']);
+    }
+
+    /**
+     * ملف التقرير بالنموذج الرسمي، نفسه للطالب وللمشرف ولتطبيق الموبايل.
+     * الطباعة عرض فقط ولا تغيّر الحالة، فهي متاحة للمسودة وللتقرير المسلَّم معاً.
+     */
+    public function pdf(FinalReport $report)
+    {
+        return app(PdfService::class)->streamPdf(
+            'ppuds::pdf.final-report.report',
+            $this->pdfData($report->loadMissing(['tasks', 'skills', 'items', 'registration'])),
+            'final-report-'.now()->format('Y-m-d-His').'.pdf',
+        );
+    }
+
+    /**
+     * بيانات النموذج الرسمي. ما يعرفه النظام يُملأ، وما لا يخزّنه يبقى خانة
+     * فارغة في الورقة ليُكتب بخط اليد كما في النموذج المعتمد.
+     *
+     * @return array<string, mixed>
+     */
+    protected function pdfData(FinalReport $report): array
+    {
+        $registration = $report->registration;
+        $studentCompany = $registration?->studentCompany;
+        $company = $studentCompany?->company;
+        $settings = app(GeneralSettings::class);
+
+        return [
+            'report' => $report,
+            'registration' => $registration,
+            'student' => $registration?->student,
+            'company' => $company,
+            'branch' => $studentCompany?->branch,
+            // بلا fallback، وإلا ظهر الاسم العربي في خانة الاسم الإنجليزي.
+            'companyNameAr' => $company?->translate('ar')?->name,
+            'companyNameEn' => $company?->translate('en')?->name,
+            'contributions' => $report->items->where('type', FinalReportItemType::CONTRIBUTION)->values(),
+            'difficulties' => $report->items->where('type', FinalReportItemType::DIFFICULTY)->values(),
+            'stats' => $this->trainingStats($report, $studentCompany),
+            'trainingPeriod' => $settings->start_semester->format('j/n/Y').' – '.$settings->end_semester->format('j/n/Y'),
+            'academicYear' => $settings->year.'/'.($settings->year + 1),
+        ];
+    }
+
+    /**
+     * إحصائية التدريب كما تحتسبها شاشة الغياب. الساعات من بصمات الحضور نفسها،
+     * وتُجمع من كل تدريبات الطالب لا من تدريبه الحالي وحده، فمن انتقل بين
+     * أكثر من شركة تظهر ساعاته كلها.
+     *
+     * @return array<string, int|float|string>
+     */
+    protected function trainingStats(FinalReport $report, ?StudentCompany $studentCompany): array
+    {
+        $minutes = StudentAttendance::query()
+            ->whereHas('studentCompany', fn (Builder $query): Builder => $query->where('student_id', $report->student_id))
+            ->whereNotNull('check_in')
+            ->whereNotNull('check_out')
+            ->where('status', '!=', AttendanceStatus::DISCREPANCY->value)
+            ->get(['check_in', 'check_out'])
+            ->sum(fn (StudentAttendance $attendance): int => $attendance->check_in->diffInMinutes($attendance->check_out));
+
+        if (! $studentCompany) {
+            return ['days' => '', 'hours' => round($minutes / 60, 2), 'leaves' => ''];
+        }
+
+        $summary = app(AbsenceReportService::class)->summary($studentCompany);
+
+        return [
+            'days' => $summary['attendance_days'] ?? 0,
+            'hours' => round($minutes / 60, 2),
+            'leaves' => $summary['excused_absence_days'] ?? 0,
+        ];
     }
 
     /**

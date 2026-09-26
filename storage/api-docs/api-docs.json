@@ -5633,7 +5633,7 @@
                                         "type": "string"
                                     },
                                     "final_file": {
-                                        "description": "مرفق اختياري: jpeg, png, jpg, pdf أو zip بحد أقصى 10 ميجابايت. رفع ملف جديد يستبدل السابق. عند استخدام multipart تُرسل الجداول بصيغة الأقواس مثل tasks[0][task_name].",
+                                        "description": "مرفق اختياري: jpeg, png, jpg, pdf, docx, zip أو rar بحد أقصى 10 ميجابايت. رفع ملف جديد يستبدل السابق. عند استخدام multipart تُرسل الجداول بصيغة الأقواس مثل tasks[0][task_name].",
                                         "type": "string",
                                         "format": "binary"
                                     },
@@ -5866,7 +5866,7 @@
                                         "type": "string"
                                     },
                                     "final_file": {
-                                        "description": "مرفق اختياري: jpeg, png, jpg, pdf أو zip بحد أقصى 10 ميجابايت. رفع ملف جديد يستبدل السابق. عند استخدام multipart تُرسل الجداول بصيغة الأقواس مثل tasks[0][task_name].",
+                                        "description": "مرفق اختياري: jpeg, png, jpg, pdf, docx, zip أو rar بحد أقصى 10 ميجابايت. رفع ملف جديد يستبدل السابق. عند استخدام multipart تُرسل الجداول بصيغة الأقواس مثل tasks[0][task_name].",
                                         "type": "string",
                                         "format": "binary"
                                     },
@@ -5967,6 +5967,48 @@
                     },
                     "422": {
                         "description": "Already submitted, still incomplete, the presentation file is missing, or submission is closed in settings"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/ppuds/final-reports/{id}/pdf": {
+            "get": {
+                "tags": [
+                    "Final Reports"
+                ],
+                "summary": "Download the final report as PDF",
+                "description": "نفس ملف PDF الذي يطبعه الطالب من الويب، متاح للمسودة وللتقرير المسلَّم. الرابط يأتي أيضاً في حقل pdf_url.",
+                "operationId": "a122c4826a7ed5be665ddcec55fee353",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Final Report ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The final report PDF file",
+                        "content": {
+                            "application/pdf": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden"
                     }
                 },
                 "security": [
@@ -12446,6 +12488,12 @@
                         "description": "رابط العرض التقديمي الإجباري، و null إذا لم يُرفع بعد أو لم تُحمَّل علاقة التسجيل",
                         "type": "string",
                         "example": "https://example.com/storage/ppuds/registers/20260910_ab12cd34_deck.pptx",
+                        "nullable": true
+                    },
+                    "pdf_url": {
+                        "description": "رابط تحميل التقرير PDF، ويتطلب نفس توكن المصادقة",
+                        "type": "string",
+                        "example": "https://example.com/api/v1/ppuds/final-reports/1/pdf",
                         "nullable": true
                     },
                     "tasks": {

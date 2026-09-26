@@ -8,12 +8,14 @@ use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Masmerise\Toaster\Toaster;
 use Modules\Core\Entities\User;
 use Modules\Core\Enums\UserRole;
 use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\LeaveRequestStatus;
 use Modules\PPUDS\Services\AbsenceReportService;
+use Modules\PPUDS\Services\FinalReportService;
 use Modules\PPUDS\Settings\GeneralSettings;
 
 /**
@@ -176,6 +178,23 @@ class Details extends Component
             ])
             ->orderByDesc('id')
             ->get();
+    }
+
+    /**
+     * نفس ملف PDF الذي يطبعه الطالب. البحث داخل تقارير هذا الطالب وحده، فلا
+     * يُطبع تقرير طالب آخر بتمرير رقم تسجيله.
+     */
+    public function printFinalReport(int $registrationId)
+    {
+        $report = $this->finalReports->firstWhere('id', $registrationId)?->finalReport;
+
+        if (! $report) {
+            Toaster::error(__('No records found.'));
+
+            return null;
+        }
+
+        return app(FinalReportService::class)->pdf($report);
     }
 
     /**

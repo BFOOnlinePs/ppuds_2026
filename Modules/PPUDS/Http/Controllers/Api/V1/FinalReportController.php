@@ -491,6 +491,49 @@ class FinalReportController extends Controller
     }
 
     /**
+     * @OA\Get(
+     * path="/api/v1/ppuds/final-reports/{id}/pdf",
+     * summary="Download the final report as PDF",
+     * description="نفس ملف PDF الذي يطبعه الطالب من الويب، متاح للمسودة وللتقرير المسلَّم. الرابط يأتي أيضاً في حقل pdf_url.",
+     * tags={"Final Reports"},
+     * security={{"sanctum": {}}},
+     *
+     * @OA\Parameter(
+     * name="id",
+     * in="path",
+     * required=true,
+     * description="Final Report ID",
+     *
+     * @OA\Schema(type="integer")
+     * ),
+     *
+     * @OA\Response(
+     * response=200,
+     * description="The final report PDF file",
+     *
+     * @OA\MediaType(
+     * mediaType="application/pdf",
+     *
+     * @OA\Schema(type="string", format="binary")
+     * )
+     * ),
+     * @OA\Response(response=403, description="Forbidden")
+     * )
+     */
+    public function pdf(FinalReport $finalReport)
+    {
+        if ($denied = $this->denyUnlessStudentCan('FinalReport View')) {
+            return $denied;
+        }
+
+        if ($denied = $this->denyUnlessOwned($finalReport)) {
+            return $denied;
+        }
+
+        return $this->finalReports->pdf($finalReport);
+    }
+
+    /**
      * ملفا التقرير يُحفظان معاً: المرفق العام الاختياري والعرض التقديمي
      * الإجباري. الطلب الخالي من ملف جديد لا يمسّ الملف المرفوع سابقاً،
      * فيبقى العرض التقديمي محفوظاً عند تعديل بقية الحقول.
