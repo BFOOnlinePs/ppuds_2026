@@ -105,6 +105,7 @@ class User extends Authenticatable implements HasMedia, WirechatUser
         'branch_id',
         'point_balance',
         'loyalty_tier_id',
+        'notifications_enabled',
     ];
 
     /**
@@ -138,6 +139,7 @@ class User extends Authenticatable implements HasMedia, WirechatUser
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'notifications_enabled' => 'boolean',
         ];
     }
 

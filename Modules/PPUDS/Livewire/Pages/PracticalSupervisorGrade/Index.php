@@ -11,10 +11,12 @@ use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\TextInputColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -88,16 +90,29 @@ class Index extends Component implements HasForms, HasTable
                     ->toggleable()
                     ->visible(fn (): bool => ! $this->shouldScopeUniversitySupervisorStudentCompanies()),
 
-                TextColumn::make('supervisor_score')
+                // إدخال العلامة مباشرة من الجدول لتسريع رصد علامات عدد كبير من الطلاب.
+                TextInputColumn::make('supervisor_score')
                     ->label(fn (): string => __('Grade (out of :max)', ['max' => $this->maxGrade()]))
-                    ->badge()
-                    ->color(fn (?int $state): string => $state === null ? 'gray' : 'success')
-                    ->formatStateUsing(fn (?int $state): string => $state === null
-                        ? __('Not graded yet')
-                        : $state.' / '.$this->maxGrade()),
+                    ->type('number')
+                    ->placeholder('---')
+                    ->rules(fn (): array => ['required', 'integer', 'min:0', 'max:'.$this->maxGrade()])
+                    ->sortable()
+                    ->disabled(fn (): bool => ! auth()->user()->can('PracticalSupervisorStudent Grade'))
+                    ->updateStateUsing(function (StudentCompany $record, $state): ?int {
+                        abort_unless(auth()->user()?->can('PracticalSupervisorStudent Grade'), 403);
+
+                        $record->update([
+                            'supervisor_score' => min((int) $state, $this->maxGrade()),
+                        ]);
+
+                        Toaster::success(__('Grade saved successfully'));
+
+                        return $record->supervisor_score;
+                    }),
             ])
             ->filters($this->getTableFilters(), layout: FiltersLayout::AboveContent)
             ->filtersFormColumns(4)
+            ->paginationPageOptions([5, 10, 25, 50, 100])
             ->actions($this->getTableActions())
             ->bulkActions($this->getTableBulkActions());
     }
@@ -105,6 +120,17 @@ class Index extends Component implements HasForms, HasTable
     protected function getTableFilters(): array
     {
         return [
+            TernaryFilter::make('grade_status')
+                ->label(__('Grading Status'))
+                ->placeholder(__('All'))
+                ->trueLabel(__('Graded'))
+                ->falseLabel(__('Not graded yet'))
+                ->queries(
+                    true: fn (Builder $query): Builder => $query->whereNotNull('supervisor_score'),
+                    false: fn (Builder $query): Builder => $query->whereNull('supervisor_score'),
+                    blank: fn (Builder $query): Builder => $query,
+                ),
+
             Filter::make('student_number')
                 ->label(__('Student Number'))
                 ->form([

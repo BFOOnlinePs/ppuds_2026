@@ -9,12 +9,16 @@
         ? $semester->getLabel()
         : (is_numeric($semester) ? (SemesterType::tryFrom((int) $semester)?->getLabel() ?? $semester) : $semester);
 
-    $rows = [
+    // من أنهى تدريبه في شركة وانتقل لأخرى تظهر كل شركاته في هذا التسجيل، لا الأخيرة وحدها.
+    $placements = $registration?->studentCompanies ?? collect();
+    $placements = $placements->isNotEmpty() ? $placements : collect([$record]);
+
+    $studentRows = [
         __('Student Name') => $student?->name,
         __('Student Number') => $student?->studentProfile?->student_number,
-        __('Company') => $record->company?->name,
-        __('Branch') => $record->branch?->name,
-        __('Department') => $record->department?->name,
+    ];
+
+    $rows = [
         __('University Supervisor') => $registration?->supervisor?->name,
         __('Semester') => $semesterLabel,
         __('Year') => $registration?->year,
@@ -28,6 +32,27 @@
     <div class="overflow-x-auto">
         <table class="w-full border-collapse text-start">
             <tbody>
+                @foreach ($studentRows as $label => $value)
+                    <tr>
+                        <td class="border px-3 py-2 text-xs font-semibold">{{ $label }}</td>
+                        <td class="border px-3 py-2">{{ filled($value) ? $value : '---' }}</td>
+                    </tr>
+                @endforeach
+
+                @foreach ($placements as $placement)
+                    {{-- حالة التدريب تميّز الشركة المنتهية عن الحالية، فلا تُعرض لتدريب واحد --}}
+                    @foreach ([
+                        __('Company') => $placement->company?->name,
+                        __('Branch') => $placement->branch?->name,
+                        __('Department') => $placement->department?->name,
+                    ] + ($placements->count() > 1 ? [__('Training Status') => $placement->status?->getLabel()] : []) as $label => $value)
+                        <tr>
+                            <td class="border px-3 py-2 text-xs font-semibold">{{ $label }}</td>
+                            <td class="border px-3 py-2">{{ filled($value) ? $value : '---' }}</td>
+                        </tr>
+                    @endforeach
+                @endforeach
+
                 @foreach ($rows as $label => $value)
                     <tr>
                         <td class="border px-3 py-2 text-xs font-semibold">{{ $label }}</td>

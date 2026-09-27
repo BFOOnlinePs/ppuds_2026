@@ -31,7 +31,6 @@ use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\FinalReportStatus;
 use Modules\PPUDS\Enums\SemesterType;
-use Modules\PPUDS\Enums\TrainingStatus;
 use Modules\PPUDS\Exports\FinalDeliveryReportExport;
 use Modules\PPUDS\Settings\GeneralSettings;
 use Modules\PPUDS\Support\HasSupervisorFilter;
@@ -60,14 +59,7 @@ class Index extends Component implements HasForms, HasTable
                     'registration.supervisor',
                     'student.studentProfile.major',
                 ])
-                // من أنهى تدريبه في شركة وانتقل لأخرى يظهر بتدريبه الحالي وحده،
-                // فيُقيَّم عند شركة واحدة، ويبقى التدريب السابق في تفاصيل الطالب.
-                ->where(fn (Builder $query): Builder => $query
-                    ->where('status', '!=', TrainingStatus::FINISHED->value)
-                    ->orWhereDoesntHave(
-                        'registration.studentCompany',
-                        fn (Builder $placementQuery): Builder => $placementQuery->where('status', TrainingStatus::AVAILABLE->value)
-                    ))
+                ->latestPerRegistration()
                 ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query)))
             ->columns([
                 TextColumn::make('student.studentProfile.student_number')

@@ -355,6 +355,14 @@
     "Device token stored successfully": "تم حفظ رمز الجهاز بنجاح",
     "Device token removed successfully": "تم حذف رمز الجهاز بنجاح",
 
+    "Notifications retrieved successfully": "تم جلب الإشعارات بنجاح",
+    "Notification retrieved successfully": "تم جلب الإشعار بنجاح",
+    "Unread count retrieved successfully": "تم جلب عدد الإشعارات غير المقروءة بنجاح",
+    "Notifications marked as read successfully": "تم تحديد الإشعارات كمقروءة بنجاح",
+    "Notification marked as read successfully": "تم تحديد الإشعار كمقروء بنجاح",
+    "Notification settings updated successfully": "تم تحديث إعدادات الإشعارات بنجاح",
+    "Notification deleted successfully": "تم حذف الإشعار بنجاح",
+
     "Student profile not found": "لم يتم العثور على ملف الطالب",
     "User registered successfully": "تم تسجيل المستخدم بنجاح",
     "User registration failed": "فشل تسجيل المستخدم",

@@ -44,8 +44,13 @@ class GeneralNotification extends Notification implements ShouldBroadcastNow
 
     public function via($notifiable): array
     {
+        $channels = ['broadcast', 'database'];
 
-        return ['broadcast', 'database' , FcmChannel::class];
+        if ($notifiable->notifications_enabled ?? true) {
+            $channels[] = FcmChannel::class;
+        }
+
+        return $channels;
     }
 
     public function toArray($notifiable): array

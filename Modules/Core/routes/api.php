@@ -6,6 +6,7 @@ use Modules\Core\Http\Controllers\Api\V1\Auth\LoginController;
 use Modules\Core\Http\Controllers\Api\V1\Auth\RegisterController;
 use Modules\Core\Http\Controllers\Api\V1\CurrencyController;
 use Modules\Core\Http\Controllers\Api\V1\DeviceTokenController;
+use Modules\Core\Http\Controllers\Api\V1\NotificationController;
 use Modules\Core\Http\Controllers\Api\V1\SyncController;
 use Modules\Core\Http\Controllers\Api\V1\UserController;
 use Modules\Core\Http\Controllers\Api\V1\ConfigController;
@@ -42,6 +43,16 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
         Route::controller(ActivityLogController::class)->prefix('activity-logs')->as('activity-logs.')->group(function () {
             Route::get('/', 'index')->name('index');
             Route::get('/{activity}', 'show')->name('show');
+        });
+
+        Route::controller(NotificationController::class)->prefix('notifications')->as('notifications.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('/unread-count', 'unreadCount')->name('unread-count');
+            Route::patch('/read-all', 'markAllAsRead')->name('read-all');
+            Route::patch('/settings', 'updateSettings')->name('settings');
+            Route::get('/{notification}', 'show')->name('show');
+            Route::patch('/{notification}/read', 'markAsRead')->name('read');
+            Route::delete('/{notification}', 'destroy')->name('destroy');
         });
 
         Route::controller(CurrencyController::class)->prefix('currencies')->as('currencies.')->group(function () {

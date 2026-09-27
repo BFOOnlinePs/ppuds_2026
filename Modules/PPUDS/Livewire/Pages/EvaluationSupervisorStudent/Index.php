@@ -41,6 +41,8 @@ class Index extends Component implements HasForms, HasTable
                     'registration.finalReport',
                     'registration.media',
                 ])
+                // التقييم لآخر تدريب وحده، والتدريبات المنتهية تظهر في تفاصيل الطالب.
+                ->latestPerRegistration()
                 ->withAttendanceDays()
                 ->withActualWorkingHours())
             ->columns([

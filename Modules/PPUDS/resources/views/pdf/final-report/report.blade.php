@@ -134,7 +134,9 @@
     <p class="spacer">التخصص: {{ $student?->studentProfile?->major?->name }}</p>
 
     <p class="title">جهة التدريب:</p>
-    <p class="spacer">{{ $company?->name }}</p>
+    @foreach ($placements as $placement)
+        <p class="{{ $loop->last ? 'spacer' : '' }}">{{ $placement['company']?->name }}</p>
+    @endforeach
 
     <p class="title">فترة التدريب:</p>
     <p class="spacer">{{ $trainingPeriod }}</p>
@@ -148,86 +150,104 @@
 
 <p class="bullet">- المعلومات الأساسية</p>
 
-<table class="form-table">
-    <tr>
-        <th colspan="2">معلومات جهة التدريب</th>
-    </tr>
-    <tr>
-        <td class="label">اسم جهة التدريب (عربي)</td>
-        <td class="value">{{ $companyNameAr }}</td>
-    </tr>
-    <tr>
-        <td class="label">اسم جهة التدريب (انجليزي)</td>
-        <td class="value">{{ $companyNameEn }}</td>
-    </tr>
-    <tr>
-        <td class="label">مجال العمل</td>
-        <td class="value">{{ $company?->category?->name }}</td>
-    </tr>
-    <tr>
-        <td class="label">اسم مسؤول جهة التدريب</td>
-        <td class="value">{{ $company?->contact_person }}</td>
-    </tr>
-    <tr>
-        <td class="label">عنوان جهة التدريب</td>
-        <td class="value">{{ $branch?->address }}</td>
-    </tr>
-    <tr>
-        <td class="label">الموقع الإلكتروني</td>
-        <td class="value">{{ $company?->website }}</td>
-    </tr>
-    <tr>
-        <td class="label">البريد الإلكتروني</td>
-        <td class="value">{{ $branch?->email }}</td>
-    </tr>
-    <tr>
-        <td class="label">رقم التواصل</td>
-        <td class="value">{{ $company?->contact_info ?: $branch?->phone }}</td>
-    </tr>
-</table>
+{{-- صفحة لكل شركة درّب فيها الطالب بترتيبها، فمن أنهى تدريبه في شركة وانتقل
+     لأخرى تظهر معلومات الشركة المنتهية وإحصائيتها وتوقيع مشرفها أيضاً. --}}
+@foreach ($placements as $placement)
+    @php
+        $company = $placement['company'];
+        $branch = $placement['branch'];
+        $stats = $placement['stats'];
+    @endphp
 
-<table class="form-table">
-    <tr>
-        <th colspan="2">معلومات مشرف التدريب (شركة)</th>
-    </tr>
-    <tr>
-        <td class="label">اسم مشرف التدريب</td>
-        <td class="value">{{ $branch?->manager_name }}</td>
-    </tr>
-    <tr>
-        <td class="label">رقم الاتصال</td>
-        <td class="value">{{ $branch?->manager_phone }}</td>
-    </tr>
-    <tr>
-        <td class="label">البريد الإلكتروني</td>
-        <td class="value">{{ $branch?->email }}</td>
-    </tr>
-</table>
+    @if ($placements->count() > 1)
+        @unless ($loop->first)
+            <div class="page-break"></div>
+        @endunless
 
-<table class="form-table">
-    <tr>
-        <th colspan="2">إحصائية التدريب للطالب</th>
-    </tr>
-    <tr>
-        <td class="label">عدد أيام التدريب</td>
-        <td class="value">{{ $stats['days'] }}</td>
-    </tr>
-    <tr>
-        <td class="label">عدد ساعات التدريب</td>
-        <td class="value">{{ $stats['hours'] }}</td>
-    </tr>
-    <tr>
-        <td class="label">عدد أيام الإجازات</td>
-        <td class="value">{{ $stats['leaves'] }}</td>
-    </tr>
-</table>
+        <p class="bullet">- جهة التدريب {{ $loop->iteration }}: {{ $company?->name }} ({{ $placement['status']?->getLabel() }})</p>
+    @endif
 
-<table class="signature">
-    <tr>
-        <td style="width: 55%">توقيع مشرف جهة التدريب: {{ str_repeat('.', 20) }}</td>
-        <td style="width: 45%">ختم جهة التدريب: {{ str_repeat('.', 24) }}</td>
-    </tr>
-</table>
+    <table class="form-table">
+        <tr>
+            <th colspan="2">معلومات جهة التدريب</th>
+        </tr>
+        <tr>
+            <td class="label">اسم جهة التدريب (عربي)</td>
+            <td class="value">{{ $placement['companyNameAr'] }}</td>
+        </tr>
+        <tr>
+            <td class="label">اسم جهة التدريب (انجليزي)</td>
+            <td class="value">{{ $placement['companyNameEn'] }}</td>
+        </tr>
+        <tr>
+            <td class="label">مجال العمل</td>
+            <td class="value">{{ $company?->category?->name }}</td>
+        </tr>
+        <tr>
+            <td class="label">اسم مسؤول جهة التدريب</td>
+            <td class="value">{{ $company?->contact_person }}</td>
+        </tr>
+        <tr>
+            <td class="label">عنوان جهة التدريب</td>
+            <td class="value">{{ $branch?->address }}</td>
+        </tr>
+        <tr>
+            <td class="label">الموقع الإلكتروني</td>
+            <td class="value">{{ $company?->website }}</td>
+        </tr>
+        <tr>
+            <td class="label">البريد الإلكتروني</td>
+            <td class="value">{{ $branch?->email }}</td>
+        </tr>
+        <tr>
+            <td class="label">رقم التواصل</td>
+            <td class="value">{{ $company?->contact_info ?: $branch?->phone }}</td>
+        </tr>
+    </table>
+
+    <table class="form-table">
+        <tr>
+            <th colspan="2">معلومات مشرف التدريب (شركة)</th>
+        </tr>
+        <tr>
+            <td class="label">اسم مشرف التدريب</td>
+            <td class="value">{{ $branch?->manager_name }}</td>
+        </tr>
+        <tr>
+            <td class="label">رقم الاتصال</td>
+            <td class="value">{{ $branch?->manager_phone }}</td>
+        </tr>
+        <tr>
+            <td class="label">البريد الإلكتروني</td>
+            <td class="value">{{ $branch?->email }}</td>
+        </tr>
+    </table>
+
+    <table class="form-table">
+        <tr>
+            <th colspan="2">إحصائية التدريب للطالب</th>
+        </tr>
+        <tr>
+            <td class="label">عدد أيام التدريب</td>
+            <td class="value">{{ $stats['days'] }}</td>
+        </tr>
+        <tr>
+            <td class="label">عدد ساعات التدريب</td>
+            <td class="value">{{ $stats['hours'] }}</td>
+        </tr>
+        <tr>
+            <td class="label">عدد أيام الإجازات</td>
+            <td class="value">{{ $stats['leaves'] }}</td>
+        </tr>
+    </table>
+
+    <table class="signature">
+        <tr>
+            <td style="width: 55%">توقيع مشرف جهة التدريب: {{ str_repeat('.', 20) }}</td>
+            <td style="width: 45%">ختم جهة التدريب: {{ str_repeat('.', 24) }}</td>
+        </tr>
+    </table>
+@endforeach
 
 {{-- ======================= تفاصيل التدريب ======================= --}}
 <div class="page-break"></div>

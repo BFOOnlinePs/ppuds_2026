@@ -196,6 +196,22 @@ class StudentCompany extends Model implements HasMedia
         return $this->hasMany(FieldVisit::class, 'student_company_id');
     }
 
+    /**
+     * آخر تدريب للطالب في كل تسجيل: من أنهى تدريبه في شركة وانتقل لأخرى يظهر
+     * بتدريبه الأخير وحده، وتبقى تدريباته السابقة في تفاصيل الطالب.
+     */
+    public function scopeLatestPerRegistration(Builder $query): Builder
+    {
+        $table = $this->getTable();
+
+        return $query->whereNotExists(fn ($newerQuery) => $newerQuery
+            ->selectRaw('1')
+            ->from("{$table} as newer_placements")
+            ->whereColumn('newer_placements.registration_id', "{$table}.registration_id")
+            ->whereColumn('newer_placements.id', '>', "{$table}.id")
+            ->whereNull('newer_placements.deleted_at'));
+    }
+
     public function scopeWithAttendanceDays($query)
     {
         $table = $this->getTable();

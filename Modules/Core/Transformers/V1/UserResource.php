@@ -40,6 +40,7 @@ class UserResource extends JsonResource
             'cover_photo'       => $this->getFirstMediaUrl('cover_photo'),
             'point_balance'     => $this->getPointBalance(),
             'branch_id'         => $this->branch_id,
+            'notifications_enabled' => (bool) $this->notifications_enabled,
             'roles'             => $this->whenLoaded('roles'),
             'cv'                => $this->getFirstMediaUrl('cv'),
             'profile'           => $this->whenLoaded('studentProfile', function () {

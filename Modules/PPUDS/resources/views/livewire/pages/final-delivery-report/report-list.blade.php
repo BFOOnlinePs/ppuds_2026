@@ -8,6 +8,7 @@
     @php
         $report = $registration->finalReport;
         $placement = $registration->studentCompany;
+        $companyNames = $registration->studentCompanies->map(fn ($studentCompany) => $studentCompany->company?->name)->filter()->unique();
         $attachmentUrl = $registration->getFirstMediaUrl('final_file') ?: null;
         $presentationUrl = $registration->getFirstMediaUrl(Registration::PRESENTATION_COLLECTION) ?: null;
     @endphp
@@ -15,7 +16,7 @@
     <div class="mb-4 space-y-4 rounded-xl border border-gray-200 p-4 dark:border-gray-700">
         <div class="flex flex-wrap items-center justify-between gap-2">
             <div class="font-semibold text-gray-900 dark:text-gray-100">
-                {{ $placement?->company?->name ?: __('Final Report') }}
+                {{ $companyNames->isNotEmpty() ? $companyNames->join(' / ') : __('Final Report') }}
             </div>
             <div class="flex flex-wrap items-center gap-3">
                 <span class="rounded-full px-2 py-0.5 text-xs font-medium"

@@ -5,6 +5,7 @@ namespace Modules\PPUDS\Entities;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Log;
@@ -202,5 +203,14 @@ class Registration extends Model implements HasMedia
         return $this->hasOne(StudentCompany::class, 'registration_id')
             ->orderByRaw('(status = ?) desc', [TrainingStatus::AVAILABLE->value])
             ->orderByDesc('id');
+    }
+
+    /**
+     * كل تدريبات التسجيل بترتيبها، فمن أنهى تدريبه في شركة وانتقل لأخرى
+     * يظهر تدريبه المنتهي في التقرير النهائي مع الحالي.
+     */
+    public function studentCompanies(): HasMany
+    {
+        return $this->hasMany(StudentCompany::class, 'registration_id')->orderBy('id');
     }
 }

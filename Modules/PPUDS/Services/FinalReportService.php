@@ -180,7 +180,7 @@ class FinalReportService
     {
         return app(PdfService::class)->streamPdf(
             'ppuds::pdf.final-report.report',
-            $this->pdfData($report->loadMissing(['tasks', 'skills', 'items', 'registration'])),
+            $this->pdfData($report->loadMissing(['tasks', 'skills', 'items', 'registration.studentCompanies.company', 'registration.studentCompanies.branch'])),
             'final-report-'.now()->format('Y-m-d-His').'.pdf',
         );
     }
@@ -194,22 +194,29 @@ class FinalReportService
     protected function pdfData(FinalReport $report): array
     {
         $registration = $report->registration;
-        $studentCompany = $registration?->studentCompany;
-        $company = $studentCompany?->company;
+        $studentCompanies = $registration?->studentCompanies ?? collect();
         $settings = app(GeneralSettings::class);
+
+        // لكل شركة درّب فيها الطالب في هذا التسجيل صفحة معلوماتها وإحصائيتها، فمن
+        // أنهى تدريبه في شركة وانتقل لأخرى تظهر الشركتان. وبلا تدريب تبقى صفحة واحدة.
+        $placements = ($studentCompanies->isNotEmpty() ? $studentCompanies : collect([null]))
+            ->map(fn (?StudentCompany $studentCompany): array => [
+                'company' => $studentCompany?->company,
+                'branch' => $studentCompany?->branch,
+                'status' => $studentCompany?->status,
+                // بلا fallback، وإلا ظهر الاسم العربي في خانة الاسم الإنجليزي.
+                'companyNameAr' => $studentCompany?->company?->translate('ar')?->name,
+                'companyNameEn' => $studentCompany?->company?->translate('en')?->name,
+                'stats' => $this->trainingStats($report, $studentCompany),
+            ]);
 
         return [
             'report' => $report,
             'registration' => $registration,
             'student' => $registration?->student,
-            'company' => $company,
-            'branch' => $studentCompany?->branch,
-            // بلا fallback، وإلا ظهر الاسم العربي في خانة الاسم الإنجليزي.
-            'companyNameAr' => $company?->translate('ar')?->name,
-            'companyNameEn' => $company?->translate('en')?->name,
+            'placements' => $placements,
             'contributions' => $report->items->where('type', FinalReportItemType::CONTRIBUTION)->values(),
             'difficulties' => $report->items->where('type', FinalReportItemType::DIFFICULTY)->values(),
-            'stats' => $this->trainingStats($report, $studentCompany),
             'trainingPeriod' => $settings->start_semester->format('j/n/Y').' – '.$settings->end_semester->format('j/n/Y'),
             'academicYear' => $settings->year.'/'.($settings->year + 1),
         ];
@@ -217,15 +224,19 @@ class FinalReportService
 
     /**
      * إحصائية التدريب كما تحتسبها شاشة الغياب. الساعات من بصمات الحضور نفسها،
-     * وتُجمع من كل تدريبات الطالب لا من تدريبه الحالي وحده، فمن انتقل بين
-     * أكثر من شركة تظهر ساعاته كلها.
+     * وتُحسب لكل شركة على حدة لأن لكل شركة صفحتها في النموذج، فمن انتقل بين
+     * أكثر من شركة تظهر ساعاته في كل منها. وبلا تدريب تُجمع من كل حضوره.
      *
      * @return array<string, int|float|string>
      */
     protected function trainingStats(FinalReport $report, ?StudentCompany $studentCompany): array
     {
         $minutes = StudentAttendance::query()
-            ->whereHas('studentCompany', fn (Builder $query): Builder => $query->where('student_id', $report->student_id))
+            ->when(
+                $studentCompany,
+                fn (Builder $query): Builder => $query->where('student_company_id', $studentCompany->id),
+                fn (Builder $query): Builder => $query->whereHas('studentCompany', fn (Builder $query): Builder => $query->where('student_id', $report->student_id))
+            )
             ->whereNotNull('check_in')
             ->whereNotNull('check_out')
             ->where('status', '!=', AttendanceStatus::DISCREPANCY->value)

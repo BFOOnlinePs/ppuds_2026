@@ -57,6 +57,9 @@ class Index extends Component
                 'studentCompany.department',
                 'studentCompany.student.studentProfile',
                 'studentCompany.registration.supervisor',
+                'studentCompanies.company',
+                'studentCompanies.branch',
+                'studentCompanies.department',
             ])
             ->orderByDesc('id')
             ->get();

@@ -17,6 +17,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Jantinnerezo\LivewireAlert\Facades\LivewireAlert;
 use Livewire\Component;
@@ -539,6 +540,9 @@ class Index extends Component implements HasForms
             DB::table('app_versions')
                 ->whereNotIn('platform', $platformsToKeep)
                 ->delete();
+
+            // مسح كاش إعدادات التطبيق حتى يظهر الإصدار الجديد للطلاب فوراً (ConfigController)
+            Cache::forget('app_bootstrap_config');
         }
 
         //        auth()->user()->notify(new GeneralNotification(
