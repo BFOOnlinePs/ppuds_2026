@@ -282,6 +282,7 @@ class StudentGradeController extends Controller
                 'student.studentProfile.major',
                 'evaluationSupervisor',
                 'registration.supervisor',
+                'registration.finalReport',
                 'company',
                 'branch',
                 'department',

@@ -48,7 +48,8 @@ use Spatie\QueryBuilder\AllowedSort;
  * @OA\Property(property="max_total_score", type="integer", example=100),
  * @OA\Property(property="is_fully_graded", type="boolean", example=false),
  * @OA\Property(property="semester", type="integer", nullable=true, example=1),
- * @OA\Property(property="year", type="integer", nullable=true, example=2026)
+ * @OA\Property(property="year", type="integer", nullable=true, example=2026),
+ * @OA\Property(property="final_report_pdf_url", type="string", nullable=true, description="رابط PDF للتقرير النهائي ويتطلب توكن المصادقة. يُملأ في قائمة طلاب مشرف التقييم فقط، و null إذا لم يبدأ الطالب تقريره", example="https://example.com/api/v1/ppuds/final-reports/1/pdf")
  * )
  */
 class StudentGradeResource extends JsonResource
@@ -101,6 +102,8 @@ class StudentGradeResource extends JsonResource
             'semester' => $this->registration?->semester,
             'year' => $this->registration?->year,
 
+            'final_report_pdf_url' => $this->finalReportPdfUrl(),
+
             'registration' => RegistrationResource::make($this->whenLoaded('registration')),
             'student' => UserResource::make($this->whenLoaded('student')),
             'company' => CompanyResource::make($this->whenLoaded('company')),
@@ -119,6 +122,21 @@ class StudentGradeResource extends JsonResource
         );
 
         return $recorded === [] ? null : array_sum($recorded);
+    }
+
+    /**
+     * يُملأ فقط حين تُحمَّل علاقة التقرير مسبقاً، فلا تُضاف استعلامات لكل صف
+     * في بقية شاشات العلامات.
+     */
+    private function finalReportPdfUrl(): ?string
+    {
+        $registration = $this->registration;
+
+        if (! $registration?->relationLoaded('finalReport') || ! $registration->finalReport) {
+            return null;
+        }
+
+        return route('api.api.v1.ppuds.final-reports.pdf', $registration->finalReport->id);
     }
 
     public static function allowedFields(): array

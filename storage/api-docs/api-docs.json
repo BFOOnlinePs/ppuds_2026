@@ -6301,7 +6301,7 @@
                     "Final Reports"
                 ],
                 "summary": "Download the final report as PDF",
-                "description": "نفس ملف PDF الذي يطبعه الطالب من الويب، متاح للمسودة وللتقرير المسلَّم. الرابط يأتي أيضاً في حقل pdf_url.",
+                "description": "نفس ملف PDF الذي يطبعه الطالب من الويب، متاح للمسودة وللتقرير المسلَّم. الرابط يأتي أيضاً في حقل pdf_url. يفتحه الطالب صاحب التقرير، ومشرف التقييم المسند لهذا الطالب (صلاحية EvaluationSupervisorStudent Details) ويجد الرابط في حقل final_report_pdf_url من student-grades/evaluation-students.",
                 "operationId": "a122c4826a7ed5be665ddcec55fee353",
                 "parameters": [
                     {
@@ -13524,6 +13524,12 @@
                     "year": {
                         "type": "integer",
                         "example": 2026,
+                        "nullable": true
+                    },
+                    "final_report_pdf_url": {
+                        "description": "رابط PDF للتقرير النهائي ويتطلب توكن المصادقة. يُملأ في قائمة طلاب مشرف التقييم فقط، و null إذا لم يبدأ الطالب تقريره",
+                        "type": "string",
+                        "example": "https://example.com/api/v1/ppuds/final-reports/1/pdf",
                         "nullable": true
                     }
                 },

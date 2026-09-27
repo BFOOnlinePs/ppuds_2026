@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\FinalReport;
 use Modules\PPUDS\Entities\Registration;
+use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Http\Controllers\Api\V1\Concerns\EnsuresCurrentRegistration;
 use Modules\PPUDS\Http\Requests\FinalReportRequest;
 use Modules\PPUDS\Services\FinalReportService;
@@ -494,7 +495,7 @@ class FinalReportController extends Controller
      * @OA\Get(
      * path="/api/v1/ppuds/final-reports/{id}/pdf",
      * summary="Download the final report as PDF",
-     * description="نفس ملف PDF الذي يطبعه الطالب من الويب، متاح للمسودة وللتقرير المسلَّم. الرابط يأتي أيضاً في حقل pdf_url.",
+     * description="نفس ملف PDF الذي يطبعه الطالب من الويب، متاح للمسودة وللتقرير المسلَّم. الرابط يأتي أيضاً في حقل pdf_url. يفتحه الطالب صاحب التقرير، ومشرف التقييم المسند لهذا الطالب (صلاحية EvaluationSupervisorStudent Details) ويجد الرابط في حقل final_report_pdf_url من student-grades/evaluation-students.",
      * tags={"Final Reports"},
      * security={{"sanctum": {}}},
      *
@@ -522,6 +523,10 @@ class FinalReportController extends Controller
      */
     public function pdf(FinalReport $finalReport)
     {
+        if ($this->viewerIsAssignedEvaluationSupervisor($finalReport)) {
+            return $this->finalReports->pdf($finalReport);
+        }
+
         if ($denied = $this->denyUnlessStudentCan('FinalReport View')) {
             return $denied;
         }
@@ -584,5 +589,18 @@ class FinalReportController extends Controller
         }
 
         return $this->errorResponse(__('You are not authorized to perform this action'), 403);
+    }
+
+    /**
+     * نفس شرط شاشة سجل الطالب لمشرف التقييم على الويب: صلاحية التفاصيل، وأن
+     * يكون الطالب مسنداً إليه، فلا يُفتح تقرير طالب غيره بتغيير الرقم في الرابط.
+     */
+    private function viewerIsAssignedEvaluationSupervisor(FinalReport $finalReport): bool
+    {
+        return auth()->user()?->checkPermissionTo('EvaluationSupervisorStudent Details', 'web')
+            && StudentCompany::query()
+                ->where('student_id', $finalReport->student_id)
+                ->where('evaluation_supervisor_id', auth()->id())
+                ->exists();
     }
 }
