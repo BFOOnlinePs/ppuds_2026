@@ -8,6 +8,8 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Tables\Actions\Action;
+use Filament\Tables\Actions\BulkAction;
+use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
@@ -15,6 +17,7 @@ use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Core\Enums\UserRole;
@@ -96,7 +99,7 @@ class Index extends Component implements HasForms, HasTable
             ->filters($this->getTableFilters(), layout: FiltersLayout::AboveContent)
             ->filtersFormColumns(4)
             ->actions($this->getTableActions())
-            ->bulkActions([]);
+            ->bulkActions($this->getTableBulkActions());
     }
 
     protected function getTableFilters(): array
@@ -192,6 +195,41 @@ class Index extends Component implements HasForms, HasTable
 
                     Toaster::success(__('Grade saved successfully'));
                 }),
+        ];
+    }
+
+    protected function getTableBulkActions(): array
+    {
+        return [
+            BulkActionGroup::make([
+                BulkAction::make('grade')
+                    ->label(__('Grade Selected'))
+                    ->icon('heroicon-o-star')
+                    ->color('primary')
+                    ->form(fn (): array => [
+                        TextInput::make('supervisor_score')
+                            ->label(__('Grade (out of :max)', ['max' => $this->maxGrade()]))
+                            ->numeric()
+                            ->minValue(0)
+                            ->maxValue($this->maxGrade())
+                            ->required(),
+                    ])
+                    ->modalHeading(fn (): string => __('Grade (out of :max)', ['max' => $this->maxGrade()]))
+                    ->modalSubmitActionLabel(__('Save'))
+                    ->visible(fn (): bool => auth()->user()->can('PracticalSupervisorStudent Grade'))
+                    ->action(function (Collection $records, array $data): void {
+                        abort_unless(auth()->user()?->can('PracticalSupervisorStudent Grade'), 403);
+
+                        $score = min((int) $data['supervisor_score'], $this->maxGrade());
+
+                        $records->each(fn (StudentCompany $studentCompany) => $studentCompany->update([
+                            'supervisor_score' => $score,
+                        ]));
+
+                        Toaster::success(__('Grade saved for selected students successfully'));
+                    })
+                    ->deselectRecordsAfterCompletion(),
+            ]),
         ];
     }
 

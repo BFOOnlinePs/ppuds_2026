@@ -66,6 +66,70 @@ class AbsenceReportService
         ];
     }
 
+    /**
+     * ملخص واحد لكل تدريبات الطالب معاً: كل تدريب يُحسب على الفصل كاملاً، فمن
+     * انتقل بين شركتين تتضاعف أيام دوامه المطلوبة لو جُمعت الملخصات، ويُعدّ
+     * يوم دوامه في إحداهما غياباً عن الأخرى. هنا يُحسب اليوم مرة واحدة.
+     */
+    public function combinedSummary(Collection $studentCompanies, ?string $dateFrom = null, ?string $dateTo = null): array
+    {
+        $period = $this->resolvePeriod($dateFrom, $dateTo);
+
+        if ($period === null || $studentCompanies->isEmpty()) {
+            return $this->emptyDetailedSummary();
+        }
+
+        [$start, $end] = $period;
+
+        $studentCompanies->each->loadMissing([
+            'attendances',
+            'workingHours',
+            'branch.workingHours',
+            'leaveRequests',
+        ]);
+
+        $workingDates = $studentCompanies
+            ->flatMap(fn (StudentCompany $studentCompany) => $this->workingDates($studentCompany, $start, $end))
+            ->unique()
+            ->sort()
+            ->values();
+        $attendanceDates = $studentCompanies
+            ->flatMap(fn (StudentCompany $studentCompany) => $this->attendanceDates($studentCompany))
+            ->unique()
+            ->intersect($workingDates)
+            ->values();
+        $leaveRequestDates = $studentCompanies
+            ->flatMap(fn (StudentCompany $studentCompany) => $this->leaveRequestDates($studentCompany, $start, $end))
+            ->unique()
+            ->intersect($workingDates)
+            ->values();
+        $approvedLeaveDates = $studentCompanies
+            ->flatMap(fn (StudentCompany $studentCompany) => $this->leaveRequestDates($studentCompany, $start, $end, approvedOnly: true))
+            ->unique()
+            ->intersect($workingDates)
+            ->values();
+
+        $actualAbsenceDates = $workingDates->diff($attendanceDates)->values();
+        $excusedAbsenceDates = $actualAbsenceDates->intersect($approvedLeaveDates)->values();
+        $unexcusedAbsenceDates = $actualAbsenceDates->diff($approvedLeaveDates)->values();
+
+        return [
+            'training_start' => $start->toDateString(),
+            'training_end' => $end->toDateString(),
+            'required_working_days' => $workingDates->count(),
+            'scheduled_training_days' => $workingDates->count(),
+            'attendance_days' => $attendanceDates->count(),
+            'total_absence_days' => $excusedAbsenceDates->count() + $unexcusedAbsenceDates->count(),
+            'excused_absence_days' => $excusedAbsenceDates->count(),
+            'unexcused_absence_days' => $unexcusedAbsenceDates->count(),
+            'actual_absence_days' => $actualAbsenceDates->count(),
+            'leave_request_days' => $leaveRequestDates->count(),
+            'excused_absence_dates' => $excusedAbsenceDates->all(),
+            'unexcused_absence_dates' => $unexcusedAbsenceDates->all(),
+            'actual_absence_dates' => $actualAbsenceDates->all(),
+        ];
+    }
+
     private function resolvePeriod(?string $dateFrom, ?string $dateTo): ?array
     {
         $settings = app(GeneralSettings::class);

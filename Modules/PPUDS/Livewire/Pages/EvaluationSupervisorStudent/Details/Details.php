@@ -129,7 +129,8 @@ class Details extends Component
     }
 
     /**
-     * مجاميع مسيرة الطالب كلها، لا تدريبه الأخير وحده.
+     * مجاميع مسيرة الطالب كلها، لا تدريبه الأخير وحده. أيام الدوام والغياب من
+     * ملخص واحد لكل التدريبات، فمن انتقل بين شركتين لا تتضاعف أيام فصله.
      *
      * @return array<string, int|float>
      */
@@ -137,19 +138,19 @@ class Details extends Component
     public function totals(): array
     {
         $placements = $this->placements;
-        $absences = $placements->map(fn (StudentCompany $placement): array => $this->absence($placement));
+        $absences = app(AbsenceReportService::class)->combinedSummary($placements);
 
         return [
             'trainings' => $placements->count(),
             'companies' => $placements->whereNotNull('company_id')->pluck('company_id')->unique()->count(),
-            'required_days' => (int) $absences->sum('required_working_days'),
+            'required_days' => (int) $absences['required_working_days'],
             'attendance_days' => (int) $placements->sum('attendance_days'),
             'working_hours' => round((float) $placements->sum('actual_working_hours'), 2),
-            'absence_days' => (int) $absences->sum('total_absence_days'),
-            'excused_days' => (int) $absences->sum('excused_absence_days'),
-            'unexcused_days' => (int) $absences->sum('unexcused_absence_days'),
+            'absence_days' => (int) $absences['total_absence_days'],
+            'excused_days' => (int) $absences['excused_absence_days'],
+            'unexcused_days' => (int) $absences['unexcused_absence_days'],
             'leave_requests' => (int) $placements->sum(fn (StudentCompany $placement): int => $placement->leaveRequests->count()),
-            'leave_days' => (int) $absences->sum('leave_request_days'),
+            'leave_days' => (int) $absences['leave_request_days'],
         ];
     }
 
