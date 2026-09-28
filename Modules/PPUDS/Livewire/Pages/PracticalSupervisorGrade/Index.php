@@ -51,7 +51,9 @@ class Index extends Component implements HasForms, HasTable
                     'company',
                     'branch',
                     'department',
-                ]))
+                ])
+                // العلامة لآخر تدريب وحده، والتدريبات المنتهية تظهر في تفاصيل الطالب.
+                ->latestPerRegistration())
             ->columns([
                 UserColumn::make('student.name')
                     ->label(__('Student'))
