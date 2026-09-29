@@ -52,9 +52,9 @@ class PpuApiService
             ?? session('keycloak_refresh_token');
     }
 
-    private function isTokenExpired(string $token): bool
+    public function isTokenExpired(string $token): bool
     {
-        $payload = json_decode(base64_decode(explode('.', $token)[1] ?? '{}'), true);
+        $payload = json_decode(base64_decode(strtr(explode('.', $token)[1] ?? '', '-_', '+/')), true);
         $exp = $payload['exp'] ?? 0;
 
         return ($exp - 30) < now()->timestamp;

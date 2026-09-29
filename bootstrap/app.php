@@ -32,6 +32,10 @@ return Application::configure(basePath: dirname(__DIR__))
                 : route('login')
         );
 
+        $middleware->web(append: [
+            \App\Http\Middleware\EnsureUniversitySessionIsActive::class,
+        ]);
+
         $middleware->api(append: [
             \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
         ]);

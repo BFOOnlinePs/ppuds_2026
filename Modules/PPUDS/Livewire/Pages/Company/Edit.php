@@ -215,7 +215,7 @@ class Edit extends Component implements HasActions, HasForms
                                                         ->label(__('Category'))
                                                         ->prefixIcon('solar-tag-price-linear')
                                                         ->required()
-                                                        ->options(CompanyCategory::get()->pluck('name', 'id'))
+                                                        ->options(CompanyCategory::with('translations')->get()->pluck('name', 'id'))
                                                         ->searchable()
                                                         ->preload(),
 
@@ -362,7 +362,7 @@ class Edit extends Component implements HasActions, HasForms
                                                             Grid::make(2)->schema([
                                                                 Select::make('country_id')
                                                                     ->label(__('Country'))
-                                                                    ->options(Country::all()->pluck('name', 'id'))
+                                                                    ->options(Country::with('translations')->get()->pluck('name', 'id'))
                                                                     ->searchable()
                                                                     ->required()
                                                                     ->live()
@@ -377,7 +377,7 @@ class Edit extends Component implements HasActions, HasForms
                                                                             return [];
                                                                         }
 
-                                                                        return City::whereHas('governorate', function (Builder $query) use ($countryId) {
+                                                                        return City::with('translations')->whereHas('governorate', function (Builder $query) use ($countryId) {
                                                                             $query->where('country_id', $countryId);
                                                                         })->get()->pluck('name', 'id');
                                                                     })
@@ -419,7 +419,7 @@ class Edit extends Component implements HasActions, HasForms
                                                                             ->prefixIcon('solar-case-minimalistic-linear')
                                                                             ->disableOptionsWhenSelectedInSiblingRepeaterItems()
                                                                             ->options(function () {
-                                                                                return CompanyDepartment::get()
+                                                                                return CompanyDepartment::with('translations')->get()
                                                                                     ->pluck('name', 'name')
                                                                                     ->unique()
                                                                                     ->toArray();
