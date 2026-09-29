@@ -1158,6 +1158,8 @@
     "Evaluation supervisor assigned to selected placements successfully": "تم تعيين مشرف التقييم للطلاب المحددين بنجاح",
     "Clear Evaluation Supervisor": "إلغاء تعيين مشرف التقييم",
     "Evaluation supervisor cleared from selected placements successfully": "تم إلغاء تعيين مشرف التقييم عن الطلاب المحددين بنجاح",
+    "Assign University Supervisor": "تعيين مشرف جامعي",
+    "University supervisor assigned to selected placements successfully": "تم تعيين المشرف الجامعي للطلاب المحددين بنجاح",
     "Grade (out of 25)": "العلامة (من 25)",
     "The grade must be between 0 and 25.": "يجب أن تكون العلامة بين 0 و 25.",
     "Grade saved successfully": "تم حفظ العلامة بنجاح",

@@ -470,6 +470,34 @@ class Index extends Component implements HasForms, HasTable
     {
         return [
             BulkActionGroup::make([
+                // المشرف الجامعي يُخزَّن على التسجيل لا على التدريب، فيُحدَّث تسجيل كل تدريب محدد.
+                BulkAction::make('assignUniversitySupervisor')
+                    ->label(__('Assign University Supervisor'))
+                    ->icon('solar-user-id-bold-duotone')
+                    ->color('primary')
+                    ->form([
+                        Select::make('supervisor_id')
+                            ->label(__('University Supervisor'))
+                            ->options(fn (): array => $this->supervisorFilterOptions())
+                            ->searchable()
+                            ->preload()
+                            ->required()
+                            ->native(false),
+                    ])
+                    ->modalHeading(__('Assign University Supervisor'))
+                    ->modalSubmitActionLabel(__('Assign'))
+                    ->visible(fn () => auth()->user()->can('Registration Select Supervisor'))
+                    ->action(function (Collection $records, array $data): void {
+                        $supervisorId = (int) $data['supervisor_id'];
+
+                        $records->each(fn (StudentCompany $studentCompany) => $studentCompany->registration?->update([
+                            'supervisor_id' => $supervisorId,
+                        ]));
+
+                        Toaster::success(__('University supervisor assigned to selected placements successfully'));
+                    })
+                    ->deselectRecordsAfterCompletion(),
+
                 BulkAction::make('assignEvaluationSupervisor')
                     ->label(__('Assign Evaluation Supervisor'))
                     ->icon('heroicon-o-star')
