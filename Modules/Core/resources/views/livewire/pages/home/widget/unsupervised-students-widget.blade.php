@@ -67,5 +67,11 @@
                 @endforeach
             </div>
         </section>
+    @else
+        {{-- سطر صغير دائم الظهور: يؤكد أن الفحص يعمل وأن لا طالب ضائع --}}
+        <div class="flex items-center gap-2 rounded-lg border border-success/30 bg-success-light px-4 py-3 text-sm font-medium text-success dark:bg-success-dark-light">
+            @svg('heroicon-o-check-circle', 'h-5 w-5 shrink-0')
+            {{ __('All current students have a company supervisor') }}
+        </div>
     @endif
 </x-filament-widgets::widget>
