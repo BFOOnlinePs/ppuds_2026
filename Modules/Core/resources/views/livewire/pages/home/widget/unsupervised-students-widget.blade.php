@@ -6,7 +6,8 @@
     <div class="space-y-4">
         {{-- 1. تدريبات بشركة أو فرع أو قسم مفقود أو محذوف: يُنقل القسم كاملاً لمقعد مشرف يُختار --}}
         @if ($broken->isNotEmpty())
-            <section class="overflow-hidden rounded-lg border border-danger-300 bg-danger-50 shadow-sm dark:border-danger-500/30 dark:bg-danger-500/10">
+            {{-- بلا overflow-hidden حتى لا تُقص قائمة البحث المنسدلة في آخر سطر --}}
+            <section class="rounded-lg border border-danger-300 bg-danger-50 shadow-sm dark:border-danger-500/30 dark:bg-danger-500/10">
                 <div class="flex items-start gap-3 border-b border-danger-200 px-4 py-3 dark:border-danger-500/20">
                     @svg('heroicon-o-exclamation-triangle', 'h-6 w-6 shrink-0 text-danger-600 dark:text-danger-400')
 
@@ -65,24 +66,22 @@
                             </div>
 
                             <div class="flex flex-wrap items-center gap-2">
-                                <x-filament::input.wrapper class="min-w-[14rem] flex-1 sm:flex-none">
-                                    <x-filament::input.select wire:model.live="selectedCompanies.{{ $group['key'] }}">
-                                        <option value="">{{ __('Select Company') }}</option>
-                                        @foreach ($companyOptions as $companyId => $companyName)
-                                            <option value="{{ $companyId }}">{{ $companyName }}</option>
-                                        @endforeach
-                                    </x-filament::input.select>
-                                </x-filament::input.wrapper>
+                                <x-core::forms.search-select
+                                    wire:model.live="selectedCompanies.{{ $group['key'] }}"
+                                    :options="$companyOptions"
+                                    :placeholder="__('Select Company')"
+                                    class="min-w-[14rem] flex-1 sm:flex-none"
+                                />
 
                                 @if ($group['seats']->isNotEmpty())
-                                    <x-filament::input.wrapper class="min-w-[16rem] flex-1 sm:flex-none">
-                                        <x-filament::input.select wire:model="selectedSeats.{{ $group['key'] }}">
-                                            <option value="">{{ __('Select Supervisor') }}</option>
-                                            @foreach ($group['seats'] as $seatId => $seatLabel)
-                                                <option value="{{ $seatId }}">{{ $seatLabel }}</option>
-                                            @endforeach
-                                        </x-filament::input.select>
-                                    </x-filament::input.wrapper>
+                                    {{-- المفتاح يتبع الشركة المختارة فتُبنى القائمة من جديد بمشرفيها --}}
+                                    <x-core::forms.search-select
+                                        wire:key="seat-select-{{ $group['key'] }}-{{ $this->selectedCompanies[$group['key']] ?? 0 }}"
+                                        wire:model="selectedSeats.{{ $group['key'] }}"
+                                        :options="$group['seats']"
+                                        :placeholder="__('Select Supervisor')"
+                                        class="min-w-[16rem] flex-1 sm:flex-none"
+                                    />
 
                                     <x-filament::button
                                         color="danger"
