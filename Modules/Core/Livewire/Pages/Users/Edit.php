@@ -11,10 +11,15 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Component;
 use Modules\Core\Entities\User;
+use Modules\Core\Enums\UserRole;
+use Modules\PPUDS\Entities\Company;
+use Modules\PPUDS\Services\PpuApiService;
 use Spatie\Permission\Models\Role;
+use Throwable;
 
 class Edit extends Component implements HasForms
 {
@@ -109,6 +114,7 @@ class Edit extends Component implements HasForms
         unset($data['roles']);
 
         $this->user->update($data);
+        $phoneChanged = $this->user->wasChanged('phone');
 
         // تحديث الأدوار بالاعتماد على الـ Names لتوافق Spatie Permissions
         if (!empty($roles)) {
@@ -123,7 +129,59 @@ class Edit extends Component implements HasForms
             ->success()
             ->send();
 
+        if ($phoneChanged) {
+            // الحالة الخام ما زالت تحمل كلمة المرور قبل التشفير
+            $this->sendCompanySupervisorToUniversity(
+                filled($this->data['password'] ?? null) ? (string) $this->data['password'] : null
+            );
+        }
+
         return redirect()->route('users.index');
+    }
+
+    /**
+     * الهاتف هو اسم المستخدم وكلمة المرور الافتراضية لمشرف الشركة في نظام الجامعة،
+     * فتغييره يستلزم إعادة إرساله لكل شركة يشرف فيها، كما تفعل شاشة مشرفي الشركات.
+     */
+    protected function sendCompanySupervisorToUniversity(?string $plainPassword): void
+    {
+        if (! $this->user->hasRole(UserRole::COMPANY_SUPERVISOR->value) || blank($this->user->phone)) {
+            return;
+        }
+
+        $companies = Company::query()
+            ->whereHas('branches.supervisors', fn (Builder $query) => $query->whereKey($this->user->id))
+            ->with(['branches.supervisors', 'translations'])
+            ->get();
+
+        $apiService = app(PpuApiService::class);
+
+        foreach ($companies as $company) {
+            try {
+                $result = $apiService->addCompanyToUniversity(
+                    $company,
+                    $plainPassword,
+                    $this->user->id,
+                    sendEvenIfCompanyExists: true,
+                );
+            } catch (Throwable $exception) {
+                report($exception);
+
+                $result = null;
+            }
+
+            [$title, $status] = match (true) {
+                ($result['operation'] ?? null) === 'already_exists' => [__('Company supervisor already exists in university system'), 'warning'],
+                $result === null || ($result['success'] ?? null) === false => [__('Unable to send company supervisor to university system'), 'danger'],
+                default => [__('Company supervisor sent to university successfully'), 'success'],
+            };
+
+            Notification::make()
+                ->title($title)
+                ->body($company->name)
+                ->status($status)
+                ->send();
+        }
     }
 
     public function render()

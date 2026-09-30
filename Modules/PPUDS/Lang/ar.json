@@ -85,6 +85,8 @@
     "Students not assigned to any company": "طلاب غير مرتبطين بأي شركة",
     "Dashboard Statistics Verification": "التحقق من إحصائيات الداشبورد",
     "Enrolled Students Without Company": "طلاب مسجلون بدون شركة",
+    "Students Without A Company Supervisor": "طلاب في أقسام بلا مشرف شركة",
+    "Select Supervisor": "اختر المشرف",
     "No admitted students need matching": "لا يوجد طلاب مقبولون بحاجة مطابقة",
     "No enrolled students are missing companies": "لا يوجد طلاب مسجلون بدون شركة",
     "View All": "عرض الكل",

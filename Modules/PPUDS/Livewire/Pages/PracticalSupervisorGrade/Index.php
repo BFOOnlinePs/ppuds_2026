@@ -26,6 +26,7 @@ use Modules\Core\Enums\UserRole;
 use Modules\Core\Filament\Tables\Columns\UserColumn;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\SemesterType;
+use Modules\PPUDS\Enums\TrainingStatus;
 use Modules\PPUDS\Settings\GeneralSettings;
 use Modules\PPUDS\Support\HasSupervisorFilter;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
@@ -51,9 +52,9 @@ class Index extends Component implements HasForms, HasTable
                     'company',
                     'branch',
                     'department',
-                ])
-                // العلامة لآخر تدريب وحده، والتدريبات المنتهية تظهر في تفاصيل الطالب.
-                ->latestPerRegistration())
+                ]))
+                // الاقتصار على آخر تدريب لكل تسجيل انتقل إلى فلتر «حالة التدريب»،
+                // لأن فلتر «منتهي» يحتاج إظهار التدريبات المنتهية السابقة أيضاً.
             ->columns([
                 UserColumn::make('student.name')
                     ->label(__('Student'))
@@ -122,6 +123,19 @@ class Index extends Component implements HasForms, HasTable
     protected function getTableFilters(): array
     {
         return [
+            // بلا اختيار: آخر تدريب لكل تسجيل كما كانت الشاشة دائماً.
+            // «منتهي»: كل التدريبات المنتهية بعلاماتها، ومنها السابقة لطالب انتقل لشركة أخرى.
+            TernaryFilter::make('training_status')
+                ->label(__('Training Status'))
+                ->placeholder(__('All'))
+                ->trueLabel(__('Finished'))
+                ->falseLabel(__('Available / Still Training'))
+                ->queries(
+                    true: fn (Builder $query): Builder => $query->where($query->qualifyColumn('status'), TrainingStatus::FINISHED->value),
+                    false: fn (Builder $query): Builder => $query->where($query->qualifyColumn('status'), TrainingStatus::AVAILABLE->value)->latestPerRegistration(),
+                    blank: fn (Builder $query): Builder => $query->latestPerRegistration(),
+                ),
+
             TernaryFilter::make('grade_status')
                 ->label(__('Grading Status'))
                 ->placeholder(__('All'))

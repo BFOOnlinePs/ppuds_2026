@@ -427,9 +427,25 @@ class Index extends Component implements HasTable, HasForms
                     $record->password = Hash::make((string) $data['password']);
                 }
 
+                $phoneChanged = $record->isDirty('phone');
+
                 $record->save();
 
                 Toaster::success(__('Company supervisor updated successfully'));
+
+                // الهاتف هو اسم المستخدم وكلمة المرور الافتراضية للمشرف في نظام الجامعة،
+                // فتغييره يستلزم إعادة إرساله لكل شركة يشرف فيها.
+                if ($phoneChanged) {
+                    $companyIds = $this->assignmentRows($record)->pluck('company_id')->filter()->unique();
+
+                    foreach ($companyIds as $companyId) {
+                        $this->sendSupervisorToUniversity(
+                            (int) $companyId,
+                            $record->id,
+                            filled($data['password'] ?? null) ? (string) $data['password'] : null,
+                        );
+                    }
+                }
             });
     }
 
