@@ -290,7 +290,9 @@ class Details extends Component implements HasForms, HasInfolists, HasActions
                                             ->grid(1)
                                             ->extraAttributes(['class' => 'gap-6 company-structure-repeater'])
                                             ->schema([
-                                                TextInput::make('id')->hidden(),
+                                                // الحقل المخفي لا يصل إلى getState() بدون dehydratedWhenHidden،
+                                                // فكان كل حفظ يُنشئ نسخة جديدة من كل فرع موجود.
+                                                TextInput::make('id')->hidden()->dehydratedWhenHidden(),
 
                                                 Group::make()
                                                     ->schema([
@@ -830,10 +832,15 @@ class Details extends Component implements HasForms, HasInfolists, HasActions
 
             $branch = null;
 
+            // الفرع المنسوخ بزر النسخ يحمل id الأصل، فيُنشأ فرعاً جديداً بدل أن يكتب فوق الأصل.
+            if ($branchId && in_array((int) $branchId, $processedBranchIds, true)) {
+                $branchId = null;
+            }
+
             // --- أ. التعامل مع الفرع (تحديث أو إنشاء) ---
             if ($branchId) {
-                // تحديث فرع موجود
-                $branch = Branch::find($branchId);
+                // تحديث فرع موجود — من فروع هذه الشركة فقط
+                $branch = $this->company->branches()->whereKey((int) $branchId)->first();
                 if ($branch) {
                     $branch->update($branchAttributes);
                 }
