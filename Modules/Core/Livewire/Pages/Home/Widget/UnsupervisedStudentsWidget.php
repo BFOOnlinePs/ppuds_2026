@@ -76,9 +76,16 @@ class UnsupervisedStudentsWidget extends Widget
             ])
             ->get();
 
+        // أزواج (شركة-فرع) المرتبطة فعلاً، لمعرفة الفرع «غير المرتبط بهذه الشركة».
+        $linkedPairs = DB::table(config('ppuds.table_prefix').'branch_company')
+            ->whereIn('branch_id', $placements->pluck('branch_id')->filter()->unique()->values())
+            ->get(['company_id', 'branch_id'])
+            ->map(fn (object $link): string => "{$link->company_id}-{$link->branch_id}")
+            ->flip();
+
         $groups = $placements
             ->groupBy(fn (StudentCompany $placement): string => $this->groupKey($placement))
-            ->map(function (Collection $groupPlacements, string $key): array {
+            ->map(function (Collection $groupPlacements, string $key) use ($linkedPairs): array {
                 $first = $groupPlacements->first();
                 $ids = $groupPlacements->pluck('id')->map(fn ($id): string => (string) $id)->all();
 
@@ -97,7 +104,7 @@ class UnsupervisedStudentsWidget extends Widget
                     'company' => $first->company?->name,
                     'branch' => $first->branch?->name,
                     'department' => $first->department?->name,
-                    'reasons' => $this->brokenReasons($first),
+                    'reasons' => $this->brokenReasons($first, $linkedPairs),
                     'students' => $groupPlacements->map(fn (StudentCompany $placement): array => [
                         'id' => (string) $placement->id,
                         'name' => $placement->student?->name,
@@ -190,15 +197,32 @@ class UnsupervisedStudentsWidget extends Widget
 
     /**
      * تدريبات الفصل الحالي القائمة التي بلا شركة أو فرع أو قسم، أو أحدها محذوف
-     * حذفاً ناعماً (العلاقة لا تعيد المحذوف).
+     * حذفاً ناعماً (العلاقة لا تعيد المحذوف)، أو فرعها لم يعد تابعاً لشركتها.
      */
     protected function brokenPlacementsQuery(): Builder
     {
+        $table = (new StudentCompany)->getTable();
+
         return $this->currentPlacementsQuery()
             ->where(fn (Builder $query): Builder => $query
                 ->whereDoesntHave('company')
                 ->orWhereDoesntHave('branch')
-                ->orWhereDoesntHave('department'));
+                ->orWhereDoesntHave('department')
+                // حفظ قديم لشاشة الشركة كان يفصل فروعها ويُنشئ نسخاً جديدة، فبقي
+                // التدريب على فرع «غير مرتبط بهذه الشركة» وترفضه شاشة تعديل التدريب.
+                ->orWhereNotExists(fn ($subQuery) => $this->companyBranchLink($subQuery, $table)));
+    }
+
+    /**
+     * صف في branch_company يربط فرع التدريب بشركته.
+     */
+    protected function companyBranchLink(mixed $subQuery, string $table): mixed
+    {
+        return $subQuery
+            ->select(DB::raw(1))
+            ->from(config('ppuds.table_prefix').'branch_company as placement_link')
+            ->whereColumn('placement_link.company_id', "{$table}.company_id")
+            ->whereColumn('placement_link.branch_id', "{$table}.branch_id");
     }
 
     protected function groupKey(StudentCompany $placement): string
@@ -225,9 +249,10 @@ class UnsupervisedStudentsWidget extends Widget
     }
 
     /**
+     * @param  Collection<string, int>  $linkedPairs  مفاتيح «شركة-فرع» المرتبطة
      * @return array<int, string>
      */
-    protected function brokenReasons(StudentCompany $placement): array
+    protected function brokenReasons(StudentCompany $placement, Collection $linkedPairs): array
     {
         $reasons = [];
 
@@ -243,6 +268,13 @@ class UnsupervisedStudentsWidget extends Widget
             } elseif ($related->trashed()) {
                 $reasons[] = __($deleted);
             }
+        }
+
+        // الفرع والشركة موجودان لكن الرابط بينهما مفقود.
+        if ($placement->company && ! $placement->company->trashed()
+            && $placement->branch && ! $placement->branch->trashed()
+            && ! $linkedPairs->has("{$placement->company_id}-{$placement->branch_id}")) {
+            $reasons[] = __('Branch').': '.__('Not linked to this company');
         }
 
         return $reasons;
@@ -348,6 +380,7 @@ class UnsupervisedStudentsWidget extends Widget
             ->whereHas('company')
             ->whereHas('branch')
             ->whereHas('department')
+            ->whereExists(fn ($subQuery) => $this->companyBranchLink($subQuery, $table))
             // لا مقعد بمشرف فعّال: المقعد مفقود، أو مشرفه فارغ، أو محذوف حذفاً ناعماً.
             ->whereNotExists(fn ($subQuery) => $subQuery
                 ->select(DB::raw(1))

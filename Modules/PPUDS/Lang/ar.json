@@ -89,7 +89,7 @@
     "Select Supervisor": "اختر المشرف",
     "No company supervisor assignment issues": "لا توجد مشاكل في إسناد مشرفي الشركات",
     "Students With A Broken Placement": "طلاب في تدريبهم مشكلة",
-    "The company, branch or department of these trainings is missing or deleted, so no company supervisor sees them. Choose the company and the supervisor, then move them.": "شركة هذه التدريبات أو فرعها أو قسمها مفقود أو محذوف، فلا يراهم أي مشرف شركة. اختر الشركة والمشرف ثم اضغط نقل.",
+    "The company, branch or department of these trainings is missing, deleted or not linked to the company. Choose the company and the supervisor, then move them.": "شركة هذه التدريبات أو فرعها أو قسمها مفقود أو محذوف أو غير مرتبط بالشركة. اختر الشركة والمشرف ثم اضغط نقل.",
     "Company deleted": "شركة محذوفة",
     "Branch deleted": "فرع محذوف",
     "Department deleted": "قسم محذوف",

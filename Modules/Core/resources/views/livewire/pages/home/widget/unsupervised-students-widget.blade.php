@@ -18,7 +18,7 @@
                             </span>
                         </h2>
                         <p class="mt-1 text-sm text-danger-700 dark:text-danger-400">
-                            {{ __('The company, branch or department of these trainings is missing or deleted, so no company supervisor sees them. Choose the company and the supervisor, then move them.') }}
+                            {{ __('The company, branch or department of these trainings is missing, deleted or not linked to the company. Choose the company and the supervisor, then move them.') }}
                         </p>
                     </div>
                 </div>
