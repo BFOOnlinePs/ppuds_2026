@@ -551,13 +551,15 @@ class Edit extends Component implements HasActions, HasForms
         // 1. التحقق من الصلاحيات والبيانات
         $this->authorize('Company Update');
         $this->validate();
-        $this->data = $this->form->getState();
-        $this->mergePendingCreatedSupervisorAssignmentsIntoFormData();
 
-        // لا يُحفظ شيء إذا أُزيل فرع أو قسم عليه تدريبات طلاب
+        // لا يُحفظ شيء إذا أُزيل فرع أو قسم عليه تدريبات طلاب. يُفحص قبل getState()
+        // لأنها تُسقط الشعار من الحالة، فيحذفه الحفظ التالي بعد الرفض.
         if (! $this->linkedStructureIsKept()) {
             return;
         }
+
+        $this->data = $this->form->getState();
+        $this->mergePendingCreatedSupervisorAssignmentsIntoFormData();
 
         // 2. تحديث بيانات الشركة الأساسية (مع استبعاد الفروع والشعار)
         $companyData = Arr::except($this->data, ['branches', 'logo']);
@@ -841,8 +843,9 @@ class Edit extends Component implements HasActions, HasForms
             return true;
         }
 
+        // تُضاف كأخطاء على الفروع لتظهر في ملخص الأخطاء أعلى الصفحة بدل رسالة منبثقة تختفي.
         if ($removedBranchIds !== []) {
-            Toaster::error(__('These branches cannot be deleted because student placements are recorded on them: :branches', [
+            $this->addError('data.branches', __('These branches cannot be deleted because student placements are recorded on them: :branches', [
                 'branches' => Branch::whereKey($removedBranchIds)->get()->pluck('name')->filter()->implode(', ') ?: implode(', ', $removedBranchIds),
             ]));
         }
@@ -851,12 +854,14 @@ class Edit extends Component implements HasActions, HasForms
             $branchNames = Branch::whereKey(array_column($removedDepartments, 0))->get()->pluck('name', 'id');
             $departmentNames = CompanyDepartment::whereKey(array_column($removedDepartments, 1))->get()->pluck('name', 'id');
 
-            Toaster::error(__('These departments cannot be deleted because student placements are recorded on them: :departments', [
+            $this->addError('data.branches', __('These departments cannot be deleted because student placements are recorded on them: :departments', [
                 'departments' => collect($removedDepartments)
                     ->map(fn (array $pair): string => ($branchNames[$pair[0]] ?? $pair[0]).' / '.($departmentNames[$pair[1]] ?? $pair[1]))
                     ->implode(', '),
             ]));
         }
+
+        $this->dispatch('form-validation-error', livewireId: $this->getId());
 
         return false;
     }

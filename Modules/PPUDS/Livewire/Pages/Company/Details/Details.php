@@ -6,6 +6,7 @@ use App\View\Components\AppLayout;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
+use Filament\Forms\Components\Actions\Action as FormAction;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Group;
@@ -60,6 +61,8 @@ class Details extends Component implements HasForms, HasInfolists, HasActions
 
     public Company $company;
 
+    protected ?array $linkedDepartmentIdsCache = null;
+
     public function mount(Company $company)
     {
         $this->company = $company;
@@ -102,6 +105,8 @@ class Details extends Component implements HasForms, HasInfolists, HasActions
                 'name' => $branch->name,
                 'email' => $branch->email,
                 'phone' => $branch->phone,
+                'manager_name' => $branch->manager_name,
+                'manager_phone' => $branch->manager_phone,
                 'country_id' => $branch->country_id,
                 'city_id' => $branch->city_id,
                 'latitude' => $branch->latitude,
@@ -111,12 +116,17 @@ class Details extends Component implements HasForms, HasInfolists, HasActions
                     'lng' => (float) ($branch->longitude ?: 35.0998),
                 ],
                 'working_hours' => $workingHoursData,
-                'departments' => $branch->departments->map(function ($dept) {
-                    return [
-                        'name' => $dept->name,
-                        'user_id' => $dept->pivot->user_id,
-                    ];
-                })->toArray(),
+                // مثل صفحة التعديل: القسم قد يكون له أكثر من مشرف والنموذج يحمل واحداً،
+                // فنأخذ آخر من أُسند حتى لا يختفي ثم يُحذف صفه عند الحفظ.
+                'departments' => $branch->departments
+                    ->sortByDesc(fn (CompanyDepartment $dept): int => (int) $dept->pivot->id)
+                    ->unique(fn (CompanyDepartment $dept): int => $dept->id)
+                    ->map(function (CompanyDepartment $dept) {
+                        return [
+                            'name' => $dept->name,
+                            'user_id' => $dept->pivot->user_id,
+                        ];
+                    })->toArray(),
             ];
         })->toArray();
 
@@ -274,6 +284,9 @@ class Details extends Component implements HasForms, HasInfolists, HasActions
                                             ->cloneable()
                                             ->itemLabel(fn (array $state): ?string => $state['name'] ?? __('New Branch'))
                                             ->addActionLabel(__('Add New Branch'))
+                                            ->deleteAction(fn (FormAction $action) => $action->visible(
+                                                fn (array $arguments, Repeater $component): bool => ! $this->isBranchLinked($component->getRawItemState($arguments['item'])['id'] ?? null)
+                                            ))
                                             ->grid(1)
                                             ->extraAttributes(['class' => 'gap-6 company-structure-repeater'])
                                             ->schema([
@@ -301,6 +314,15 @@ class Details extends Component implements HasForms, HasInfolists, HasActions
 
                                                                                 TextInput::make('phone')
                                                                                     ->label(__('Phone Number')),
+
+                                                                                TextInput::make('manager_name')
+                                                                                    ->label(__('Company Manager Name'))
+                                                                                    ->maxLength(255),
+
+                                                                                TextInput::make('manager_phone')
+                                                                                    ->label(__('Company Manager Phone'))
+                                                                                    ->tel()
+                                                                                    ->maxLength(50),
 
                                                                                 // Working hours
                                                                                 Section::make(__('Working Hours'))
@@ -375,7 +397,7 @@ class Details extends Component implements HasForms, HasInfolists, HasActions
                                                                             ->schema([
                                                                                 Select::make('country_id')
                                                                                     ->label(__('Country'))
-                                                                                    ->options(Country::get()->pluck('name', 'id'))
+                                                                                    ->options(Country::with('translations')->get()->pluck('name', 'id'))
                                                                                     // ملاحظة: تم ابقاء القيم العربية هنا لأنها قيم بحث في قاعدة البيانات
                                                                                     ->default(fn () => Country::whereTranslation('name', 'فلسطين')
                                                                                         ->orWhereTranslation('name', 'Palestine')->first()?->id)
@@ -392,7 +414,7 @@ class Details extends Component implements HasForms, HasInfolists, HasActions
                                                                                             return [];
                                                                                         }
 
-                                                                                        return City::whereHas('governorate', function (Builder $query) use ($countryId) {
+                                                                                        return City::with('translations')->whereHas('governorate', function (Builder $query) use ($countryId) {
                                                                                             $query->where('country_id', $countryId);
                                                                                         })->get()->pluck('name', 'id');
                                                                                     })
@@ -431,8 +453,9 @@ class Details extends Component implements HasForms, HasInfolists, HasActions
                                                                                         ->searchable()
                                                                                         ->preload()
                                                                                         ->prefixIcon('solar-case-minimalistic-linear')
+                                                                                        ->disableOptionsWhenSelectedInSiblingRepeaterItems()
                                                                                         ->options(function () {
-                                                                                            return CompanyDepartment::get()
+                                                                                            return CompanyDepartment::with('translations')->get()
                                                                                                 ->pluck('name', 'name')
                                                                                                 ->unique()
                                                                                                 ->toArray();
@@ -490,6 +513,7 @@ class Details extends Component implements HasForms, HasInfolists, HasActions
                                                                                             $data['password'] = bcrypt($data['password']);
                                                                                             $user = User::create($data);
                                                                                             $user->assignRole('Company Supervisor');
+                                                                                            session()->put($this->supervisorPasswordSessionKey($user->id), $plainPassword);
 
                                                                                             $supervisorId = (int) $user->getKey();
                                                                                             $set('user_id', (string) $supervisorId);
@@ -504,6 +528,9 @@ class Details extends Component implements HasForms, HasInfolists, HasActions
                                                                             ->collapsible()
                                                                             ->itemLabel(fn (array $state): ?string => $state['name'] ?? null)
                                                                             ->addActionLabel(__('Add Department'))
+                                                                            ->deleteAction(fn (FormAction $action) => $action->visible(
+                                                                                fn (array $arguments, Repeater $component, Get $get): bool => ! $this->isDepartmentLinked($get('id'), $component->getRawItemState($arguments['item'])['name'] ?? null)
+                                                                            ))
                                                                             ->reorderableWithButtons()
                                                                             ->extraAttributes(['class' => 'company-departments-repeater border-l-4 border-primary-500 pl-4']),
                                                                     ]),
@@ -736,6 +763,13 @@ class Details extends Component implements HasForms, HasInfolists, HasActions
 
         // 1. التحقق من البيانات
         $this->validate();
+
+        // لا يُحفظ شيء إذا أُزيل فرع أو قسم عليه تدريبات طلاب. يُفحص قبل getState()
+        // لأنها تُسقط الشعار والغلاف من الحالة، فيحذفهما الحفظ التالي بعد الرفض.
+        if (! $this->linkedStructureIsKept()) {
+            return null;
+        }
+
         $this->data = $this->form->getState();
         $this->mergePendingCreatedSupervisorAssignmentsIntoFormData();
 
@@ -751,8 +785,13 @@ class Details extends Component implements HasForms, HasInfolists, HasActions
         // 3.1 حفظ مرفقات الشركة بنفس أسلوب الإضافة اليدوية
         $this->saveAttachments($attachmentUploads);
 
+        $previousSupervisorIds = $this->persistedCompanySupervisorIds();
+
         // 4. حفظ الفروع والأقسام وساعات العمل
         $this->saveBranchesAndDepartments();
+
+        // 4.1 إرسال المشرفين الجدد إلى نظام الجامعة عبر Company/Add
+        $this->syncAddedSupervisorsToUniversity($previousSupervisorIds);
 
         // 5. رسالة نجاح
         Toaster::success(__('Saved successfully'));
@@ -874,27 +913,147 @@ class Details extends Component implements HasForms, HasInfolists, HasActions
         return array_values(array_diff($branchIds, $usedBranchIds));
     }
 
-    protected function syncDepartmentsForBranch(Branch $branch, array $departmentsData)
+    /**
+     * الفروع والأقسام الحالية للشركة التي عليها تدريبات طلاب:
+     * branch id => ids الأقسام المربوطة بصف في branch_department.
+     * حذف صف القسم يُخفي الطلاب عن مشرف الشركة، وفصل الفرع يترك التدريب معلّقاً.
+     *
+     * @return array<int, array<int, int>>
+     */
+    protected function linkedDepartmentIdsByBranch(): array
     {
-        $syncData = [];
-
-        foreach ($departmentsData as $deptData) {
-            $deptName = $deptData['name'];
-            $userId = $deptData['user_id'] ?? null;
-
-            $department = CompanyDepartment::whereTranslation('name', $deptName)->first();
-
-            if (! $department) {
-                $department = CompanyDepartment::create([
-                    'name' => $deptName,
-                    'created_by' => auth()->id(),
-                ]);
-            }
-
-            $syncData[$department->id] = ['user_id' => $userId];
+        if ($this->linkedDepartmentIdsCache !== null) {
+            return $this->linkedDepartmentIdsCache;
         }
 
-        $branch->departments()->sync($syncData);
+        $companyBranches = $this->company->branches()->with('departments')->get()->keyBy('id');
+
+        $placements = StudentCompany::query()
+            ->where('company_id', $this->company->id)
+            ->whereIn('branch_id', $companyBranches->keys())
+            ->select(['branch_id', 'department_id'])
+            ->distinct()
+            ->get();
+
+        $linked = [];
+
+        foreach ($placements as $placement) {
+            $branchId = (int) $placement->branch_id;
+            $linked[$branchId] ??= [];
+
+            $seatedDepartmentIds = $companyBranches->get($branchId)->departments->pluck('id')->map(fn ($id): int => (int) $id)->all();
+
+            if ($placement->department_id && in_array((int) $placement->department_id, $seatedDepartmentIds, true)) {
+                $linked[$branchId][] = (int) $placement->department_id;
+            }
+        }
+
+        return $this->linkedDepartmentIdsCache = array_map(fn (array $ids): array => array_values(array_unique($ids)), $linked);
+    }
+
+    protected function isBranchLinked(mixed $branchId): bool
+    {
+        return filled($branchId) && array_key_exists((int) $branchId, $this->linkedDepartmentIdsByBranch());
+    }
+
+    protected function isDepartmentLinked(mixed $branchId, mixed $departmentName): bool
+    {
+        if (blank($branchId) || blank($departmentName)) {
+            return false;
+        }
+
+        $linkedIds = $this->linkedDepartmentIdsByBranch()[(int) $branchId] ?? [];
+
+        if ($linkedIds === []) {
+            return false;
+        }
+
+        $departmentId = CompanyDepartment::whereTranslation('name', trim((string) $departmentName))->value('id');
+
+        return $departmentId && in_array((int) $departmentId, $linkedIds, true);
+    }
+
+    /**
+     * يمنع الحفظ إذا حُذف (أو أُعيدت تسميته) فرع أو قسم عليه تدريبات طلاب.
+     */
+    protected function linkedStructureIsKept(): bool
+    {
+        $linked = $this->linkedDepartmentIdsByBranch();
+
+        if ($linked === []) {
+            return true;
+        }
+
+        $formBranches = collect($this->data['branches'] ?? [])
+            ->filter(fn (mixed $branch): bool => is_array($branch) && filled($branch['id'] ?? null))
+            ->keyBy(fn (array $branch): int => (int) $branch['id']);
+
+        $removedBranchIds = [];
+        $removedDepartments = [];
+
+        foreach ($linked as $branchId => $departmentIds) {
+            $branchData = $formBranches->get($branchId);
+
+            if (! $branchData) {
+                $removedBranchIds[] = $branchId;
+
+                continue;
+            }
+
+            $keptDepartmentIds = collect($branchData['departments'] ?? [])
+                ->pluck('name')
+                ->filter()
+                ->map(fn (mixed $name) => CompanyDepartment::whereTranslation('name', trim((string) $name))->value('id'))
+                ->filter()
+                ->map(fn (mixed $id): int => (int) $id)
+                ->all();
+
+            foreach (array_diff($departmentIds, $keptDepartmentIds) as $departmentId) {
+                $removedDepartments[] = [$branchId, $departmentId];
+            }
+        }
+
+        if ($removedBranchIds === [] && $removedDepartments === []) {
+            return true;
+        }
+
+        // تُضاف كأخطاء على الفروع لتظهر في ملخص الأخطاء أعلى الصفحة بدل رسالة منبثقة تختفي.
+        if ($removedBranchIds !== []) {
+            $this->addError('data.branches', __('These branches cannot be deleted because student placements are recorded on them: :branches', [
+                'branches' => Branch::whereKey($removedBranchIds)->get()->pluck('name')->filter()->implode(', ') ?: implode(', ', $removedBranchIds),
+            ]));
+        }
+
+        if ($removedDepartments !== []) {
+            $branchNames = Branch::whereKey(array_column($removedDepartments, 0))->get()->pluck('name', 'id');
+            $departmentNames = CompanyDepartment::whereKey(array_column($removedDepartments, 1))->get()->pluck('name', 'id');
+
+            $this->addError('data.branches', __('These departments cannot be deleted because student placements are recorded on them: :departments', [
+                'departments' => collect($removedDepartments)
+                    ->map(fn (array $pair): string => ($branchNames[$pair[0]] ?? $pair[0]).' / '.($departmentNames[$pair[1]] ?? $pair[1]))
+                    ->implode(', '),
+            ]));
+        }
+
+        $this->dispatch('form-validation-error', livewireId: $this->getId());
+
+        return false;
+    }
+
+    protected function syncDepartmentsForBranch(Branch $branch, array $departmentsData): void
+    {
+        $pivotTable = config('ppuds.table_prefix').'branch_department';
+        $rows = $this->departmentPivotRows($branch, $departmentsData);
+
+        DB::transaction(function () use ($pivotTable, $branch, $rows): void {
+            DB::table($pivotTable)
+                ->where('branch_id', $branch->id)
+                ->delete();
+
+            if ($rows !== []) {
+                DB::table($pivotTable)->insert($rows);
+            }
+        });
     }
 
     private function attachCreatedSupervisorToCompanyDepartment(Get $get, int $supervisorId, string $plainPassword): void
@@ -939,6 +1098,11 @@ class Details extends Component implements HasForms, HasInfolists, HasActions
         $this->syncSingleSupervisorToUniversity($supervisorId, $plainPassword);
     }
 
+    /**
+     * مثل صفحة التعديل: يملأ المشرف المُنشأ من نافذة "إضافة" في قسمه فقط إن
+     * كان القسم بلا مشرف، ولا يضيف أقساماً جديدة — إضافتها كانت تخترع قسماً
+     * ثانياً بنفس المشرف إذا تغيّر اسم القسم بعد إنشاء المشرف.
+     */
     private function mergePendingCreatedSupervisorAssignmentsIntoFormData(): void
     {
         if ($this->pendingCreatedSupervisorAssignments === []) {
@@ -956,20 +1120,156 @@ class Details extends Component implements HasForms, HasInfolists, HasActions
                         continue;
                     }
 
-                    $department['user_id'] = (int) $assignment['user_id'];
+                    // لا نستبدل مشرفاً اختاره المستخدم بعد ذلك.
+                    if (blank($department['user_id'] ?? null)) {
+                        $department['user_id'] = (int) $assignment['user_id'];
+                    }
+
                     continue 3;
                 }
 
-                $branch['departments'][] = [
-                    'name' => $assignment['department_name'],
-                    'user_id' => (int) $assignment['user_id'],
-                ];
-
-                continue 2;
+                unset($department);
             }
 
-            unset($department, $branch);
+            unset($branch);
         }
+
+        // استُهلكت — حفظ لاحق يجب ألا يعيد تطبيقها على فرع آخر.
+        $this->pendingCreatedSupervisorAssignments = [];
+    }
+
+    private function syncAddedSupervisorsToUniversity(array $previousSupervisorIds): void
+    {
+        $addedSupervisorIds = array_values(array_diff(
+            $this->selectedCompanySupervisorIds(),
+            $previousSupervisorIds,
+        ));
+
+        if ($addedSupervisorIds === []) {
+            return;
+        }
+
+        $company = $this->company->fresh(['branches.supervisors', 'translations']);
+
+        if (! $company) {
+            return;
+        }
+
+        $apiService = app(PpuApiService::class);
+        $created = 0;
+        $alreadyExists = 0;
+
+        foreach ($this->prioritizeSupervisorIdsForSync($addedSupervisorIds) as $supervisorId) {
+            $password = session()->pull($this->supervisorPasswordSessionKey($supervisorId));
+            $result = $apiService->addCompanyToUniversity(
+                $company,
+                $password,
+                $supervisorId,
+                sendEvenIfCompanyExists: true,
+            );
+
+            if (($result['operation'] ?? null) === 'already_exists') {
+                $alreadyExists++;
+            } elseif ($result !== null) {
+                $created++;
+            }
+        }
+
+        if ($created > 0) {
+            Toaster::success(count($addedSupervisorIds) > 1
+                ? __('Company supervisors sent to university successfully')
+                : __('Company supervisor sent to university successfully'));
+
+            return;
+        }
+
+        if ($alreadyExists > 0) {
+            Toaster::success(__('Company supervisor already exists in university system'));
+        }
+    }
+
+    private function departmentPivotRows(Branch $branch, array $departmentsData): array
+    {
+        $now = now();
+
+        return collect($this->normalizeDepartmentsData($departmentsData))
+            ->map(function (array $deptData) use ($branch, $now): array {
+                $department = $this->resolveCompanyDepartment($deptData['name']);
+
+                return [
+                    'branch_id' => $branch->id,
+                    'company_department_id' => $department->id,
+                    'user_id' => $deptData['user_id'],
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            })
+            ->all();
+    }
+
+    private function normalizeDepartmentsData(array $departmentsData): array
+    {
+        return collect($departmentsData)
+            ->filter(fn (mixed $deptData): bool => is_array($deptData)
+                && filled($deptData['name'] ?? null)
+                && filled($deptData['user_id'] ?? null))
+            ->map(fn (array $deptData): array => [
+                'name' => trim((string) $deptData['name']),
+                'user_id' => (int) $deptData['user_id'],
+            ])
+            ->unique(fn (array $deptData): string => mb_strtolower($deptData['name']))
+            ->values()
+            ->all();
+    }
+
+    private function selectedCompanySupervisorIds(): array
+    {
+        return $this->supervisorIdsFromBranches($this->data['branches'] ?? []);
+    }
+
+    private function persistedCompanySupervisorIds(): array
+    {
+        $company = $this->company->fresh(['branches.supervisors']);
+
+        if (! $company) {
+            return [];
+        }
+
+        return $company->companySupervisors()
+            ->pluck('id')
+            ->map(fn (mixed $supervisorId): int => (int) $supervisorId)
+            ->values()
+            ->all();
+    }
+
+    private function supervisorIdsFromBranches(array $branches): array
+    {
+        return collect($branches)
+            ->flatMap(fn (array $branch): array => $branch['departments'] ?? [])
+            ->pluck('user_id')
+            ->filter(fn (mixed $supervisorId): bool => filled($supervisorId))
+            ->map(fn (mixed $supervisorId): int => (int) $supervisorId)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function prioritizeSupervisorIdsForSync(array $supervisorIds): array
+    {
+        return collect($supervisorIds)
+            ->map(fn (int $supervisorId): array => [
+                'id' => $supervisorId,
+                'has_password' => session()->has($this->supervisorPasswordSessionKey($supervisorId)),
+            ])
+            ->sortByDesc('has_password')
+            ->pluck('id')
+            ->values()
+            ->all();
+    }
+
+    private function supervisorPasswordSessionKey(int $supervisorId): string
+    {
+        return "company_supervisor_plain_password_{$supervisorId}";
     }
 
     private function resolveCompanyDepartment(string $name): CompanyDepartment
