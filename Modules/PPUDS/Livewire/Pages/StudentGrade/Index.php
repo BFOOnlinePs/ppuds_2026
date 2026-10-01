@@ -53,6 +53,9 @@ class Index extends Component implements HasForms, HasTable
                     'company',
                     'branch',
                 ])
+                // آخر تدريب لكل تسجيل فقط: التدريب المنتهي الذي تلاه تدريب آخر لا يظهر،
+                // أما الطالب الذي أنهى تدريبه الأخير فيبقى ظاهراً بعلاماته.
+                ->latestPerRegistration()
                 ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query)))
             ->columns([
                 UserColumn::make('student.name')
