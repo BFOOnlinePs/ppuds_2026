@@ -1342,6 +1342,8 @@
     "Pending Grading": "بانتظار التقييم",
     "Average Grade": "متوسط العلامة",
     "Grading Status": "حالة التقييم",
+    "Missing Grade": "علامة غير مرصودة",
+    "All Grades": "جميع العلامات",
     "Has Pending Grades": "لديه علامات لم تُرصد",
     "All Grades Entered": "رُصدت جميع العلامات",
     "With Assigned Students": "لديه طلاب مسندون",

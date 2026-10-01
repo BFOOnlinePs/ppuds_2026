@@ -195,6 +195,26 @@ class Index extends Component implements HasForms, HasTable
                 ->searchable()
                 ->preload(),
 
+            // الطلاب الذين لم تُرصد لهم علامة بعد: من جهة واحدة، أو من الجهات الثلاث معاً.
+            SelectFilter::make('missing_grade')
+                ->label(__('Missing Grade'))
+                ->options([
+                    'evaluation' => __('Evaluation Supervisor Grade'),
+                    'company' => __('Company Grade'),
+                    'university' => __('University Supervisor Grade'),
+                    'all' => __('All Grades'),
+                ])
+                ->native(false)
+                ->query(fn (Builder $query, array $data): Builder => match ($data['value'] ?? null) {
+                    'evaluation' => $query->whereNull($query->qualifyColumn('evaluation_score')),
+                    'company' => $this->whereCompanyGradeMissing($query),
+                    'university' => $query->whereNull($query->qualifyColumn('supervisor_score')),
+                    'all' => $this->whereCompanyGradeMissing($query
+                        ->whereNull($query->qualifyColumn('evaluation_score'))
+                        ->whereNull($query->qualifyColumn('supervisor_score'))),
+                    default => $query,
+                }),
+
             Filter::make('year')
                 ->form([
                     TextInput::make('year')
@@ -245,6 +265,16 @@ class Index extends Component implements HasForms, HasTable
     protected function companyGrade(StudentCompany $record): int|float|null
     {
         return $record->company_survey_score ?? $record->registration?->company_score;
+    }
+
+    /**
+     * نفس مصدرَي companyGrade(): لا علامة من استبيان مشرف الشركة ولا من مزامنة الجامعة.
+     */
+    protected function whereCompanyGradeMissing(Builder $query): Builder
+    {
+        return $query
+            ->whereNull($query->qualifyColumn('company_survey_score'))
+            ->whereDoesntHave('registration', fn (Builder $registrationQuery): Builder => $registrationQuery->whereNotNull('company_score'));
     }
 
     protected function totalGrade(StudentCompany $record): int|float|null
