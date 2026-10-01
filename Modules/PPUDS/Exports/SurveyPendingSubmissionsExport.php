@@ -11,6 +11,7 @@ use Modules\Core\Entities\User;
 use Modules\Core\Enums\UserRole;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Entities\Survey;
+use Modules\PPUDS\Enums\TrainingStatus;
 use Modules\PPUDS\Support\HandlesCompanySupervisorSurveyEvaluations;
 
 class SurveyPendingSubmissionsExport implements FromGenerator, ShouldAutoSize, WithHeadings
@@ -19,7 +20,8 @@ class SurveyPendingSubmissionsExport implements FromGenerator, ShouldAutoSize, W
 
     /**
      * $query يأتي من جدول "بانتظار التسليم" بعد تطبيق الفلاتر والبحث، فيخرج
-     * الملف مطابقاً لما يراه المستخدم على الشاشة.
+     * الملف مطابقاً لما يراه المستخدم على الشاشة، عدا أن استبيان مشرف الشركة
+     * يقتصر على التدريبات السارية.
      */
     public function __construct(protected Survey $survey, protected Builder $query) {}
 
@@ -32,6 +34,7 @@ class SurveyPendingSubmissionsExport implements FromGenerator, ShouldAutoSize, W
                 __('Student Number'),
                 __('Major'),
                 __('Company'),
+                __('Company Email'),
                 __('Branch'),
                 __('Department'),
                 __('Status'),
@@ -52,6 +55,9 @@ class SurveyPendingSubmissionsExport implements FromGenerator, ShouldAutoSize, W
         $query = clone $this->query;
 
         if ($this->isCompanySupervisorSurvey($this->survey)) {
+            // المنتهي والمؤجل لا يُنتظر من الشركة تقييمه، فلا يظهر في الملف.
+            $query->where($query->qualifyColumn('status'), TrainingStatus::AVAILABLE->value);
+
             $query->with([
                 'student.studentProfile.major.translations',
                 'company.translations',
@@ -96,6 +102,7 @@ class SurveyPendingSubmissionsExport implements FromGenerator, ShouldAutoSize, W
             (string) $student?->studentProfile?->student_number,
             (string) $student?->studentProfile?->major?->name,
             (string) $studentCompany->company?->name,
+            (string) $studentCompany->branch?->email,
             (string) $studentCompany->branch?->name,
             (string) $studentCompany->department?->name,
             __('Not Submitted'),
