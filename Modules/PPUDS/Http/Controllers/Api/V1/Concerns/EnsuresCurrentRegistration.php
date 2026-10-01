@@ -62,14 +62,15 @@ trait EnsuresCurrentRegistration
         return $this->ensureStudentCompanyInCurrentSemester($model->studentCompany);
     }
 
-    // التدريب المنتهي في الشركة يبقى للعرض فقط ولا يُعدَّل عليه من التطبيق.
+    // التدريب المنتهي أو المؤجل في الشركة يبقى للعرض فقط ولا يُعدَّل عليه من التطبيق،
+    // كما في شاشات الويب التي لا تقبل الحضور والإجازات إلا على التدريب الساري.
     protected function ensureStudentCompanyNotFinished(?StudentCompany $studentCompany): ?JsonResponse
     {
-        if ($studentCompany?->status !== TrainingStatus::FINISHED) {
-            return null;
-        }
-
-        return $this->errorResponse(__('Training at this company has been finished.'), 422);
+        return match ($studentCompany?->status) {
+            TrainingStatus::FINISHED => $this->errorResponse(__('Training at this company has been finished.'), 422),
+            TrainingStatus::POSTPONED => $this->errorResponse(__('Training at this company has been postponed.'), 422),
+            default => null,
+        };
     }
 
     protected function registrationIsInCurrentSemester(?Registration $registration): bool

@@ -356,6 +356,7 @@
     "Available / Still Training": "متاح / قيد التدريب",
     "Finished": "منتهي",
     "Deleted": "محذوف",
+    "Postponed": "مؤجل",
     "Field Visit": "زيارة ميدانية",
     "Field Visits": "الزيارات الميدانية",
     "Field Visits List": "قائمة الزيارات الميدانية",
@@ -936,6 +937,7 @@
     "The attendance date to must be after or equal to attendance date from.": "يجب أن يكون تاريخ الحضور (إلى) بعد أو يساوي تاريخ الحضور (من).",
     "This record does not belong to the current registration semester.": "هذا السجل لا يعود للفصل الدراسي الحالي.",
     "Training at this company has been finished.": "تم إنهاء التدريب في هذه الشركة.",
+    "Training at this company has been postponed.": "تم تأجيل التدريب في هذه الشركة.",
 
     "Announcement retrieved successfully": "تم جلب الإعلان بنجاح",
     "Announcements retrieved successfully": "تم جلب الإعلانات بنجاح",

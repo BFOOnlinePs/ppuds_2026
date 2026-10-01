@@ -10,6 +10,7 @@ enum TrainingStatus: int implements HasLabel, HasColor
     case AVAILABLE  = 1;
     case FINISHED   = 2;
     case DELETED    = 3;
+    case POSTPONED  = 4;
 
     public function getLabel(): ?string
     {
@@ -17,6 +18,7 @@ enum TrainingStatus: int implements HasLabel, HasColor
             self::AVAILABLE => __('Available / Still Training'),
             self::FINISHED  => __('Finished'),
             self::DELETED   => __('Deleted'),
+            self::POSTPONED => __('Postponed'),
         };
     }
 
@@ -26,6 +28,7 @@ enum TrainingStatus: int implements HasLabel, HasColor
             self::AVAILABLE => 'primary',
             self::FINISHED  => 'success',
             self::DELETED   => 'danger',
+            self::POSTPONED => 'warning',
         };
     }
 
