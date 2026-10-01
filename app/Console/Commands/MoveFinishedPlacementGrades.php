@@ -124,11 +124,11 @@ class MoveFinishedPlacementGrades extends Command
      */
     private function planMoves(Collection $sources): Collection
     {
-        // آخر تدريب للتسجيل وحده، وبشرط أن يكون سارياً.
+        // التدريب الساري للتسجيل حتى لو كان أقدم من المنتهي.
         $targets = StudentCompany::query()
             ->whereIn('registration_id', $sources->pluck('registration_id')->unique()->values())
             ->where('status', TrainingStatus::AVAILABLE->value)
-            ->latestPerRegistration()
+            ->currentPerRegistration()
             ->get()
             ->keyBy('registration_id');
 
@@ -195,7 +195,7 @@ class MoveFinishedPlacementGrades extends Command
         }
 
         $this->table(
-            ['Finished', 'Active', 'Student', 'Company', 'Grade', 'Score', 'Graded by', 'Reason'],
+            ['Finished', 'Active', 'Student', 'Company', 'Grade', 'Score', 'Active score', 'Graded by', 'Reason'],
             $moves->map(fn (array $move): array => [
                 (string) $move['source']->id,
                 $move['target'] ? (string) $move['target']->id : '—',
@@ -203,6 +203,7 @@ class MoveFinishedPlacementGrades extends Command
                 $move['source']->company?->name ?: '—',
                 self::GRADES[$move['column']],
                 (string) $move['source']->{$move['column']},
+                (string) ($move['target']?->{$move['column']} ?? '—'),
                 ($move['column'] === 'evaluation_score'
                     ? $move['source']->evaluationSupervisor?->name
                     : $move['source']->registration?->supervisor?->name) ?: '—',

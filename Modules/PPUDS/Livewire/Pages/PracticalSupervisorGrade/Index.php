@@ -123,7 +123,7 @@ class Index extends Component implements HasForms, HasTable
     protected function getTableFilters(): array
     {
         return [
-            // بلا اختيار: آخر تدريب لكل تسجيل كما كانت الشاشة دائماً.
+            // بلا اختيار: التدريب الحالي لكل تسجيل (الساري أولاً ثم الأحدث)، فلا يُخفي الساري تدريبٌ منتهٍ أحدث منه.
             // «منتهي»: كل التدريبات المنتهية بعلاماتها، ومنها السابقة لطالب انتقل لشركة أخرى.
             TernaryFilter::make('training_status')
                 ->label(__('Training Status'))
@@ -132,8 +132,8 @@ class Index extends Component implements HasForms, HasTable
                 ->falseLabel(__('Available / Still Training'))
                 ->queries(
                     true: fn (Builder $query): Builder => $query->where($query->qualifyColumn('status'), TrainingStatus::FINISHED->value),
-                    false: fn (Builder $query): Builder => $query->where($query->qualifyColumn('status'), TrainingStatus::AVAILABLE->value)->latestPerRegistration(),
-                    blank: fn (Builder $query): Builder => $query->latestPerRegistration(),
+                    false: fn (Builder $query): Builder => $query->where($query->qualifyColumn('status'), TrainingStatus::AVAILABLE->value)->currentPerRegistration(),
+                    blank: fn (Builder $query): Builder => $query->currentPerRegistration(),
                 ),
 
             TernaryFilter::make('grade_status')
