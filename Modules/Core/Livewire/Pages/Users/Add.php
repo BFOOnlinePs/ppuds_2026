@@ -53,6 +53,9 @@ class Add extends Component implements HasForms
                                     ->tel()
                                     ->nullable()
                                     ->unique('users', 'phone')
+                                    ->validationMessages([
+                                        'unique' => __('This phone number is already taken'),
+                                    ])
                                     ->maxLength(255),
 
                                 TextInput::make('password')

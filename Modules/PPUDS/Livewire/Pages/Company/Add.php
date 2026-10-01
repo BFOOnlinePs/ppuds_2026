@@ -479,7 +479,14 @@ class Add extends Component implements HasActions, HasForms
                                                                                         ->validationMessages([
                                                                                             'unique' => __('This email is already taken'),
                                                                                         ]),
-                                                                                    TextInput::make('phone')->label(__('Phone'))->required()->numeric(),
+                                                                                    TextInput::make('phone')
+                                                                                        ->label(__('Phone'))
+                                                                                        ->required()
+                                                                                        ->numeric()
+                                                                                        ->unique('users', 'phone')
+                                                                                        ->validationMessages([
+                                                                                            'unique' => __('This phone number is already taken'),
+                                                                                        ]),
                                                                                     TextInput::make('password')->label(__('Password'))->required()->password()->confirmed(),
                                                                                     TextInput::make('password_confirmation')->label(__('Confirm Password'))->required()->password(),
                                                                                 ]),

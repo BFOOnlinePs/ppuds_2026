@@ -64,6 +64,9 @@ class Edit extends Component implements HasForms
                                     ->tel()
                                     ->nullable()
                                     ->unique('users', 'phone', ignorable: $this->user)
+                                    ->validationMessages([
+                                        'unique' => __('This phone number is already taken'),
+                                    ])
                                     ->maxLength(255),
 
                                 TextInput::make('password')

@@ -244,6 +244,10 @@ class Index extends Component implements HasTable, HasForms
                     TextInput::make('phone')
                         ->label(__('Phone'))
                         ->required()
+                        ->unique('users', 'phone')
+                        ->validationMessages([
+                            'unique' => __('This phone number is already taken'),
+                        ])
                         ->maxLength(255)
                         ->helperText(__('It will also be the initial password.'))
                         ->prefixIcon('solar-phone-linear'),
@@ -389,6 +393,10 @@ class Index extends Component implements HasTable, HasForms
                     TextInput::make('phone')
                         ->label(__('Phone'))
                         ->required()
+                        ->unique('users', 'phone', ignorable: $record)
+                        ->validationMessages([
+                            'unique' => __('This phone number is already taken'),
+                        ])
                         ->maxLength(255),
 
                     TextInput::make('email')

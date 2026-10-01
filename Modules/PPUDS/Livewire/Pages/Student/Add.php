@@ -69,6 +69,9 @@ class Add extends Component implements HasForms
                                             ->label(__('Phone'))
                                             ->numeric()
                                             ->unique('users', 'phone')
+                                            ->validationMessages([
+                                                'unique' => __('This phone number is already taken'),
+                                            ])
                                             ->required(),
 
                                         TextInput::make('password')

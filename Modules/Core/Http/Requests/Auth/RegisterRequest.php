@@ -17,7 +17,7 @@ class RegisterRequest extends FormRequest
             'name'      => 'required|string|max:255',
             'email'     => 'required|email|max:255',
             'password'  => 'required|string|max:255',
-            'phone'     => 'required|string|max:255',
+            'phone'     => ['required', 'string', 'max:255', Rule::unique('users', 'phone')],
 
             'fcm_token'   => 'sometimes|string',
             'device_name' => 'sometimes|string|max:255',
@@ -26,6 +26,13 @@ class RegisterRequest extends FormRequest
                 UserRole::STUDENT->value,
                 UserRole::COMPANY_SUPERVISOR->value,
             ])],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'phone.unique' => __('This phone number is already taken'),
         ];
     }
 

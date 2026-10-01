@@ -384,5 +384,9 @@
     "Without Deleted": "بدون المحذوفين",
     "Deleted Only": "المحذوفون فقط",
     "With Deleted": "مع المحذوفين",
-    "No results found": "لا توجد نتائج"
+    "No results found": "لا توجد نتائج",
+    "This phone number is already taken": "رقم الهاتف هذا مستخدم بالفعل",
+    "Duplicate Phone Numbers": "أرقام الهواتف المكررة",
+    "Duplicated Only": "المكررة فقط",
+    "Without Duplicates": "بدون المكررة"
 }

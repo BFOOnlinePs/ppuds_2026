@@ -121,6 +121,10 @@ class UnsupervisedStudentsWidget extends Widget
             ->map(function (array $group) use ($seatOptions): array {
                 $seats = $seatOptions->get((int) ($this->selectedCompanies[$group['key']] ?? 0), collect());
 
+                // المفتاح يوجد دائماً ولو فارغاً: قائمة المشرف تربطه بـ entangle، وربط مفتاح
+                // غير موجود يفشل بصمت فلا يصل المشرف المختار للخادم عند الضغط على نقل.
+                $this->selectedSeats[$group['key']] ??= null;
+
                 // مشرف وحيد في الشركة المختارة يُختار مسبقاً، فيصبح النقل ضغطة واحدة.
                 if ($seats->count() === 1 && blank($this->selectedSeats[$group['key']] ?? null)) {
                     $this->selectedSeats[$group['key']] = $seats->keys()->first();

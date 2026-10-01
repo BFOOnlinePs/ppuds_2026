@@ -167,6 +167,9 @@ class Index extends Component implements HasForms, HasTable
                                         ->label(__('Phone'))
                                         ->numeric()
                                         ->unique('users', 'phone')
+                                        ->validationMessages([
+                                            'unique' => __('This phone number is already taken'),
+                                        ])
                                         ->required(),
 
                                     TextInput::make('password')

@@ -21,6 +21,7 @@ use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Enums\FiltersLayout; // ✅ تم استيراد الـ Layout
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
 use Modules\Core\Entities\User;
 use Modules\Core\Filament\Forms\Components\CreateAction;
@@ -162,7 +163,36 @@ class Index extends Component implements HasTable, HasForms
                         );
                 })
                 ->columns(2), // لجعل حقلي التاريخ بجانب بعضهما
+
+            // 4. فلتر أرقام الهواتف المكررة لتنظيف التكرار القديم
+            TernaryFilter::make('duplicate_phone')
+                ->label(__('Duplicate Phone Numbers'))
+                ->placeholder(__('All'))
+                ->trueLabel(__('Duplicated Only'))
+                ->falseLabel(__('Without Duplicates'))
+                ->queries(
+                    true: fn (Builder $query): Builder => $query->whereIn($query->qualifyColumn('phone'), $this->duplicatePhonesQuery()),
+                    false: fn (Builder $query): Builder => $query->where(fn (Builder $phoneQuery): Builder => $phoneQuery
+                        ->whereNull($phoneQuery->qualifyColumn('phone'))
+                        ->orWhereNotIn($phoneQuery->qualifyColumn('phone'), $this->duplicatePhonesQuery())),
+                    blank: fn (Builder $query): Builder => $query,
+                ),
         ];
+    }
+
+    /**
+     * أرقام الهواتف المسجلة لأكثر من مستخدم. المحذوفون يُحسبون لأن منع التكرار
+     * عند الإضافة والتعديل يشملهم أيضاً، ويُستثنى 00000000 الذي تضعه مزامنة
+     * الطلاب لمن لا رقم له حتى لا يغرق الفلتر بهم.
+     */
+    protected function duplicatePhonesQuery(): QueryBuilder
+    {
+        return DB::table('users')
+            ->select('phone')
+            ->whereNotNull('phone')
+            ->whereNotIn('phone', ['', '00000000'])
+            ->groupBy('phone')
+            ->havingRaw('COUNT(*) > 1');
     }
 
     protected function getTableActions(): array

@@ -36,6 +36,13 @@ class UserRequest extends FormRequest
         ];
     }
 
+    public function messages(): array
+    {
+        return [
+            'phone.unique' => __('This phone number is already taken'),
+        ];
+    }
+
     /**
      * Determine if the user is authorized to make this request.
      */

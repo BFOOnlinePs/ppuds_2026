@@ -152,6 +152,10 @@ class Index extends Component implements HasTable, HasForms
                             ->label(__('Phone'))
                             ->numeric()
                             ->required()
+                            ->unique('users', 'phone')
+                            ->validationMessages([
+                                'unique' => __('This phone number is already taken'),
+                            ])
                             ->maxLength(255),
                     ]),
                 ])

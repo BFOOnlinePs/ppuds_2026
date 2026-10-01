@@ -84,6 +84,9 @@ class Edit extends Component implements HasForms
                                             ->label(__('Phone'))
                                             ->numeric()
                                             ->unique('users', 'phone', ignorable: $this->user)
+                                            ->validationMessages([
+                                                'unique' => __('This phone number is already taken'),
+                                            ])
                                             ->required(),
 
                                         TextInput::make('password')

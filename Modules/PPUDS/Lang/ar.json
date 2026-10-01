@@ -275,6 +275,7 @@
     "The supervisor name is required": "اسم المشرف مطلوب",
     "The supervisor email is required": "البريد الإلكتروني للمشرف مطلوب",
     "This email is already taken": "البريد الإلكتروني هذا مستخدم بالفعل",
+    "This phone number is already taken": "رقم الهاتف هذا مستخدم بالفعل",
     "The password is required": "كلمة المرور مطلوبة",
     "The password confirmation does not match": "تأكيد كلمة المرور غير متطابق",
     "Please select a student.": "يرجى اختيار طالب.",
