@@ -25,6 +25,7 @@ use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\SemesterType;
+use Modules\PPUDS\Enums\TrainingStatus;
 use Modules\PPUDS\Exports\StudentGradesExport;
 use Modules\PPUDS\Settings\GeneralSettings;
 use Modules\PPUDS\Support\HasSupervisorFilter;
@@ -53,9 +54,11 @@ class Index extends Component implements HasForms, HasTable
                     'company',
                     'branch',
                 ])
-                // آخر تدريب لكل تسجيل فقط: التدريب المنتهي الذي تلاه تدريب آخر لا يظهر،
-                // أما الطالب الذي أنهى تدريبه الأخير فيبقى ظاهراً بعلاماته.
-                ->latestPerRegistration()
+                // التدريب الحالي لكل تسجيل فقط (الساري أولاً ثم الأحدث): التدريب المنتهي
+                // الذي تلاه تدريب آخر لا يظهر، والطالب الذي أنهى تدريبه الأخير يبقى بعلاماته.
+                ->currentPerRegistration()
+                // التدريب المؤجل متوقف ولا يُرصد عليه بعد.
+                ->where((new StudentCompany)->qualifyColumn('status'), '!=', TrainingStatus::POSTPONED->value)
                 ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query)))
             ->columns([
                 UserColumn::make('student.name')

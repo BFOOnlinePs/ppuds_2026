@@ -212,6 +212,28 @@ class StudentCompany extends Model implements HasMedia
             ->whereNull('newer_placements.deleted_at'));
     }
 
+    /**
+     * التدريب الحالي في كل تسجيل بنفس ترتيب Registration::studentCompany(): الساري
+     * أولاً ثم الأحدث. بخلاف latestPerRegistration لا يُخفي التدريبَ الساري سجلٌّ
+     * أحدث منه منتهٍ أو مؤجل أو محذوف الحالة.
+     */
+    public function scopeCurrentPerRegistration(Builder $query): Builder
+    {
+        $table = $this->getTable();
+        $available = TrainingStatus::AVAILABLE->value;
+
+        return $query->whereNotExists(fn ($preferredQuery) => $preferredQuery
+            ->selectRaw('1')
+            ->from("{$table} as preferred_placements")
+            ->whereColumn('preferred_placements.registration_id', "{$table}.registration_id")
+            ->whereNull('preferred_placements.deleted_at')
+            ->whereRaw(
+                "((preferred_placements.status = ? AND {$table}.status <> ?)
+                    OR ((preferred_placements.status = ?) = ({$table}.status = ?) AND preferred_placements.id > {$table}.id))",
+                [$available, $available, $available, $available]
+            ));
+    }
+
     public function scopeWithAttendanceDays($query)
     {
         $table = $this->getTable();
