@@ -27,6 +27,8 @@ use Modules\Core\Filament\Tables\Columns\UserColumn;
 use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\Core\Traits\PrintsTableReportPdf;
 use Modules\PPUDS\Entities\Company;
+use Modules\PPUDS\Entities\Course;
+use Modules\PPUDS\Entities\Major;
 use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\FinalReportStatus;
@@ -251,6 +253,38 @@ class Index extends Component implements HasForms, HasTable
                             );
                         });
                     }
+                }),
+
+            SelectFilter::make('major_id')
+                ->label(__('Major'))
+                ->options(fn (): array => Major::get()->pluck('name', 'id')->toArray())
+                ->searchable()
+                ->preload()
+                ->native(false)
+                ->query(function (Builder $query, array $data): Builder {
+                    return $query->when(
+                        filled($data['value'] ?? null),
+                        fn (Builder $query) => $query->whereHas(
+                            'student.studentProfile',
+                            fn (Builder $profileQuery) => $profileQuery->where('major_id', (int) $data['value'])
+                        )
+                    );
+                }),
+
+            SelectFilter::make('course_id')
+                ->label(__('Course'))
+                ->options(fn (): array => Course::get()->pluck('name', 'id')->toArray())
+                ->searchable()
+                ->preload()
+                ->native(false)
+                ->query(function (Builder $query, array $data): Builder {
+                    return $query->when(
+                        filled($data['value'] ?? null),
+                        fn (Builder $query) => $query->whereHas(
+                            'registration',
+                            fn (Builder $registrationQuery) => $registrationQuery->where('course_id', (int) $data['value'])
+                        )
+                    );
                 }),
 
             SelectFilter::make('company_id')
