@@ -10,6 +10,7 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\TextInputColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Enums\FiltersLayout;
@@ -58,6 +59,26 @@ class Index extends Component implements HasForms, HasTable
                     ->searchable()
                     ->sortable(),
 
+                // إدخال العلامة مباشرة من الجدول بجانب اسم الطالب، كما في شاشة علامات مشرف الجامعة.
+                TextInputColumn::make('evaluation_score')
+                    ->label(fn (): string => __('Grade (out of :max)', ['max' => $this->maxGrade()]))
+                    ->type('number')
+                    ->placeholder('---')
+                    ->rules(fn (): array => ['required', 'integer', 'min:0', 'max:'.$this->maxGrade()])
+                    ->sortable()
+                    ->disabled(fn (): bool => ! auth()->user()->can('EvaluationSupervisorStudent Grade'))
+                    ->updateStateUsing(function (StudentCompany $record, $state): ?int {
+                        abort_unless(auth()->user()?->can('EvaluationSupervisorStudent Grade'), 403);
+
+                        $record->update([
+                            'evaluation_score' => min((int) $state, $this->maxGrade()),
+                        ]);
+
+                        Toaster::success(__('Grade saved successfully'));
+
+                        return $record->evaluation_score;
+                    }),
+
                 TextColumn::make('student.studentProfile.major.name')
                     ->label(__('Major'))
                     ->placeholder('---')
@@ -92,14 +113,6 @@ class Index extends Component implements HasForms, HasTable
                     ->label(__('Attendance Hours'))
                     ->badge()
                     ->color('info'),
-
-                TextColumn::make('evaluation_score')
-                    ->label(fn (): string => __('Grade (out of :max)', ['max' => $this->maxGrade()]))
-                    ->badge()
-                    ->color(fn (?int $state): string => $state === null ? 'gray' : 'success')
-                    ->formatStateUsing(fn (?int $state): string => $state === null
-                        ? __('Not graded yet')
-                        : $state.' / '.$this->maxGrade()),
             ])
             ->filters($this->getTableFilters(), layout: FiltersLayout::AboveContent)
             ->actions($this->getTableActions())
