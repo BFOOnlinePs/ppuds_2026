@@ -388,5 +388,10 @@
     "This phone number is already taken": "رقم الهاتف هذا مستخدم بالفعل",
     "Duplicate Phone Numbers": "أرقام الهواتف المكررة",
     "Duplicated Only": "المكررة فقط",
-    "Without Duplicates": "بدون المكررة"
+    "Without Duplicates": "بدون المكررة",
+    "Notifications Log": "سجل الإشعارات",
+    "Recipient": "المستلم",
+    "Read Status": "حالة القراءة",
+    "Read": "مقروء",
+    "Unread": "غير مقروء"
 }

@@ -91,6 +91,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 });
 
                 Route::group([
+                    'prefix' => 'notifications',
+                    'as' => 'notifications.',
+                    'namespace' => 'Modules\Core\Livewire\Pages\Notification',
+                ], function () {
+                    Route::get('/', Index::class)->name('index')->can('Notification View List');
+                });
+
+                Route::group([
                     'prefix' => 'media',
                     'as' => 'media.',
                     'namespace' => 'Modules\Core\Livewire\Pages\MediaLibrary',

@@ -46,6 +46,10 @@ class SidebarServiceProvider extends ServiceProvider
         );
 
         $sidebar->add(
+            (new SidebarItem('Notifications Log', 'solar-bell-bold-duotone', ['Notification View List'], 'notifications.index', 136))
+        );
+
+        $sidebar->add(
             (new SidebarGroup('Settings', 'solar-settings-bold-duotone', [], 140))
                 ->add(new SidebarItem('System Settings', 'solar-settings-bold-duotone', ['Setting View'], 'settings'))
                 ->add(new SidebarItem('Sync System Data', 'solar-server-square-update-bold-duotone', ['Sync System Data View'], 'sync-system-data.index'))

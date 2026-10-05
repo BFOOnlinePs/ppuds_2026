@@ -823,6 +823,13 @@ class PermissionSeeder extends Seeder
                 'module_name' => 'Activity Log',
             ],
 
+            // TODO Notification
+            [
+                'name' => 'Notification View List',
+                'guard_name' => 'web',
+                'module_name' => 'Notification',
+            ],
+
             // TODO Report
             [
                 'name' => 'Report View List',

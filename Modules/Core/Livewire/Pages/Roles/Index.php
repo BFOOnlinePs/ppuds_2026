@@ -376,6 +376,7 @@ class Index extends Component implements HasTable, HasForms
             'Major' => 'التخصصات',
             'Marketing' => 'التسويق',
             'Note' => 'الملاحظات',
+            'Notification' => 'الإشعارات',
             'Offer' => 'العروض',
             'Order' => 'الطلبات',
             'Page' => 'الصفحات',
