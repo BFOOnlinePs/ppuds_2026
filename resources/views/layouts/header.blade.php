@@ -290,6 +290,7 @@
                 {{--                        </template> --}}
                 {{--                    </ul> --}}
                 {{--                </div> --}}
+                @unlessrole('Evaluation Supervisor')
                 <div class="dropdown" x-data="dropdown" @click.outside="open = false">
                     <a href="javascript:;"
                         class="relative block rounded-full bg-white-light/40 p-2 hover:bg-white-light/90 hover:text-primary dark:bg-dark/40 dark:hover:bg-dark/60"
@@ -354,6 +355,7 @@
                         {{--                        @endforelse --}}
                     </ul>
                 </div>
+                @endunlessrole
                 <div class="dropdown flex-shrink-0" x-data="dropdown" @click.outside="open = false">
                     <a href="javascript:;" class="group relative" @click="toggle()">
                         <span><img class="h-9 w-9 rounded-full object-cover saturate-50 group-hover:saturate-100"

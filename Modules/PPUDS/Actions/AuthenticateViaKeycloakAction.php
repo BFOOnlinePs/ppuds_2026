@@ -148,6 +148,14 @@ class AuthenticateViaKeycloakAction
             return;
         }
 
+        // An evaluation supervisor is never a student, even when the account
+        // still carries a student profile (e.g. a former student promoted from
+        // the users page). Without this, every sign-in re-added the Student
+        // role and overwrote the profile's number with the supervisor's username.
+        if ($user->hasRole(UserRole::EVALUATION_SUPERVISOR->value)) {
+            return;
+        }
+
         if (! $user->hasRole(UserRole::STUDENT->value) && ! $user->studentProfile()->exists()) {
             return;
         }

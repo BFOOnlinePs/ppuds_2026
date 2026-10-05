@@ -71,6 +71,11 @@ class AnnouncementController extends Controller
      */
     public function index()
     {
+        // نفس صلاحية شاشة الإعلانات على الويب.
+        if (! auth()->user()->can('Announcement View List')) {
+            return $this->errorResponse(__('You are not authorized to perform this action'), 403);
+        }
+
         $defaultPerPage = config('core.pagination.per_page', 10);
         $maxPerPage = config('core.pagination.max_per_page', 100);
         $perPage = min(request('per_page', $defaultPerPage), $maxPerPage);
@@ -182,6 +187,10 @@ class AnnouncementController extends Controller
      */
     public function show(Announcement $announcment)
     {
+        if (! auth()->user()->can('Announcement Details')) {
+            return $this->errorResponse(__('You are not authorized to perform this action'), 403);
+        }
+
         $announcment = QueryBuilder::for(Announcement::class)
             ->where('id', $announcment->id)
             ->allowedFields(AnnouncementResource::allowedFields())

@@ -24,4 +24,17 @@ class DeviceToken extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    protected static function booted()
+    {
+        // A token identifies one device, so it belongs only to whoever signed
+        // in on it last. Otherwise the previous user's pushes keep arriving on
+        // a phone someone else is now using.
+        static::saved(function (DeviceToken $deviceToken) {
+            static::query()
+                ->where('token', $deviceToken->token)
+                ->where('user_id', '!=', $deviceToken->user_id)
+                ->delete();
+        });
+    }
 }

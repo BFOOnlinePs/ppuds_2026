@@ -65,6 +65,7 @@ class Index extends Component implements HasForms, HasInfolists
     {
         return $form->schema([
             Section::make(__('Announcements'))
+                ->visible(fn (): bool => (bool) auth()->user()?->can('Announcement View List'))
                 ->schema([
                     ViewField::make('announcements_list')
                         ->view('ppuds::components.fields.announcements-view'),

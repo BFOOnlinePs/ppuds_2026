@@ -260,6 +260,8 @@ class PpudsNotificationService
     {
         $users = $users
             ->filter(fn($user) => $user instanceof User)
+            // مشرف التقييم لا يستقبل أي إشعار.
+            ->reject(fn(User $user) => $user->hasRole(UserRole::EVALUATION_SUPERVISOR->value))
             ->unique('id')
             ->values();
 
