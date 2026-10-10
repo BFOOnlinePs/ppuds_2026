@@ -342,6 +342,19 @@ class Index extends Component implements HasForms, HasTable
 
             $this->supervisorSelectFilter('registration'),
 
+            SelectFilter::make('evaluation_supervisor_id')
+                ->label(__('Evaluation Supervisor'))
+                ->options(fn (): array => User::role(UserRole::EVALUATION_SUPERVISOR->value)
+                    ->orderBy('name')
+                    ->pluck('name', 'id')
+                    ->toArray())
+                ->searchable()
+                ->preload(),
+
+            Filter::make('without_evaluation_supervisor')
+                ->label(__('Without Evaluation Supervisor'))
+                ->query(fn (Builder $query): Builder => $query->whereNull('evaluation_supervisor_id')),
+
             Filter::make('field_visit_days')
                 ->label(__('Supervisor Visit Days'))
                 ->form([

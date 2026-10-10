@@ -33,6 +33,7 @@ class StudentCompaniesExport implements FromGenerator, ShouldAutoSize, WithHeadi
             __('Year'),
             __('Supervisor'),
             __('Created At'),
+            __('Actual Working Hours'),
         ];
     }
 
@@ -76,6 +77,7 @@ class StudentCompaniesExport implements FromGenerator, ShouldAutoSize, WithHeadi
             (string) $registration?->year,
             (string) $registration?->supervisor?->name,
             $this->dateTimeValue($studentCompany->created_at),
+            (string) $studentCompany->actual_working_hours,
         ];
     }
 

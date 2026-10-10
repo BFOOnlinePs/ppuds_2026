@@ -68,7 +68,7 @@ class AbsenceReportExport implements FromGenerator, ShouldAutoSize, WithHeadings
             (string) ($studentCompany->company?->name ?? '---'),
             (string) ($studentCompany->branch?->name ?? '---'),
             (string) ($summary['required_working_days'] ?? 0),
-            (string) ($summary['attendance_days'] ?? 0),
+            (string) ($studentCompany->attendance_days ?? 0),
             (string) ($studentCompany->actual_working_hours ?? 0),
             (string) ($summary['total_absence_days'] ?? 0),
             (string) ($summary['excused_absence_days'] ?? 0),

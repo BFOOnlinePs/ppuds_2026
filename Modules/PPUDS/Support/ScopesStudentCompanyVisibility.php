@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Modules\Core\Enums\UserRole;
 use Modules\PPUDS\Entities\StudentCompany;
+use Modules\PPUDS\Enums\TrainingStatus;
 
 trait ScopesStudentCompanyVisibility
 {
@@ -50,7 +51,9 @@ trait ScopesStudentCompanyVisibility
             return $query;
         }
 
-        return $this->applyStudentCompanySupervisorExistsScope($query, (int) auth()->id());
+        // الطالب الذي أنهى تدريبه لا يظهر لمشرف الشركة.
+        return $this->applyStudentCompanySupervisorExistsScope($query, (int) auth()->id())
+            ->where($query->getModel()->getTable().'.status', '!=', TrainingStatus::FINISHED->value);
     }
 
     protected function applyStudentProfileVisibilityScope(Builder $query): Builder

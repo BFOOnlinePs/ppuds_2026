@@ -61,6 +61,7 @@ class Index extends Component implements HasForms, HasTable
                     'registration',
                     'student.studentProfile',
                 ])
+                ->withAttendanceDays()
                 ->withActualWorkingHours()
                 ->whereIn("{$studentCompanyTable}.id", $this->absentStudentCompanyIds()))
             ->columns([
@@ -91,9 +92,10 @@ class Index extends Component implements HasForms, HasTable
                     ->getStateUsing(fn (StudentCompany $record) => $this->summaryValue($record, 'required_working_days'))
                     ->wrapHeader(),
 
+                // أيام الحضور كما في صفحة تدريبات الطلاب: كل يوم سُجّل فيه دخول،
+                // حتى لو لم يكن من أيام دوام الفرع؛ الغياب وحده يُحسب على أيام الدوام.
                 TextColumn::make('attendance_days')
-                    ->label(__('Attendance Days'))
-                    ->getStateUsing(fn (StudentCompany $record) => $this->summaryValue($record, 'attendance_days')),
+                    ->label(__('Attendance Days')),
 
                 TextColumn::make('actual_working_hours')
                     ->label(__('Actual Working Hours'))
