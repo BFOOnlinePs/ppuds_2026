@@ -8,13 +8,21 @@ use Illuminate\Database\Eloquent\Builder;
 use Maatwebsite\Excel\Concerns\FromGenerator;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
+use Modules\Core\Entities\User;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Enums\SemesterType;
 use Modules\PPUDS\Enums\TrainingStatus;
 
 class StudentCompaniesExport implements FromGenerator, ShouldAutoSize, WithHeadings
 {
-    public function __construct(protected Builder $query) {}
+    protected bool $showEvaluationSupervisor;
+
+    public function __construct(protected Builder $query)
+    {
+        // نفس شرط ظهور عمود مشرف التقييم في الجدول: لا يراه الطالب ولا مشرف الشركة.
+        $this->showEvaluationSupervisor = (bool) (auth()->user()?->can('StudentCompany Assign Evaluation Supervisor')
+            || auth()->user()?->can('EvaluationSupervisor View List'));
+    }
 
     public function headings(): array
     {
@@ -31,9 +39,16 @@ class StudentCompaniesExport implements FromGenerator, ShouldAutoSize, WithHeadi
             __('Course'),
             __('Semester'),
             __('Year'),
-            __('Supervisor'),
-            __('Created At'),
+            __('University Supervisor'),
+            __('Company Supervisor'),
+            ...($this->showEvaluationSupervisor ? [__('Evaluation Supervisor')] : []),
+            __('Attendance Days'),
+            __('Reports'),
+            __('Supervisor Visit Days'),
+            __('Leave Requests'),
             __('Actual Working Hours'),
+            __('Created By'),
+            __('Created At'),
         ];
     }
 
@@ -43,12 +58,18 @@ class StudentCompaniesExport implements FromGenerator, ShouldAutoSize, WithHeadi
 
         $query->with([
             'branch.translations',
+            'branch.supervisors',
             'company.translations',
             'department.translations',
             'registration.course.translations',
             'registration.student.studentProfile.major.translations',
             'registration.supervisor',
             'student.studentProfile.major.translations',
+            'evaluationSupervisor',
+            'createdBy',
+        ])->withCount([
+            'attendances as reports_count' => fn (Builder $attendanceQuery) => $attendanceQuery->has('studentReport'),
+            'leaveRequests',
         ]);
 
         foreach ($query->lazy(500) as $studentCompany) {
@@ -76,9 +97,30 @@ class StudentCompaniesExport implements FromGenerator, ShouldAutoSize, WithHeadi
             $this->semesterLabel($registration?->semester),
             (string) $registration?->year,
             (string) $registration?->supervisor?->name,
-            $this->dateTimeValue($studentCompany->created_at),
+            (string) $this->companySupervisorFor($studentCompany)?->name,
+            ...($this->showEvaluationSupervisor ? [(string) $studentCompany->evaluationSupervisor?->name] : []),
+            (int) ($studentCompany->attendance_days ?? 0),
+            (int) ($studentCompany->reports_count ?? 0),
+            (int) ($studentCompany->field_visit_days ?? 0),
+            (int) ($studentCompany->leave_requests_count ?? 0),
             (string) $studentCompany->actual_working_hours,
+            (string) $studentCompany->createdBy?->name,
+            $this->dateTimeValue($studentCompany->created_at),
         ];
+    }
+
+    /**
+     * مشرف الشركة هو من يشغل مقعد (الفرع + القسم) في branch_department،
+     * بنفس قاعدة عمود مشرف الشركة في جدول التدريبات.
+     */
+    protected function companySupervisorFor(StudentCompany $studentCompany): ?User
+    {
+        if (! $studentCompany->department_id) {
+            return null;
+        }
+
+        return $studentCompany->branch?->supervisors
+            ->first(fn (User $supervisor): bool => (int) $supervisor->pivot->company_department_id === (int) $studentCompany->department_id);
     }
 
     protected function statusLabel(mixed $status): string

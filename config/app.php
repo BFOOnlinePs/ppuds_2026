@@ -78,7 +78,9 @@ return [
     |
     */
 
-    'locale' => env('APP_LOCALE', 'ar'),
+    // العربية هي اللغة الأساسية للنظام دائماً، ولا تُقرأ من .env حتى لا تتجاوزها
+    // قيمة APP_LOCALE=en قديمة في بيئة السيرفر.
+    'locale' => 'ar',
 
     'fallback_locale' => env('APP_FALLBACK_LOCALE', 'ar'),
 
