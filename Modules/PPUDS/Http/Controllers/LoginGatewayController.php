@@ -13,7 +13,9 @@ class LoginGatewayController extends Controller
     {
         $generalSettings = app(GeneralSettings::class);
 
-        if ($generalSettings->login_method === LoginMethod::PPU) {
+        // عند وجود خطأ من محاولة دخول الجامعة تُعرض صفحة الدخول برسالته، بدل
+        // إعادة التحويل إلى الجامعة بصمت.
+        if ($generalSettings->login_method === LoginMethod::PPU && ! $request->session()->has('errors')) {
             return redirect()->route('keycloak.redirect');
         }
 

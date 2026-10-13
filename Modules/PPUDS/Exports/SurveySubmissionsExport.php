@@ -44,8 +44,8 @@ class SurveySubmissionsExport implements FromGenerator, ShouldAutoSize, WithHead
     {
         return array_merge(
             $this->isCompanySupervisorSurvey($this->survey)
-                ? [__('Submitted By'), __('Evaluated Student'), __('Student Number'), __('Major'), __('Company')]
-                : [__('Submitted By'), __('Major')],
+                ? [__('Submitted By'), __('Submitted By Email'), __('Evaluated Student'), __('Email'), __('Student Number'), __('Major'), __('Company')]
+                : [__('Submitted By'), __('Email'), __('Major')],
             $this->questions
                 ->map(fn (SurveyQuestion $question): string => $this->questionHeading($question))
                 ->all()
@@ -145,6 +145,7 @@ class SurveySubmissionsExport implements FromGenerator, ShouldAutoSize, WithHead
     {
         $row = [
             $this->submittedPerson($user),
+            (string) $user->email,
             $this->majorNameFor($user),
         ];
 
@@ -163,7 +164,9 @@ class SurveySubmissionsExport implements FromGenerator, ShouldAutoSize, WithHead
 
         $row = [
             $firstAnswer instanceof SurveyAnswer ? $this->submittedPerson($firstAnswer->submittedBy) : '',
+            (string) $firstAnswer?->submittedBy?->email,
             $this->studentPerson($studentCompany),
+            (string) $studentCompany->student?->email,
             (string) $studentCompany->student?->studentProfile?->student_number,
             $this->majorNameFor($studentCompany->student),
             (string) $studentCompany->company?->name,
@@ -243,19 +246,13 @@ class SurveySubmissionsExport implements FromGenerator, ShouldAutoSize, WithHead
 
     protected function submittedPerson(User $user): string
     {
-        $name = trim((string) $user->name) ?: __('User').' #'.$user->id;
-        $email = trim((string) $user->email);
-
-        return $email ? "{$name} ({$email})" : $name;
+        return trim((string) $user->name) ?: __('User').' #'.$user->id;
     }
 
     protected function studentPerson(StudentCompany $studentCompany): string
     {
         $student = $studentCompany->student;
-        $name = trim((string) $student?->name) ?: __('Student').' #'.$studentCompany->student_id;
-        $email = trim((string) $student?->email);
-
-        return $email ? "{$name} ({$email})" : $name;
+        return trim((string) $student?->name) ?: __('Student').' #'.$studentCompany->student_id;
     }
 
     protected function questionHeading(SurveyQuestion $question): string

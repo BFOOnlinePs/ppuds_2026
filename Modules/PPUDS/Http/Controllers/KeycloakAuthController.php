@@ -70,7 +70,8 @@ class KeycloakAuthController extends Controller
             return redirect()->intended(route('home'));
         } catch (ValidationException $e) {
             if ($this->usesKeycloakLogin()) {
-                return redirect($this->keycloakLogoutUrl());
+                // الخطأ يُحمَل في الجلسة ليظهر في صفحة الدخول بعد العودة من خروج الجامعة.
+                return redirect($this->keycloakLogoutUrl())->withErrors($e->errors());
             }
 
             return redirect()->route('login')->withErrors($e->errors());
@@ -78,7 +79,9 @@ class KeycloakAuthController extends Controller
             Log::error('Keycloak Auth Failed: '.$e->getMessage());
 
             if ($this->usesKeycloakLogin()) {
-                return redirect($this->keycloakLogoutUrl());
+                return redirect($this->keycloakLogoutUrl())->withErrors([
+                    'auth' => 'فشل في تسجيل الدخول عبر نظام الجامعة.',
+                ]);
             }
 
             return redirect()->route('login')->withErrors([

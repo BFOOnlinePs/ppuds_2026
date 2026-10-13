@@ -61,6 +61,13 @@ return [
         'password_grant_scope' => env('KEYCLOAK_PASSWORD_GRANT_SCOPE', 'openid profile offline_access'),
 
         'timeout' => env('KEYCLOAK_TIMEOUT', 20),
+
+        // مهلة طلبات Socialite عند دخول الويب (تبديل الكود بالتوكن ثم userinfo).
+        // بدونها يبقى المتصفح يحمّل بلا نهاية وبلا خطأ إذا تعذر الوصول إلى نظام الجامعة.
+        'guzzle' => [
+            'connect_timeout' => 10,
+            'timeout' => env('KEYCLOAK_TIMEOUT', 20),
+        ],
     ],
 
     'ppu_api' => [
