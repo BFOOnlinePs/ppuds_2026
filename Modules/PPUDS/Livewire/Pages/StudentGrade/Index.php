@@ -51,6 +51,7 @@ class Index extends Component implements HasForms, HasTable
                     'student.studentProfile.major',
                     'evaluationSupervisor',
                     'registration.supervisor',
+                    'registration.course.translations',
                     'company',
                     'branch',
                 ])
@@ -70,6 +71,13 @@ class Index extends Component implements HasForms, HasTable
 
                 TextColumn::make('student.studentProfile.major.name')
                     ->label(__('Major'))
+                    ->placeholder('---')
+                    ->toggleable(),
+
+                TextColumn::make('registration.course.name')
+                    ->label(__('Course'))
+                    ->badge()
+                    ->color('gray')
                     ->placeholder('---')
                     ->toggleable(),
 
