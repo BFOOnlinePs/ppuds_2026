@@ -85,7 +85,7 @@ class SurveyAnswerController extends Controller
      * @OA\Property(property="question_id", type="integer", example=10),
      * @OA\Property(
      * property="value",
-     * description="Depends on the question type: RATING -> integer 1 to 5. RADIO/SELECT -> the selected option id (integer). CHECKBOX/MULTI_SELECT -> array of option ids. TEXT/TEXTAREA/DATE -> string.",
+     * description="Depends on the question type: RATING -> integer 1 to 5. RADIO/SELECT -> the selected option id (integer). CHECKBOX/MULTI_SELECT -> array of option ids. TEXT/TEXTAREA/DATE -> string. NUMBER -> number (0 or more).",
      * example="3"
      * )
      * )
@@ -161,6 +161,21 @@ class SurveyAnswerController extends Controller
                 'status' => false,
                 'message' => __('You have already submitted this survey.'),
             ], 403);
+        }
+
+        // سؤال الرقم لا يقبل نصاً حتى يبقى عموده في ملف الإكسيل أرقاماً فقط.
+        foreach ($request->answers as $answerData) {
+            $value = $answerData['value'] ?? null;
+            $question = $survey->questions->firstWhere('id', $answerData['question_id']);
+
+            if ((int) $question?->type === SurveyQuestionType::NUMBER->value
+                && ! (is_null($value) || $value === '')
+                && (! is_numeric($value) || $value < 0)) {
+                return response()->json([
+                    'status' => false,
+                    'message' => __('Please enter a number for: :question', ['question' => $question->content]),
+                ], 422);
+            }
         }
 
         DB::transaction(function () use ($request, $survey, $surveyId, $userId, $studentCompany) {

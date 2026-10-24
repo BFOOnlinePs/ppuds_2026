@@ -23,14 +23,18 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Component;
 use Maatwebsite\Excel\Excel as WriterType;
+use Modules\Branch\Entities\Branch;
 use Modules\Core\Filament\Tables\Columns\UserColumn;
 use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\Core\Traits\PrintsTableReportPdf;
 use Modules\PPUDS\Entities\Company;
+use Modules\PPUDS\Entities\CompanyDepartment;
 use Modules\PPUDS\Entities\Course;
+use Modules\PPUDS\Entities\FinalReport;
 use Modules\PPUDS\Entities\Major;
 use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Entities\StudentCompany;
+use Modules\PPUDS\Entities\StudentProfile;
 use Modules\PPUDS\Enums\FinalReportStatus;
 use Modules\PPUDS\Enums\SemesterType;
 use Modules\PPUDS\Exports\FinalDeliveryReportExport;
@@ -67,16 +71,27 @@ class Index extends Component implements HasForms, HasTable
                 TextColumn::make('student.studentProfile.student_number')
                     ->label(__('Student Number'))
                     ->weight('bold')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
 
                 UserColumn::make('student.name')
                     ->label(__('Student Name'))
                     ->user(fn (StudentCompany $record) => $record->student)
-                    ->summarize(Count::make('student.name')),
+                    ->summarize(Count::make('student.name'))
+                    ->sortable(),
 
                 TextColumn::make('student.studentProfile.major.name')
                     ->label(__('Major'))
                     ->placeholder('---')
+                    ->sortable(query: fn (Builder $query, string $direction): Builder => $this->orderByTranslatedName(
+                        $query,
+                        $direction,
+                        Major::class,
+                        StudentProfile::query()
+                            ->select('major_id')
+                            ->whereColumn('user_id', $query->qualifyColumn('student_id'))
+                            ->limit(1)
+                    ))
                     ->toggleable(),
 
                 TextColumn::make('company.name')
@@ -84,14 +99,17 @@ class Index extends Component implements HasForms, HasTable
                     ->searchable(query: fn (Builder $query, string $search): Builder => $query->whereHas(
                         'company.translations',
                         fn (Builder $query) => $query->where('name', 'like', "%{$search}%")
-                    )),
+                    ))
+                    ->sortable(query: fn (Builder $query, string $direction): Builder => $this->orderByTranslatedName($query, $direction, Company::class, 'company_id')),
 
                 TextColumn::make('branch.name')
                     ->label(__('Branch'))
+                    ->sortable(query: fn (Builder $query, string $direction): Builder => $this->orderByTranslatedName($query, $direction, Branch::class, 'branch_id'))
                     ->toggleable(),
 
                 TextColumn::make('department.name')
                     ->label(__('Department'))
+                    ->sortable(query: fn (Builder $query, string $direction): Builder => $this->orderByTranslatedName($query, $direction, CompanyDepartment::class, 'department_id'))
                     ->toggleable(),
 
                 TextColumn::make('final_report_status')
@@ -100,26 +118,44 @@ class Index extends Component implements HasForms, HasTable
                         ? __('Submitted')
                         : __('Not Submitted'))
                     ->badge()
-                    ->color(fn (string $state): string => $state === __('Submitted') ? 'success' : 'danger'),
+                    ->color(fn (string $state): string => $state === __('Submitted') ? 'success' : 'danger')
+                    // نفس شرط فلتر حالة التسليم: 1 إذا سُلّم التقرير، و0 إذا لم يُسلَّم أو لا يوجد تقرير.
+                    ->sortable(query: fn (Builder $query, string $direction): Builder => $query->orderBy(
+                        FinalReport::query()
+                            ->selectRaw('count(*)')
+                            ->whereColumn('registration_id', $query->qualifyColumn('registration_id'))
+                            ->where('status', FinalReportStatus::SUBMITTED),
+                        $direction
+                    )),
 
                 TextColumn::make('final_report_submitted_at')
                     ->label(__('Submitted At'))
                     ->getStateUsing(fn (StudentCompany $record): ?string => $record->registration?->finalReport?->submitted_at?->format('Y-m-d H:i'))
                     ->placeholder('---')
+                    ->sortable(query: fn (Builder $query, string $direction): Builder => $query->orderBy(
+                        FinalReport::query()
+                            ->select('submitted_at')
+                            ->whereColumn('registration_id', $query->qualifyColumn('registration_id'))
+                            ->limit(1),
+                        $direction
+                    ))
                     ->toggleable(),
 
                 TextColumn::make('registration.semester')
                     ->label(__('Semester'))
                     ->badge()
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('registration.year')
                     ->label(__('Year'))
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('created_at')
                     ->label(__('Created At'))
                     ->dateTime('Y-m-d H:i')
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters($this->getTableFilters(), layout: FiltersLayout::AboveContent)
@@ -229,6 +265,26 @@ class Index extends Component implements HasForms, HasTable
                         ->columnSpanFull(),
                 ]),
         ];
+    }
+
+    /**
+     * الترتيب حسب الاسم المترجم لنموذج مرتبط، لأن الاسم في جدول الترجمات لا في جدول
+     * النموذج نفسه. تُفضَّل ترجمة اللغة الحالية ثم أي ترجمة متاحة كما في عرض الاسم.
+     */
+    protected function orderByTranslatedName(Builder $query, string $direction, string $modelClass, string|Builder $ownerKey): Builder
+    {
+        $model = new $modelClass;
+        $translations = $model->translations()->getRelated()->newQuery()->select('name');
+        $foreignKey = $translations->qualifyColumn($model->getTranslationRelationKey());
+
+        is_string($ownerKey)
+            ? $translations->whereColumn($foreignKey, $query->qualifyColumn($ownerKey))
+            : $translations->where($foreignKey, $ownerKey);
+
+        return $query->orderBy(
+            $translations->orderByRaw('locale = ? desc', [app()->getLocale()])->limit(1),
+            $direction
+        );
     }
 
     protected function getTableFilters(): array

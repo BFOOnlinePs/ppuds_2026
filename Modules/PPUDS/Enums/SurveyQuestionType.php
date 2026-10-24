@@ -16,6 +16,7 @@ enum SurveyQuestionType: int implements HasLabel, HasColor
     case DATE           = 7; // تاريخ
     case FILE           = 8; // رفع ملف
     case RATING         = 9; // تقييم (نجوم)
+    case NUMBER         = 10; // إجابة رقمية فقط
 
     public function getLabel(): ?string
     {
@@ -29,13 +30,14 @@ enum SurveyQuestionType: int implements HasLabel, HasColor
             self::DATE          => __('Date Picker'),
             self::FILE          => __('File Upload'),
             self::RATING        => __('Star Rating'),
+            self::NUMBER        => __('Number'),
         };
     }
 
     public function getColor(): ?string
     {
         return match ($this) {
-            self::TEXT, self::TEXTAREA  => 'gray',
+            self::TEXT, self::TEXTAREA, self::NUMBER => 'gray',
             self::RADIO, self::CHECKBOX => 'success',
             self::SELECT, self::MULTI_SELECT => 'info',
             self::DATE                  => 'warning',

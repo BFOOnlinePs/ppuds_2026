@@ -2,12 +2,14 @@
 
 namespace Modules\PPUDS\Exports;
 
+use Closure;
 use Generator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\FromGenerator;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
+use Modules\Branch\Entities\Branch;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\Major;
 use Modules\PPUDS\Entities\Registration;
@@ -32,11 +34,27 @@ class CompaniesExport implements FromGenerator, ShouldAutoSize, WithHeadings
     {
         return [
             __('Name'),
+            __('About Company'),
+            __('Website'),
+            __('Contact Person'),
+            __('Contact Information'),
             __('Company Category'),
+            __('Company Status'),
+            __('Branches'),
+            __('Email'),
+            __('Phone Number'),
+            __('Company Manager Name'),
+            __('Company Manager Phone'),
+            __('Country'),
+            __('City'),
+            __('Location'),
+            __('Working Hours'),
+            __('Departments'),
             __('Supervisors'),
             __('Current Semester Students'),
             __('Students Per Major'),
-            __('Company Status'),
+            __('Created By'),
+            __('Created At'),
         ];
     }
 
@@ -44,7 +62,17 @@ class CompaniesExport implements FromGenerator, ShouldAutoSize, WithHeadings
     {
         $query = clone $this->query;
 
-        $query->with(['category.translations', 'branches.supervisors'])
+        $query->with([
+            'translations',
+            'category.translations',
+            'createdBy',
+            'branches.translations',
+            'branches.country.translations',
+            'branches.city.translations',
+            'branches.workingHours',
+            'branches.departments.translations',
+            'branches.supervisors',
+        ])
             ->withCurrentStudentsCount();
 
         $this->majorBreakdowns = $this->loadMajorBreakdowns();
@@ -58,12 +86,102 @@ class CompaniesExport implements FromGenerator, ShouldAutoSize, WithHeadings
     {
         return [
             (string) $company->name,
+            (string) ($company->description ?: '---'),
+            (string) ($company->website ?: '---'),
+            (string) ($company->contact_person ?: '---'),
+            (string) ($company->contact_info ?: '---'),
             (string) ($company->category?->name ?? '---'),
+            $this->statusLabel($company->status),
+            $this->branchContacts($company, 'name'),
+            $this->branchContacts($company, 'email'),
+            $this->branchContacts($company, 'phone'),
+            $this->branchContacts($company, 'manager_name'),
+            $this->branchContacts($company, 'manager_phone'),
+            $this->branchContacts($company, fn (Branch $branch) => $branch->country?->name),
+            $this->branchContacts($company, fn (Branch $branch) => $branch->city?->name),
+            $this->branchContacts($company, fn (Branch $branch) => filled($branch->latitude) && filled($branch->longitude)
+                ? "{$branch->latitude}, {$branch->longitude}"
+                : null),
+            $this->perBranch($company, fn (Branch $branch): string => $this->workingHours($branch)),
+            $this->perBranch($company, fn (Branch $branch): string => $this->departments($branch)),
             implode(', ', $company->companySupervisorNames()),
             (string) ($company->current_students_count ?? 0),
             $this->majorBreakdowns[(int) $company->id] ?? '---',
-            $this->statusLabel($company->status),
+            (string) ($company->createdBy?->name ?? '---'),
+            (string) ($company->created_at?->format('Y-m-d H:i') ?? '---'),
         ];
+    }
+
+    /**
+     * A company's contact details are stored on its branches, so list every
+     * distinct value from the already eager-loaded branches.
+     */
+    protected function branchContacts(Company $company, string|Closure $field): string
+    {
+        $values = $company->branches
+            ->map(fn (Branch $branch) => $field instanceof Closure ? $field($branch) : $branch->{$field})
+            ->filter(fn ($value): bool => filled($value))
+            ->unique()
+            ->implode(', ');
+
+        return $values !== '' ? $values : '---';
+    }
+
+    /**
+     * Values that only make sense per branch (working hours, departments) are
+     * prefixed with the branch name when the company has more than one.
+     */
+    protected function perBranch(Company $company, callable $format): string
+    {
+        $multiple = $company->branches->count() > 1;
+
+        $values = $company->branches
+            ->map(function (Branch $branch) use ($format, $multiple): ?string {
+                $value = $format($branch);
+
+                if ($value === '') {
+                    return null;
+                }
+
+                return $multiple ? "{$branch->name}: {$value}" : $value;
+            })
+            ->filter()
+            ->implode(' | ');
+
+        return $values !== '' ? $values : '---';
+    }
+
+    protected function workingHours(Branch $branch): string
+    {
+        return $branch->workingHours
+            ->sortBy(fn ($hour): int => (int) ($hour->day?->value ?? 0))
+            ->map(fn ($hour): string => sprintf(
+                '%s %s',
+                $hour->day?->getLabel() ?? '',
+                $hour->is_closed
+                    ? __('Closed')
+                    : ($hour->start_time?->format('H:i') ?? '--').' - '.($hour->end_time?->format('H:i') ?? '--'),
+            ))
+            ->implode(', ');
+    }
+
+    protected function departments(Branch $branch): string
+    {
+        return $branch->departments
+            ->unique('id')
+            ->map(function ($department) use ($branch): string {
+                $supervisors = $branch->supervisors
+                    ->filter(fn ($user): bool => (int) $user->pivot->company_department_id === (int) $department->id)
+                    ->pluck('name')
+                    ->filter()
+                    ->unique()
+                    ->implode(' / ');
+
+                return $supervisors !== ''
+                    ? "{$department->name} ({$supervisors})"
+                    : (string) $department->name;
+            })
+            ->implode(', ');
     }
 
     /**

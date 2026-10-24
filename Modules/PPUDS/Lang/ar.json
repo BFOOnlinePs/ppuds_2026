@@ -1363,5 +1363,7 @@
     "Grade Selected": "وضع علامة للطلاب المحددين",
     "Grade saved for selected students successfully": "تم حفظ العلامة للطلاب المحددين بنجاح",
     "Company Email": "بريد الشركة الإلكتروني",
-    "Submitted By Email": "بريد المُسلِّم الإلكتروني"
+    "Submitted By Email": "بريد المُسلِّم الإلكتروني",
+    "Number": "رقم",
+    "Please enter a number for: :question": "الرجاء إدخال رقم للسؤال: :question"
 }

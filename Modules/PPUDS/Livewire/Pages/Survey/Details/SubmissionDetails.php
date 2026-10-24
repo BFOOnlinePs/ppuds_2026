@@ -77,6 +77,7 @@ class SubmissionDetails extends Component implements HasForms
                 SurveyQuestionType::DATE->value => DatePicker::make($fieldName)->native(false),
                 SurveyQuestionType::FILE->value => FileUpload::make($fieldName)->directory('surveys'),
                 SurveyQuestionType::RATING->value => Radio::make($fieldName)->options(SurveyQuestionType::ratingScaleOptions())->inline(),
+                SurveyQuestionType::NUMBER->value => TextInput::make($fieldName)->numeric(),
                 default => TextInput::make($fieldName),
             };
 

@@ -18,11 +18,14 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Component;
+use Maatwebsite\Excel\Excel as WriterType;
 use Masmerise\Toaster\Toaster;
 use Modules\Core\Enums\UserRole;
 use Modules\Core\Filament\Tables\Columns\UserColumn;
+use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Entities\StudentCompany;
+use Modules\PPUDS\Exports\EvaluationSupervisorStudentsExport;
 use Modules\PPUDS\Settings\GeneralSettings;
 
 class Index extends Component implements HasForms, HasTable
@@ -115,6 +118,22 @@ class Index extends Component implements HasForms, HasTable
                     ->color('info'),
             ])
             ->filters($this->getTableFilters(), layout: FiltersLayout::AboveContent)
+            ->headerActions([
+                Action::make('export_student_grades')
+                    ->label(__('Export Grades'))
+                    ->icon('heroicon-m-arrow-down-tray')
+                    ->color('success')
+                    ->action(fn () => app(ExcelServiceInterface::class)->download(
+                        // getTableQueryForExport يحمل تقييد المشرف بطلابه والفلاتر معاً.
+                        new EvaluationSupervisorStudentsExport(
+                            $this->getTableQueryForExport(),
+                            ! $this->shouldScopeToAuthenticatedSupervisor()
+                        ),
+                        'evaluation-supervisor-grades-'.now()->format('Y-m-d-His').'.xlsx',
+                        WriterType::XLSX
+                    ))
+                    ->visible(fn (): bool => auth()->user()?->can('EvaluationSupervisorStudent View List') ?? false),
+            ])
             ->actions($this->getTableActions())
             ->bulkActions([]);
     }
