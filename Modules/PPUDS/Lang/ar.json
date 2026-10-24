@@ -1322,6 +1322,10 @@
     "Careful, we found companies with similar names:": "انتبه، وجدنا شركات بأسماء مشابهة:",
     "Export Grades": "تصدير العلامات",
     "Out of :max": "من :max",
+    "Postponed Students": "الطلاب المؤجلون",
+    "Without Postponed": "بدون المؤجلين",
+    "With Postponed": "مع المؤجلين",
+    "Postponed Only": "المؤجلون فقط",
 
     "Evaluation Supervisors": "مشرفو التقييم",
     "Evaluation Supervisors List": "قائمة مشرفي التقييم",

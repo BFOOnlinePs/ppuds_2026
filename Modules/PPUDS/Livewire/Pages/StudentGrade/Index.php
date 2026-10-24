@@ -14,6 +14,7 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Component;
@@ -58,8 +59,7 @@ class Index extends Component implements HasForms, HasTable
                 // التدريب الحالي لكل تسجيل فقط (الساري أولاً ثم الأحدث): التدريب المنتهي
                 // الذي تلاه تدريب آخر لا يظهر، والطالب الذي أنهى تدريبه الأخير يبقى بعلاماته.
                 ->currentPerRegistration()
-                // التدريب المؤجل متوقف ولا يُرصد عليه بعد.
-                ->where((new StudentCompany)->qualifyColumn('status'), '!=', TrainingStatus::POSTPONED->value)
+                // إخفاء التدريب المؤجل صار في فلتر postponed ليختار المستخدم إظهاره.
                 ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query)))
             ->columns([
                 UserColumn::make('student.name')
@@ -225,6 +225,20 @@ class Index extends Component implements HasForms, HasTable
                         ->whereNull($query->qualifyColumn('supervisor_score'))),
                     default => $query,
                 }),
+
+            // التدريب المؤجل متوقف ولا يُرصد عليه بعد، فيُخفى افتراضياً كما كان،
+            // والتصدير يتبع اختيار الفلتر لأنه يأخذ استعلام الجدول بفلاتره.
+            TernaryFilter::make('postponed')
+                ->label(__('Postponed Students'))
+                ->placeholder(__('Without Postponed'))
+                ->trueLabel(__('With Postponed'))
+                ->falseLabel(__('Postponed Only'))
+                ->native(false)
+                ->queries(
+                    true: fn (Builder $query): Builder => $query,
+                    false: fn (Builder $query): Builder => $query->where($query->qualifyColumn('status'), TrainingStatus::POSTPONED->value),
+                    blank: fn (Builder $query): Builder => $query->where($query->qualifyColumn('status'), '!=', TrainingStatus::POSTPONED->value),
+                ),
 
             Filter::make('year')
                 ->form([
