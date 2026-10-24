@@ -29,39 +29,52 @@ class SidebarServiceProvider extends ServiceProvider
                 ->hiddenForRoles([UserRole::EVALUATION_SUPERVISOR->value])
         );
 
+        // البيانات الأكاديمية تُعرض ضمن قسم إدارة التدريب لأن صلاحياتها ممنوحة لأدوار غير إدارية.
         $sidebar->add(
-            (new SidebarItem('Media Library', 'solar-gallery-bold-duotone', ['Media Library View List'], 'media.index', 20))
+            (new SidebarGroup('Academic Data', 'solar-library-bold-duotone', [], 170))
+                ->section('Training Management')
+                ->add(new SidebarItem('Specialties', 'solar-square-academic-cap-bold-duotone', ['Student View List'], 'majors.index'))
+                ->add(new SidebarItem('Courses', 'solar-book-bookmark-bold-duotone', ['Course View List'], 'courses.index'))
         );
 
+        // ===== إدارة النظام ===== (ترتيب الأقسام موضّح في SidebarServiceProvider لموديول PPUDS)
+
         $sidebar->add(
-            (new SidebarGroup('Users', 'solar-users-group-rounded-bold-duotone', [], 30))
+            (new SidebarGroup('Users', 'solar-users-group-rounded-bold-duotone', [], 500))
+                ->section('System Administration')
                 ->add(new SidebarItem('Users List', 'solar-users-group-two-rounded-bold-duotone', ['User View List'],  'users.index'))
                 ->add(new SidebarItem('Add User', 'solar-user-plus-rounded-bold-duotone', ['User Create'], 'users.add'))
         );
 
         $sidebar->add(
-            (new SidebarGroup('Activity Log', 'solar-history-3-bold-duotone', [], 135))
+            (new SidebarItem('Media Library', 'solar-gallery-bold-duotone', ['Media Library View List'], 'media.index', 510))
+                ->section('System Administration')
+        );
+
+        $sidebar->add(
+            (new SidebarGroup('Activity Log', 'solar-history-3-bold-duotone', [], 520))
+                ->section('System Administration')
                 ->add(new SidebarItem('Activity Log Report', 'solar-clipboard-list-bold-duotone', ['Activity Log View List'], 'activity-logs.index'))
                 ->add(new SidebarItem('Login Activity Log', 'solar-login-3-bold-duotone', ['Activity Log View List'], 'activity-logs.auth'))
         );
 
         $sidebar->add(
-            (new SidebarItem('Notifications Log', 'solar-bell-bold-duotone', ['Notification View List'], 'notifications.index', 136))
+            (new SidebarItem('Notifications Log', 'solar-bell-bold-duotone', ['Notification View List'], 'notifications.index', 530))
+                ->section('System Administration')
         );
 
         $sidebar->add(
-            (new SidebarGroup('Settings', 'solar-settings-bold-duotone', [], 140))
+            (new SidebarGroup('Settings', 'solar-settings-bold-duotone', [], 540))
+                ->section('System Administration')
                 ->add(new SidebarItem('System Settings', 'solar-settings-bold-duotone', ['Setting View'], 'settings'))
+                ->add(new SidebarItem('Roles And Permissions', 'solar-shield-keyhole-bold-duotone', ['Roles And Permissions View'], 'roles.index'))
                 ->add(new SidebarItem('Sync System Data', 'solar-server-square-update-bold-duotone', ['Sync System Data View'], 'sync-system-data.index'))
                 ->add(new SidebarItem('Sync Companies With University API', 'solar-buildings-bold-duotone', ['Sync System Data View'], 'sync-company-supervisors.index'))
-                ->add(new SidebarItem('Roles And Permissions', 'solar-shield-keyhole-bold-duotone', ['Roles And Permissions View'], 'roles.index'))
-                ->add(new SidebarItem('Currencies', 'solar-wallet-money-bold-duotone', ['Currency View List'],  'currencies.index'))
                 ->add(new SidebarItem('Countries', 'solar-global-bold-duotone', ['Country View List'], 'countries.index'))
                 ->add(new SidebarItem('Governorates', 'solar-map-bold-duotone', ['Governorate View List'], 'governorates.index'))
                 ->add(new SidebarItem('Cities', 'solar-city-bold-duotone', ['City View List'], 'cities.index'))
                 ->add(new SidebarItem('Districts', 'solar-map-point-bold-duotone', ['District View List'], 'districts.index'))
-                ->add(new SidebarItem('Specialties', 'solar-square-academic-cap-bold-duotone', ['Student View List'], 'majors.index'))
-                ->add(new SidebarItem('Courses', 'solar-book-bookmark-bold-duotone', ['Course View List'], 'courses.index'))
+                ->add(new SidebarItem('Currencies', 'solar-wallet-money-bold-duotone', ['Currency View List'],  'currencies.index'))
         );
     }
 

@@ -78,8 +78,20 @@
                 class="perfect-scrollbar relative h-[calc(100vh-80px)] space-y-0.5 overflow-y-auto overflow-x-hidden p-4 py-0 font-semibold"
                 x-data="{ activeDropdown: '{{ $activeGroupKey }}' }"
             >
+                @php
+                    //  Track the section of the previous item so each section heading is printed once
+                    $currentSection = null;
+                @endphp
                 {{--  Iterate over each item in the $sidebar array --}}
                 @foreach($sidebar as $item)
+                    {{--  Print the section heading when a new section starts --}}
+                    @if(!empty($item['section']) && $item['section'] !== $currentSection)
+                        @php $currentSection = $item['section']; @endphp
+                        <h2 class="-mx-4 mb-1 mt-2 flex items-center bg-white-light/30 py-3 px-7 text-xs font-extrabold uppercase dark:bg-dark dark:bg-opacity-[0.08]">
+                            <svg class="hidden h-5 w-4 flex-none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                            <span>{{ __($item['section']) }}</span>
+                        </h2>
+                    @endif
                     {{--  Check if the current item is a group --}}
                     @if($item['type'] === 'group')
                         <li class="menu nav-item">

@@ -327,6 +327,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 });
 
                 Route::group([
+                    'prefix' => 'company-statistics',
+                    'as' => 'company-statistics.',
+                    'namespace' => 'Modules\PPUDS\Livewire\Pages\CompanyStatistics',
+                ], function () {
+                    Route::get('/', Index::class)->name('index')->can('Report View List');
+                });
+
+                Route::group([
                     'prefix' => 'supervisor-reports',
                     'as' => 'supervisor-reports.',
                     'namespace' => 'Modules\PPUDS\Livewire\Pages\SupervisorReport',

@@ -11,7 +11,7 @@ class SidebarGroup implements SidebarItemsInterface
     protected array $children = [];
     protected array $permissions = [];
     protected int $sort = 1000;
-
+    protected ?string $section = null;
 
     public function __construct(
         string $title,
@@ -38,6 +38,16 @@ class SidebarGroup implements SidebarItemsInterface
         return $this;
     }
 
+    /**
+     * عنوان القسم الذي يُعرض فوق المجموعة في القائمة الجانبية.
+     */
+    public function section(string $section): static
+    {
+        $this->section = $section;
+
+        return $this;
+    }
+
     public function canSee(): bool
     {
         if (empty($this->permissions)) {
@@ -60,6 +70,7 @@ class SidebarGroup implements SidebarItemsInterface
             'icon' => $this->icon,
             'permissions' => $this->permissions,
             'sort' => $this->sort,
+            'section' => $this->section,
             'children' => collect($this->children)
                 ->filter(fn($item) => $item->canSee())
                 ->map(fn($item) => $item->toArray())

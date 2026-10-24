@@ -1369,5 +1369,10 @@
     "Company Email": "بريد الشركة الإلكتروني",
     "Submitted By Email": "بريد المُسلِّم الإلكتروني",
     "Number": "رقم",
-    "Please enter a number for: :question": "الرجاء إدخال رقم للسؤال: :question"
+    "Please enter a number for: :question": "الرجاء إدخال رقم للسؤال: :question",
+    "Training Management": "إدارة التدريب العملي",
+    "Evaluation And Reports": "التقييم والتقارير",
+    "Companies And Supervisors": "الشركات والمشرفون",
+    "Communication And Announcements": "التواصل والإعلانات",
+    "Alumni": "الخريجون"
 }

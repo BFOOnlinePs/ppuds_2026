@@ -22,14 +22,17 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Component;
+use Maatwebsite\Excel\Excel as WriterType;
 use Masmerise\Toaster\Toaster;
 use Modules\Branch\Entities\Branch;
 use Modules\Core\Entities\User;
 use Modules\Core\Enums\UserRole;
 use Modules\Core\Filament\Tables\Columns\UserColumn;
+use Modules\Core\Interfaces\ExcelServiceInterface;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\CompanyDepartment;
 use Modules\PPUDS\Entities\StudentCompany;
+use Modules\PPUDS\Exports\CompanySupervisorsExport;
 use Modules\PPUDS\Support\ManagesCompanySupervisorSeats;
 use Spatie\Permission\Models\Role;
 use Throwable;
@@ -96,7 +99,20 @@ class Index extends Component implements HasTable, HasForms
             ])
             ->filters($this->getTableFilters(), layout: FiltersLayout::AboveContent)
             ->filtersFormColumns(3)
-            ->headerActions([$this->createAction()])
+            ->headerActions([
+                $this->createAction(),
+
+                Action::make('export')
+                    ->label(__('Export'))
+                    ->icon('heroicon-m-arrow-down-tray')
+                    ->color('success')
+                    ->action(fn () => app(ExcelServiceInterface::class)->download(
+                        new CompanySupervisorsExport($this->getTableQueryForExport()),
+                        $this->exportFilename(),
+                        WriterType::XLSX
+                    ))
+                    ->visible(fn () => auth()->user()->can('Company View List')),
+            ])
             ->actions([
                 $this->assignAction(),
                 $this->unassignAction(),
@@ -588,6 +604,11 @@ class Index extends Component implements HasTable, HasForms
                 ->where($prefix.'branch_department.user_id', $supervisor->id))
             ->distinct('student_id')
             ->count('student_id');
+    }
+
+    protected function exportFilename(): string
+    {
+        return 'company-supervisors-'.now()->format('Y-m-d-His').'.xlsx';
     }
 
     protected function canManage(): bool

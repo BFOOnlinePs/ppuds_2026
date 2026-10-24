@@ -14,6 +14,7 @@ class SidebarItem implements SidebarItemsInterface
     protected array $hiddenRoles = [];
     protected ?string $badge = null;
     protected int $sort = 0;
+    protected ?string $section = null;
     protected ?Closure $visibleCallback = null;
 
     public function __construct(
@@ -39,6 +40,16 @@ class SidebarItem implements SidebarItemsInterface
     public function hiddenForRoles(array $roles): static
     {
         $this->hiddenRoles = $roles;
+
+        return $this;
+    }
+
+    /**
+     * عنوان القسم الذي يُعرض فوق العنصر في القائمة الجانبية.
+     */
+    public function section(string $section): static
+    {
+        $this->section = $section;
 
         return $this;
     }
@@ -91,6 +102,7 @@ class SidebarItem implements SidebarItemsInterface
             'hidden_roles' => $this->hiddenRoles,
             'badge' => $this->badge,
             'sort' => $this->sort,
+            'section' => $this->section,
         ];
     }
 }

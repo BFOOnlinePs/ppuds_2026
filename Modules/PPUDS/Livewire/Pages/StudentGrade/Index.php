@@ -14,7 +14,6 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
-use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Component;
@@ -57,9 +56,9 @@ class Index extends Component implements HasForms, HasTable
                     'branch',
                 ])
                 // التدريب الحالي لكل تسجيل فقط (الساري أولاً ثم الأحدث): التدريب المنتهي
-                // الذي تلاه تدريب آخر لا يظهر، والطالب الذي أنهى تدريبه الأخير يبقى بعلاماته.
+                // الذي تلاه تدريب آخر لا يظهر.
                 ->currentPerRegistration()
-                // إخفاء التدريب المؤجل صار في فلتر postponed ليختار المستخدم إظهاره.
+                // إخفاء التدريب المنتهي والمؤجل والمحذوف صار في فلتر status ليختار المستخدم الحالات الظاهرة.
                 ->tap(fn (Builder $query) => $this->applyStudentCompanyVisibilityScope($query)))
             ->columns([
                 UserColumn::make('student.name')
@@ -226,19 +225,19 @@ class Index extends Component implements HasForms, HasTable
                     default => $query,
                 }),
 
-            // التدريب المؤجل متوقف ولا يُرصد عليه بعد، فيُخفى افتراضياً كما كان،
-            // والتصدير يتبع اختيار الفلتر لأنه يأخذ استعلام الجدول بفلاتره.
-            TernaryFilter::make('postponed')
-                ->label(__('Postponed Students'))
-                ->placeholder(__('Without Postponed'))
-                ->trueLabel(__('With Postponed'))
-                ->falseLabel(__('Postponed Only'))
+            // كل حالات التدريب، والمستخدم يختار ما يظهر منها. الافتراضي التدريب الساري
+            // فقط: المنتهي والمؤجل والمحذوف لا تظهر علاماتهم إلا إن اختارهم المستخدم،
+            // والتصدير يتبع الفلتر لأنه يأخذ استعلام الجدول بفلاتره. إفراغ الاختيار يُظهر كل الحالات.
+            SelectFilter::make('status')
+                ->label(__('Training Status'))
+                ->options(TrainingStatus::options())
+                ->multiple()
+                ->default([TrainingStatus::AVAILABLE->value])
                 ->native(false)
-                ->queries(
-                    true: fn (Builder $query): Builder => $query,
-                    false: fn (Builder $query): Builder => $query->where($query->qualifyColumn('status'), TrainingStatus::POSTPONED->value),
-                    blank: fn (Builder $query): Builder => $query->where($query->qualifyColumn('status'), '!=', TrainingStatus::POSTPONED->value),
-                ),
+                ->query(fn (Builder $query, array $data): Builder => $query->when(
+                    $data['values'] ?? [],
+                    fn (Builder $query, array $statuses): Builder => $query->whereIn($query->qualifyColumn('status'), $statuses)
+                )),
 
             Filter::make('year')
                 ->form([
