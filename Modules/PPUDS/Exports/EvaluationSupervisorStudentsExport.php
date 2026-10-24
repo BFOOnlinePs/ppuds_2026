@@ -33,6 +33,7 @@ class EvaluationSupervisorStudentsExport implements FromGenerator, ShouldAutoSiz
             __('Student Number'),
             __('Student'),
             __('Major'),
+            __('Course'),
             __('Company'),
             __('Department'),
             $this->withEvaluationSupervisor ? __('Evaluation Supervisor') : null,
@@ -50,6 +51,7 @@ class EvaluationSupervisorStudentsExport implements FromGenerator, ShouldAutoSiz
             'company.translations',
             'department',
             'evaluationSupervisor',
+            'registration.course.translations',
             'student.studentProfile.major.translations',
         ]);
 
@@ -66,6 +68,7 @@ class EvaluationSupervisorStudentsExport implements FromGenerator, ShouldAutoSiz
             (string) $studentProfile?->student_number,
             (string) $studentCompany->student?->name,
             (string) $studentProfile?->major?->name,
+            (string) $studentCompany->registration?->course?->name,
             (string) $studentCompany->company?->name,
             (string) $studentCompany->department?->name,
         ];

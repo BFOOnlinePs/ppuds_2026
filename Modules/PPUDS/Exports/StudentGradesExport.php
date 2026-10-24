@@ -35,6 +35,7 @@ class StudentGradesExport implements FromGenerator, ShouldAutoSize, WithHeadings
             __('Student Number'),
             __('Student'),
             __('Major'),
+            __('Course'),
             __('Company'),
             __('Branch'),
             __('Evaluation Supervisor'),
@@ -56,6 +57,7 @@ class StudentGradesExport implements FromGenerator, ShouldAutoSize, WithHeadings
             'branch.translations',
             'company.translations',
             'evaluationSupervisor',
+            'registration.course.translations',
             'registration.supervisor',
             'student.studentProfile.major.translations',
         ]);
@@ -79,6 +81,7 @@ class StudentGradesExport implements FromGenerator, ShouldAutoSize, WithHeadings
             (string) $studentProfile?->student_number,
             (string) $student?->name,
             (string) $studentProfile?->major?->name,
+            (string) $registration?->course?->name,
             (string) $studentCompany->company?->name,
             (string) $studentCompany->branch?->name,
             (string) $studentCompany->evaluationSupervisor?->name,
