@@ -185,6 +185,18 @@ class Edit extends Component implements HasActions, HasForms
                                                             ->rows(3)
                                                             ->placeholder(__('Phone number, email, or any other contact details'))
                                                             ->columnSpan(1),
+
+                                                        TextInput::make('main_location')
+                                                            ->label(__('Main Location'))
+                                                            ->maxLength(255)
+                                                            ->prefixIcon('solar-map-point-linear')
+                                                            ->columnSpan(1),
+
+                                                        TextInput::make('sub_location')
+                                                            ->label(__('Sub Location'))
+                                                            ->maxLength(255)
+                                                            ->prefixIcon('solar-map-point-linear')
+                                                            ->columnSpan(1),
                                                     ]),
                                                     Textarea::make('description')
                                                         ->label(__('About Company'))
