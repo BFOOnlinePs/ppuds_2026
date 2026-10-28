@@ -292,23 +292,25 @@ class Index extends Component implements HasTable, HasForms
                 ->options([
                     'image' => __('Images'),
                     'video' => __('Videos'),
+                    'audio' => __('Audio'),
                     'document' => __('Documents'),
+                    'pdf' => __('PDF Files'),
+                    'word' => __('Word Files'),
+                    'excel' => __('Excel Files'),
+                    'powerpoint' => __('PowerPoint Files'),
+                    'text' => __('Text Files'),
+                    'archive' => __('Compressed Files'),
+                    'other' => __('Other Files'),
                 ])
+                ->multiple()
                 ->native(false)
                 ->query(fn (Builder $query, array $data): Builder => $query->when(
-                    $data['value'],
-                    function (Builder $q, string $type): Builder {
-                        if ($type === 'image') {
-                            return $q->where('mime_type', 'like', 'image/%');
+                    $data['values'] ?? [],
+                    fn (Builder $q, array $types): Builder => $q->where(function (Builder $q) use ($types): void {
+                        foreach ($types as $type) {
+                            $q->orWhere(fn (Builder $q): Builder => $this->applyFileType($q, $type));
                         }
-
-                        if ($type === 'video') {
-                            return $q->where('mime_type', 'like', 'video/%');
-                        }
-
-                        return $q->where('mime_type', 'not like', 'image/%')
-                            ->where('mime_type', 'not like', 'video/%');
-                    }
+                    })
                 )),
 
             SelectFilter::make('collection_name')
@@ -330,6 +332,94 @@ class Index extends Component implements HasTable, HasForms
                 ->native(false)
                 ->searchable(),
         ];
+    }
+
+    /**
+     * Mime types and extensions per document type. The extension is matched
+     * too because browsers often report office files as octet-stream or zip.
+     *
+     * @return array<string, array{mimes: array<int, string>, extensions: array<int, string>}>
+     */
+    protected function fileTypeRules(): array
+    {
+        return [
+            'pdf' => [
+                'mimes' => ['application/pdf'],
+                'extensions' => ['pdf'],
+            ],
+            'word' => [
+                'mimes' => [
+                    'application/msword',
+                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    'application/vnd.oasis.opendocument.text',
+                    'application/rtf',
+                ],
+                'extensions' => ['doc', 'docx', 'odt', 'rtf'],
+            ],
+            'excel' => [
+                'mimes' => [
+                    'application/vnd.ms-excel',
+                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    'application/vnd.oasis.opendocument.spreadsheet',
+                    'text/csv',
+                ],
+                'extensions' => ['xls', 'xlsx', 'ods', 'csv'],
+            ],
+            'powerpoint' => [
+                'mimes' => [
+                    'application/vnd.ms-powerpoint',
+                    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                    'application/vnd.oasis.opendocument.presentation',
+                ],
+                'extensions' => ['ppt', 'pptx', 'odp'],
+            ],
+            'text' => [
+                'mimes' => ['text/plain'],
+                'extensions' => ['txt'],
+            ],
+            'archive' => [
+                'mimes' => [
+                    'application/zip',
+                    'application/x-zip-compressed',
+                    'application/vnd.rar',
+                    'application/x-rar-compressed',
+                    'application/x-7z-compressed',
+                ],
+                'extensions' => ['zip', 'rar', '7z'],
+            ],
+        ];
+    }
+
+    protected function applyFileType(Builder $query, string $type): Builder
+    {
+        $rules = $this->fileTypeRules();
+
+        return match ($type) {
+            'image', 'video', 'audio' => $query->where('mime_type', 'like', "{$type}/%"),
+
+            'document' => $query->where(function (Builder $q): void {
+                foreach (['pdf', 'word', 'excel', 'powerpoint', 'text'] as $documentType) {
+                    $q->orWhere(fn (Builder $q): Builder => $this->applyFileType($q, $documentType));
+                }
+            }),
+
+            // Anything none of the other options would match.
+            'other' => $query->whereNot(function (Builder $q) use ($rules): void {
+                foreach (['image', 'video', 'audio', ...array_keys($rules)] as $knownType) {
+                    $q->orWhere(fn (Builder $q): Builder => $this->applyFileType($q, $knownType));
+                }
+            }),
+
+            default => isset($rules[$type])
+                ? $query->where(function (Builder $q) use ($rules, $type): void {
+                    $q->whereIn('mime_type', $rules[$type]['mimes']);
+
+                    foreach ($rules[$type]['extensions'] as $extension) {
+                        $q->orWhere('file_name', 'like', "%.{$extension}");
+                    }
+                })
+                : $query,
+        };
     }
 
     protected function getTableActions(): array
