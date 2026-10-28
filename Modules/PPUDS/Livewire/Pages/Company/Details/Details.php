@@ -166,6 +166,16 @@ class Details extends Component implements HasForms, HasInfolists, HasActions
                                                             ->options(CompanyCategory::all()->pluck('name', 'id'))
                                                             ->required(),
 
+                                                        TextInput::make('main_location')
+                                                            ->label(__('Main Location'))
+                                                            ->maxLength(255)
+                                                            ->columnSpan(1),
+
+                                                        TextInput::make('sub_location')
+                                                            ->label(__('Sub Location'))
+                                                            ->maxLength(255)
+                                                            ->columnSpan(1),
+
                                                         Textarea::make('description')
                                                             ->label(__('Description'))
                                                             ->dehydrateStateUsing(fn (?string $state): ?string => blank($state) ? null : $state)
