@@ -410,6 +410,24 @@ class Details extends Component implements HasForms, HasInfolists
                                             ]),
                                     ]),
 
+                                Tabs\Tab::make('training-plan')
+                                    ->label(__('Training Plan'))
+                                    ->icon('heroicon-o-clipboard-document-list')
+                                    ->visible(fn (): bool => auth()->user()->can('TrainingPlan View'))
+                                    ->schema([
+                                        Grid::make(2)
+                                            ->schema([
+                                                Livewire::make(
+                                                    \Modules\PPUDS\Livewire\Pages\Student\Details\TrainingPlan\Index::class,
+                                                    [
+                                                        'studentId' => $this->userId,
+                                                    ]
+                                                )
+                                                    ->columnSpanFull()
+                                                    ->lazy(),
+                                            ]),
+                                    ]),
+
                                 // نفس صلاحية شاشة تسليم التقارير النهائية.
                                 Tabs\Tab::make('final-report')
                                     ->label(__('Final Report'))

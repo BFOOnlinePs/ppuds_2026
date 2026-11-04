@@ -248,6 +248,7 @@ class RolePermissionSeeder extends Seeder
                 'Student Export Companies',
                 ...$this->read('StudentCompany'),
                 'StudentCompany Details',
+                'TrainingPlan View',
                 ...$this->read('LeaveRequest'),
                 'LeaveRequest CompanyApprove',
                 ...$this->read('StudentAttendance'),

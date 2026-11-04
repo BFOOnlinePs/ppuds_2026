@@ -35,6 +35,7 @@ class SidebarServiceProvider extends ServiceProvider
                 ->section('Training Management')
                 ->add(new SidebarItem('Specialties', 'solar-square-academic-cap-bold-duotone', ['Student View List'], 'majors.index'))
                 ->add(new SidebarItem('Courses', 'solar-book-bookmark-bold-duotone', ['Course View List'], 'courses.index'))
+                ->add(new SidebarItem('Training Plans', 'solar-clipboard-list-bold-duotone', ['TrainingPlan View List'], 'training-plans.index'))
         );
 
         // ===== إدارة النظام ===== (ترتيب الأقسام موضّح في SidebarServiceProvider لموديول PPUDS)

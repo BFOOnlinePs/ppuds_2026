@@ -379,6 +379,33 @@ class PermissionSeeder extends Seeder
                 'module_name' => 'Course',
             ],
 
+            // TODO Training Plan
+            [
+                'name' => 'TrainingPlan View List',
+                'guard_name' => 'web',
+                'module_name' => 'TrainingPlan',
+            ],
+            [
+                'name' => 'TrainingPlan Create',
+                'guard_name' => 'web',
+                'module_name' => 'TrainingPlan',
+            ],
+            [
+                'name' => 'TrainingPlan Update',
+                'guard_name' => 'web',
+                'module_name' => 'TrainingPlan',
+            ],
+            [
+                'name' => 'TrainingPlan Delete',
+                'guard_name' => 'web',
+                'module_name' => 'TrainingPlan',
+            ],
+            [
+                'name' => 'TrainingPlan View',
+                'guard_name' => 'web',
+                'module_name' => 'TrainingPlan',
+            ],
+
 
             // TODO Registration
             [

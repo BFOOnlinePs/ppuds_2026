@@ -168,6 +168,15 @@ class Details extends Component implements HasForms, HasInfolists
                                     ],
                                 ]),
                             ]),
+                        Tabs\Tab::make('training-plan')
+                            ->label(__('Training Plan'))
+                            ->visible(fn (): bool => auth()->user()->can('TrainingPlan View'))
+                            ->schema([
+                                Livewire::make(\Modules\PPUDS\Livewire\Pages\Student\Details\TrainingPlan\Index::class, [
+                                    'studentId' => $this->studentCompanyModel->student_id,
+                                    'studentCompanyId' => $this->studentCompanyModel->id,
+                                ]),
+                            ]),
                     ]),
             ]);
     }

@@ -401,6 +401,7 @@ class Index extends Component implements HasTable, HasForms
             'Subscription' => 'الاشتراكات',
             'Survey' => 'الاستبيانات',
             'Tag' => 'الوسوم',
+            'TrainingPlan' => 'خطط التدريب',
             'Type Of Meal' => 'أنواع الوجبات',
             'User' => 'المستخدمون',
             'WorkExperience' => 'الخبرات العملية',

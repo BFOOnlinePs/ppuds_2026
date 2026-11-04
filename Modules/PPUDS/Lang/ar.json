@@ -1376,5 +1376,19 @@
     "Evaluation And Reports": "التقييم والتقارير",
     "Companies And Supervisors": "الشركات والمشرفون",
     "Communication And Announcements": "التواصل والإعلانات",
-    "Alumni": "الخريجون"
+    "Alumni": "الخريجون",
+    "Training Plans": "خطط التدريب",
+    "Training Plan": "خطة التدريب",
+    "Add Training Plan": "إضافة خطة تدريب",
+    "Edit Training Plan": "تعديل خطة التدريب",
+    "Objectives": "الأهداف",
+    "Tasks": "المهام",
+    "Outcomes": "المخرجات",
+    "Add Objective": "إضافة هدف",
+    "Add Task": "إضافة مهمة",
+    "Add Outcome": "إضافة مخرج",
+    "This major already has a training plan for this course.": "يوجد بالفعل خطة تدريب لهذا التخصص وهذا المساق.",
+    "Training plan updated successfully": "تم تحديث خطة التدريب بنجاح",
+    "Training plan deleted successfully": "تم حذف خطة التدريب بنجاح",
+    "No training plan has been added for this major and course yet.": "لم تتم إضافة خطة تدريب لهذا التخصص والمساق بعد."
 }

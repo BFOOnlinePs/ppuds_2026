@@ -119,6 +119,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 });
 
                 Route::group([
+                    'prefix' => 'training-plans',
+                    'as' => 'training-plans.',
+                    'namespace' => 'Modules\PPUDS\Livewire\Pages\TrainingPlan',
+                ], function () {
+                    Route::get('/', Index::class)->name('index')->can('TrainingPlan View List');
+                });
+
+                Route::group([
                     'prefix' => 'practical-supervisor-students',
                     'as' => 'practical-supervisor-students.',
                     'namespace' => 'Modules\PPUDS\Livewire\Pages\PracticalSupervisorStudent',

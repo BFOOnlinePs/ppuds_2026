@@ -140,6 +140,25 @@ class StudentCompany extends Model implements HasMedia
         return $this->belongsTo(User::class, 'student_id');
     }
 
+    /**
+     * ورقة الخطة حسب تخصص الطالب ومساق تسجيله في هذا التدريب.
+     */
+    public function trainingPlan(): ?TrainingPlan
+    {
+        $majorId = $this->student?->studentProfile?->major_id;
+        $courseId = $this->registration?->course_id;
+
+        if (! $majorId || ! $courseId) {
+            return null;
+        }
+
+        return TrainingPlan::query()
+            ->with(['major.translations', 'course.translations'])
+            ->where('major_id', $majorId)
+            ->where('course_id', $courseId)
+            ->first();
+    }
+
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class, 'company_id');
