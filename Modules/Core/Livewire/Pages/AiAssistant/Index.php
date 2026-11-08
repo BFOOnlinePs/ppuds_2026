@@ -6,6 +6,7 @@ use App\View\Components\AppLayout;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -128,7 +129,18 @@ class Index extends Component
                 return;
             }
 
-            $result = $service->send(auth()->user(), $prompt, $this->conversationId);
+            // نعرض الرد أثناء كتابته (مثل ChatGPT) بإعادة رسم النص المتراكم كـ Markdown.
+            $streamed = '';
+
+            $result = $service->send(auth()->user(), $prompt, $this->conversationId, function (string $delta) use (&$streamed) {
+                $streamed .= $delta;
+
+                $this->stream(
+                    to: 'ai-assistant-stream',
+                    content: Str::markdown($streamed, ['html_input' => 'strip', 'allow_unsafe_links' => false]),
+                    replace: true,
+                );
+            });
 
             $this->conversationId = $result['conversation_id'] ?? $this->conversationId;
             $this->messages[] = [

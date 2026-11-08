@@ -6,6 +6,8 @@ use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Laravel\Ai\Enums\Lab;
+use Laravel\Ai\Streaming\Events\TextDelta;
+use Laravel\Ai\Streaming\Events\ToolCall as ToolCallEvent;
 use Modules\Core\Ai\AiAssistantAgent;
 use Modules\Core\Entities\User;
 
@@ -17,7 +19,7 @@ class AiAssistantService
     /**
      * @return array{conversation_id: ?string, text: string, tools: array<int, string>}
      */
-    public function send(User $user, string $message, ?string $conversationId = null): array
+    public function send(User $user, string $message, ?string $conversationId = null, ?callable $onText = null): array
     {
         $agent = AiAssistantAgent::make();
 
@@ -25,12 +27,29 @@ class AiAssistantService
             ? $agent->continue($conversationId, $user)
             : $agent->forUser($user);
 
-        $response = $agent->prompt(
-            $message,
-            provider: $this->configuredProvider(),
-            model: $this->configuredModel(),
-            timeout: $this->configuredTimeout(),
-        );
+        $options = [
+            'provider' => $this->configuredProvider(),
+            'model' => $this->configuredModel(),
+            'timeout' => $this->configuredTimeout(),
+        ];
+
+        if ($onText) {
+            // بث الرد جزءًا جزءًا للواجهة؛ المحادثة تُحفظ بعد انتهاء البث.
+            $response = $agent->stream($message, ...$options);
+
+            foreach ($response as $event) {
+                if ($event instanceof TextDelta) {
+                    $onText($event->delta);
+                }
+            }
+
+            $toolCalls = $response->events
+                ->whereInstanceOf(ToolCallEvent::class)
+                ->map(fn (ToolCallEvent $event) => $event->toolCall);
+        } else {
+            $response = $agent->prompt($message, ...$options);
+            $toolCalls = $response->toolCalls;
+        }
 
         if ($response->conversationId) {
             $this->conversations()
@@ -40,8 +59,8 @@ class AiAssistantService
 
         return [
             'conversation_id' => $response->conversationId,
-            'text' => trim($response->text),
-            'tools' => $response->toolCalls
+            'text' => trim((string) $response->text),
+            'tools' => collect($toolCalls)
                 ->map(fn ($toolCall) => (string) data_get($toolCall, 'name'))
                 ->filter()
                 ->unique()

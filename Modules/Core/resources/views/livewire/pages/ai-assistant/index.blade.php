@@ -193,17 +193,28 @@
                     @endforeach
 
                     @if ($isThinking)
-                        <div class="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
-                            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-white ring-1 ring-gray-200 dark:bg-gray-900 dark:ring-gray-800">
+                        {{-- الرد يُبث هنا أثناء كتابته، ومؤشر "يفكر" يختفي عند وصول أول جزء --}}
+                        <article wire:key="ai-message-streaming" x-data="{ streaming: false }" class="flex gap-3">
+                            <span class="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-950 text-white dark:bg-white dark:text-gray-950">
                                 @svg('heroicon-o-sparkles', 'h-4 w-4')
                             </span>
-                            <span class="inline-flex items-center gap-1">
-                                <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-gray-400"></span>
-                                <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-gray-400 [animation-delay:120ms]"></span>
-                                <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-gray-400 [animation-delay:240ms]"></span>
-                            </span>
-                            <span>{{ __('Thinking...') }}</span>
-                        </div>
+                            <div class="min-w-0 flex-1">
+                                <div
+                                    wire:stream="ai-assistant-stream"
+                                    x-init="new MutationObserver(() => streaming = $el.innerHTML.trim() !== '').observe($el, { childList: true, subtree: true })"
+                                    class="prose prose-sm max-w-none break-words leading-7 text-gray-800 dark:prose-invert dark:text-gray-100 prose-a:text-primary-600 prose-table:text-xs"
+                                ></div>
+
+                                <div x-show="! streaming" class="flex h-8 items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
+                                    <span class="inline-flex items-center gap-1">
+                                        <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-gray-400"></span>
+                                        <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-gray-400 [animation-delay:120ms]"></span>
+                                        <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-gray-400 [animation-delay:240ms]"></span>
+                                    </span>
+                                    <span>{{ __('Thinking...') }}</span>
+                                </div>
+                            </div>
+                        </article>
                     @endif
                 </div>
             @endif
