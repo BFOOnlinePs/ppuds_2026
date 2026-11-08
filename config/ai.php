@@ -41,7 +41,8 @@ return [
     'ai_assistant' => [
         // Ollama يعمل محلياً على نفس السيرفر بنموذج مفتوح المصدر، بدون أي تكلفة API.
         'provider' => env('AI_ASSISTANT_PROVIDER', 'ollama'),
-        'model' => env('AI_ASSISTANT_MODEL', 'qwen2.5:7b'),
+        // فارغ = النموذج الافتراضي للمزوّد المختار.
+        'model' => env('AI_ASSISTANT_MODEL'),
         'timeout' => (int) env('AI_ASSISTANT_TIMEOUT', 300),
     ],
 
