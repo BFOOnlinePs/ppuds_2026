@@ -38,6 +38,7 @@ class TrainingPlan extends Model implements TranslatableContract
         'objectives',
         'tasks',
         'outcomes',
+        'subjects',
     ];
 
     public $useTranslationFallback = true;

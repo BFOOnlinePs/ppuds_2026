@@ -17,6 +17,7 @@ class TrainingPlanTranslation extends Model
         'objectives',
         'tasks',
         'outcomes',
+        'subjects',
         'locale',
     ];
 
@@ -24,5 +25,6 @@ class TrainingPlanTranslation extends Model
         'objectives' => 'array',
         'tasks' => 'array',
         'outcomes' => 'array',
+        'subjects' => 'array',
     ];
 }

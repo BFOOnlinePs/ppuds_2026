@@ -148,10 +148,11 @@ class Index extends Component implements HasTable, HasForms
             $this->itemsRepeater('objectives', __('Objectives'), __('Add Objective')),
             $this->itemsRepeater('tasks', __('Tasks'), __('Add Task')),
             $this->itemsRepeater('outcomes', __('Outcomes'), __('Add Outcome')),
+            $this->itemsRepeater('subjects', __('Subjects'), __('Add Subject'), required: false),
         ];
     }
 
-    protected function itemsRepeater(string $name, string $label, string $addLabel): Repeater
+    protected function itemsRepeater(string $name, string $label, string $addLabel, bool $required = true): Repeater
     {
         return Repeater::make($name)
             ->label($label)
@@ -160,9 +161,9 @@ class Index extends Component implements HasTable, HasForms
                     ->rows(2)
                     ->required()
             )
-            ->defaultItems(1)
-            ->minItems(1)
-            ->required()
+            ->defaultItems($required ? 1 : 0)
+            ->minItems($required ? 1 : 0)
+            ->required($required)
             ->addActionLabel($addLabel);
     }
 
@@ -174,6 +175,7 @@ class Index extends Component implements HasTable, HasForms
             'objectives' => $record->objectives,
             'tasks' => $record->tasks,
             'outcomes' => $record->outcomes,
+            'subjects' => $record->subjects ?? [],
         ];
     }
 

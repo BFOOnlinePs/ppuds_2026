@@ -2,7 +2,9 @@
     @forelse ($this->plans as $plan)
         <x-filament::section :heading="$plan->course?->name" :description="$plan->major?->name">
             <div class="space-y-6">
-                @foreach (['objectives' => __('Objectives'), 'tasks' => __('Tasks'), 'outcomes' => __('Outcomes')] as $field => $label)
+                @foreach (['objectives' => __('Objectives'), 'tasks' => __('Tasks'), 'outcomes' => __('Outcomes'), 'subjects' => __('Subjects')] as $field => $label)
+                    {{-- المواد اختيارية، فلا نعرض عنوانها إذا كانت فارغة --}}
+                    @continue(empty($plan->{$field}))
                     <div>
                         <h4 class="font-semibold mb-2">{{ $label }}</h4>
                         <ol class="space-y-1">
