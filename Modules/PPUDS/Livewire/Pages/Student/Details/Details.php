@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Attributes\Computed;
 use Livewire\Component; // استيراد ضروري
+use Masmerise\Toaster\Toaster;
 use Modules\Core\Entities\User;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
@@ -174,10 +175,13 @@ class Details extends Component implements HasForms, HasInfolists
                                                                         'female' => __('Female'),
                                                                     ]),
 
+                                                                // الحقل الوحيد القابل للتعديل هنا: مدينة السكن لا تأتي من مزامنة الجامعة.
                                                                 Select::make('student_profile.residence_city_id')
                                                                     ->label(__('Residence City'))
-                                                                    ->disabled()
-                                                                    ->options(fn ($state) => \Modules\GeoLocation\Entities\City::with('translations')->whereKey($state)->get()->pluck('name', 'id')),
+                                                                    ->disabled(fn (): bool => ! auth()->user()->can('Student Update'))
+                                                                    ->options(fn () => \Modules\GeoLocation\Entities\City::with('translations')->get()->pluck('name', 'id'))
+                                                                    ->searchable()
+                                                                    ->nullable(),
 
                                                                 Select::make('student_profile.cv_status')
                                                                     ->label(__('CV Status'))
@@ -497,8 +501,14 @@ class Details extends Component implements HasForms, HasInfolists
 
             $this->form->model($user)->saveRelationships();
 
+            $user->studentProfile?->update([
+                'residence_city_id' => data_get($data, 'student_profile.residence_city_id'),
+            ]);
+
             // Notification::make()->title('Saved successfully')->success()->send();
         });
+
+        Toaster::success(__('Saved successfully'));
 
         // إعادة التوجيه بعد الحفظ
         // return redirect()->route('students.index');

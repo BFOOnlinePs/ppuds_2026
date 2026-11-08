@@ -79,8 +79,9 @@ class AiAssistantAgent implements Agent, Conversational, HasTools
         ];
     }
 
+    // سجل أقصر = نص أقل يعالجه النموذج المحلي في كل رسالة = رد أسرع.
     protected function maxConversationMessages(): int
     {
-        return 40;
+        return 12;
     }
 }
