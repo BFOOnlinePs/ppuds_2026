@@ -174,6 +174,11 @@ class Details extends Component implements HasForms, HasInfolists
                                                                         'female' => __('Female'),
                                                                     ]),
 
+                                                                Select::make('student_profile.residence_city_id')
+                                                                    ->label(__('Residence City'))
+                                                                    ->disabled()
+                                                                    ->options(fn ($state) => \Modules\GeoLocation\Entities\City::with('translations')->whereKey($state)->get()->pluck('name', 'id')),
+
                                                                 Select::make('student_profile.cv_status')
                                                                     ->label(__('CV Status'))
                                                                     ->disabled()

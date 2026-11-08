@@ -213,4 +213,12 @@ class Registration extends Model implements HasMedia
     {
         return $this->hasMany(StudentCompany::class, 'registration_id')->orderBy('id');
     }
+
+    /**
+     * المواد الجامعية التي درسها الطالب، مسجلة يدوياً لهذه المرحلة التدريبية.
+     */
+    public function subjects(): HasMany
+    {
+        return $this->hasMany(RegistrationSubject::class, 'registration_id')->orderBy('id');
+    }
 }

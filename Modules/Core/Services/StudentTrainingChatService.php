@@ -66,6 +66,16 @@ class StudentTrainingChatService
         return $this->studentSearchTerm($question);
     }
 
+    /**
+     * بيانات الطالب وتدريبه كما تُرسل للذكاء الاصطناعي — يستخدمها مساعد الذكاء الاصطناعي.
+     */
+    public function payloadForStudent(int $studentId): ?array
+    {
+        $student = $this->loadStudent($studentId);
+
+        return $student ? $this->studentTrainingPayload($student) : null;
+    }
+
     private function answerForLoadedStudent(string $question, User $student): array
     {
         $payload = $this->studentTrainingPayload($student);

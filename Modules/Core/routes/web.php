@@ -46,6 +46,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 });
 
                 Route::group([
+                    'prefix' => 'ai-assistant',
+                    'as' => 'ai-assistant.',
+                    'namespace' => 'Modules\Core\Livewire\Pages\AiAssistant',
+                ], function () {
+                    Route::get('/', Index::class)->name('index')->can('AI Assistant View');
+                });
+
+                Route::group([
                     'prefix' => 'profile',
                     'as' => 'profile.',
                     'namespace' => 'Modules\Core\Livewire\Pages\Profile',

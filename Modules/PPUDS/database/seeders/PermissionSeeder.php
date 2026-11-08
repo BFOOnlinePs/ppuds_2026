@@ -406,6 +406,28 @@ class PermissionSeeder extends Seeder
                 'module_name' => 'TrainingPlan',
             ],
 
+            // TODO Registration Subject
+            [
+                'name' => 'RegistrationSubject View',
+                'guard_name' => 'web',
+                'module_name' => 'RegistrationSubject',
+            ],
+            [
+                'name' => 'RegistrationSubject Create',
+                'guard_name' => 'web',
+                'module_name' => 'RegistrationSubject',
+            ],
+            [
+                'name' => 'RegistrationSubject Update',
+                'guard_name' => 'web',
+                'module_name' => 'RegistrationSubject',
+            ],
+            [
+                'name' => 'RegistrationSubject Delete',
+                'guard_name' => 'web',
+                'module_name' => 'RegistrationSubject',
+            ],
+
 
             // TODO Registration
             [
@@ -921,6 +943,13 @@ class PermissionSeeder extends Seeder
                 'name' => 'Sync Company Supervisors Sync',
                 'guard_name' => 'web',
                 'module_name' => 'Sync Company Supervisors',
+            ],
+
+            // TODO AI Assistant
+            [
+                'name' => 'AI Assistant View',
+                'guard_name' => 'web',
+                'module_name' => 'AI Assistant',
             ],
         ];
 

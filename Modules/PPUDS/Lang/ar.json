@@ -1390,5 +1390,11 @@
     "This major already has a training plan for this course.": "يوجد بالفعل خطة تدريب لهذا التخصص وهذا المساق.",
     "Training plan updated successfully": "تم تحديث خطة التدريب بنجاح",
     "Training plan deleted successfully": "تم حذف خطة التدريب بنجاح",
-    "No training plan has been added for this major and course yet.": "لم تتم إضافة خطة تدريب لهذا التخصص والمساق بعد."
+    "No training plan has been added for this major and course yet.": "لم تتم إضافة خطة تدريب لهذا التخصص والمساق بعد.",
+    "University Subjects": "المواد الجامعية",
+    "Subject Name": "اسم المادة",
+    "Subject Code": "رمز المادة",
+    "Add Subject": "إضافة مادة",
+    "Subjects saved successfully": "تم حفظ المواد بنجاح",
+    "Residence City": "مدينة السكن"
 }

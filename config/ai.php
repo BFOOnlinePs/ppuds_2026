@@ -38,6 +38,18 @@ return [
         'timeout' => (int) env('AI_STUDENT_TRAINING_CHAT_TIMEOUT', 60),
     ],
 
+    'ai_assistant' => [
+        // Ollama يعمل محلياً على نفس السيرفر بنموذج مفتوح المصدر، بدون أي تكلفة API.
+        'provider' => env('AI_ASSISTANT_PROVIDER', 'ollama'),
+        'model' => env('AI_ASSISTANT_MODEL', 'qwen2.5:7b'),
+        'timeout' => (int) env('AI_ASSISTANT_TIMEOUT', 300),
+    ],
+
+    // عنوان المحادثة يؤخذ من أول رسالة بدل طلب إضافي للنموذج.
+    'conversations' => [
+        'generate_title' => (bool) env('AI_GENERATE_CONVERSATION_TITLE', false),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Caching

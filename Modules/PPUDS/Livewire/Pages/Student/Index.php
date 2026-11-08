@@ -30,6 +30,7 @@ use Modules\Core\Filament\Forms\Components\Textarea;
 use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\Core\Filament\Tables\Columns\UserColumn;
 use Modules\Core\Interfaces\ExcelServiceInterface;
+use Modules\GeoLocation\Entities\City;
 use Modules\PPUDS\Entities\Major;
 use Modules\PPUDS\Entities\StudentProfile;
 use Modules\PPUDS\Enums\CvStatus;
@@ -248,6 +249,12 @@ class Index extends Component implements HasForms, HasTable
                                     Select::make('gender')
                                         ->label(__('Gender'))
                                         ->options(StudentGender::options()),
+
+                                    Select::make('residence_city_id')
+                                        ->label(__('Residence City'))
+                                        ->options(fn () => City::with('translations')->get()->pluck('name', 'id'))
+                                        ->searchable()
+                                        ->nullable(),
 
                                     TextInput::make('tawjihi_gpa')
                                         ->label(__('Tawjihi GPA'))

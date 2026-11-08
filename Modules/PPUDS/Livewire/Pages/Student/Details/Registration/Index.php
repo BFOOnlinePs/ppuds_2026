@@ -5,9 +5,13 @@ namespace Modules\PPUDS\Livewire\Pages\Student\Details\Registration;
 use App\View\Components\AppLayout;
 use Filament\Forms;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Forms\Get;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Columns\TextColumn;
@@ -29,6 +33,7 @@ use Modules\Core\Filament\Forms\Components\ViewAction;
 use Modules\Core\Filament\Tables\Columns\UserColumn;
 use Modules\PPUDS\Entities\Course;
 use Modules\PPUDS\Entities\Registration;
+use Modules\PPUDS\Entities\RegistrationSubject;
 use Modules\PPUDS\Enums\SemesterType;
 
 // ✅ تأكد من استدعاء مودل الكورس
@@ -82,6 +87,7 @@ class Index extends Component implements HasTable, HasForms
             ])
             ->filters($this->getTableFilters(), layout: FiltersLayout::AboveContent)
             ->filtersFormColumns(4)
+            ->actions([$this->subjectsTableAction()])
             ->bulkActions($this->getTableBulkAction());
     }
 
@@ -214,6 +220,108 @@ class Index extends Component implements HasTable, HasForms
                 })
                 ->visible(fn() => auth()->user()->can('Registration Delete'))
         ];
+    }
+
+    /**
+     * المواد الجامعية التي درسها الطالب لهذه المرحلة التدريبية (التسجيل)، تُدخل يدوياً.
+     * مربوط وحده بالجدول لأن getTableActions غير مستخدمة لهذا الجدول.
+     */
+    protected function subjectsTableAction(): Action
+    {
+        return Action::make('subjects')
+            ->label('')
+            ->size('xl')
+            ->color('info')
+            ->icon('solar-book-2-bold-duotone')
+            ->tooltip(__('University Subjects'))
+            ->modalHeading(fn(Registration $record) => __('University Subjects') . ' - ' . ($record->course?->name ?? '-'))
+            ->modalWidth('3xl')
+            ->fillForm(fn(Registration $record) => [
+                'subjects' => $record->subjects()
+                    ->get(['id', 'name', 'code'])
+                    ->map(fn(RegistrationSubject $subject) => $subject->only(['id', 'name', 'code']))
+                    ->all(),
+            ])
+            ->form(fn() => [
+                Repeater::make('subjects')
+                    ->label(__('University Subjects'))
+                    ->schema([
+                        Hidden::make('id'),
+                        Grid::make(2)->schema([
+                            TextInput::make('name')
+                                ->label(__('Subject Name'))
+                                ->required()
+                                ->maxLength(255)
+                                // المادة المحفوظة لا تُعدَّل إلا بصلاحية التعديل.
+                                ->disabled(fn(Get $get) => filled($get('id')) && ! auth()->user()->can('RegistrationSubject Update')),
+                            TextInput::make('code')
+                                ->label(__('Subject Code'))
+                                ->maxLength(255)
+                                ->disabled(fn(Get $get) => filled($get('id')) && ! auth()->user()->can('RegistrationSubject Update')),
+                        ]),
+                    ])
+                    ->defaultItems(0)
+                    ->addable(fn() => auth()->user()->can('RegistrationSubject Create'))
+                    ->deletable(fn() => auth()->user()->can('RegistrationSubject Delete'))
+                    ->reorderable(false)
+                    ->addActionLabel(__('Add Subject')),
+            ])
+            ->modalSubmitAction(fn($action) => auth()->user()->canAny([
+                'RegistrationSubject Create',
+                'RegistrationSubject Update',
+                'RegistrationSubject Delete',
+            ]) ? $action : false)
+            ->action(function (Registration $record, array $data) {
+                $this->syncSubjects($record, $data['subjects'] ?? []);
+                Toaster::success(__('Subjects saved successfully'));
+            })
+            ->visible(fn() => auth()->user()->can('RegistrationSubject View'));
+    }
+
+    /**
+     * إخفاء أزرار الإضافة والحذف في الواجهة ليس حماية، لذلك تُفحص صلاحية كل عملية هنا.
+     * المعرّفات تُطابق مواد هذا التسجيل فقط، فلا يمكن تعديل مادة تسجيل آخر.
+     */
+    private function syncSubjects(Registration $registration, array $items): void
+    {
+        $user = auth()->user();
+        $existing = $registration->subjects()->get()->keyBy('id');
+        $keptIds = [];
+
+        foreach ($items as $item) {
+            $id = $item['id'] ?? null;
+
+            if (filled($id)) {
+                $subject = $existing->get((int) $id);
+
+                if (! $subject) {
+                    continue;
+                }
+
+                $keptIds[] = $subject->id;
+
+                if ($user->can('RegistrationSubject Update') && array_key_exists('name', $item)) {
+                    $subject->update([
+                        'name' => $item['name'],
+                        'code' => $item['code'] ?? null,
+                    ]);
+                }
+
+                continue;
+            }
+
+            if ($user->can('RegistrationSubject Create') && filled($item['name'] ?? null)) {
+                $registration->subjects()->create([
+                    'name' => $item['name'],
+                    'code' => $item['code'] ?? null,
+                    'created_by' => $user->id,
+                ]);
+            }
+        }
+
+        if ($user->can('RegistrationSubject Delete')) {
+            $existing->except($keptIds)->each->delete();
+        }
     }
 
     public function render()

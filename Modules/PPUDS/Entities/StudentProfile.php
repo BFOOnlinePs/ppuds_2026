@@ -15,6 +15,7 @@ use Modules\Core\Entities\User;
 use Modules\Core\Enums\ImageQuality;
 use Modules\Core\Enums\ImageSize;
 use Modules\Core\Services\ImageService;
+use Modules\GeoLocation\Entities\City;
 use Modules\PPUDS\Enums\StudentGender;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -53,6 +54,7 @@ class StudentProfile extends Model implements HasMedia
         'enrollment_year',
         'semester_level',
         'major_id',
+        'residence_city_id',
         'linkedin_url',
         'behance_url',
         'github_url',
@@ -200,5 +202,10 @@ class StudentProfile extends Model implements HasMedia
     public function major(): BelongsTo
     {
         return $this->belongsTo(Major::class);
+    }
+
+    public function residenceCity(): BelongsTo
+    {
+        return $this->belongsTo(City::class, 'residence_city_id');
     }
 }

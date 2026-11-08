@@ -386,6 +386,7 @@ class Index extends Component implements HasTable, HasForms
             'Program Details' => 'تفاصيل البرامج',
             'Program Instruction' => 'تعليمات البرامج',
             'Program Type Of Meal' => 'أنواع وجبات البرامج',
+            'RegistrationSubject' => 'المواد الجامعية',
             'Registration' => 'التسجيلات',
             'Report' => 'التقارير',
             'Roles And Permissions' => 'الأدوار والصلاحيات',

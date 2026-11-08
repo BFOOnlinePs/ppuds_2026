@@ -29,6 +29,10 @@ class SidebarServiceProvider extends ServiceProvider
                 ->hiddenForRoles([UserRole::EVALUATION_SUPERVISOR->value])
         );
 
+        $sidebar->add(
+            new SidebarItem('AI Assistant', 'solar-magic-stick-3-bold-duotone', ['AI Assistant View'], 'ai-assistant.index', 15)
+        );
+
         // البيانات الأكاديمية تُعرض ضمن قسم إدارة التدريب لأن صلاحياتها ممنوحة لأدوار غير إدارية.
         $sidebar->add(
             (new SidebarGroup('Academic Data', 'solar-library-bold-duotone', [], 170))
