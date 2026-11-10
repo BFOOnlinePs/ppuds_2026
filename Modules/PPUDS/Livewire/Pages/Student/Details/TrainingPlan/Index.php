@@ -5,6 +5,7 @@ namespace Modules\PPUDS\Livewire\Pages\Student\Details\TrainingPlan;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
+use Modules\PPUDS\Entities\Registration;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Support\ScopesStudentCompanyVisibility;
 
@@ -29,19 +30,48 @@ class Index extends Component
     }
 
     #[Computed]
-    public function plans(): Collection
+    public function studentCompanies(): Collection
     {
         return $this->applyStudentCompanyVisibilityScope(
             StudentCompany::query()
                 ->where('student_id', $this->studentId)
                 ->when($this->studentCompanyId, fn ($query) => $query->whereKey($this->studentCompanyId))
         )
-            ->with(['registration', 'student.studentProfile'])
-            ->get()
+            ->with(['registration.subjects', 'registration.course.translations', 'student.studentProfile'])
+            ->get();
+    }
+
+    #[Computed]
+    public function plans(): Collection
+    {
+        return $this->studentCompanies
             ->map(fn (StudentCompany $studentCompany) => $studentCompany->trainingPlan())
             ->filter()
             ->unique('id')
             ->values();
+    }
+
+    /**
+     * المواد الجامعية للطالب (المدخلة يدوياً لكل تسجيل) مجمّعة حسب المساق،
+     * لتُعرض داخل قسم خطة المساق نفسه.
+     */
+    #[Computed]
+    public function registrationSubjects(): Collection
+    {
+        if (! auth()->user()->can('RegistrationSubject View')) {
+            return collect();
+        }
+
+        return $this->studentCompanies
+            ->pluck('registration')
+            ->filter()
+            ->unique('id')
+            ->groupBy('course_id')
+            ->map(fn (Collection $registrations) => [
+                'course' => $registrations->first()->course,
+                'subjects' => $registrations->flatMap(fn (Registration $registration) => $registration->subjects),
+            ])
+            ->filter(fn (array $group) => $group['subjects']->isNotEmpty());
     }
 
     public function render()

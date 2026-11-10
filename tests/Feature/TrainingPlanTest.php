@@ -303,6 +303,71 @@ class TrainingPlanTest extends TestCase
             ->assertDontSee(__('Training Plan'));
     }
 
+    public function test_plan_tab_shows_the_university_subjects_of_the_student_in_the_plan_of_their_course(): void
+    {
+        $major = $this->major('Fintech');
+        $course = $this->course('STAGE-1');
+        $this->plan($major, $course);
+        $placement = $this->placement($major, $course);
+        $this->registrationSubject($placement, 'برمجة متقدمة', 'CS201');
+        $this->actingAs($this->adminWith(['TrainingPlan View', 'RegistrationSubject View']));
+
+        Livewire::test(PlanTab::class, ['studentId' => $placement->student_id])
+            ->assertSee(__('University Subjects'))
+            ->assertSee('برمجة متقدمة')
+            ->assertSee('CS201')
+            ->assertSee('هدف تجريبي');
+    }
+
+    public function test_plan_tab_hides_university_subjects_without_their_view_permission(): void
+    {
+        $major = $this->major('Fintech');
+        $course = $this->course('STAGE-1');
+        $this->plan($major, $course);
+        $placement = $this->placement($major, $course);
+        $this->registrationSubject($placement, 'برمجة متقدمة');
+        $this->actingAs($this->adminWith(['TrainingPlan View']));
+
+        Livewire::test(PlanTab::class, ['studentId' => $placement->student_id])
+            ->assertSee('هدف تجريبي')
+            ->assertDontSee('برمجة متقدمة');
+    }
+
+    public function test_plan_tab_shows_university_subjects_even_when_the_course_has_no_plan(): void
+    {
+        $placement = $this->placement($this->major('Fintech'), $this->course('STAGE-1'));
+        $this->registrationSubject($placement, 'قواعد بيانات');
+        $this->actingAs($this->adminWith(['TrainingPlan View', 'RegistrationSubject View']));
+
+        Livewire::test(PlanTab::class, ['studentId' => $placement->student_id])
+            ->assertSee(__('No training plan has been added for this major and course yet.'))
+            ->assertSee('STAGE-1')
+            ->assertSee('قواعد بيانات');
+    }
+
+    public function test_placement_scope_shows_only_the_university_subjects_of_that_placement(): void
+    {
+        $major = $this->major('Fintech');
+        $first = $this->placement($major, $this->course('STAGE-1'));
+        $second = $this->placementFor($first->student_id, $this->course('STAGE-2'));
+        $this->registrationSubject($first, 'مادة المرحلة الأولى');
+        $this->registrationSubject($second, 'مادة المرحلة الثانية');
+        $this->actingAs($this->adminWith(['TrainingPlan View', 'RegistrationSubject View']));
+
+        Livewire::test(PlanTab::class, ['studentId' => $first->student_id, 'studentCompanyId' => $second->id])
+            ->assertSee('مادة المرحلة الثانية')
+            ->assertDontSee('مادة المرحلة الأولى');
+    }
+
+    private function registrationSubject(StudentCompany $placement, string $name, ?string $code = null): void
+    {
+        $placement->registration->subjects()->create([
+            'name' => $name,
+            'code' => $code,
+            'created_by' => $this->admin->id,
+        ]);
+    }
+
     /**
      * المسارات مسجلة بدون بادئة لغة في الاختبارات، فإعادة التوجيه إلى /ar تنتهي بـ 404.
      */
