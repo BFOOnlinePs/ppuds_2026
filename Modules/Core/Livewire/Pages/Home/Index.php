@@ -12,15 +12,6 @@ use Filament\Infolists\Concerns\InteractsWithInfolists;
 use Filament\Infolists\Contracts\HasInfolists;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
-use Modules\Core\Livewire\Pages\Home\Widget\Charts\AttendanceLastSevenDaysChart;
-use Modules\Core\Livewire\Pages\Home\Widget\Charts\CompanyLocationsChart;
-use Modules\Core\Livewire\Pages\Home\Widget\Charts\CompanySectorsChart;
-use Modules\Core\Livewire\Pages\Home\Widget\Charts\CurrentStudentsGenderChart;
-use Modules\Core\Livewire\Pages\Home\Widget\Charts\CurrentStudentsProgramChart;
-use Modules\Core\Livewire\Pages\Home\Widget\Charts\FieldVisitsLastSixMonthsChart;
-use Modules\Core\Livewire\Pages\Home\Widget\Charts\LeaveRequestsStatusChart;
-use Modules\Core\Livewire\Pages\Home\Widget\Charts\TrainingStatusChart;
-use Modules\Core\Livewire\Pages\Home\Widget\Charts\UsersByRoleChart;
 use Modules\Core\Settings\GeneralSettings;
 use Modules\PPUDS\Entities\Announcement;
 
@@ -30,24 +21,6 @@ class Index extends Component implements HasForms, HasInfolists
     use InteractsWithInfolists;
 
     public function mount() {}
-
-    public function chartWidgets(): array
-    {
-        return collect([
-            UsersByRoleChart::class,
-            CurrentStudentsGenderChart::class,
-            CurrentStudentsProgramChart::class,
-            TrainingStatusChart::class,
-            CompanyLocationsChart::class,
-            CompanySectorsChart::class,
-            AttendanceLastSevenDaysChart::class,
-            LeaveRequestsStatusChart::class,
-            FieldVisitsLastSixMonthsChart::class,
-        ])
-            ->filter(fn (string $widget) => $widget::canView())
-            ->values()
-            ->all();
-    }
 
     #[Computed]
     public function settings()

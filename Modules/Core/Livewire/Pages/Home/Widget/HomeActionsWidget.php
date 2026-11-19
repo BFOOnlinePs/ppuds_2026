@@ -9,7 +9,7 @@ use Modules\Core\Enums\UserRole;
 
 class HomeActionsWidget extends Widget
 {
-    protected int | string | array $columnSpan = 'full';
+    protected int|string|array $columnSpan = 'full';
 
     protected static string $view = 'core::livewire.pages.home.widget.home-actions-widget';
 
@@ -24,7 +24,25 @@ class HomeActionsWidget extends Widget
 
     private function items(): array
     {
+        $companyRoles = [
+            UserRole::COMPANY_SUPERVISOR->value,
+            'Company Manager',
+            'مدير الشركة',
+        ];
+
         return [
+            [
+                'label' => 'Add Student Company',
+                'route' => 'student-companies.add',
+                'permission' => 'StudentCompany Create',
+                'icon' => 'heroicon-o-user-plus',
+            ],
+            [
+                'label' => 'Student Company Registration',
+                'route' => 'student-companies.index',
+                'permission' => 'StudentCompany View List',
+                'icon' => 'heroicon-o-briefcase',
+            ],
             [
                 'label' => 'Students',
                 'route' => 'students.index',
@@ -32,65 +50,24 @@ class HomeActionsWidget extends Widget
                 'icon' => 'heroicon-o-academic-cap',
             ],
             [
+                'label' => 'Registrations',
+                'route' => 'registrations.index',
+                'permission' => 'Registration View List',
+                'icon' => 'heroicon-o-clipboard-document',
+            ],
+            [
                 'label' => 'Companies',
                 'route' => 'companies.index',
                 'permission' => 'Company View List',
                 'icon' => 'heroicon-o-building-office-2',
-                'hidden_roles' => [
-                    UserRole::COMPANY_SUPERVISOR->value,
-                    'Company Manager',
-                    'مدير الشركة',
-                ],
+                'hidden_roles' => $companyRoles,
             ],
             [
                 'label' => 'Generate Company With AI',
                 'route' => 'companies.add',
                 'permission' => 'Company Create',
                 'icon' => 'heroicon-o-sparkles',
-                'hidden_roles' => [
-                    UserRole::COMPANY_SUPERVISOR->value,
-                    'Company Manager',
-                    'مدير الشركة',
-                ],
-            ],
-            [
-                'label' => 'Attendance And Departure Log',
-                'route' => 'student-attendances.index',
-                'permission' => 'StudentAttendance View List',
-                'icon' => 'heroicon-o-clipboard-document-check',
-            ],
-            [
-                'label' => 'Student Company Registration',
-                'route' => 'student-companies.index',
-                'permission' => 'StudentCompany View List',
-                'icon' => 'heroicon-o-user-plus',
-            ],
-            [
-                'label' => 'Field Visit',
-                'route' => 'field-visits.index',
-                'permission' => 'FieldVisit View List',
-                'icon' => 'heroicon-o-map-pin',
-            ],
-            [
-                'label' => 'Surveys',
-                'route' => 'surveys.index',
-                'permission' => 'Survey View List',
-                'icon' => 'heroicon-o-clipboard-document-list',
-            ],
-            [
-                'label' => 'Announcements',
-                'route' => 'announcements.index',
-                'permission' => 'Announcement View List',
-                'icon' => 'heroicon-o-megaphone',
-            ],
-            [
-                'label' => 'Attendance Map',
-                'roles' => [
-                    UserRole::SUPER_ADMIN->value,
-                    UserRole::ADMIN->value,
-                ],
-                'icon' => 'heroicon-o-map',
-                'event' => 'open-attendance-map',
+                'hidden_roles' => $companyRoles,
             ],
             [
                 'label' => 'Attendance And Departure Records',
@@ -103,6 +80,39 @@ class HomeActionsWidget extends Widget
                 'route' => 'leave-requests.index',
                 'permission' => 'LeaveRequest View List',
                 'icon' => 'heroicon-o-document-text',
+            ],
+            [
+                'label' => 'Field Visit',
+                'route' => 'field-visits.index',
+                'permission' => 'FieldVisit View List',
+                'icon' => 'heroicon-o-map-pin',
+            ],
+            [
+                'label' => 'Reports',
+                'route' => 'reports.index',
+                'permission' => 'Report View List',
+                'icon' => 'heroicon-o-document-chart-bar',
+            ],
+            [
+                'label' => 'Announcements',
+                'route' => 'announcements.index',
+                'permission' => 'Announcement View List',
+                'icon' => 'heroicon-o-megaphone',
+            ],
+            [
+                'label' => 'Surveys',
+                'route' => 'surveys.index',
+                'permission' => 'Survey View List',
+                'icon' => 'heroicon-o-clipboard-document-list',
+            ],
+            [
+                'label' => 'Attendance Map',
+                'roles' => [
+                    UserRole::SUPER_ADMIN->value,
+                    UserRole::ADMIN->value,
+                ],
+                'icon' => 'heroicon-o-map',
+                'event' => 'open-attendance-map',
             ],
         ];
     }
