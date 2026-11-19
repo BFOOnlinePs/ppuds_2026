@@ -48,5 +48,15 @@
                 </x-button>
             </div>
         </form>
+
+        {{-- "Password or code": offer the code beside the password. --}}
+        @inject('otpLogin', 'Modules\PPUDS\Services\LoginOtpService')
+        @if ($otpLogin->availability(\Modules\PPUDS\Enums\LoginClient::WEB)['code_login'])
+            <div class="mt-6 border-t border-gray-200 pt-4 text-center">
+                <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('login.otp') }}">
+                    {{ __('Sign in with a one-time code instead') }}
+                </a>
+            </div>
+        @endif
     </x-authentication-card>
 </x-guest-layout>

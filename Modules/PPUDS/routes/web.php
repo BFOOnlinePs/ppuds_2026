@@ -2,8 +2,10 @@
 
 use App\Http\Middleware\EnforceConfiguredLoginMethod;
 use Illuminate\Support\Facades\Route;
+use Modules\PPUDS\Http\Controllers\CompanyQrCodeController;
 use Modules\PPUDS\Http\Controllers\KeycloakAuthController;
 use Modules\PPUDS\Http\Controllers\LoginGatewayController;
+use Modules\PPUDS\Http\Controllers\OtpLoginController;
 
 // Route::get('/login', [KeycloakAuthController::class, 'redirect'])->name('login');
 
@@ -13,6 +15,23 @@ use Modules\PPUDS\Http\Controllers\LoginGatewayController;
 // });
 
 Route::middleware('guest')->get('/login', LoginGatewayController::class)->name('login');
+
+// الدخول برمز لمرة واحدة — لتسجيل الدخول الداخلي فقط، ومنفصل تماماً عن Keycloak.
+Route::middleware('guest')
+    ->prefix('login/code')
+    ->controller(OtpLoginController::class)
+    ->group(function () {
+        Route::get('/', 'show')->name('login.otp');
+        Route::post('/', 'send')->middleware('throttle:ppuds-otp')->name('login.otp.send');
+        Route::post('/verify', 'verify')->middleware('throttle:ppuds-otp')->name('login.otp.verify');
+        Route::post('/reset', 'reset')->name('login.otp.reset');
+    });
+
+// ما يفتحه رابط رمز QR الشركة في المتصفح: إرشاد لفتح التطبيق، دون أي دخول.
+Route::get('/c/{token}', [CompanyQrCodeController::class, 'landing'])
+    ->middleware('throttle:ppuds-otp')
+    ->where('token', '[A-Za-z0-9_-]{32,128}')
+    ->name('company-qr.landing');
 
 // مسارات Keycloak
 Route::middleware(['guest', EnforceConfiguredLoginMethod::class])->group(function () {
@@ -95,6 +114,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     Route::get('/{company}/edit', Edit::class)->name('edit')->can('Company Update');
                     Route::get('/{company}/details', Details\Details::class)->name('details')->can('Company Details List');
                 });
+
+                // ملفات رمز QR الخاص بدخول الشركة؛ الإنشاء والإلغاء من صفحة تفاصيل الشركة.
+                Route::prefix('companies/{company}/qr-code')
+                    ->as('companies.qr-code.')
+                    ->controller(CompanyQrCodeController::class)
+                    ->group(function () {
+                        Route::get('/print', 'print')->name('print')->can('Company QR View');
+                        Route::get('/{format}', 'download')->whereIn('format', ['svg', 'png'])->name('download')->can('Company QR View');
+                    });
 
                 // كل ما يخص مشرفي الشركات في شاشة واحدة: إضافة وتعديل وإسناد أقسام.
                 Route::get(

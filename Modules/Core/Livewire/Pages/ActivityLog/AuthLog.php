@@ -116,6 +116,20 @@ class AuthLog extends Component implements HasForms, HasTable
                     ->color('gray')
                     ->toggleable(isToggledHiddenByDefault: true),
 
+                TextColumn::make('sign_in_method')
+                    ->label(__('Sign In Method'))
+                    ->getStateUsing(fn (Model $record): string => match ($this->activityProperties($record)['sign_in_method'] ?? null) {
+                        'email_code' => __('Email code'),
+                        'sms_code' => __('SMS code'),
+                        'password_and_email_code' => __('Password + email code'),
+                        'password_and_sms_code' => __('Password + SMS code'),
+                        'company_qr' => __('Company QR code'),
+                        default => '—',
+                    })
+                    ->badge()
+                    ->color('gray')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 TextColumn::make('user_agent')
                     ->label(__('User Agent'))
                     ->getStateUsing(fn (Model $record): string => (string) ($this->activityProperties($record)['user_agent'] ?? '—'))

@@ -48,6 +48,8 @@ class Index extends Component implements HasTable, HasForms
     {
         return $table
             ->query(fn() => Announcement::query()
+                // Non-managers see only the published announcements aimed at them.
+                ->when(! auth()->user()->can('Announcement Create'), fn (Builder $query) => $query->forUser(auth()->user()))
                 ->with(['createdBy', 'category.translations'])
                 ->orderByDesc('is_pinned')
                 ->latest('published_at'))
@@ -277,6 +279,9 @@ class Index extends Component implements HasTable, HasForms
                     if (isset($data['announcement_image'])) {
                         $record->addMedia($data['announcement_image'])->toMediaCollection('announcement_image');
                     }
+
+                    // No-op once notified; sends now if the publish date was moved up.
+                    app(PpudsNotificationService::class)->announcementCreated($record);
 
                     Toaster::success(__('Announcement updated successfully'));
                 })

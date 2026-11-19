@@ -2,8 +2,11 @@
 
 namespace Modules\PPUDS\Providers;
 
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
@@ -14,6 +17,7 @@ use Modules\PPUDS\Auth\KeycloakUserProvider;
 use Modules\PPUDS\Enums\LoginMethod;
 use Modules\PPUDS\Settings\GeneralSettings;
 use Modules\PPUDS\Settings\KeycloakSettings;
+use Modules\PPUDS\Support\Sms\SmsManager;
 use Nwidart\Modules\Traits\PathNamespace;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -47,6 +51,8 @@ class PPUDSServiceProvider extends ServiceProvider
             SocialiteWasCalled::class,
             [KeycloakExtendSocialite::class, 'handle']
         );
+
+        $this->registerRateLimiters();
 
         if (! $this->app->runningInConsole()) {
             try {
@@ -110,11 +116,42 @@ class PPUDSServiceProvider extends ServiceProvider
     }
 
     /**
+     * Per-IP ceiling on the code sign-in endpoints. LoginOtpService adds the
+     * per-email limits; this one stops a single client from cycling through
+     * many emails.
+     */
+    private function registerRateLimiters(): void
+    {
+        RateLimiter::for('ppuds-otp', function (Request $request) {
+            return Limit::perMinute(20)
+                ->by('ppuds-otp-ip:'.$request->ip())
+                ->response(function (Request $request, array $headers) {
+                    $seconds = (int) ($headers['Retry-After'] ?? 60);
+                    $message = __('Too many requests. Please try again in :seconds seconds.', ['seconds' => $seconds]);
+
+                    if ($request->expectsJson() || $request->is('api/*')) {
+                        return response()->json([
+                            'status' => false,
+                            'message' => $message,
+                            'data' => ['retry_after' => $seconds],
+                        ], 429, $headers, JSON_UNESCAPED_UNICODE);
+                    }
+
+                    return back()->withErrors([$request->routeIs('login.otp.verify') ? 'code' : 'email' => $message]);
+                });
+        });
+    }
+
+    /**
      * Registration the service provider.
      */
     public function register(): void
     {
         $this->registerKeycloakUserProvider();
+
+        // Scoped rather than singleton so a long-lived Octane worker never
+        // keeps a provider the settings screen has since switched away from.
+        $this->app->scoped(SmsManager::class, fn (Application $app) => new SmsManager($app));
 
         $this->app->register(EventServiceProvider::class);
         $this->app->register(RouteServiceProvider::class);

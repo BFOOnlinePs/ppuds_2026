@@ -4,8 +4,10 @@ namespace Modules\Core\Livewire\Pages\Settings;
 
 use App\View\Components\AppLayout;
 use Carbon\Carbon;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -19,18 +21,27 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Jantinnerezo\LivewireAlert\Facades\LivewireAlert;
 use Livewire\Component;
 use Modules\Core\Entities\Settings;
+use Modules\Core\Enums\UserRole;
 use Modules\Core\Settings\GeneralSettings;
 use Modules\PPUDS\Entities\Major;
 use Modules\PPUDS\Enums\GigEvaluationStatus;
+use Modules\PPUDS\Enums\InternalLoginMode;
 use Modules\PPUDS\Enums\LoginMethod;
+use Modules\PPUDS\Enums\OtpChannel;
 use Modules\PPUDS\Enums\ReportStatus;
 use Modules\PPUDS\Enums\SemesterType;
 use Modules\PPUDS\Enums\WorkLocationEnforcement;
+use Modules\PPUDS\Services\CompanyMembershipService;
+use Modules\PPUDS\Settings\AuthenticationSettings;
 use Modules\PPUDS\Settings\GeneralSettings as PPUDSGeneralSettings;
 use Modules\PPUDS\Settings\KeycloakSettings;
+use Modules\PPUDS\Settings\SmsSettings;
+use Modules\PPUDS\Support\Sms\SmsManager;
+use Spatie\Permission\Models\Role;
 
 class Index extends Component implements HasForms
 {
@@ -94,6 +105,7 @@ class Index extends Component implements HasForms
 
             'app_versions' => $appVersions,
 
+            ...$this->authenticationFormState(),
         ]);
     }
 
@@ -429,6 +441,8 @@ class Index extends Component implements HasForms
                                     ->defaultItems(0) // لا تضف عناصر فارغة افتراضياً
                                     ->collapsible(), // جعل العناصر قابلة للطي لتوفير المساحة
                             ]),
+
+                        $this->authenticationTab(),
                     ])->columnSpanFull(),
             ])
             ->statePath('data');
@@ -440,11 +454,326 @@ class Index extends Component implements HasForms
         return (int) $get('work_location_enforcement') !== WorkLocationEnforcement::DISABLED->value;
     }
 
+    /**
+     * Sign-in code and company QR settings, prefixed `auth_` / `sms_` in the
+     * form state. The SMS api key is deliberately left out: it never travels
+     * to the browser, and an empty field on save keeps the stored key.
+     */
+    protected function authenticationFormState(): array
+    {
+        $auth = app(AuthenticationSettings::class);
+        $sms = app(SmsSettings::class);
+
+        return [
+            'auth_web_login_mode' => $auth->web_login_mode->value,
+            'auth_mobile_login_mode' => $auth->mobile_login_mode->value,
+            'auth_qr_login_enabled' => $auth->qr_login_enabled,
+            'auth_qr_login_roles' => $auth->qr_login_roles,
+            'auth_qr_code_validity_days' => $auth->qr_code_validity_days,
+            'auth_otp_length' => $auth->otp_length,
+            'auth_otp_ttl_minutes' => $auth->otp_ttl_minutes,
+            'auth_otp_max_attempts' => $auth->otp_max_attempts,
+            'auth_otp_resend_cooldown_seconds' => $auth->otp_resend_cooldown_seconds,
+            'auth_otp_max_sends_per_hour' => $auth->otp_max_sends_per_hour,
+            'auth_otp_email_enabled' => $auth->otp_email_enabled,
+            'auth_otp_sms_enabled' => $auth->otp_sms_enabled,
+            'auth_otp_default_channel' => $auth->otp_default_channel->value,
+            'auth_otp_allow_channel_choice' => $auth->otp_allow_channel_choice,
+            'auth_otp_sms_fallback_to_email' => $auth->otp_sms_fallback_to_email,
+            'auth_sms_daily_limit' => $auth->sms_daily_limit,
+
+            'sms_driver' => $sms->driver,
+            'sms_api_url' => $sms->api_url,
+            'sms_sender_id' => $sms->sender_id,
+            'sms_api_key' => null,
+        ];
+    }
+
+    protected function authenticationTab(): Tabs\Tab
+    {
+        return Tabs\Tab::make(__('Sign In & Verification'))
+            ->icon('solar-shield-keyhole-bold-duotone')
+            ->schema([
+                // Both features belong to the internal login only, so make it
+                // obvious when the university sign-in is what is in use.
+                Placeholder::make('auth_internal_login_only')
+                    ->hiddenLabel()
+                    ->content(__('These options apply to the internal login only. They have no effect while the login method is set to University SSO (PPU).'))
+                    ->visible(fn (callable $get): bool => (int) $get('login_method') === LoginMethod::PPU->value),
+
+                Section::make(__('Sign-In Method'))
+                    ->description(__('Chosen separately for the dashboard and the mobile app. Any method that uses a one-time code needs working email (or SMS) delivery — without it, the system falls back to the password so nobody is locked out.'))
+                    ->icon('solar-password-minimalistic-input-bold-duotone')
+                    ->schema([
+                        Grid::make(2)->schema([
+                            Select::make('auth_web_login_mode')
+                                ->label(__('Dashboard (Website) Sign-In'))
+                                ->prefixIcon('solar-monitor-bold-duotone')
+                                ->options(InternalLoginMode::options())
+                                ->helperText(fn (callable $get): ?string => InternalLoginMode::tryFrom((int) $get('auth_web_login_mode'))?->getDescription())
+                                ->native(false)
+                                ->live()
+                                ->required(),
+
+                            Select::make('auth_mobile_login_mode')
+                                ->label(__('Mobile App Sign-In'))
+                                ->prefixIcon('solar-smartphone-bold-duotone')
+                                ->options(InternalLoginMode::options())
+                                ->helperText(fn (callable $get): ?string => InternalLoginMode::tryFrom((int) $get('auth_mobile_login_mode'))?->getDescription())
+                                ->native(false)
+                                ->live()
+                                ->required(),
+                        ]),
+                    ]),
+
+                Section::make(__('Company QR Sign In'))
+                    ->description(__('The mobile app scans the company QR code, then the person confirms who they are with a one-time code. Only people who belong to that company can sign in this way.'))
+                    ->icon('solar-qr-code-bold-duotone')
+                    ->schema([
+                        Toggle::make('auth_qr_login_enabled')
+                            ->label(__('Enable Company QR Sign In'))
+                            ->live(),
+
+                        CheckboxList::make('auth_qr_login_roles')
+                            ->label(__('Roles Allowed To Sign In With A Company QR Code'))
+                            ->helperText(__('Only roles that can be linked to a company are available.'))
+                            ->options(fn (): array => $this->roleOptions())
+                            ->disableOptionWhen(fn (string $value): bool => ! in_array($value, CompanyMembershipService::supportedRoles(), true))
+                            ->columns(2)
+                            ->required(fn (callable $get): bool => (bool) $get('auth_qr_login_enabled'))
+                            ->visible(fn (callable $get): bool => (bool) $get('auth_qr_login_enabled')),
+
+                        TextInput::make('auth_qr_code_validity_days')
+                            ->label(__('QR Code Validity (days)'))
+                            ->helperText(__('Applies to newly generated codes. 0 means the code stays valid until it is revoked.'))
+                            ->prefixIcon('solar-calendar-bold-duotone')
+                            ->numeric()
+                            ->minValue(0)
+                            ->maxValue(3650)
+                            ->required(),
+                    ]),
+
+                Section::make(__('Code Rules'))
+                    ->icon('solar-shield-check-bold-duotone')
+                    ->collapsible()
+                    ->schema([
+                        Grid::make(3)->schema([
+                            TextInput::make('auth_otp_length')
+                                ->label(__('Code Length (digits)'))
+                                ->prefixIcon('solar-hashtag-bold-duotone')
+                                ->numeric()->minValue(4)->maxValue(8)->required(),
+
+                            TextInput::make('auth_otp_ttl_minutes')
+                                ->label(__('Code Validity (minutes)'))
+                                ->prefixIcon('solar-stopwatch-bold-duotone')
+                                ->numeric()->minValue(1)->maxValue(60)->required(),
+
+                            TextInput::make('auth_otp_max_attempts')
+                                ->label(__('Wrong Attempts Allowed Per Code'))
+                                ->prefixIcon('solar-danger-triangle-bold-duotone')
+                                ->numeric()->minValue(1)->maxValue(10)->required(),
+
+                            TextInput::make('auth_otp_resend_cooldown_seconds')
+                                ->label(__('Wait Before Resending (seconds)'))
+                                ->prefixIcon('solar-refresh-bold-duotone')
+                                ->numeric()->minValue(30)->maxValue(600)->required(),
+
+                            TextInput::make('auth_otp_max_sends_per_hour')
+                                ->label(__('Codes Allowed Per Hour'))
+                                ->prefixIcon('solar-clock-circle-bold-duotone')
+                                ->numeric()->minValue(1)->maxValue(20)->required(),
+                        ]),
+                    ]),
+
+                Section::make(__('Delivery Channels'))
+                    ->description(__('How the one-time code reaches the person.'))
+                    ->icon('solar-letter-bold-duotone')
+                    ->collapsible()
+                    ->schema([
+                        Grid::make(2)->schema([
+                            Toggle::make('auth_otp_email_enabled')
+                                ->label(__('Send Codes By Email'))
+                                ->live(),
+
+                            Toggle::make('auth_otp_sms_enabled')
+                                ->label(__('Send Codes By SMS'))
+                                ->live(),
+
+                            Select::make('auth_otp_default_channel')
+                                ->label(__('Default Channel'))
+                                ->prefixIcon('solar-plain-bold-duotone')
+                                ->options(OtpChannel::options())
+                                ->required(),
+
+                            Toggle::make('auth_otp_allow_channel_choice')
+                                ->label(__('Let The User Choose The Channel'))
+                                ->helperText(__('Only when both channels are enabled.')),
+
+                            Toggle::make('auth_otp_sms_fallback_to_email')
+                                ->label(__('Use Email When SMS Fails'))
+                                ->visible(fn (callable $get): bool => (bool) $get('auth_otp_sms_enabled')),
+
+                            TextInput::make('auth_sms_daily_limit')
+                                ->label(__('Maximum Sign In Texts Per Day'))
+                                ->helperText(__('Across the whole system, to protect the SMS balance.'))
+                                ->prefixIcon('solar-chat-round-money-bold-duotone')
+                                ->numeric()->minValue(1)->maxValue(100000)->required()
+                                ->visible(fn (callable $get): bool => (bool) $get('auth_otp_sms_enabled')),
+                        ]),
+                    ]),
+
+                Section::make(__('SMS Provider'))
+                    ->icon('solar-smartphone-bold-duotone')
+                    ->collapsible()
+                    ->collapsed()
+                    ->schema([
+                        Grid::make(2)->schema([
+                            Select::make('sms_driver')
+                                ->label(__('Provider'))
+                                ->prefixIcon('solar-server-bold-duotone')
+                                ->options(SmsManager::driverOptions())
+                                ->required(),
+
+                            TextInput::make('sms_sender_id')
+                                ->label(__('Sender Name'))
+                                ->prefixIcon('solar-user-id-bold-duotone')
+                                ->maxLength(20),
+
+                            TextInput::make('sms_api_url')
+                                ->label(__('API URL'))
+                                ->prefixIcon('solar-link-bold-duotone')
+                                ->url()
+                                ->maxLength(500),
+
+                            TextInput::make('sms_api_key')
+                                ->label(__('API Key'))
+                                ->prefixIcon('solar-lock-password-bold-duotone')
+                                ->password()
+                                ->autocomplete('new-password')
+                                ->maxLength(500)
+                                ->dehydrated(fn (?string $state): bool => filled($state))
+                                ->helperText(fn (): string => filled(app(SmsSettings::class)->api_key)
+                                    ? __('A key is saved. Leave empty to keep it.')
+                                    : __('No key saved yet.')),
+                        ]),
+                    ]),
+            ]);
+    }
+
+    /**
+     * The roles that actually exist, labelled the way the rest of the system
+     * labels them.
+     *
+     * @return array<string, string>
+     */
+    protected function roleOptions(): array
+    {
+        return Role::query()
+            ->orderBy('name')
+            ->pluck('name')
+            ->unique()
+            ->mapWithKeys(fn (string $name): array => [
+                $name => UserRole::tryFrom($name)?->getLabel() ?? __($name),
+            ])
+            ->all();
+    }
+
+    /**
+     * Rules that span several fields, which per-field validation cannot express.
+     *
+     * @throws ValidationException
+     */
+    protected function validateAuthenticationSettings(array $data): void
+    {
+        $usesCodes = InternalLoginMode::from((int) $data['auth_web_login_mode'])->usesCodes()
+            || InternalLoginMode::from((int) $data['auth_mobile_login_mode'])->usesCodes()
+            || ! empty($data['auth_qr_login_enabled']);
+        $emailEnabled = ! empty($data['auth_otp_email_enabled']);
+        $smsEnabled = ! empty($data['auth_otp_sms_enabled']);
+
+        if ($usesCodes && ! $emailEnabled && ! $smsEnabled) {
+            throw ValidationException::withMessages([
+                'data.auth_otp_email_enabled' => __('Enable at least one delivery channel, or the code cannot reach anyone.'),
+            ]);
+        }
+
+        $defaultChannel = OtpChannel::tryFrom((int) ($data['auth_otp_default_channel'] ?? 0));
+
+        if ($usesCodes && (
+            ($defaultChannel === OtpChannel::MAIL && ! $emailEnabled) ||
+            ($defaultChannel === OtpChannel::SMS && ! $smsEnabled)
+        )) {
+            throw ValidationException::withMessages([
+                'data.auth_otp_default_channel' => __('The default channel must be one of the enabled channels.'),
+            ]);
+        }
+
+        $unsupported = array_diff($data['auth_qr_login_roles'] ?? [], CompanyMembershipService::supportedRoles());
+
+        if ($unsupported !== []) {
+            throw ValidationException::withMessages([
+                'data.auth_qr_login_roles' => __('Only roles that can be linked to a company are available.'),
+            ]);
+        }
+    }
+
+    protected function saveAuthenticationSettings(array $data): void
+    {
+        $auth = app(AuthenticationSettings::class);
+
+        $auth->web_login_mode = InternalLoginMode::from((int) $data['auth_web_login_mode']);
+        $auth->mobile_login_mode = InternalLoginMode::from((int) $data['auth_mobile_login_mode']);
+        $auth->qr_login_enabled = (bool) ($data['auth_qr_login_enabled'] ?? false);
+
+        // The role list is hidden while QR sign-in is off; keep what was
+        // stored so switching it back on restores the old choice.
+        if (array_key_exists('auth_qr_login_roles', $data)) {
+            $auth->qr_login_roles = array_values(array_map('strval', $data['auth_qr_login_roles'] ?? []));
+        }
+
+        $auth->qr_code_validity_days = (int) $data['auth_qr_code_validity_days'];
+        $auth->otp_length = (int) $data['auth_otp_length'];
+        $auth->otp_ttl_minutes = (int) $data['auth_otp_ttl_minutes'];
+        $auth->otp_max_attempts = (int) $data['auth_otp_max_attempts'];
+        $auth->otp_resend_cooldown_seconds = (int) $data['auth_otp_resend_cooldown_seconds'];
+        $auth->otp_max_sends_per_hour = (int) $data['auth_otp_max_sends_per_hour'];
+        $auth->otp_email_enabled = (bool) ($data['auth_otp_email_enabled'] ?? false);
+        $auth->otp_sms_enabled = (bool) ($data['auth_otp_sms_enabled'] ?? false);
+        $auth->otp_default_channel = OtpChannel::from((int) $data['auth_otp_default_channel']);
+        $auth->otp_allow_channel_choice = (bool) ($data['auth_otp_allow_channel_choice'] ?? false);
+
+        if (array_key_exists('auth_otp_sms_fallback_to_email', $data)) {
+            $auth->otp_sms_fallback_to_email = (bool) $data['auth_otp_sms_fallback_to_email'];
+        }
+
+        if (array_key_exists('auth_sms_daily_limit', $data)) {
+            $auth->sms_daily_limit = (int) $data['auth_sms_daily_limit'];
+        }
+
+        $auth->save();
+
+        $sms = app(SmsSettings::class);
+        $sms->driver = (string) $data['sms_driver'];
+        $sms->api_url = trim((string) ($data['sms_api_url'] ?? ''));
+        $sms->sender_id = trim((string) ($data['sms_sender_id'] ?? ''));
+
+        // Write-only: an empty field means "keep the stored key".
+        if (filled($data['sms_api_key'] ?? null)) {
+            $sms->api_key = trim((string) $data['sms_api_key']);
+        }
+
+        $sms->save();
+    }
+
     public function save()
     {
         $this->authorize('Setting Update');
 
         $data = $this->form->getState();
+
+        // Before anything is written, so a rejected combination never leaves
+        // the other tabs half saved.
+        $this->validateAuthenticationSettings($data);
 
         $generalSettings = app(GeneralSettings::class);
         $generalSettings->site_name = $data['site_name'];
@@ -516,6 +845,8 @@ class Index extends Component implements HasForms
         }
 
         $keycloakSettings->save();
+
+        $this->saveAuthenticationSettings($data);
 
         if (isset($data['app_versions'])) {
             $platformsToKeep = [];

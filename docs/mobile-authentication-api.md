@@ -1,0 +1,676 @@
+# تسجيل الدخول في تطبيق الجوال — دليل مبرمج Flutter
+
+هذا الدليل يشرح كل ما يحتاجه التطبيق لتسجيل الدخول عبر **الدخول الداخلي للنظام** (ليس دخول الجامعة Keycloak).
+
+الفكرة الأساسية: **طريقة دخول التطبيق تُحدَّد من لوحة التحكم**، والتطبيق يقرأها من السيرفر ويعرض الشاشة المناسبة. لا تكتب طريقة الدخول ثابتة في التطبيق.
+
+---
+
+## 1. الصورة العامة
+
+من لوحة التحكم: **الإعدادات ← تسجيل الدخول والتحقق ← الدخول من تطبيق الجوال**. يختار المسؤول واحدة من أربع طرق:
+
+| `mode` | ماذا يفعل المستخدم |
+|---|---|
+| `password` | البريد + كلمة المرور فقط (كما يعمل التطبيق الآن) |
+| `code` | البريد، ثم رمز يصله على البريد أو SMS. **لا توجد كلمة مرور** |
+| `password_or_code` | المستخدم يختار: كلمة المرور **أو** الرمز |
+| `password_then_code` | البريد + كلمة المرور، **ثم** رمز للتأكيد (تحقق بخطوتين) |
+
+وبشكل مستقل عن الطرق الأربع، يوجد مفتاح **الدخول عبر رمز QR للشركة** (`company_qr_login`): يمسح المستخدم QR الشركة، ثم يدخل بريده والرمز الذي يصله.
+
+> لوحة التحكم (الويب) لها إعداد منفصل خاص بها، ولا يؤثر على التطبيق.
+
+### أي نظام دخول أصلاً؟ الجامعة أم الداخلي؟
+
+هذا الأمر لم يتغير، والتطبيق يعرفه من:
+
+```
+GET /api/v1/ppuds/settings   →   data.login_method
+```
+
+- `login_method = 2` (PPU): الدخول عبر الجامعة كما هو اليوم (`/api/v1/auth/university-login`)، **وهذا الدليل لا ينطبق**.
+- `login_method = 1` (SYSTEM): الدخول الداخلي، **اتبع هذا الدليل**.
+
+---
+
+## 2. قبل أي شيء: اقرأ خيارات الدخول
+
+```
+GET /api/v1/auth/options
+```
+
+نفس البيانات موجودة أيضاً في `GET /api/v1/config` داخل `data.auth`. استخدم أيهما. اقرأها **في كل مرة تفتح فيها شاشة الدخول**، لأن المسؤول قد يغيّرها في أي وقت.
+
+### مثال للاستجابة
+
+```json
+{
+  "status": true,
+  "message": "تم جلب خيارات تسجيل الدخول بنجاح.",
+  "data": {
+    "mode": "password_or_code",
+    "password_login": true,
+    "code_login": true,
+    "two_step": false,
+    "company_qr_login": true,
+    "channels": ["mail"],
+    "default_channel": "mail",
+    "channel_choice": false,
+    "code_length": 6
+  }
+}
+```
+
+### معنى الحقول
+
+| الحقل | النوع | المعنى في الشاشة |
+|---|---|---|
+| `mode` | string | الطريقة المختارة (أحد القيم الأربع أعلاه) |
+| `password_login` | bool | اعرض حقل كلمة المرور / زر "الدخول بكلمة المرور" |
+| `code_login` | bool | اعرض "الدخول برمز" (بريد فقط ثم رمز) |
+| `two_step` | bool | بعد كلمة المرور قد يُطلب رمز (انظر القسم 6) |
+| `company_qr_login` | bool | اعرض زر "الدخول برمز الشركة (QR)" |
+| `channels` | string[] | القنوات المتاحة: `mail`, `sms` |
+| `default_channel` | string\|null | القناة الافتراضية |
+| `channel_choice` | bool | إذا `true` اعرض اختيار "إرسال عبر البريد / SMS" وأرسل `channel` |
+| `code_length` | int\|null | عدد خانات الرمز، لبناء حقل الإدخال |
+
+> إذا تعذّر إرسال الرموز لأي سبب (مثلاً البريد غير مضبوط)، يعيد السيرفر تلقائياً `mode = password` حتى لا يُحرم أحد من الدخول. لذلك اعتمد دائماً على الاستجابة لا على افتراضات.
+
+---
+
+## 3. قواعد عامة لكل الطلبات
+
+### الـ Headers
+
+```
+Accept: application/json
+Content-Type: application/json
+Accept-Language: ar        // أو en — لغة رسائل الأخطاء والإيميل/SMS المرسل
+```
+
+> `Accept-Language` تؤثر على مسارات `options` و`otp/*` و`company-qr/*`. أما المسار الحالي `/api/v1/auth/login` فيرد بالعربية دائماً، كما كان قبل هذه الإضافة.
+
+### شكل الاستجابة الموحّد
+
+كل الطلبات تعيد نفس الغلاف:
+
+```json
+{ "status": true | false, "message": "نص جاهز للعرض للمستخدم", "data": { } | null }
+```
+
+اعرض `message` للمستخدم مباشرة، فهو مترجم حسب `Accept-Language`.
+
+### رموز الحالة (HTTP status)
+
+| الكود | المعنى | ماذا يفعل التطبيق |
+|---|---|---|
+| `200` | نجاح | — |
+| `401` | بيانات دخول خاطئة، أو `login_ticket` منتهي/غير صالح | اعرض `message`. مع التذكرة: ارجع لشاشة كلمة المرور |
+| `403` | هذه الطريقة معطّلة من لوحة التحكم | أعد قراءة `/auth/options` واعرض الشاشة الصحيحة |
+| `404` | رمز QR غير صالح/ملغى/منتهي، أو الشركة غير فعّالة | اعرض `message` واطلب مسح QR الحالي |
+| `422` | خطأ تحقق (حقل ناقص، أو الرمز خاطئ/منتهي) | اعرض `message`. تفاصيل الحقول في `data` |
+| `429` | طلبات كثيرة | انتظر `data.retry_after` ثانية (موجودة أيضاً في الـ header `Retry-After`) |
+
+مثال `422` لرمز خاطئ:
+
+```json
+{
+  "status": false,
+  "message": "الرمز غير صحيح أو منتهي الصلاحية.",
+  "data": { "code": ["الرمز غير صحيح أو منتهي الصلاحية."] }
+}
+```
+
+مثال `429`:
+
+```json
+{
+  "status": false,
+  "message": "طلبات كثيرة جداً. يرجى المحاولة مجدداً بعد 42 ثانية.",
+  "data": { "retry_after": 42 }
+}
+```
+
+### استجابة الدخول الناجح (موحّدة لكل الطرق)
+
+كل طرق الدخول تنتهي بنفس الاستجابة الحالية لـ `/api/v1/auth/login`، فلا يتغير شيء في بقية التطبيق:
+
+```json
+{
+  "status": true,
+  "message": "تم تسجيل الدخول بنجاح",
+  "data": {
+    "token": "15|Qm3x....",
+    "token_type": "Bearer",
+    "user": {
+      "id": 3,
+      "name": "مشرف تجريبي",
+      "email": "supervisor@example.com",
+      "phone": "0599000000",
+      "image": "https://...",
+      "...": "..."
+    }
+  }
+}
+```
+
+بعدها استخدم التوكن كالمعتاد:
+
+```
+Authorization: Bearer 15|Qm3x....
+```
+
+وتسجيل الخروج كما هو: `POST /api/v1/auth/logout`.
+
+---
+
+## 4. الطريقة `password` — كلمة المرور فقط
+
+لا شيء جديد، الطلب الحالي نفسه:
+
+```
+POST /api/v1/auth/login
+```
+
+```json
+{
+  "email": "supervisor@example.com",
+  "password": "********",
+  "device_name": "Samsung S23",
+  "fcm_token": "fcm-token-value"
+}
+```
+
+الاستجابة: استجابة الدخول الناجح (القسم 3).
+
+---
+
+## 5. الطريقة `code` — البريد ثم الرمز (بدون كلمة مرور)
+
+```
+شاشة البريد ──► POST /auth/otp/request ──► شاشة الرمز ──► POST /auth/otp/verify ──► توكن
+                                          ▲
+                                          └── "إعادة الإرسال" بعد resend_after ثانية
+```
+
+### الخطوة 1: طلب الرمز
+
+```
+POST /api/v1/auth/otp/request
+```
+
+```json
+{
+  "email": "supervisor@example.com",
+  "channel": "mail"
+}
+```
+
+- `channel` اختياري، ولا يُحترم إلا إذا كان `channel_choice = true`.
+
+الاستجابة:
+
+```json
+{
+  "status": true,
+  "message": "إذا كان الحساب يستطيع الدخول بهذه الطريقة، فقد أُرسل إليه رمز.",
+  "data": {
+    "channel": "mail",
+    "expires_in": 600,
+    "resend_after": 60,
+    "code_length": 6
+  }
+}
+```
+
+> **مهم أمنياً:** الاستجابة واحدة سواء كان البريد مسجّلاً أم لا، حتى لا يُستغل الـ API لمعرفة الحسابات الموجودة. لذلك لا تكتب في التطبيق "تم الإرسال إلى بريدك" بشكل قاطع. استخدم `message` كما هو، أو صياغة مشابهة: "إذا كان الحساب موجوداً ستصلك رسالة".
+
+| الحقل | الاستخدام |
+|---|---|
+| `expires_in` | صلاحية الرمز بالثواني (اعرض "صالح لمدة 10 دقائق") |
+| `resend_after` | عطّل زر "إعادة الإرسال" هذا العدد من الثواني (عداد تنازلي) |
+| `code_length` | عدد خانات حقل الرمز |
+
+### الخطوة 2: التحقق من الرمز
+
+```
+POST /api/v1/auth/otp/verify
+```
+
+```json
+{
+  "email": "supervisor@example.com",
+  "code": "482913",
+  "device_name": "Samsung S23",
+  "fcm_token": "fcm-token-value"
+}
+```
+
+الاستجابة: استجابة الدخول الناجح (القسم 3).
+
+### إعادة الإرسال
+
+نفس طلب الخطوة 1 مرة أخرى، بعد انتهاء العداد. الرمز الجديد يُلغي القديم تلقائياً.
+
+### قواعد الرمز (من السيرفر، للعلم)
+
+- يُستخدم **مرة واحدة فقط**.
+- صالح لمدة `expires_in`.
+- له عدد محاولات خاطئة محدود (افتراضياً 5). بعدها يُحرق، ويجب طلب رمز جديد.
+- كثرة المحاولات الخاطئة تقفل البريد مؤقتاً، ويعيد السيرفر `429` مع `retry_after`.
+
+---
+
+## 6. الطريقة `password_then_code` — تحقق بخطوتين
+
+```
+البريد + كلمة المرور ──► POST /auth/login
+        │
+        ├─ data.token موجود        → دخل مباشرة (لا يحدث في هذا الوضع، لكن تعامل معه)
+        └─ data.requires_code=true → احفظ login_ticket ──► شاشة الرمز
+                                                          │
+                       POST /auth/otp/verify {login_ticket, code} ──► توكن
+                       إعادة الإرسال: POST /auth/otp/request {login_ticket}
+```
+
+### الخطوة 1: كلمة المرور
+
+نفس الطلب الحالي:
+
+```
+POST /api/v1/auth/login
+```
+
+```json
+{
+  "email": "supervisor@example.com",
+  "password": "********",
+  "channel": "mail"
+}
+```
+
+إذا كانت كلمة المرور خاطئة: `401` كالمعتاد.
+
+إذا كانت صحيحة، **لا يأتي توكن**، بل:
+
+```json
+{
+  "status": true,
+  "message": "أدخل الرمز الذي أرسلناه إليك لإتمام تسجيل الدخول.",
+  "data": {
+    "requires_code": true,
+    "login_ticket": "eyJpdiI6IkV2...",
+    "channel": "mail",
+    "expires_in": 600,
+    "resend_after": 60,
+    "code_length": 6
+  }
+}
+```
+
+> **قاعدة بسيطة للتطبيق:** بعد `/auth/login` افحص الاستجابة. إذا وُجد `data.token` فقد تم الدخول، وإذا كان `data.requires_code == true` فانتقل لشاشة الرمز. بهذا يعمل نفس الكود مع كل الطرق.
+
+`login_ticket`:
+
+- دليل على أن كلمة المرور صحيحة، وصالح بنفس مدة الرمز.
+- احفظه في الذاكرة فقط (state) أثناء شاشة الرمز، ولا تخزّنه بشكل دائم.
+- لا يحتاج التطبيق لفهم محتواه، فهو مشفّر.
+
+### الخطوة 2: الرمز
+
+```
+POST /api/v1/auth/otp/verify
+```
+
+```json
+{
+  "login_ticket": "eyJpdiI6IkV2...",
+  "code": "482913",
+  "device_name": "Samsung S23",
+  "fcm_token": "fcm-token-value"
+}
+```
+
+الاستجابة: استجابة الدخول الناجح (القسم 3).
+
+- إذا انتهت صلاحية التذكرة أو كانت غير صالحة: `401`. أرجع المستخدم لشاشة كلمة المرور.
+
+### إعادة الإرسال
+
+```
+POST /api/v1/auth/otp/request
+```
+
+```json
+{ "login_ticket": "eyJpdiI6IkV2..." }
+```
+
+> في هذا الوضع **لا يعمل** `otp/request` و`otp/verify` بالبريد وحده (يعيد `403`). الرمز لا يُطلب إلا بعد كلمة مرور صحيحة.
+
+---
+
+## 7. الطريقة `password_or_code`
+
+اعرض الخيارين في شاشة الدخول:
+
+- "الدخول بكلمة المرور" → القسم 4.
+- "الدخول برمز يصلك على البريد" → القسم 5.
+
+---
+
+## 8. الدخول عبر رمز QR للشركة
+
+يظهر فقط إذا `company_qr_login = true`. لكل شركة رمز QR مطبوع، يُنشأ ويُطبع من صفحة الشركة في لوحة التحكم.
+
+```
+مسح QR ──► POST /auth/company-qr/resolve ──► (عرض اسم وشعار الشركة)
+       ──► البريد ──► POST /auth/otp/request {email, qr_token}
+       ──► الرمز  ──► POST /auth/otp/verify  {email, code, qr_token} ──► توكن
+```
+
+### محتوى الـ QR
+
+الـ QR يحتوي رابطاً بهذا الشكل:
+
+```
+https://<domain>/c/9fQxK2v...Lm7   (43 حرفاً بعد /c/)
+```
+
+أرسل **النص الممسوح كما هو** (الرابط كاملاً) في `qr_token`، والسيرفر يستخرج منه الرمز. لو فتح أحد الرابط بالمتصفح بدل التطبيق، تظهر له صفحة تطلب منه فتح التطبيق (يمكن لاحقاً جعلها Deep Link).
+
+### الخطوة 1: التحقق من QR
+
+```
+POST /api/v1/auth/company-qr/resolve
+```
+
+```json
+{ "qr_token": "https://ds.ppu.edu/c/9fQxK2v...Lm7" }
+```
+
+```json
+{
+  "status": true,
+  "message": "تم العثور على الشركة.",
+  "data": {
+    "company": {
+      "id": 12,
+      "name": "شركة التدريب",
+      "logo_url": "https://..."
+    }
+  }
+}
+```
+
+- `404`: الرمز غير صالح أو أُلغي (المسؤول ولّد رمزاً جديداً) أو انتهى أو الشركة غير فعّالة.
+- `403`: الدخول عبر QR معطّل.
+
+### الخطوة 2 و3
+
+مثل الطريقة `code` تماماً، مع إضافة `qr_token` (نفس النص الممسوح) في **الطلبين**:
+
+```json
+// POST /api/v1/auth/otp/request
+{ "email": "supervisor@example.com", "qr_token": "https://ds.ppu.edu/c/9fQx..." }
+
+// POST /api/v1/auth/otp/verify
+{ "email": "supervisor@example.com", "code": "482913", "qr_token": "https://ds.ppu.edu/c/9fQx...", "device_name": "Samsung S23", "fcm_token": "..." }
+```
+
+ملاحظات:
+
+- **لا يدخل إلا من يتبع لهذه الشركة** (مثلاً مشرف الشركة على أحد فروعها)، وبحسب الأدوار المسموحة في لوحة التحكم. غير ذلك لن يصله رمز، والاستجابة نفسها لا تكشف ذلك.
+- الرمز المطلوب عبر QR يعمل لهذه الشركة فقط، ولا يصلح للدخول العادي، والعكس صحيح.
+- دخول QR مستقل عن `mode`، ويحكمه `company_qr_login` فقط.
+
+---
+
+## 9. ملخص كل الـ Endpoints
+
+| Method | Path | Auth | الوصف |
+|---|---|---|---|
+| GET | `/api/v1/auth/options` | — | خيارات الدخول (أو `data.auth` في `/api/v1/config`) |
+| POST | `/api/v1/auth/login` | — | كلمة المرور. قد تعيد `requires_code` في وضع الخطوتين |
+| POST | `/api/v1/auth/otp/request` | — | طلب/إعادة إرسال رمز: `{email}` أو `{email, qr_token}` أو `{login_ticket}` |
+| POST | `/api/v1/auth/otp/verify` | — | التحقق وإصدار التوكن: `{email, code}` أو `{email, code, qr_token}` أو `{login_ticket, code}` |
+| POST | `/api/v1/auth/company-qr/resolve` | — | التحقق من QR الشركة: `{qr_token}` |
+| POST | `/api/v1/auth/logout` | Bearer | تسجيل الخروج (بدون تغيير) |
+
+حقول اختيارية مشتركة في `otp/verify`: `device_name` و`fcm_token` (نفس `/auth/login`).
+
+حد عام للطلبات: 20 طلباً في الدقيقة لكل IP على مسارات الرمز و QR، وبعدها `429`.
+
+---
+
+## 10. نماذج Dart جاهزة
+
+> مثال باستخدام `dio`. عدّل حسب طبقة الشبكة الموجودة في التطبيق.
+
+### Model: AuthOptions
+
+```dart
+enum LoginMode { password, code, passwordOrCode, passwordThenCode }
+
+LoginMode _parseMode(String? v) => switch (v) {
+      'code' => LoginMode.code,
+      'password_or_code' => LoginMode.passwordOrCode,
+      'password_then_code' => LoginMode.passwordThenCode,
+      _ => LoginMode.password,
+    };
+
+class AuthOptions {
+  final LoginMode mode;
+  final bool passwordLogin;
+  final bool codeLogin;
+  final bool twoStep;
+  final bool companyQrLogin;
+  final List<String> channels;
+  final String? defaultChannel;
+  final bool channelChoice;
+  final int codeLength;
+
+  AuthOptions.fromJson(Map<String, dynamic> j)
+      : mode = _parseMode(j['mode'] as String?),
+        passwordLogin = j['password_login'] == true,
+        codeLogin = j['code_login'] == true,
+        twoStep = j['two_step'] == true,
+        companyQrLogin = j['company_qr_login'] == true,
+        channels = List<String>.from(j['channels'] ?? const []),
+        defaultChannel = j['default_channel'] as String?,
+        channelChoice = j['channel_choice'] == true,
+        codeLength = (j['code_length'] as int?) ?? 6;
+}
+```
+
+### Model: CodeChallenge
+
+```dart
+class CodeChallenge {
+  final String channel;     // mail | sms
+  final int expiresIn;      // ثواني
+  final int resendAfter;    // ثواني
+  final int codeLength;
+  final String? loginTicket; // في وضع الخطوتين فقط
+
+  CodeChallenge.fromJson(Map<String, dynamic> j)
+      : channel = j['channel'] as String,
+        expiresIn = j['expires_in'] as int,
+        resendAfter = j['resend_after'] as int,
+        codeLength = j['code_length'] as int,
+        loginTicket = j['login_ticket'] as String?;
+}
+```
+
+### نتيجة كلمة المرور (توكن أو خطوة ثانية)
+
+```dart
+sealed class PasswordLoginResult {}
+
+class LoggedIn extends PasswordLoginResult {
+  final String token;
+  final Map<String, dynamic> user;
+  LoggedIn(this.token, this.user);
+}
+
+class CodeRequired extends PasswordLoginResult {
+  final CodeChallenge challenge; // فيه loginTicket
+  CodeRequired(this.challenge);
+}
+```
+
+### Service
+
+```dart
+class AuthApi {
+  AuthApi(this._dio);
+  final Dio _dio;
+
+  Future<AuthOptions> options() async {
+    final r = await _dio.get('/api/v1/auth/options');
+    return AuthOptions.fromJson(r.data['data']);
+  }
+
+  /// كلمة المرور — تعيد توكن، أو تطلب رمزاً في وضع الخطوتين.
+  Future<PasswordLoginResult> loginWithPassword({
+    required String email,
+    required String password,
+    String? channel,
+    String? deviceName,
+    String? fcmToken,
+  }) async {
+    final r = await _dio.post('/api/v1/auth/login', data: {
+      'email': email,
+      'password': password,
+      if (channel != null) 'channel': channel,
+      if (deviceName != null) 'device_name': deviceName,
+      if (fcmToken != null) 'fcm_token': fcmToken,
+    });
+    final data = r.data['data'] as Map<String, dynamic>;
+    if (data['requires_code'] == true) {
+      return CodeRequired(CodeChallenge.fromJson(data));
+    }
+    return LoggedIn(data['token'] as String, data['user'] as Map<String, dynamic>);
+  }
+
+  /// طلب رمز: بالبريد (وضع code / QR) أو بالتذكرة (إعادة إرسال في وضع الخطوتين).
+  Future<CodeChallenge> requestCode({
+    String? email,
+    String? loginTicket,
+    String? qrToken,
+    String? channel,
+  }) async {
+    final r = await _dio.post('/api/v1/auth/otp/request', data: {
+      if (email != null) 'email': email,
+      if (loginTicket != null) 'login_ticket': loginTicket,
+      if (qrToken != null) 'qr_token': qrToken,
+      if (channel != null) 'channel': channel,
+    });
+    return CodeChallenge.fromJson(r.data['data']);
+  }
+
+  /// التحقق من الرمز وإصدار التوكن.
+  Future<LoggedIn> verifyCode({
+    required String code,
+    String? email,
+    String? loginTicket,
+    String? qrToken,
+    String? deviceName,
+    String? fcmToken,
+  }) async {
+    final r = await _dio.post('/api/v1/auth/otp/verify', data: {
+      'code': code,
+      if (email != null) 'email': email,
+      if (loginTicket != null) 'login_ticket': loginTicket,
+      if (qrToken != null) 'qr_token': qrToken,
+      if (deviceName != null) 'device_name': deviceName,
+      if (fcmToken != null) 'fcm_token': fcmToken,
+    });
+    final data = r.data['data'] as Map<String, dynamic>;
+    return LoggedIn(data['token'] as String, data['user'] as Map<String, dynamic>);
+  }
+
+  Future<Map<String, dynamic>> resolveCompanyQr(String scanned) async {
+    final r = await _dio.post('/api/v1/auth/company-qr/resolve', data: {'qr_token': scanned});
+    return r.data['data']['company'] as Map<String, dynamic>;
+  }
+}
+```
+
+### قراءة الأخطاء
+
+```dart
+String errorMessage(DioException e) =>
+    (e.response?.data is Map ? e.response?.data['message'] : null) ?? 'حدث خطأ، حاول مجدداً';
+
+int? retryAfter(DioException e) {
+  final d = e.response?.data;
+  return (d is Map && d['data'] is Map) ? d['data']['retry_after'] as int? : null;
+}
+```
+
+### بناء شاشة الدخول من الخيارات
+
+```dart
+final o = await authApi.options();
+
+switch (o.mode) {
+  case LoginMode.password:
+  case LoginMode.passwordThenCode:
+    showEmailPasswordForm();               // بعد الإرسال: افحص LoggedIn / CodeRequired
+  case LoginMode.code:
+    showEmailOnlyForm();                   // ثم شاشة الرمز
+  case LoginMode.passwordOrCode:
+    showEmailPasswordForm(withCodeOption: true);
+}
+
+if (o.companyQrLogin) showScanCompanyQrButton();
+```
+
+---
+
+## 11. توصيات الواجهة (UX)
+
+- **حقل الرمز:**
+  - طوله `code_length`، ولوحة مفاتيح أرقام.
+  - فعّل `autofillHints: [AutofillHints.oneTimeCode]` حتى يقترح iOS/Android الرمز من الرسالة.
+  - أرسل الرمز تلقائياً عند اكتمال الخانات.
+- **زر إعادة الإرسال:** عداد تنازلي بقيمة `resend_after`. عند `429` استخدم `retry_after`.
+- **رسالة بعد طلب الرمز:** استخدم `message` من السيرفر، ولا تؤكد أن البريد موجود (انظر القسم 5).
+- **"تغيير البريد"** في شاشة الرمز يرجع لشاشة البريد. في وضع الخطوتين يرجع لشاشة كلمة المرور ويحذف `login_ticket`.
+- **عند `403`:** أعد تحميل `/auth/options`. الغالب أن المسؤول غيّر طريقة الدخول.
+- **عند `401` مع التذكرة:** "انتهت محاولة الدخول، أدخل كلمة المرور مجدداً".
+- لا تخزّن الرمز ولا `login_ticket` في التخزين الدائم ولا في الـ logs.
+
+---
+
+## 12. سيناريوهات اختبار قبل التسليم
+
+اضبط كل وضع من لوحة التحكم وجرّب:
+
+1. **`password`:** الدخول بكلمة المرور يعمل كما كان. `otp/request` يعيد `403`.
+2. **`code`:**
+   - طلب رمز ← التحقق ← دخول.
+   - `/auth/login` بكلمة المرور يعيد `403`.
+   - رمز خاطئ يعيد `422`، و5 أخطاء تحرق الرمز.
+   - إعادة الإرسال قبل انتهاء العداد تعيد `429`.
+3. **`password_or_code`:** الطريقتان تعملان.
+4. **`password_then_code`:**
+   - كلمة مرور خاطئة تعيد `401`.
+   - كلمة مرور صحيحة تعيد `requires_code` ← التحقق بالتذكرة ← دخول.
+   - إعادة الإرسال بالتذكرة.
+   - تذكرة منتهية (بعد 10 دقائق) تعيد `401`.
+5. **QR:**
+   - مسح QR صحيح ← اسم الشركة ← بريد مشرف الشركة ← رمز ← دخول.
+   - QR ملغى (ولّد المسؤول رمزاً جديداً) يعيد `404`.
+   - بريد شخص لا يتبع للشركة: نفس الرسالة، لكن لا يصله رمز.
+6. **اللغة:** `Accept-Language: en` يعيد رسائل مسارات الرمز وQR بالإنجليزية.
+
+---
+
+## 13. للمراجعة في السيرفر
+
+- التوثيق التفاعلي (Swagger) يحتوي كل المسارات أعلاه تحت تصنيف **Auth**.
+- الإعدادات: لوحة التحكم ← الإعدادات ← **تسجيل الدخول والتحقق**.
+- رمز QR الشركة: لوحة التحكم ← الشركات ← تفاصيل الشركة ← تبويب **رمز QR للدخول**.

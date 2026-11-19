@@ -52,6 +52,7 @@ class Announcement extends Model implements TranslatableContract, HasMedia
         'filters' => 'array',
         'published_at' => 'datetime',
         'expires_at' => 'datetime',
+        'notified_at' => 'datetime',
         'is_pinned' => 'boolean',
     ];
 
@@ -85,22 +86,43 @@ class Announcement extends Model implements TranslatableContract, HasMedia
             });
     }
 
-    // السكوب المصحح للتعامل مع JSON
+    /**
+     * Published announcements that one of the user's roles is targeted by.
+     * A student sees a major-specific announcement only for their own major.
+     */
     public function scopeForUser(Builder $query, User $user)
     {
-        return $query->active()->where(function ($q) use ($user) {
-            // 1. هل دور المستخدم موجود داخل مصفوفة الأدوار المستهدفة؟
-            // نستخدم whereJsonContains بدلاً من where العادية
-            $q->whereJsonContains('target_roles', $user->role->value);
+        $roles = $user->getRoleNames();
+        $majorId = $roles->contains(UserRole::STUDENT->value)
+            ? $user->studentProfile?->major_id
+            : null;
 
-            // 2. فلترة خاصة للطلاب (التخصص)
-            if ($user->role === UserRole::STUDENT) {
-                $q->where(function ($subQ) use ($user) {
-                    $subQ->whereNull('filters->major_id')
-                        ->orWhere('filters->major_id', $user->major_id);
+        return $query->active()->where(function (Builder $q) use ($roles, $majorId) {
+            if ($roles->isEmpty()) {
+                $q->whereRaw('1 = 0');
+
+                return;
+            }
+
+            foreach ($roles as $role) {
+                $q->orWhere(function (Builder $roleQuery) use ($role, $majorId) {
+                    $roleQuery->whereJsonContains('target_roles', $role);
+
+                    if ($role === UserRole::STUDENT->value) {
+                        $roleQuery->where(function (Builder $majorQuery) use ($majorId) {
+                            $majorQuery->whereNull('filters->major_id')
+                                ->when($majorId, fn (Builder $q) => $q->orWhere('filters->major_id', $majorId));
+                        });
+                    }
                 });
             }
         });
+    }
+
+    /** Published announcements whose notification has not gone out yet. */
+    public function scopeAwaitingNotification(Builder $query)
+    {
+        return $query->active()->whereNull('notified_at');
     }
 
     protected static function booted()

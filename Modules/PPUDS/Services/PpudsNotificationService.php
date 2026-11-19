@@ -17,6 +17,7 @@ use Modules\PPUDS\Entities\StudentAttendance;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Entities\Survey;
 use Modules\PPUDS\Enums\PaymentStatus;
+use Modules\PPUDS\Jobs\SendAnnouncementNotification;
 use Throwable;
 use Wirechat\Wirechat\Models\Message;
 
@@ -155,7 +156,46 @@ class PpudsNotificationService
             ->chunkById(100, fn(Collection $users) => $this->notifyUsers($users, $notification));
     }
 
+    /**
+     * Queues the announcement's notification if it is already published.
+     * A scheduled one is picked up by dispatchDueAnnouncementNotifications()
+     * when its publish time arrives. Each announcement is notified once.
+     */
     public function announcementCreated(Announcement $announcement): void
+    {
+        $this->queueAnnouncementNotification($announcement->getKey());
+    }
+
+    /** Run every minute by the scheduler. Returns how many were queued. */
+    public function dispatchDueAnnouncementNotifications(): int
+    {
+        return Announcement::query()
+            ->awaitingNotification()
+            ->pluck('id')
+            ->filter(fn (int $id) => $this->queueAnnouncementNotification($id))
+            ->count();
+    }
+
+    private function queueAnnouncementNotification(int $announcementId): bool
+    {
+        // Setting notified_at only while it is still null claims the
+        // announcement, so a concurrent caller cannot queue it a second time.
+        $claimed = Announcement::query()
+            ->whereKey($announcementId)
+            ->awaitingNotification()
+            ->toBase()
+            ->update(['notified_at' => now()]);
+
+        if ($claimed === 0) {
+            return false;
+        }
+
+        SendAnnouncementNotification::dispatch($announcementId);
+
+        return true;
+    }
+
+    public function sendAnnouncementNotification(Announcement $announcement): void
     {
         $notification = new GeneralNotification(
             title: $this->plainText($announcement->name ?: __('New Announcement')),

@@ -46,6 +46,9 @@ use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\CompanyCategory;
 use Modules\PPUDS\Entities\CompanyDepartment;
 use Modules\PPUDS\Entities\StudentCompany;
+use Modules\PPUDS\Enums\LoginClient;
+use Modules\PPUDS\Services\CompanyQrCodeService;
+use Modules\PPUDS\Services\LoginOtpService;
 use Modules\PPUDS\Services\PpuApiService;
 use Spatie\MediaLibrary\MediaCollections\Models\Media as SpatieMedia;
 
@@ -570,6 +573,16 @@ class Details extends Component implements HasForms, HasInfolists, HasActions
                                             ]),
                                     ]),
 
+                                // رمز QR الخاص بدخول منتسبي الشركة من التطبيق.
+                                Tabs\Tab::make(__('Sign-in QR Code'))
+                                    ->icon('heroicon-o-qr-code')
+                                    ->visible(fn (): bool => (bool) auth()->user()?->can('Company QR View'))
+                                    ->schema([
+                                        View::make('ppuds::livewire.pages.company.details.qr-code')
+                                            ->columnSpanFull()
+                                            ->viewData(fn (): array => $this->qrCodeViewData()),
+                                    ]),
+
                                 // التعديل هنا: تحويل "تدريبات الطلاب" إلى مفتاح ترجمة
                                 Tabs\Tab::make(__('Student Trainings'))
                                     ->icon('heroicon-o-academic-cap')
@@ -736,6 +749,70 @@ class Details extends Component implements HasForms, HasInfolists, HasActions
                 Toaster::success(__('Supervisor updated successfully'));
             })
             ->visible(fn () => auth()->user()?->can('Company Update'));
+    }
+
+    /** What the sign-in QR tab shows. */
+    protected function qrCodeViewData(): array
+    {
+        $qrCodes = app(CompanyQrCodeService::class);
+        $code = $qrCodes->activeFor($this->company);
+
+        return [
+            'company' => $this->company,
+            'qrCode' => $code,
+            'qrSvg' => $code ? $qrCodes->svg($code, 6) : null,
+            'qrLoginEnabled' => app(LoginOtpService::class)->availability(LoginClient::MOBILE)['company_qr_login'],
+        ];
+    }
+
+    public function generateQrCodeAction(): Action
+    {
+        return Action::make('generateQrCode')
+            ->label(fn (): string => app(CompanyQrCodeService::class)->activeFor($this->company)
+                ? __('Generate A New Code')
+                : __('Generate Code'))
+            ->icon('heroicon-o-arrow-path')
+            ->requiresConfirmation()
+            ->modalHeading(__('Generate a new sign-in QR code?'))
+            ->modalDescription(fn (): string => app(CompanyQrCodeService::class)->activeFor($this->company)
+                ? __('The current code stops working immediately, including every printed copy. Print and hang the new code afterwards.')
+                : __('People who belong to this company will be able to start signing in by scanning it.'))
+            ->action(function (): void {
+                abort_unless(auth()->user()?->can('Company QR Manage'), 403);
+
+                app(CompanyQrCodeService::class)->generate($this->company, auth()->user());
+
+                Toaster::success(__('A new sign-in QR code was generated.'));
+            })
+            ->visible(fn (): bool => (bool) auth()->user()?->can('Company QR Manage'));
+    }
+
+    public function revokeQrCodeAction(): Action
+    {
+        return Action::make('revokeQrCode')
+            ->label(__('Revoke Code'))
+            ->icon('heroicon-o-no-symbol')
+            ->color('danger')
+            ->requiresConfirmation()
+            ->modalHeading(__('Revoke the sign-in QR code?'))
+            ->modalDescription(__('The code, and every printed copy of it, stops working immediately. Nobody can sign in through this company\'s QR code until a new one is generated.'))
+            ->action(function (): void {
+                abort_unless(auth()->user()?->can('Company QR Manage'), 403);
+
+                $qrCodes = app(CompanyQrCodeService::class);
+                $code = $qrCodes->activeFor($this->company);
+
+                if (! $code) {
+                    Toaster::error(__('This company has no active sign-in QR code.'));
+
+                    return;
+                }
+
+                $qrCodes->revoke($code, auth()->user());
+
+                Toaster::success(__('The sign-in QR code was revoked.'));
+            })
+            ->visible(fn (): bool => (bool) auth()->user()?->can('Company QR Manage'));
     }
 
     public function downloadAttachment(int $mediaId)

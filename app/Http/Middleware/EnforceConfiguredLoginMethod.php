@@ -4,7 +4,9 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Modules\PPUDS\Enums\LoginClient;
 use Modules\PPUDS\Enums\LoginMethod;
+use Modules\PPUDS\Services\LoginOtpService;
 use Modules\PPUDS\Settings\GeneralSettings;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -20,6 +22,14 @@ class EnforceConfiguredLoginMethod
 
         if ($loginMethod === LoginMethod::SYSTEM && $request->routeIs('keycloak.*')) {
             return redirect()->route('login');
+        }
+
+        // While the dashboard signs in with the code only, a password is never
+        // accepted — not even when posted straight to the login route.
+        if ($loginMethod === LoginMethod::SYSTEM
+            && $request->routeIs('login.store')
+            && ! app(LoginOtpService::class)->passwordLoginAllowed(LoginClient::WEB)) {
+            return redirect()->route('login.otp');
         }
 
         return $next($request);

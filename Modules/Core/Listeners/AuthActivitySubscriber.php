@@ -62,6 +62,10 @@ class AuthActivitySubscriber
             [
                 'guard' => $event->guard,
                 'remember' => (bool) ($event->remember ?? false),
+                // Set by sign-in flows other than the password, e.g. a
+                // one-time code; absent (and so not recorded) otherwise.
+                // Not "method": that key already holds the HTTP method.
+                'sign_in_method' => $this->signInMethod(),
             ],
         );
     }
@@ -182,6 +186,25 @@ class AuthActivitySubscriber
             'url' => mb_substr((string) $request->fullUrl(), 0, 500),
             'method' => $request->method(),
         ], fn (mixed $value): bool => filled($value));
+    }
+
+    /**
+     * The request attribute a sign-in flow sets to say how the person signed
+     * in, so a code sign-in is told apart from a password one in the log.
+     */
+    public const SIGN_IN_METHOD_ATTRIBUTE = 'auth_sign_in_method';
+
+    protected function signInMethod(): ?string
+    {
+        $request = request();
+
+        if (! $request instanceof Request) {
+            return null;
+        }
+
+        $method = $request->attributes->get(self::SIGN_IN_METHOD_ATTRIBUTE);
+
+        return is_string($method) && $method !== '' ? $method : null;
     }
 
     /** @param array<string, mixed> $credentials */

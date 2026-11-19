@@ -279,6 +279,17 @@ class PermissionSeeder extends Seeder
                 'guard_name' => 'web',
                 'module_name' => 'Company',
             ],
+            // رمز QR الخاص بدخول منتسبي الشركة: العرض والتنزيل والطباعة، ثم الإنشاء والإلغاء.
+            [
+                'name' => 'Company QR View',
+                'guard_name' => 'web',
+                'module_name' => 'Company',
+            ],
+            [
+                'name' => 'Company QR Manage',
+                'guard_name' => 'web',
+                'module_name' => 'Company',
+            ],
 
 
             // TODO Companies Department

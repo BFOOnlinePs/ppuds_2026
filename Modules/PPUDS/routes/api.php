@@ -2,6 +2,7 @@
 
     use Illuminate\Support\Facades\Route;
     use Modules\PPUDS\Http\Controllers\Api\V1\AbsenceReportController;
+    use Modules\PPUDS\Http\Controllers\Api\V1\Auth\OtpLoginController;
     use Modules\PPUDS\Http\Controllers\Api\V1\Auth\UniversityLoginController;
     use Modules\PPUDS\Http\Controllers\Api\V1\AnnouncementCategoryController;
     use Modules\PPUDS\Http\Controllers\Api\V1\AnnouncementController;
@@ -44,6 +45,21 @@
             // expired, and the refresh token is itself the credential.
             Route::post('university-refresh', [UniversityLoginController::class, 'refresh'])
                 ->name('university-refresh');
+
+            // Internal login only, as configured from the dashboard: one-time
+            // codes, two-step sign-in and company QR codes.
+            Route::get('options', [OtpLoginController::class, 'options'])
+                ->middleware('api.localize')
+                ->name('options');
+
+            Route::middleware(['api.localize', 'throttle:ppuds-otp'])->group(function () {
+                Route::post('company-qr/resolve', [OtpLoginController::class, 'resolveCompany'])
+                    ->name('company-qr.resolve');
+                Route::post('otp/request', [OtpLoginController::class, 'requestCode'])
+                    ->name('otp.request');
+                Route::post('otp/verify', [OtpLoginController::class, 'verifyCode'])
+                    ->name('otp.verify');
+            });
         });
 
         Route::prefix('ppuds')->as('ppuds.')->group(function () {

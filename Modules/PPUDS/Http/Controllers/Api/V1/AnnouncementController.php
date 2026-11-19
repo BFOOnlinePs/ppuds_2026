@@ -3,6 +3,7 @@
 namespace Modules\PPUDS\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\Announcement;
@@ -80,7 +81,7 @@ class AnnouncementController extends Controller
         $maxPerPage = config('core.pagination.max_per_page', 100);
         $perPage = min(request('per_page', $defaultPerPage), $maxPerPage);
 
-        $companies = QueryBuilder::for(Announcement::class)
+        $companies = QueryBuilder::for($this->visibleAnnouncements())
             ->allowedFields(AnnouncementResource::allowedFields())
             ->allowedFilters(AnnouncementResource::allowedFilters())
             ->allowedSorts(AnnouncementResource::allowedSorts())
@@ -185,14 +186,16 @@ class AnnouncementController extends Controller
      * )
      * )
      */
-    public function show(Announcement $announcment)
+    public function show(Announcement $announcement)
     {
         if (! auth()->user()->can('Announcement Details')) {
             return $this->errorResponse(__('You are not authorized to perform this action'), 403);
         }
 
-        $announcment = QueryBuilder::for(Announcement::class)
-            ->where('id', $announcment->id)
+        // The parameter must be named like the {announcement} route segment,
+        // or route model binding is skipped and an empty model arrives.
+        $announcment = QueryBuilder::for($this->visibleAnnouncements())
+            ->where('id', $announcement->id)
             ->allowedFields(AnnouncementResource::allowedFields())
             ->with(['media', 'translations', 'category.translations'])
             ->firstOrFail();
@@ -201,5 +204,17 @@ class AnnouncementController extends Controller
             new AnnouncementResource($announcment),
             __('Announcement retrieved successfully')
         );
+    }
+
+    /**
+     * Whoever manages announcements sees them all; everyone else sees the
+     * published ones aimed at their role (and major, for students).
+     */
+    private function visibleAnnouncements(): Builder
+    {
+        $user = auth()->user();
+
+        return Announcement::query()
+            ->when(! $user->can('Announcement Create'), fn (Builder $query) => $query->forUser($user));
     }
 }

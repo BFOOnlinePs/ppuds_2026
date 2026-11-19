@@ -9,11 +9,13 @@ use Maatwebsite\Excel\Concerns\FromGenerator;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Modules\Core\Entities\User;
+use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\StudentCompany;
 use Modules\PPUDS\Entities\Survey;
 use Modules\PPUDS\Entities\SurveyAnswer;
 use Modules\PPUDS\Entities\SurveyQuestion;
 use Modules\PPUDS\Enums\SurveyQuestionType;
+use Modules\PPUDS\Settings\GeneralSettings;
 use Modules\PPUDS\Support\HandlesCompanySupervisorSurveyEvaluations;
 
 class SurveySubmissionsExport implements FromGenerator, ShouldAutoSize, WithHeadings
@@ -43,8 +45,9 @@ class SurveySubmissionsExport implements FromGenerator, ShouldAutoSize, WithHead
     public function headings(): array
     {
         return array_merge(
+            [__('Student Phone'), __('Student Number'), __('Current Training Place'), __('Training Place Address')],
             $this->isCompanySupervisorSurvey($this->survey)
-                ? [__('Submitted By'), __('Submitted By Email'), __('Evaluated Student'), __('Email'), __('Student Number'), __('Major'), __('Company')]
+                ? [__('Submitted By'), __('Submitted By Email'), __('Evaluated Student'), __('Email'), __('Major')]
                 : [__('Submitted By'), __('Email'), __('Major')],
             $this->questions
                 ->map(fn (SurveyQuestion $question): string => $this->questionHeading($question))
@@ -74,8 +77,10 @@ class SurveySubmissionsExport implements FromGenerator, ShouldAutoSize, WithHead
             ->get()
             ->groupBy(['submitted_by', 'survey_question_id']);
 
+        $currentStudentCompanies = $this->currentStudentCompaniesFor($users->pluck('id'));
+
         foreach ($users as $user) {
-            yield $this->rowFor($user, $answers->get($user->id, collect()));
+            yield $this->rowFor($user, $answers->get($user->id, collect()), $currentStudentCompanies->get($user->id));
         }
     }
 
@@ -84,7 +89,12 @@ class SurveySubmissionsExport implements FromGenerator, ShouldAutoSize, WithHead
         $studentCompaniesTable = (new StudentCompany)->getTable();
 
         $studentCompanies = $this->currentSurveyStudentCompaniesQuery($this->survey)
-            ->with('student.studentProfile.major.translations')
+            ->with([
+                // الطالب المحذوف حذفاً ناعماً يبقى تقييمه في الجدول، فنُظهر بياناته بدل خانات فارغة.
+                'student' => fn ($query) => $query->withTrashed(),
+                'student.studentProfile.major.translations',
+                'company.translations',
+            ])
             ->when($this->majorId, fn (Builder $query, int $majorId): Builder => $query->whereHas(
                 'student.studentProfile',
                 fn (Builder $profileQuery): Builder => $profileQuery->where('major_id', $majorId)
@@ -105,7 +115,9 @@ class SurveySubmissionsExport implements FromGenerator, ShouldAutoSize, WithHead
         $answers = SurveyAnswer::query()
             ->where('survey_id', $this->survey->id)
             ->whereIn('student_company_id', $studentCompanies->pluck('id'))
-            ->with(['option.translations', 'submittedBy'])
+            // User يستخدم SoftDeletes، والمفتاح الأجنبي لا يُحذف إلا مع الحذف الفعلي،
+            // فإجابات المشرف المحذوف ناعماً تبقى ويعود submittedBy بـ null بدون withTrashed.
+            ->with(['option.translations', 'submittedBy' => fn ($query) => $query->withTrashed()])
             ->orderBy('id')
             ->get()
             ->groupBy(['student_company_id', 'survey_question_id']);
@@ -141,9 +153,56 @@ class SurveySubmissionsExport implements FromGenerator, ShouldAutoSize, WithHead
             ->orderBy('users.name');
     }
 
-    protected function rowFor(User $user, Collection $answersByQuestion): array
+    /**
+     * مكان التدريب الحالي لكل طالب ضمن الفصل والسنة المعتمدين في الإعدادات،
+     * محمّل دفعة واحدة لتجنّب استعلام لكل صف. عند وجود أكثر من تسجيل يُعتمد الأحدث.
+     *
+     * @return Collection<int, StudentCompany>
+     */
+    protected function currentStudentCompaniesFor(Collection $studentIds): Collection
+    {
+        $settings = app(GeneralSettings::class);
+
+        return StudentCompany::query()
+            ->with('company.translations')
+            ->whereIn('student_id', $studentIds)
+            ->whereNotNull('company_id')
+            ->whereHas('registration', fn (Builder $query): Builder => $query
+                ->where('semester', $settings->semester_type->value)
+                ->where('year', $settings->year))
+            ->orderByDesc('id')
+            ->get()
+            ->unique('student_id')
+            ->keyBy('student_id');
+    }
+
+    /**
+     * الأعمدة الأربعة الأولى: هاتف الطالب، رقمه الجامعي، مكان تدريبه الحالي وعنوانه.
+     * غير الطلبة (كالمشرفين) تبقى خاناتهم فارغة.
+     */
+    protected function studentLeadingColumns(?User $student, ?StudentCompany $studentCompany): array
+    {
+        return [
+            (string) ($student?->phone ?? ''),
+            (string) ($student?->studentProfile?->student_number ?? ''),
+            (string) ($studentCompany?->company?->name ?? ''),
+            $this->companyAddress($studentCompany?->company),
+        ];
+    }
+
+    protected function companyAddress(?Company $company): string
+    {
+        return collect([$company?->main_location, $company?->sub_location])
+            ->map(fn (?string $part): string => trim((string) $part))
+            ->filter()
+            ->unique()
+            ->implode(' - ');
+    }
+
+    protected function rowFor(User $user, Collection $answersByQuestion, ?StudentCompany $currentStudentCompany = null): array
     {
         $row = [
+            ...$this->studentLeadingColumns($user, $currentStudentCompany),
             $this->submittedPerson($user),
             (string) $user->email,
             $this->majorNameFor($user),
@@ -163,13 +222,12 @@ class SurveySubmissionsExport implements FromGenerator, ShouldAutoSize, WithHead
             ->first();
 
         $row = [
-            $firstAnswer instanceof SurveyAnswer ? $this->submittedPerson($firstAnswer->submittedBy) : '',
+            ...$this->studentLeadingColumns($studentCompany->student, $studentCompany),
+            $firstAnswer instanceof SurveyAnswer ? $this->submittedPerson($firstAnswer->submittedBy, $firstAnswer->submitted_by) : '',
             (string) $firstAnswer?->submittedBy?->email,
             $this->studentPerson($studentCompany),
             (string) $studentCompany->student?->email,
-            (string) $studentCompany->student?->studentProfile?->student_number,
             $this->majorNameFor($studentCompany->student),
-            (string) $studentCompany->company?->name,
         ];
 
         foreach ($this->questions as $question) {
@@ -244,9 +302,14 @@ class SurveySubmissionsExport implements FromGenerator, ShouldAutoSize, WithHead
         return $answer->option?->text;
     }
 
-    protected function submittedPerson(User $user): string
+    /**
+     * يقبل null كخط دفاع أخير (حساب حُذف فعلياً أو علاقة مفقودة) بدل إسقاط التصدير كاملاً.
+     */
+    protected function submittedPerson(?User $user, ?int $fallbackId = null): string
     {
-        return trim((string) $user->name) ?: __('User').' #'.$user->id;
+        $id = $user?->id ?? $fallbackId;
+
+        return trim((string) $user?->name) ?: __('User').($id ? ' #'.$id : '');
     }
 
     protected function studentPerson(StudentCompany $studentCompany): string

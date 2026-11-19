@@ -15,6 +15,8 @@ class LoginRequest extends FormRequest
             'email'     => 'required|email|max:255',
             'password'  => 'required|string|max:255',
             'fcm_token'   => 'sometimes|string',
+            // Two-step mode only: the channel the code goes out on, when the settings let the user choose.
+            'channel'     => 'sometimes|nullable|in:mail,sms',
         ];
     }
 
