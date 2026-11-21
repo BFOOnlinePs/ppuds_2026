@@ -77,15 +77,19 @@ class CompanyQrCodeService
     }
 
     /**
-     * Issues a personal code for someone who belongs to the company, revoking
-     * their previous one there.
+     * Issues a personal code for someone who belongs to the company through
+     * one of the roles allowed to sign in with QR codes (Settings), revoking
+     * their previous one there. Anyone else — e.g. students, while their role
+     * is not allowed — never gets one.
      *
-     * @throws \InvalidArgumentException when the person does not belong to the company.
+     * @throws \InvalidArgumentException when the person may not have a personal code here.
      */
     public function generatePersonal(Company $company, User $user, ?User $by = null): CompanyQrCode
     {
-        if ($this->membership->qualifyingRole($user, $company, CompanyMembershipService::supportedRoles()) === null) {
-            throw new \InvalidArgumentException('Personal sign-in codes are only issued to people who belong to the company.');
+        $roles = app(AuthenticationSettings::class)->qr_login_roles;
+
+        if ($this->membership->qualifyingRole($user, $company, $roles) === null) {
+            throw new \InvalidArgumentException('Personal sign-in codes are only issued to people who belong to the company through a role allowed to sign in with QR codes.');
         }
 
         return $this->issue($company, $user, $by);

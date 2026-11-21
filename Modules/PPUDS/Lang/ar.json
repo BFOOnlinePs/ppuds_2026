@@ -1505,5 +1505,7 @@
     "A personal sign-in code was generated for :name.": "تم إنشاء رمز دخول شخصي لـ :name.",
     "Revoke this personal sign-in code?": "إلغاء رمز الدخول الشخصي هذا؟",
     "It stops working immediately, including any printed copy. Devices already signed in stay signed in.": "يتوقف عن العمل فوراً، بما في ذلك أي نسخة مطبوعة منه. الأجهزة المسجّل دخولها مسبقاً تبقى مسجّلة.",
-    "The personal sign-in code of :name was revoked.": "تم إلغاء رمز الدخول الشخصي لـ :name."
+    "The personal sign-in code of :name was revoked.": "تم إلغاء رمز الدخول الشخصي لـ :name.",
+
+    "This person's role is not allowed to sign in with QR codes. Add it in Settings → Sign In & Verification first.": "دور هذا الشخص غير مسموح له بالدخول عبر رموز QR. أضفه أولاً من الإعدادات ← تسجيل الدخول والتحقق."
 }

@@ -217,6 +217,71 @@ class PersonalQrLoginTest extends TestCase
             ->assertDontSee($this->supervisor->name);
     }
 
+    /**
+     * The setup the administration asked for: students sign in with a
+     * one-time code and never with a QR code, while company supervisors scan
+     * their personal QR code and get in without any code.
+     */
+    public function test_students_use_the_code_while_supervisors_scan_their_personal_code(): void
+    {
+        $this->fakeAuthenticationSettings([
+            'mobile_login_mode' => InternalLoginMode::CODE,
+            'qr_login_enabled' => false,
+            'personal_qr_login_enabled' => true,
+            'qr_login_roles' => ['Company Supervisor'],
+        ]);
+
+        // Supervisor: scan, and in — no email, no code.
+        $this->postJson('/api/v1/auth/qr/scan', ['qr_token' => $this->personalUrl()])
+            ->assertOk()
+            ->assertJsonPath('data.type', 'personal')
+            ->assertJsonPath('data.user.id', $this->supervisor->id);
+        Notification::assertNothingSent();
+
+        // Student: email, then the code sent to them.
+        $student = $this->makeUser('student@example.com', ['Student']);
+        $this->placeStudent($student);
+
+        $this->postJson('/api/v1/auth/otp/request', ['email' => 'student@example.com'])->assertOk();
+
+        $code = null;
+        Notification::assertSentTo($student, \Modules\PPUDS\Notifications\LoginOtpNotification::class, function ($notification) use (&$code): bool {
+            $code = (fn () => $this->code)->call($notification);
+
+            return true;
+        });
+
+        $this->postJson('/api/v1/auth/otp/verify', ['email' => 'student@example.com', 'code' => $code])
+            ->assertOk()
+            ->assertJsonPath('data.user.id', $student->id);
+
+        // A student can never be issued a personal QR code, even when training at the company…
+        try {
+            $this->qrService()->generatePersonal($this->company, $student);
+            $this->fail('Students must not get a personal QR code.');
+        } catch (\InvalidArgumentException) {
+        }
+
+        // …and no password works for anyone in this mode.
+        $this->postJson('/api/v1/auth/login', ['email' => 'student@example.com', 'password' => 'anything'])->assertForbidden();
+    }
+
+    private function placeStudent(User $student): void
+    {
+        $registrationId = DB::table('ppu_ds_registrations')->insertGetId([
+            'student_id' => $student->id,
+            'semester' => \Modules\PPUDS\Enums\SemesterType::FIRST->value,
+            'year' => 2026,
+        ]);
+
+        DB::table('ppu_ds_students_companies')->insert([
+            'registration_id' => $registrationId,
+            'company_id' => $this->company->id,
+            'student_id' => $student->id,
+            'status' => \Modules\PPUDS\Enums\TrainingStatus::AVAILABLE->value,
+        ]);
+    }
+
     public function test_the_options_report_personal_qr_sign_in(): void
     {
         $this->getJson('/api/v1/auth/options')->assertJsonPath('data.personal_qr_login', true);

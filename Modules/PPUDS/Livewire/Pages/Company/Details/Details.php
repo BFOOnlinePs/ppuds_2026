@@ -834,7 +834,13 @@ class Details extends Component implements HasForms, HasInfolists, HasActions
 
                 $user = $this->companySupervisorOrFail($arguments['userId'] ?? null);
 
-                app(CompanyQrCodeService::class)->generatePersonal($this->company, $user, auth()->user());
+                try {
+                    app(CompanyQrCodeService::class)->generatePersonal($this->company, $user, auth()->user());
+                } catch (\InvalidArgumentException) {
+                    Toaster::error(__('This person\'s role is not allowed to sign in with QR codes. Add it in Settings → Sign In & Verification first.'));
+
+                    return;
+                }
 
                 Toaster::success(__('A personal sign-in code was generated for :name.', ['name' => $user->name]));
             })
