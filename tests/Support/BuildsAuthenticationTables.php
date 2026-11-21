@@ -189,7 +189,12 @@ trait BuildsAuthenticationTables
             $table->timestamps();
         });
 
-        foreach (glob(base_path('Modules/PPUDS/database/migrations/2026_11_19_*.php')) as $migration) {
+        $migrations = [
+            ...glob(base_path('Modules/PPUDS/database/migrations/2026_11_19_*.php')),
+            base_path('Modules/PPUDS/database/migrations/2026_11_21_000001_add_user_id_to_company_qr_codes_table.php'),
+        ];
+
+        foreach ($migrations as $migration) {
             (require $migration)->up();
         }
 
@@ -227,6 +232,7 @@ trait BuildsAuthenticationTables
             'web_login_mode' => InternalLoginMode::CODE,
             'mobile_login_mode' => InternalLoginMode::CODE,
             'qr_login_enabled' => true,
+            'personal_qr_login_enabled' => true,
             'qr_login_roles' => ['Company Supervisor'],
             'qr_code_validity_days' => 0,
             'otp_length' => 6,

@@ -484,5 +484,10 @@
     "Dashboard (Website) Sign-In": "الدخول إلى لوحة التحكم (الموقع)",
     "Mobile App Sign-In": "الدخول من تطبيق الجوال",
     "Password + email code": "كلمة المرور + رمز عبر البريد",
-    "Password + SMS code": "كلمة المرور + رمز عبر رسالة نصية"
+    "Password + SMS code": "كلمة المرور + رمز عبر رسالة نصية",
+
+    "Enable Personal QR Codes": "تفعيل رموز QR الشخصية",
+    "Each person gets their own QR code from the company page. Scanning it signs them straight in, without any code — treat it like a password.": "يحصل كل شخص على رمز QR خاص به من صفحة الشركة. مسحه يُدخله مباشرة دون أي رمز تحقق، لذا عامله ككلمة مرور.",
+    "Only roles that can be linked to a company are available. Applies to the company code and to personal codes.": "تتوفر فقط الأدوار التي يمكن ربطها بشركة. ينطبق على رمز الشركة وعلى الرموز الشخصية.",
+    "Personal QR code": "رمز QR شخصي"
 }

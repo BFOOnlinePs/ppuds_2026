@@ -17,7 +17,14 @@
 | `password_or_code` | المستخدم يختار: كلمة المرور **أو** الرمز |
 | `password_then_code` | البريد + كلمة المرور، **ثم** رمز للتأكيد (تحقق بخطوتين) |
 
-وبشكل مستقل عن الطرق الأربع، يوجد مفتاح **الدخول عبر رمز QR للشركة** (`company_qr_login`): يمسح المستخدم QR الشركة، ثم يدخل بريده والرمز الذي يصله.
+وبشكل مستقل عن الطرق الأربع، يوجد نوعان من رموز QR، ولكل منهما مفتاح مستقل:
+
+| النوع | المفتاح | ماذا يحدث عند المسح |
+|---|---|---|
+| **رمز QR شخصي** (لكل مشرف رمزه) | `personal_qr_login` | **يدخل مباشرة**، بدون بريد وبدون رمز تأكيد |
+| **رمز QR الشركة** (ملصق مطبوع) | `company_qr_login` | يحدد الشركة فقط، ثم يدخل المستخدم بريده والرمز الذي يصله |
+
+التطبيق لا يحتاج أن يعرف مسبقاً نوع الرمز الذي مسحه: يرسله إلى `POST /api/v1/auth/qr/scan`، والسيرفر يعيد النوع (القسم 8).
 
 > لوحة التحكم (الويب) لها إعداد منفصل خاص بها، ولا يؤثر على التطبيق.
 
@@ -54,6 +61,7 @@ GET /api/v1/auth/options
     "code_login": true,
     "two_step": false,
     "company_qr_login": true,
+    "personal_qr_login": true,
     "channels": ["mail"],
     "default_channel": "mail",
     "channel_choice": false,
@@ -70,7 +78,10 @@ GET /api/v1/auth/options
 | `password_login` | bool | اعرض حقل كلمة المرور / زر "الدخول بكلمة المرور" |
 | `code_login` | bool | اعرض "الدخول برمز" (بريد فقط ثم رمز) |
 | `two_step` | bool | بعد كلمة المرور قد يُطلب رمز (انظر القسم 6) |
-| `company_qr_login` | bool | اعرض زر "الدخول برمز الشركة (QR)" |
+| `company_qr_login` | bool | رمز QR الشركة مفعّل |
+| `personal_qr_login` | bool | رموز QR الشخصية مفعّلة |
+
+> اعرض زر **"مسح رمز QR"** إذا كان `company_qr_login` **أو** `personal_qr_login` يساوي `true`.
 | `channels` | string[] | القنوات المتاحة: `mail`, `sms` |
 | `default_channel` | string\|null | القناة الافتراضية |
 | `channel_choice` | bool | إذا `true` اعرض اختيار "إرسال عبر البريد / SMS" وأرسل `channel` |
@@ -360,41 +371,69 @@ POST /api/v1/auth/otp/request
 
 ---
 
-## 8. الدخول عبر رمز QR للشركة
+## 8. الدخول عبر رمز QR (شخصي أو للشركة)
 
-يظهر فقط إذا `company_qr_login = true`. لكل شركة رمز QR مطبوع، يُنشأ ويُطبع من صفحة الشركة في لوحة التحكم.
+يظهر زر "مسح رمز QR" إذا كان `personal_qr_login` أو `company_qr_login` يساوي `true`. كل الرموز تُنشأ وتُطبع من صفحة الشركة في لوحة التحكم.
 
 ```
-مسح QR ──► POST /auth/company-qr/resolve ──► (عرض اسم وشعار الشركة)
-       ──► البريد ──► POST /auth/otp/request {email, qr_token}
-       ──► الرمز  ──► POST /auth/otp/verify  {email, code, qr_token} ──► توكن
+مسح QR ──► POST /auth/qr/scan {qr_token, device_name, fcm_token}
+              │
+              ├─ data.type = "personal" → دخل مباشرة (فيها token و user) ✔
+              │
+              └─ data.type = "company"  → (اعرض اسم وشعار الشركة)
+                     ──► البريد ──► POST /auth/otp/request {email, qr_token}
+                     ──► الرمز  ──► POST /auth/otp/verify  {email, code, qr_token} ──► توكن
 ```
 
 ### محتوى الـ QR
 
-الـ QR يحتوي رابطاً بهذا الشكل:
+الـ QR يحتوي رابطاً بهذا الشكل (للنوعين):
 
 ```
 https://<domain>/c/9fQxK2v...Lm7   (43 حرفاً بعد /c/)
 ```
 
-أرسل **النص الممسوح كما هو** (الرابط كاملاً) في `qr_token`، والسيرفر يستخرج منه الرمز. لو فتح أحد الرابط بالمتصفح بدل التطبيق، تظهر له صفحة تطلب منه فتح التطبيق (يمكن لاحقاً جعلها Deep Link).
+أرسل **النص الممسوح كما هو** (الرابط كاملاً) في `qr_token`، والسيرفر يستخرج منه الرمز ويحدد نوعه. لو فتح أحد الرابط بالمتصفح بدل التطبيق، تظهر له صفحة تطلب منه فتح التطبيق، ولا يحدث أي دخول من المتصفح. صفحة الرمز الشخصي لا تعرض اسم صاحبه.
 
-### الخطوة 1: التحقق من QR
+### الخطوة 1: المسح
 
 ```
-POST /api/v1/auth/company-qr/resolve
+POST /api/v1/auth/qr/scan
 ```
 
 ```json
-{ "qr_token": "https://ds.ppu.edu/c/9fQxK2v...Lm7" }
+{
+  "qr_token": "https://ds.ppu.edu/c/9fQxK2v...Lm7",
+  "device_name": "Samsung S23",
+  "fcm_token": "fcm-token-value"
+}
 ```
+
+`device_name` و`fcm_token` تُستخدم فقط إذا كان الرمز شخصياً (لأنه يدخل مباشرة). أرسلها دائماً.
+
+**إذا كان الرمز شخصياً**، يتم الدخول فوراً، والاستجابة هي استجابة الدخول الناجح نفسها مع `type`:
+
+```json
+{
+  "status": true,
+  "message": "تم تسجيل الدخول بنجاح",
+  "data": {
+    "type": "personal",
+    "token": "15|Qm3x....",
+    "token_type": "Bearer",
+    "user": { "id": 3, "name": "مشرف تجريبي", "email": "supervisor@example.com", "...": "..." }
+  }
+}
+```
+
+**إذا كان رمز الشركة**:
 
 ```json
 {
   "status": true,
   "message": "تم العثور على الشركة.",
   "data": {
+    "type": "company",
     "company": {
       "id": 12,
       "name": "شركة التدريب",
@@ -404,10 +443,18 @@ POST /api/v1/auth/company-qr/resolve
 }
 ```
 
-- `404`: الرمز غير صالح أو أُلغي (المسؤول ولّد رمزاً جديداً) أو انتهى أو الشركة غير فعّالة.
-- `403`: الدخول عبر QR معطّل.
+الأخطاء:
 
-### الخطوة 2 و3
+- `404`:
+  - الرمز غير صالح، أو أُلغي (المسؤول ولّد رمزاً جديداً)، أو انتهت صلاحيته.
+  - الشركة غير فعّالة.
+  - للرمز الشخصي: صاحبه لم يعد تابعاً للشركة أو حُذف حسابه.
+  - نوع الرمز معطّل من الإعدادات.
+- `403`: الدخول عبر QR بنوعيه معطّل.
+
+> `POST /api/v1/auth/company-qr/resolve` ما زال يعمل لرمز الشركة فقط (يعيد `404` للرمز الشخصي)، لكن استخدم `qr/scan` لأنه يغطي النوعين.
+
+### رمز الشركة: الخطوة 2 و3
 
 مثل الطريقة `code` تماماً، مع إضافة `qr_token` (نفس النص الممسوح) في **الطلبين**:
 
@@ -423,7 +470,13 @@ POST /api/v1/auth/company-qr/resolve
 
 - **لا يدخل إلا من يتبع لهذه الشركة** (مثلاً مشرف الشركة على أحد فروعها)، وبحسب الأدوار المسموحة في لوحة التحكم. غير ذلك لن يصله رمز، والاستجابة نفسها لا تكشف ذلك.
 - الرمز المطلوب عبر QR يعمل لهذه الشركة فقط، ولا يصلح للدخول العادي، والعكس صحيح.
-- دخول QR مستقل عن `mode`، ويحكمه `company_qr_login` فقط.
+- دخول QR بنوعيه مستقل عن `mode`، ويحكمه `company_qr_login` و`personal_qr_login` فقط.
+
+### عن الرمز الشخصي
+
+- الرمز الشخصي **بمثابة كلمة مرور**: أي شخص يمسحه يدخل باسم صاحبه. لا تحفظ صورته في التطبيق ولا تعرضه.
+- إذا فُقد، يلغيه المسؤول من لوحة التحكم أو يولّد بديلاً، فيتوقف القديم فوراً.
+- الأجهزة التي دخلت مسبقاً تبقى مسجّلة لأن التوكن صالح. للخروج منها: `POST /api/v1/auth/logout`.
 
 ---
 
@@ -435,7 +488,8 @@ POST /api/v1/auth/company-qr/resolve
 | POST | `/api/v1/auth/login` | — | كلمة المرور. قد تعيد `requires_code` في وضع الخطوتين |
 | POST | `/api/v1/auth/otp/request` | — | طلب/إعادة إرسال رمز: `{email}` أو `{email, qr_token}` أو `{login_ticket}` |
 | POST | `/api/v1/auth/otp/verify` | — | التحقق وإصدار التوكن: `{email, code}` أو `{email, code, qr_token}` أو `{login_ticket, code}` |
-| POST | `/api/v1/auth/company-qr/resolve` | — | التحقق من QR الشركة: `{qr_token}` |
+| POST | `/api/v1/auth/qr/scan` | — | مسح أي QR: الشخصي يدخل مباشرة، والشركة تعيد بياناتها: `{qr_token, device_name, fcm_token}` |
+| POST | `/api/v1/auth/company-qr/resolve` | — | (قديم، لرمز الشركة فقط) التحقق من QR الشركة: `{qr_token}` |
 | POST | `/api/v1/auth/logout` | Bearer | تسجيل الخروج (بدون تغيير) |
 
 حقول اختيارية مشتركة في `otp/verify`: `device_name` و`fcm_token` (نفس `/auth/login`).
@@ -466,6 +520,7 @@ class AuthOptions {
   final bool codeLogin;
   final bool twoStep;
   final bool companyQrLogin;
+  final bool personalQrLogin;
   final List<String> channels;
   final String? defaultChannel;
   final bool channelChoice;
@@ -477,6 +532,7 @@ class AuthOptions {
         codeLogin = j['code_login'] == true,
         twoStep = j['two_step'] == true,
         companyQrLogin = j['company_qr_login'] == true,
+        personalQrLogin = j['personal_qr_login'] == true,
         channels = List<String>.from(j['channels'] ?? const []),
         defaultChannel = j['default_channel'] as String?,
         channelChoice = j['channel_choice'] == true,
@@ -517,6 +573,26 @@ class LoggedIn extends PasswordLoginResult {
 class CodeRequired extends PasswordLoginResult {
   final CodeChallenge challenge; // فيه loginTicket
   CodeRequired(this.challenge);
+}
+```
+
+### نتيجة مسح QR (دخول مباشر أو شركة)
+
+```dart
+sealed class QrScanResult {}
+
+/// رمز شخصي: تم الدخول مباشرة.
+class QrSignedIn extends QrScanResult {
+  final String token;
+  final Map<String, dynamic> user;
+  QrSignedIn(this.token, this.user);
+}
+
+/// رمز الشركة: أكمل بالبريد ثم الرمز، مع نفس qrToken.
+class QrCompany extends QrScanResult {
+  final Map<String, dynamic> company; // id, name, logo_url
+  final String qrToken;
+  QrCompany(this.company, this.qrToken);
 }
 ```
 
@@ -591,9 +667,18 @@ class AuthApi {
     return LoggedIn(data['token'] as String, data['user'] as Map<String, dynamic>);
   }
 
-  Future<Map<String, dynamic>> resolveCompanyQr(String scanned) async {
-    final r = await _dio.post('/api/v1/auth/company-qr/resolve', data: {'qr_token': scanned});
-    return r.data['data']['company'] as Map<String, dynamic>;
+  /// أي QR ممسوح: الشخصي يدخل مباشرة، ورمز الشركة يعيد بياناتها.
+  Future<QrScanResult> scanQr(String scanned, {String? deviceName, String? fcmToken}) async {
+    final r = await _dio.post('/api/v1/auth/qr/scan', data: {
+      'qr_token': scanned,
+      if (deviceName != null) 'device_name': deviceName,
+      if (fcmToken != null) 'fcm_token': fcmToken,
+    });
+    final data = r.data['data'] as Map<String, dynamic>;
+    if (data['type'] == 'personal') {
+      return QrSignedIn(data['token'] as String, data['user'] as Map<String, dynamic>);
+    }
+    return QrCompany(data['company'] as Map<String, dynamic>, scanned);
   }
 }
 ```
@@ -625,7 +710,16 @@ switch (o.mode) {
     showEmailPasswordForm(withCodeOption: true);
 }
 
-if (o.companyQrLogin) showScanCompanyQrButton();
+if (o.companyQrLogin || o.personalQrLogin) showScanQrButton();
+
+// عند المسح:
+final result = await authApi.scanQr(scannedText, deviceName: deviceName, fcmToken: fcmToken);
+switch (result) {
+  case QrSignedIn(:final token, :final user):
+    saveSessionAndGoHome(token, user);        // رمز شخصي: دخل مباشرة
+  case QrCompany(:final company, :final qrToken):
+    showEmailFormFor(company, qrToken);       // رمز الشركة: بريد ثم رمز
+}
 ```
 
 ---
@@ -661,11 +755,15 @@ if (o.companyQrLogin) showScanCompanyQrButton();
    - كلمة مرور صحيحة تعيد `requires_code` ← التحقق بالتذكرة ← دخول.
    - إعادة الإرسال بالتذكرة.
    - تذكرة منتهية (بعد 10 دقائق) تعيد `401`.
-5. **QR:**
-   - مسح QR صحيح ← اسم الشركة ← بريد مشرف الشركة ← رمز ← دخول.
+5. **QR الشركة:**
+   - مسح رمز الشركة ← `type = company` ← اسم الشركة ← بريد مشرف الشركة ← رمز ← دخول.
    - QR ملغى (ولّد المسؤول رمزاً جديداً) يعيد `404`.
    - بريد شخص لا يتبع للشركة: نفس الرسالة، لكن لا يصله رمز.
-6. **اللغة:** `Accept-Language: en` يعيد رسائل مسارات الرمز وQR بالإنجليزية.
+6. **QR الشخصي:**
+   - مسح رمز شخصي ← `type = personal` ← دخول مباشر بدون أي إدخال.
+   - رمز ملغى أو صاحبه أُزيل من الشركة يعيد `404`.
+   - مع تعطيل "رموز QR الشخصية" من الإعدادات يعيد `404`، أو `403` إذا كان النوعان معطّلين.
+7. **اللغة:** `Accept-Language: en` يعيد رسائل مسارات الرمز وQR بالإنجليزية.
 
 ---
 
@@ -673,4 +771,4 @@ if (o.companyQrLogin) showScanCompanyQrButton();
 
 - التوثيق التفاعلي (Swagger) يحتوي كل المسارات أعلاه تحت تصنيف **Auth**.
 - الإعدادات: لوحة التحكم ← الإعدادات ← **تسجيل الدخول والتحقق**.
-- رمز QR الشركة: لوحة التحكم ← الشركات ← تفاصيل الشركة ← تبويب **رمز QR للدخول**.
+- رمز QR الشركة والرموز الشخصية: لوحة التحكم ← الشركات ← تفاصيل الشركة ← تبويب **رمز QR للدخول** (الرموز الشخصية في قسم "رموز الدخول الشخصية" أسفل التبويب).

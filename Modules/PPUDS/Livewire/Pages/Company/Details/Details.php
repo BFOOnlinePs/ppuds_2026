@@ -757,12 +757,115 @@ class Details extends Component implements HasForms, HasInfolists, HasActions
         $qrCodes = app(CompanyQrCodeService::class);
         $code = $qrCodes->activeFor($this->company);
 
+        $availability = app(LoginOtpService::class)->availability(LoginClient::MOBILE);
+        $canManage = (bool) auth()->user()?->can('Company QR Manage');
+
         return [
             'company' => $this->company,
             'qrCode' => $code,
             'qrSvg' => $code ? $qrCodes->svg($code, 6) : null,
-            'qrLoginEnabled' => app(LoginOtpService::class)->availability(LoginClient::MOBILE)['company_qr_login'],
+            'qrLoginEnabled' => $availability['company_qr_login'],
+            'personalQrLoginEnabled' => $availability['personal_qr_login'],
+
+            // A personal code signs its holder straight in, so only those who
+            // manage QR codes ever see them.
+            'canManagePersonalCodes' => $canManage,
+            'personalCodeRows' => $canManage ? $this->personalQrCodeRows() : collect(),
         ];
+    }
+
+    /** The company's supervisors, each with their personal sign-in code if any. */
+    protected function personalQrCodeRows(): Collection
+    {
+        $codes = app(CompanyQrCodeService::class)->personalCodesFor($this->company);
+
+        return $this->company->companySupervisors()
+            ->sortBy('name')
+            ->values()
+            ->map(fn (User $user): array => [
+                'user' => $user,
+                'code' => $codes->get($user->getKey()),
+            ]);
+    }
+
+    /** A supervisor of this company, or a 404 — never someone from elsewhere. */
+    protected function companySupervisorOrFail(mixed $userId): User
+    {
+        $user = $this->company->companySupervisors()->firstWhere('id', (int) $userId);
+
+        abort_unless($user, 404);
+
+        return $user;
+    }
+
+    public function showPersonalQrCodeAction(): Action
+    {
+        return Action::make('showPersonalQrCode')
+            ->modalHeading(fn (array $arguments): string => __('Personal sign-in code of :name', [
+                'name' => $this->companySupervisorOrFail($arguments['userId'] ?? null)->name,
+            ]))
+            ->modalContent(function (array $arguments) {
+                abort_unless(auth()->user()?->can('Company QR Manage'), 403);
+
+                $user = $this->companySupervisorOrFail($arguments['userId'] ?? null);
+                $qrCodes = app(CompanyQrCodeService::class);
+                $code = $qrCodes->activePersonalFor($this->company, $user);
+
+                return view('ppuds::livewire.pages.company.details.personal-qr-code', [
+                    'company' => $this->company,
+                    'user' => $user,
+                    'code' => $code,
+                    'svg' => $code ? $qrCodes->svg($code, 6) : null,
+                ]);
+            })
+            ->modalSubmitAction(false)
+            ->modalCancelActionLabel(__('Close'))
+            ->visible(fn (): bool => (bool) auth()->user()?->can('Company QR Manage'));
+    }
+
+    public function generatePersonalQrCodeAction(): Action
+    {
+        return Action::make('generatePersonalQrCode')
+            ->requiresConfirmation()
+            ->modalHeading(__('Generate a personal sign-in code?'))
+            ->modalDescription(__('Scanning it in the app signs this person straight in, without any code. Hand it to them privately. Any previous personal code of theirs stops working.'))
+            ->action(function (array $arguments): void {
+                abort_unless(auth()->user()?->can('Company QR Manage'), 403);
+
+                $user = $this->companySupervisorOrFail($arguments['userId'] ?? null);
+
+                app(CompanyQrCodeService::class)->generatePersonal($this->company, $user, auth()->user());
+
+                Toaster::success(__('A personal sign-in code was generated for :name.', ['name' => $user->name]));
+            })
+            ->visible(fn (): bool => (bool) auth()->user()?->can('Company QR Manage'));
+    }
+
+    public function revokePersonalQrCodeAction(): Action
+    {
+        return Action::make('revokePersonalQrCode')
+            ->color('danger')
+            ->requiresConfirmation()
+            ->modalHeading(__('Revoke this personal sign-in code?'))
+            ->modalDescription(__('It stops working immediately, including any printed copy. Devices already signed in stay signed in.'))
+            ->action(function (array $arguments): void {
+                abort_unless(auth()->user()?->can('Company QR Manage'), 403);
+
+                $user = $this->companySupervisorOrFail($arguments['userId'] ?? null);
+                $qrCodes = app(CompanyQrCodeService::class);
+                $code = $qrCodes->activePersonalFor($this->company, $user);
+
+                if (! $code) {
+                    Toaster::error(__('This person has no active personal sign-in code.'));
+
+                    return;
+                }
+
+                $qrCodes->revoke($code, auth()->user());
+
+                Toaster::success(__('The personal sign-in code of :name was revoked.', ['name' => $user->name]));
+            })
+            ->visible(fn (): bool => (bool) auth()->user()?->can('Company QR Manage'));
     }
 
     public function generateQrCodeAction(): Action

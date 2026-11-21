@@ -9,7 +9,13 @@
         </x-slot>
 
         <div class="space-y-4 text-center">
-            @if ($company)
+            @if ($personal ?? false)
+                {{-- Never names the holder: the page is open to whoever has the link. --}}
+                <h1 class="text-lg font-semibold text-gray-900">{{ __('Personal sign-in code') }}</h1>
+                <p class="text-sm text-gray-600">
+                    {{ __('Open the :app app and scan this code from there to sign in. Keep it private.', ['app' => config('app.name')]) }}
+                </p>
+            @elseif ($company)
                 <h1 class="text-lg font-semibold text-gray-900">{{ $company->name }}</h1>
                 <p class="text-sm text-gray-600">
                     {{ __('This is the sign-in code of :company. Open the :app app, choose to sign in with the company code, and scan it from there.', ['company' => $company->name, 'app' => config('app.name')]) }}

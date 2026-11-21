@@ -7,6 +7,7 @@ use Illuminate\Auth\Events\Login;
 use Illuminate\Http\Request;
 use Modules\Core\Actions\StoreDeviceTokenAction;
 use Modules\Core\Entities\User;
+use Modules\Core\Listeners\AuthActivitySubscriber;
 use Modules\Core\Traits\ApiResponse;
 use Modules\Core\Transformers\V1\UserResource;
 use Modules\PPUDS\Entities\CompanyQrCode;
@@ -28,8 +29,10 @@ use Spatie\QueryBuilder\QueryBuilder;
  *  - password or code        → either of the two above;
  *  - password then code      → /api/v1/auth/login returns a login_ticket,
  *                              then otp/verify {login_ticket, code};
- *  - company QR (on its own switch) → company-qr/resolve, then otp/request and
- *                              otp/verify with the same qr_token.
+ *  - any scanned QR (own switches) → qr/scan:
+ *      · a personal code signs its holder straight in (no email, no code);
+ *      · the company's printed code → then otp/request and otp/verify with
+ *        the same qr_token (company-qr/resolve still works for this too).
  *
  * Every successful sign-in returns a Sanctum token with exactly the same
  * response as /api/v1/auth/login, so the rest of the app is unchanged.
@@ -81,6 +84,83 @@ class OtpLoginController extends Controller
 
     /**
      * @OA\Post(
+     *     path="/api/v1/auth/qr/scan",
+     *     summary="Scan any sign-in QR code",
+     *     description="The single entry point for whatever QR the app scanned. Pass the whole scanned link (or just its token). A PERSONAL code (handed to one person) signs that person straight in — no email, no code — and returns data.type = personal with the same token/user as /api/v1/auth/login. The COMPANY's printed code returns data.type = company with the company; the app then continues with otp/request and otp/verify, sending the same qr_token.",
+     *     tags={"Auth"},
+     *
+     *     @OA\RequestBody(required=true, @OA\JsonContent(required={"qr_token"},
+     *
+     *         @OA\Property(property="qr_token", type="string", example="https://ds.ppu.edu/c/9fQx..."),
+     *         @OA\Property(property="device_name", type="string", nullable=true, example="Samsung S23", description="Used when the code is personal"),
+     *         @OA\Property(property="fcm_token", type="string", nullable=true, description="Used when the code is personal")
+     *     )),
+     *
+     *     @OA\Response(response=200, description="type = personal (signed in) or type = company (continue with the code)", @OA\JsonContent(
+     *
+     *         @OA\Property(property="status", type="boolean", example=true),
+     *         @OA\Property(property="message", type="string"),
+     *         @OA\Property(property="data", type="object",
+     *             @OA\Property(property="type", type="string", enum={"personal","company"}, example="personal"),
+     *             @OA\Property(property="token", type="string", description="type = personal only", example="1|abcdefg123456789"),
+     *             @OA\Property(property="token_type", type="string", description="type = personal only", example="Bearer"),
+     *             @OA\Property(property="user", type="object", description="type = personal only"),
+     *             @OA\Property(property="company", type="object", description="type = company only",
+     *                 @OA\Property(property="id", type="integer", example=12),
+     *                 @OA\Property(property="name", type="string"),
+     *                 @OA\Property(property="logo_url", type="string")
+     *             )
+     *         )
+     *     )),
+     *
+     *     @OA\Response(response=403, description="QR sign-in is switched off"),
+     *     @OA\Response(response=404, description="The QR code is unknown, revoked or expired, its company is inactive, or its holder no longer belongs to the company"),
+     *     @OA\Response(response=422, description="Validation error"),
+     *     @OA\Response(response=429, description="Too many requests; data.retry_after says how many seconds to wait")
+     * )
+     */
+    public function scan(Request $request, StoreDeviceTokenAction $storeDeviceToken)
+    {
+        $request->validate([
+            'qr_token' => ['required', 'string', 'max:255'],
+            'device_name' => ['nullable', 'string', 'max:255'],
+            'fcm_token' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $personalOn = $this->otp->personalQrLoginAvailable();
+        $companyOn = $this->otp->qrLoginAvailable();
+
+        if (! $personalOn && ! $companyOn) {
+            throw OtpLoginException::unavailable();
+        }
+
+        $code = $this->qrCodes->resolve($request->input('qr_token'));
+
+        // A code of a kind that is switched off reads as unknown, so a scan
+        // never reveals which codes exist.
+        if (! $code || ($code->isPersonal() ? ! $personalOn : ! $companyOn)) {
+            throw $this->invalidQrCode();
+        }
+
+        if (! $code->isPersonal()) {
+            return $this->successResponse([
+                'type' => 'company',
+                'company' => $this->companyCard($code),
+            ], __('Company found.'));
+        }
+
+        $user = $this->qrCodes->personalHolder($code) ?? throw $this->invalidQrCode();
+
+        $this->qrCodes->recordUse($code);
+
+        // Lets the activity log tell this sign-in apart from the others.
+        $request->attributes->set(AuthActivitySubscriber::SIGN_IN_METHOD_ATTRIBUTE, 'personal_qr');
+
+        return $this->signedIn($request, $user, $storeDeviceToken, ['type' => 'personal']);
+    }
+
+    /**
+     * @OA\Post(
      *     path="/api/v1/auth/company-qr/resolve",
      *     summary="Read a scanned company QR code",
      *     description="Checks a scanned company QR code and returns the company it belongs to, so the app can show who the person is signing in to. Pass the whole scanned link or just its token. The QR only names the company: the person still signs in with a one-time code, sending the same qr_token to otp/request and otp/verify.",
@@ -113,14 +193,9 @@ class OtpLoginController extends Controller
         $request->validate(['qr_token' => ['required', 'string', 'max:255']]);
 
         $code = $this->companyFrom($request->input('qr_token'));
-        $company = $code->company;
 
         return $this->successResponse([
-            'company' => [
-                'id' => $company->getKey(),
-                'name' => $company->name,
-                'logo_url' => $company->getImageAttribute(),
-            ],
+            'company' => $this->companyCard($code),
         ], __('Company found.'));
     }
 
@@ -260,7 +335,7 @@ class OtpLoginController extends Controller
     /**
      * The Sanctum token and user — exactly what /api/v1/auth/login answers.
      */
-    private function signedIn(Request $request, User $user, StoreDeviceTokenAction $storeDeviceToken)
+    private function signedIn(Request $request, User $user, StoreDeviceTokenAction $storeDeviceToken, array $extra = [])
     {
         $deviceName = $request->input('device_name') ?: ($request->userAgent() ?: 'Unknown Device');
         $token = $user->createToken($deviceName)->plainTextToken;
@@ -275,10 +350,21 @@ class OtpLoginController extends Controller
             ->first();
 
         return $this->successResponse([
+            ...$extra,
             'token' => $token,
             'token_type' => 'Bearer',
             'user' => new UserResource($user),
         ], __('User logged in successfully'));
+    }
+
+    /** What the app shows about the company behind a scanned code. */
+    private function companyCard(CompanyQrCode $code): array
+    {
+        return [
+            'id' => $code->company->getKey(),
+            'name' => $code->company->name,
+            'logo_url' => $code->company->getImageAttribute(),
+        ];
     }
 
     /**
@@ -304,7 +390,19 @@ class OtpLoginController extends Controller
             throw OtpLoginException::unavailable();
         }
 
-        return $this->qrCodes->resolve($scanned)
-            ?? throw new OtpLoginException(__('This QR code is not valid. Ask the company for its current code.'), 404);
+        $code = $this->qrCodes->resolve($scanned);
+
+        // Only the company's printed code starts a code sign-in; a personal
+        // code is used through qr/scan, where it signs its holder in.
+        if (! $code || $code->isPersonal()) {
+            throw $this->invalidQrCode();
+        }
+
+        return $code;
+    }
+
+    private function invalidQrCode(): OtpLoginException
+    {
+        return new OtpLoginException(__('This QR code is not valid. Ask the company for its current code.'), 404);
     }
 }

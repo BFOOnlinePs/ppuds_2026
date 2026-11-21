@@ -468,6 +468,7 @@ class Index extends Component implements HasForms
             'auth_web_login_mode' => $auth->web_login_mode->value,
             'auth_mobile_login_mode' => $auth->mobile_login_mode->value,
             'auth_qr_login_enabled' => $auth->qr_login_enabled,
+            'auth_personal_qr_login_enabled' => $auth->personal_qr_login_enabled,
             'auth_qr_login_roles' => $auth->qr_login_roles,
             'auth_qr_code_validity_days' => $auth->qr_code_validity_days,
             'auth_otp_length' => $auth->otp_length,
@@ -534,14 +535,19 @@ class Index extends Component implements HasForms
                             ->label(__('Enable Company QR Sign In'))
                             ->live(),
 
+                        Toggle::make('auth_personal_qr_login_enabled')
+                            ->label(__('Enable Personal QR Codes'))
+                            ->helperText(__('Each person gets their own QR code from the company page. Scanning it signs them straight in, without any code — treat it like a password.'))
+                            ->live(),
+
                         CheckboxList::make('auth_qr_login_roles')
                             ->label(__('Roles Allowed To Sign In With A Company QR Code'))
-                            ->helperText(__('Only roles that can be linked to a company are available.'))
+                            ->helperText(__('Only roles that can be linked to a company are available. Applies to the company code and to personal codes.'))
                             ->options(fn (): array => $this->roleOptions())
                             ->disableOptionWhen(fn (string $value): bool => ! in_array($value, CompanyMembershipService::supportedRoles(), true))
                             ->columns(2)
-                            ->required(fn (callable $get): bool => (bool) $get('auth_qr_login_enabled'))
-                            ->visible(fn (callable $get): bool => (bool) $get('auth_qr_login_enabled')),
+                            ->required(fn (callable $get): bool => $this->anyQrLoginEnabled($get))
+                            ->visible(fn (callable $get): bool => $this->anyQrLoginEnabled($get)),
 
                         TextInput::make('auth_qr_code_validity_days')
                             ->label(__('QR Code Validity (days)'))
@@ -678,6 +684,12 @@ class Index extends Component implements HasForms
             ->all();
     }
 
+    /** The company code or personal codes — the QR role list applies to both. */
+    protected function anyQrLoginEnabled(callable $get): bool
+    {
+        return (bool) $get('auth_qr_login_enabled') || (bool) $get('auth_personal_qr_login_enabled');
+    }
+
     /**
      * Rules that span several fields, which per-field validation cannot express.
      *
@@ -724,6 +736,7 @@ class Index extends Component implements HasForms
         $auth->web_login_mode = InternalLoginMode::from((int) $data['auth_web_login_mode']);
         $auth->mobile_login_mode = InternalLoginMode::from((int) $data['auth_mobile_login_mode']);
         $auth->qr_login_enabled = (bool) ($data['auth_qr_login_enabled'] ?? false);
+        $auth->personal_qr_login_enabled = (bool) ($data['auth_personal_qr_login_enabled'] ?? false);
 
         // The role list is hidden while QR sign-in is off; keep what was
         // stored so switching it back on restores the old choice.

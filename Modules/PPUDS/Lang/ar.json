@@ -1485,5 +1485,25 @@
     "Enter the code we sent you to finish signing in.": "أدخل الرمز الذي أرسلناه إليك لإتمام تسجيل الدخول.",
     "To finish signing in, enter the code we sent by SMS to the phone number on your account.": "لإتمام تسجيل الدخول، أدخل الرمز الذي أرسلناه برسالة نصية إلى رقم الهاتف المسجّل في حسابك.",
     "To finish signing in, enter the code we sent to :email.": "لإتمام تسجيل الدخول، أدخل الرمز الذي أرسلناه إلى :email.",
-    "Back to sign in": "العودة إلى تسجيل الدخول"
+    "Back to sign in": "العودة إلى تسجيل الدخول",
+
+    "Your personal sign-in code for :app — :company": "رمز الدخول الشخصي الخاص بك إلى :app — :company",
+    "Choose \"Scan QR code\" and scan this code — you are signed in straight away.": "اختر «مسح رمز QR» وامسح هذا الرمز، فيتم تسجيل دخولك مباشرة.",
+    "Keep this code private: anyone who scans it signs in as you. If it is lost, ask the administration to revoke it.": "احتفظ بهذا الرمز لنفسك: أي شخص يمسحه يدخل باسمك. إذا فقدته فاطلب من الإدارة إلغاءه.",
+    "Personal sign-in code": "رمز دخول شخصي",
+    "Open the :app app and scan this code from there to sign in. Keep it private.": "افتح تطبيق :app وامسح هذا الرمز من داخله لتسجيل الدخول. احتفظ به لنفسك.",
+    "Personal Sign-in Codes": "رموز الدخول الشخصية",
+    "Each supervisor can get their own QR code. Scanning it in the app signs them straight in, without any code — so hand it to them privately.": "يمكن إصدار رمز QR خاص لكل مشرف. مسحه من التطبيق يُدخله مباشرة دون أي رمز تحقق، لذا سلّمه له بشكل خاص.",
+    "Personal QR sign-in is switched off, so these codes do not sign anyone in yet.": "الدخول برموز QR الشخصية معطّل، لذا لا تُدخل هذه الرموز أحداً حالياً.",
+    "This company has no supervisors yet. Assign supervisors to its branches first.": "لا يوجد مشرفون لهذه الشركة بعد. أسند مشرفين لفروعها أولاً.",
+    "Show Code": "عرض الرمز",
+    "Anyone who scans this code signs in as :name. Hand it over privately and never post it publicly.": "أي شخص يمسح هذا الرمز يدخل باسم :name. سلّمه بشكل خاص ولا تنشره علناً.",
+    "This person has no active personal sign-in code.": "لا يوجد لهذا الشخص رمز دخول شخصي فعّال.",
+    "Personal sign-in code of :name": "رمز الدخول الشخصي لـ :name",
+    "Generate a personal sign-in code?": "إنشاء رمز دخول شخصي؟",
+    "Scanning it in the app signs this person straight in, without any code. Hand it to them privately. Any previous personal code of theirs stops working.": "مسحه من التطبيق يُدخل هذا الشخص مباشرة دون أي رمز تحقق. سلّمه له بشكل خاص. يتوقف أي رمز شخصي سابق له عن العمل.",
+    "A personal sign-in code was generated for :name.": "تم إنشاء رمز دخول شخصي لـ :name.",
+    "Revoke this personal sign-in code?": "إلغاء رمز الدخول الشخصي هذا؟",
+    "It stops working immediately, including any printed copy. Devices already signed in stay signed in.": "يتوقف عن العمل فوراً، بما في ذلك أي نسخة مطبوعة منه. الأجهزة المسجّل دخولها مسبقاً تبقى مسجّلة.",
+    "The personal sign-in code of :name was revoked.": "تم إلغاء رمز الدخول الشخصي لـ :name."
 }

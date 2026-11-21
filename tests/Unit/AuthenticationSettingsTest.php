@@ -34,7 +34,10 @@ class AuthenticationSettingsTest extends TestCase
             $table->unique(['group', 'name']);
         });
 
-        foreach (glob(base_path('Modules/PPUDS/database/Settings/2026_11_19_*.php')) as $migration) {
+        foreach ([
+            ...glob(base_path('Modules/PPUDS/database/Settings/2026_11_19_*.php')),
+            base_path('Modules/PPUDS/database/Settings/2026_11_21_000001_add_personal_qr_login_setting.php'),
+        ] as $migration) {
             (require $migration)->up();
         }
     }
@@ -46,6 +49,7 @@ class AuthenticationSettingsTest extends TestCase
         $this->assertSame(InternalLoginMode::PASSWORD, $settings->web_login_mode);
         $this->assertSame(InternalLoginMode::PASSWORD, $settings->mobile_login_mode);
         $this->assertFalse($settings->qr_login_enabled);
+        $this->assertFalse($settings->personal_qr_login_enabled);
         $this->assertTrue($settings->otp_email_enabled);
         $this->assertFalse($settings->otp_sms_enabled);
         $this->assertSame(OtpChannel::MAIL, $settings->otp_default_channel);

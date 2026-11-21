@@ -12,37 +12,122 @@ use Modules\PPUDS\Settings\AuthenticationSettings;
 use RuntimeException;
 
 /**
- * Company sign-in QR codes: generating, revoking, resolving and drawing them.
+ * Sign-in QR codes: generating, revoking, resolving and drawing them.
  *
- * The QR holds a link with 256 random bits in it. That only names the
- * company — it is not a credential, and the person scanning it still proves
- * who they are with a one-time code. The token is looked up by its SHA-256
- * hash, so it cannot be guessed or forged from a company id, and a company
- * has at most one working code: generating a new one revokes the old one.
+ * Two kinds, both holding a link with 256 random bits in it:
+ *  - the company's printed code (no user): it only names the company, and
+ *    the person scanning it still proves who they are with a one-time code;
+ *  - a person's own code (with a user): it signs that person straight in, so
+ *    it is handed to them privately, like a password.
+ *
+ * Tokens are looked up by their SHA-256 hash, so they cannot be guessed or
+ * forged from an id. A company has at most one working printed code, and
+ * each person at most one working personal code per company: generating a
+ * new one revokes the old one.
  */
 class CompanyQrCodeService
 {
     /** White border, in modules, that scanners need around the code. */
     private const QUIET_ZONE = 4;
 
+    public function __construct(private readonly CompanyMembershipService $membership) {}
+
+    /** The company's working printed code. */
     public function activeFor(Company $company): ?CompanyQrCode
     {
         return CompanyQrCode::query()
             ->where('company_id', $company->getKey())
+            ->companyWide()
             ->active()
             ->latest('id')
             ->first();
     }
 
-    /** Issues a new code for the company, revoking the one in use. */
+    /** Issues a new printed code for the company, revoking the one in use. */
     public function generate(Company $company, ?User $by = null): CompanyQrCode
+    {
+        return $this->issue($company, null, $by);
+    }
+
+    /** The person's working personal code at this company. */
+    public function activePersonalFor(Company $company, User $user): ?CompanyQrCode
+    {
+        return CompanyQrCode::query()
+            ->where('company_id', $company->getKey())
+            ->where('user_id', $user->getKey())
+            ->active()
+            ->latest('id')
+            ->first();
+    }
+
+    /**
+     * Working personal codes at the company, keyed by user id.
+     *
+     * @return \Illuminate\Support\Collection<int, CompanyQrCode>
+     */
+    public function personalCodesFor(Company $company): \Illuminate\Support\Collection
+    {
+        return CompanyQrCode::query()
+            ->where('company_id', $company->getKey())
+            ->personal()
+            ->active()
+            ->orderBy('id')
+            ->get()
+            ->keyBy('user_id');
+    }
+
+    /**
+     * Issues a personal code for someone who belongs to the company, revoking
+     * their previous one there.
+     *
+     * @throws \InvalidArgumentException when the person does not belong to the company.
+     */
+    public function generatePersonal(Company $company, User $user, ?User $by = null): CompanyQrCode
+    {
+        if ($this->membership->qualifyingRole($user, $company, CompanyMembershipService::supportedRoles()) === null) {
+            throw new \InvalidArgumentException('Personal sign-in codes are only issued to people who belong to the company.');
+        }
+
+        return $this->issue($company, $user, $by);
+    }
+
+    /**
+     * Who a personal code signs in, or null when it must not sign anyone in:
+     * the account is gone, or the person no longer belongs to the company
+     * through one of the roles allowed to sign in with QR codes.
+     */
+    public function personalHolder(CompanyQrCode $code): ?User
+    {
+        if (! $code->isPersonal() || ! $code->company) {
+            return null;
+        }
+
+        $user = User::query()->find($code->user_id);
+
+        if (! $user) {
+            return null;
+        }
+
+        $roles = app(AuthenticationSettings::class)->qr_login_roles;
+
+        return $this->membership->qualifyingRole($user, $code->company, $roles) !== null ? $user : null;
+    }
+
+    protected function issue(Company $company, ?User $holder, ?User $by): CompanyQrCode
     {
         $validityDays = app(AuthenticationSettings::class)->qr_code_validity_days;
         $token = $this->newToken();
 
-        return DB::transaction(function () use ($company, $by, $validityDays, $token): CompanyQrCode {
+        return DB::transaction(function () use ($company, $holder, $by, $validityDays, $token): CompanyQrCode {
+            // Only the same kind of code for the same holder is replaced: a new
+            // printed code never touches personal ones, and the other way round.
             CompanyQrCode::query()
                 ->where('company_id', $company->getKey())
+                ->when(
+                    $holder,
+                    fn ($query) => $query->where('user_id', $holder->getKey()),
+                    fn ($query) => $query->whereNull('user_id'),
+                )
                 ->whereNull('revoked_at')
                 ->lockForUpdate()
                 ->get()
@@ -50,6 +135,7 @@ class CompanyQrCodeService
 
             return CompanyQrCode::create([
                 'company_id' => $company->getKey(),
+                'user_id' => $holder?->getKey(),
                 'token_hash' => $this->hash($token),
                 'token' => $token,
                 'expires_at' => $validityDays > 0 ? now()->addDays($validityDays) : null,
@@ -83,7 +169,7 @@ class CompanyQrCodeService
         $code = CompanyQrCode::query()
             ->where('token_hash', $this->hash($token))
             ->active()
-            ->with('company')
+            ->with(['company', 'user'])
             ->first();
 
         if (! $code || ! $code->company || $code->company->status !== CompanyStatus::ACTIVE) {

@@ -123,13 +123,28 @@ class LoginOtpService
     }
 
     /**
+     * The mobile app may sign someone straight in from their own personal QR
+     * code. Needs no delivery channel: no code is sent.
+     */
+    public function personalQrLoginAvailable(): bool
+    {
+        try {
+            return $this->internalLoginInUse() && $this->settings()->personal_qr_login_enabled;
+        } catch (Throwable $e) {
+            report($e);
+
+            return false;
+        }
+    }
+
+    /**
      * Everything a sign-in screen needs to know, in one go.
      *
      * Never throws: it is read by the login pages and the app's bootstrap
      * config, which must keep working even before the settings migration
      * has run — then it simply reads as "password only".
      *
-     * @return array{mode: string, password_login: bool, code_login: bool, two_step: bool, company_qr_login: bool, channels: array<int, string>, default_channel: ?string, channel_choice: bool, code_length: ?int}
+     * @return array{mode: string, password_login: bool, code_login: bool, two_step: bool, company_qr_login: bool, personal_qr_login: bool, channels: array<int, string>, default_channel: ?string, channel_choice: bool, code_length: ?int}
      */
     public function availability(LoginClient $client): array
     {
@@ -143,6 +158,7 @@ class LoginOtpService
                 'code_login' => $mode->allowsCodeOnly(),
                 'two_step' => $mode->requiresCodeAfterPassword(),
                 'company_qr_login' => $client === LoginClient::MOBILE && $this->qrLoginAvailable(),
+                'personal_qr_login' => $client === LoginClient::MOBILE && $this->personalQrLoginAvailable(),
                 'channels' => $usesCodes ? array_map(fn (OtpChannel $channel): string => $channel->key(), $this->enabledChannels()) : [],
                 'default_channel' => $usesCodes ? $this->resolveChannel()?->key() : null,
                 'channel_choice' => $usesCodes && $this->channelChoiceAllowed(),
@@ -157,6 +173,7 @@ class LoginOtpService
                 'code_login' => false,
                 'two_step' => false,
                 'company_qr_login' => false,
+                'personal_qr_login' => false,
                 'channels' => [],
                 'default_channel' => null,
                 'channel_choice' => false,

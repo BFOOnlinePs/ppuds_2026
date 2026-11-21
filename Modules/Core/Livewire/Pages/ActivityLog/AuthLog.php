@@ -124,6 +124,7 @@ class AuthLog extends Component implements HasForms, HasTable
                         'password_and_email_code' => __('Password + email code'),
                         'password_and_sms_code' => __('Password + SMS code'),
                         'company_qr' => __('Company QR code'),
+                        'personal_qr' => __('Personal QR code'),
                         default => '—',
                     })
                     ->badge()

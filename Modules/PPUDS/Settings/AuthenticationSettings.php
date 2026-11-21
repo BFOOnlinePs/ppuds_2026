@@ -40,6 +40,10 @@ class AuthenticationSettings extends Settings
      */
     public array $qr_login_roles;
 
+    // Whether a person's own QR code (handed to them privately) signs them
+    // straight in from the mobile app, without any confirmation code.
+    public bool $personal_qr_login_enabled;
+
     // How long a newly generated company QR code stays valid, in days. 0 = no expiry.
     public int $qr_code_validity_days;
 

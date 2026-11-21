@@ -25,6 +25,7 @@ class CompanyQrCode extends Model
 
     protected $fillable = [
         'company_id',
+        'user_id',
         'token_hash',
         'token',
         'expires_at',
@@ -53,6 +54,12 @@ class CompanyQrCode extends Model
         return $this->belongsTo(Company::class);
     }
 
+    /** The person a personal code signs in; null for the company's printed code. */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -71,9 +78,26 @@ class CompanyQrCode extends Model
             ->where(fn (Builder $query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()));
     }
 
+    /** The company's printed code, shared by everyone at the company. */
+    public function scopeCompanyWide(Builder $query): Builder
+    {
+        return $query->whereNull('user_id');
+    }
+
+    /** One person's own sign-in code. */
+    public function scopePersonal(Builder $query): Builder
+    {
+        return $query->whereNotNull('user_id');
+    }
+
     public function isActive(): bool
     {
         return $this->revoked_at === null && ($this->expires_at === null || $this->expires_at->isFuture());
+    }
+
+    public function isPersonal(): bool
+    {
+        return $this->user_id !== null;
     }
 
     /**
@@ -83,7 +107,7 @@ class CompanyQrCode extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['company_id', 'expires_at', 'revoked_at', 'revoked_by', 'created_by'])
+            ->logOnly(['company_id', 'user_id', 'expires_at', 'revoked_at', 'revoked_by', 'created_by'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()
             ->setDescriptionForEvent(fn (string $eventName) => "This model has been {$eventName} and value ")

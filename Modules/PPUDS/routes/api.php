@@ -53,6 +53,8 @@
                 ->name('options');
 
             Route::middleware(['api.localize', 'throttle:ppuds-otp'])->group(function () {
+                Route::post('qr/scan', [OtpLoginController::class, 'scan'])
+                    ->name('qr.scan');
                 Route::post('company-qr/resolve', [OtpLoginController::class, 'resolveCompany'])
                     ->name('company-qr.resolve');
                 Route::post('otp/request', [OtpLoginController::class, 'requestCode'])

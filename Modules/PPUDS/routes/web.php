@@ -122,6 +122,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     ->group(function () {
                         Route::get('/print', 'print')->name('print')->can('Company QR View');
                         Route::get('/{format}', 'download')->whereIn('format', ['svg', 'png'])->name('download')->can('Company QR View');
+
+                        // الرمز الشخصي يُدخل صاحبه مباشرة، فهو بمثابة كلمة مرور: الإدارة فقط.
+                        Route::get('/users/{user}/print', 'printPersonal')->name('personal.print')->can('Company QR Manage');
+                        Route::get('/users/{user}/{format}', 'downloadPersonal')->whereIn('format', ['svg', 'png'])->name('personal.download')->can('Company QR Manage');
                     });
 
                 // كل ما يخص مشرفي الشركات في شاشة واحدة: إضافة وتعديل وإسناد أقسام.
