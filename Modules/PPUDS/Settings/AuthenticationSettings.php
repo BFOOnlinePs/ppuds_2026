@@ -29,6 +29,19 @@ class AuthenticationSettings extends Settings
     // How people sign in from the mobile app — chosen independently of the web.
     public InternalLoginMode $mobile_login_mode;
 
+    /**
+     * Sign-in method by role, applied to the dashboard and the app alike. In
+     * order: someone with several roles follows the first rule that matches.
+     * A person's own setting (UserLoginPreference) still comes before these.
+     *
+     * Each rule: ['role' => role name, 'mode' => InternalLoginMode value or
+     * null, 'channel' => OtpChannel value or null]. (The @var stays a plain
+     * array type: Spatie's docblock parser cannot read array shapes.)
+     *
+     * @var array<int, array<string, mixed>>
+     */
+    public array $role_login_rules;
+
     // Whether the mobile app may start a sign-in by scanning a company QR code.
     public bool $qr_login_enabled;
 

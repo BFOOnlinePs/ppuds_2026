@@ -57,6 +57,7 @@ GET /api/v1/auth/options
   "message": "تم جلب خيارات تسجيل الدخول بنجاح.",
   "data": {
     "mode": "password_or_code",
+    "per_user": false,
     "password_login": true,
     "code_login": true,
     "two_step": false,
@@ -74,7 +75,8 @@ GET /api/v1/auth/options
 
 | الحقل | النوع | المعنى في الشاشة |
 |---|---|---|
-| `mode` | string | الطريقة المختارة (أحد القيم الأربع أعلاه) |
+| `mode` | string | الطريقة العامة (أحد القيم الأربع أعلاه) |
+| `per_user` | bool | **مهم:** إذا `true` فلبعض المستخدمين أو الأدوار طريقة خاصة بهم. اطلب البريد أولاً ثم استدعِ `/auth/identify` (القسم 2.1) |
 | `password_login` | bool | اعرض حقل كلمة المرور / زر "الدخول بكلمة المرور" |
 | `code_login` | bool | اعرض "الدخول برمز" (بريد فقط ثم رمز) |
 | `two_step` | bool | بعد كلمة المرور قد يُطلب رمز (انظر القسم 6) |
@@ -88,6 +90,59 @@ GET /api/v1/auth/options
 | `code_length` | int\|null | عدد خانات الرمز، لبناء حقل الإدخال |
 
 > إذا تعذّر إرسال الرموز لأي سبب (مثلاً البريد غير مضبوط)، يعيد السيرفر تلقائياً `mode = password` حتى لا يُحرم أحد من الدخول. لذلك اعتمد دائماً على الاستجابة لا على افتراضات.
+
+---
+
+### 2.1 طريقة دخول خاصة لكل مستخدم (`per_user = true`)
+
+يمكن للمسؤول تحديد طريقة الدخول حسب الدور أو لكل مستخدم بعينه، مثلاً: الطلاب بالرمز عبر SMS، والمشرفون بكلمة المرور. ترتيب الأولوية:
+
+1. طريقة المستخدم نفسه، من صفحة المستخدم في لوحة التحكم.
+2. قاعدة دوره، من الإعدادات.
+3. الطريقة العامة للتطبيق (`mode`).
+
+في هذه الحالة **لا يعرف التطبيق الشاشة المناسبة قبل معرفة المستخدم**، فاعرض الشاشة على خطوتين:
+
+```
+شاشة البريد ──► POST /api/v1/auth/identify {email}
+                 │
+                 ├─ mode = password            → اطلب كلمة المرور    → القسم 4
+                 ├─ mode = code                → أرسل الرمز مباشرة   → القسم 5
+                 ├─ mode = password_or_code    → اعرض الخيارين       → القسم 7
+                 └─ mode = password_then_code  → اطلب كلمة المرور    → القسم 6
+```
+
+```
+POST /api/v1/auth/identify
+```
+
+```json
+{ "email": "student@example.com" }
+```
+
+```json
+{
+  "status": true,
+  "message": "تم جلب خيارات تسجيل الدخول بنجاح.",
+  "data": {
+    "mode": "code",
+    "password_login": false,
+    "code_login": true,
+    "two_step": false,
+    "channels": ["sms"],
+    "default_channel": "sms",
+    "channel_choice": false,
+    "code_length": 6
+  }
+}
+```
+
+ملاحظات:
+
+- البريد **غير المسجّل** يعيد الطريقة العامة، تماماً مثل أي حساب ليس له طريقة خاصة. لذلك اعرض الشاشة حسب الاستجابة دائماً، دون رسالة "الحساب غير موجود".
+- إذا حدد المسؤول قناة للمستخدم أو لدوره (مثلاً SMS)، تأتي في `default_channel` ويكون `channel_choice = false`.
+- السيرفر يفرض الطريقة بنفسه. إذا حاول حساب "رمز فقط" الدخول بكلمة المرور الصحيحة، يرد `/auth/login` بـ `403` ورسالة توضيحية.
+- إذا كان `per_user = false`، تجاهل هذا القسم واعتمد على `mode` كما في بقية الدليل.
 
 ---
 
@@ -485,7 +540,8 @@ POST /api/v1/auth/qr/scan
 | Method | Path | Auth | الوصف |
 |---|---|---|---|
 | GET | `/api/v1/auth/options` | — | خيارات الدخول (أو `data.auth` في `/api/v1/config`) |
-| POST | `/api/v1/auth/login` | — | كلمة المرور. قد تعيد `requires_code` في وضع الخطوتين |
+| POST | `/api/v1/auth/identify` | — | طريقة دخول حساب معيّن (عند `per_user = true`): `{email}` |
+| POST | `/api/v1/auth/login` | — | كلمة المرور. قد تعيد `requires_code` في وضع الخطوتين، أو `403` لحساب "رمز فقط" |
 | POST | `/api/v1/auth/otp/request` | — | طلب/إعادة إرسال رمز: `{email}` أو `{email, qr_token}` أو `{login_ticket}` |
 | POST | `/api/v1/auth/otp/verify` | — | التحقق وإصدار التوكن: `{email, code}` أو `{email, code, qr_token}` أو `{login_ticket, code}` |
 | POST | `/api/v1/auth/qr/scan` | — | مسح أي QR: الشخصي يدخل مباشرة، والشركة تعيد بياناتها: `{qr_token, device_name, fcm_token}` |
@@ -521,6 +577,7 @@ class AuthOptions {
   final bool twoStep;
   final bool companyQrLogin;
   final bool personalQrLogin;
+  final bool perUser;
   final List<String> channels;
   final String? defaultChannel;
   final bool channelChoice;
@@ -533,6 +590,7 @@ class AuthOptions {
         twoStep = j['two_step'] == true,
         companyQrLogin = j['company_qr_login'] == true,
         personalQrLogin = j['personal_qr_login'] == true,
+        perUser = j['per_user'] == true,
         channels = List<String>.from(j['channels'] ?? const []),
         defaultChannel = j['default_channel'] as String?,
         channelChoice = j['channel_choice'] == true,
@@ -605,6 +663,13 @@ class AuthApi {
 
   Future<AuthOptions> options() async {
     final r = await _dio.get('/api/v1/auth/options');
+    return AuthOptions.fromJson(r.data['data']);
+  }
+
+  /// طريقة دخول حساب معيّن — عند options.perUser == true.
+  /// نفس شكل AuthOptions (بدون حقول QR و per_user).
+  Future<AuthOptions> identify(String email) async {
+    final r = await _dio.post('/api/v1/auth/identify', data: {'email': email});
     return AuthOptions.fromJson(r.data['data']);
   }
 
@@ -700,14 +765,24 @@ int? retryAfter(DioException e) {
 ```dart
 final o = await authApi.options();
 
-switch (o.mode) {
-  case LoginMode.password:
-  case LoginMode.passwordThenCode:
-    showEmailPasswordForm();               // بعد الإرسال: افحص LoggedIn / CodeRequired
-  case LoginMode.code:
-    showEmailOnlyForm();                   // ثم شاشة الرمز
-  case LoginMode.passwordOrCode:
-    showEmailPasswordForm(withCodeOption: true);
+void showScreenFor(AuthOptions m) {
+  switch (m.mode) {
+    case LoginMode.password:
+    case LoginMode.passwordThenCode:
+      showPasswordStep();                  // بعد الإرسال: افحص LoggedIn / CodeRequired
+    case LoginMode.code:
+      sendCodeAndShowCodeStep();           // otp/request ثم شاشة الرمز
+    case LoginMode.passwordOrCode:
+      showPasswordStep(withCodeOption: true);
+  }
+}
+
+if (o.perUser) {
+  // لكل مستخدم طريقته: البريد أولاً، ثم طريقته هو.
+  final email = await askForEmail();
+  showScreenFor(await authApi.identify(email));
+} else {
+  showScreenFor(o);                        // الطريقة العامة للجميع
 }
 
 if (o.companyQrLogin || o.personalQrLogin) showScanQrButton();
@@ -763,12 +838,18 @@ switch (result) {
    - مسح رمز شخصي ← `type = personal` ← دخول مباشر بدون أي إدخال.
    - رمز ملغى أو صاحبه أُزيل من الشركة يعيد `404`.
    - مع تعطيل "رموز QR الشخصية" من الإعدادات يعيد `404`، أو `403` إذا كان النوعان معطّلين.
-7. **اللغة:** `Accept-Language: en` يعيد رسائل مسارات الرمز وQR بالإنجليزية.
+7. **طريقة لكل مستخدم:** ضع قاعدة "الطلاب: رمز عبر SMS" في الإعدادات:
+   - `options.per_user = true`.
+   - `identify` لطالب يعيد `mode = code` مع `default_channel = sms`.
+   - `identify` لبريد غير موجود يعيد الطريقة العامة.
+   - كلمة مرور طالب صحيحة على `/auth/login` تعيد `403`.
+8. **اللغة:** `Accept-Language: en` يعيد رسائل مسارات الرمز وQR بالإنجليزية.
 
 ---
 
 ## 13. للمراجعة في السيرفر
 
 - التوثيق التفاعلي (Swagger) يحتوي كل المسارات أعلاه تحت تصنيف **Auth**.
-- الإعدادات: لوحة التحكم ← الإعدادات ← **تسجيل الدخول والتحقق**.
+- الإعدادات: لوحة التحكم ← الإعدادات ← **تسجيل الدخول والتحقق** (ومنها قسم **طريقة الدخول حسب الدور**).
+- طريقة مستخدم بعينه: لوحة التحكم ← المستخدمين ← تعديل ← قسم **طريقة تسجيل الدخول**.
 - رمز QR الشركة والرموز الشخصية: لوحة التحكم ← الشركات ← تفاصيل الشركة ← تبويب **رمز QR للدخول** (الرموز الشخصية في قسم "رموز الدخول الشخصية" أسفل التبويب).

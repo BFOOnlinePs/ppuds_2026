@@ -53,7 +53,7 @@ class OtpLoginController extends Controller
      * @OA\Get(
      *     path="/api/v1/auth/options",
      *     summary="How the app signs in",
-     *     description="The mobile sign-in options chosen in the dashboard. Read it before showing the sign-in screen: it says whether to ask for a password, a code, either, or both (two-step), and whether to offer company QR sign-in. Also included as data.auth in GET /api/v1/config.",
+     *     description="The mobile sign-in options chosen in the dashboard. Read it before showing the sign-in screen. mode is the general method. When per_user is true, people or roles have methods of their own: ask for the email first and call POST /api/v1/auth/identify. password_login / code_login / two_step say whether anyone may use each. Also included as data.auth in GET /api/v1/config.",
      *     tags={"Auth"},
      *
      *     @OA\Response(response=200, description="The options", @OA\JsonContent(
@@ -62,6 +62,7 @@ class OtpLoginController extends Controller
      *         @OA\Property(property="message", type="string"),
      *         @OA\Property(property="data", type="object",
      *             @OA\Property(property="mode", type="string", enum={"password","code","password_or_code","password_then_code"}, example="password_or_code"),
+     *             @OA\Property(property="per_user", type="boolean", example=true, description="Ask for the email first, then call /auth/identify"),
      *             @OA\Property(property="password_login", type="boolean", example=true),
      *             @OA\Property(property="code_login", type="boolean", example=true),
      *             @OA\Property(property="two_step", type="boolean", example=false),
@@ -78,6 +79,53 @@ class OtpLoginController extends Controller
     {
         return $this->successResponse(
             $this->otp->availability(LoginClient::MOBILE),
+            __('Sign-in options retrieved successfully.'),
+        );
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/api/v1/auth/identify",
+     *     summary="How this account signs in",
+     *     description="For when options.per_user is true: each person or role may have their own sign-in method. Ask for the email first, call this, then show the right screen (password, code, either, or password then code). An unknown email gets the general mobile method, exactly like an account without a method of its own.",
+     *     tags={"Auth"},
+     *
+     *     @OA\RequestBody(required=true, @OA\JsonContent(required={"email"},
+     *
+     *         @OA\Property(property="email", type="string", format="email", example="student@example.com")
+     *     )),
+     *
+     *     @OA\Response(response=200, description="The account's sign-in method", @OA\JsonContent(
+     *
+     *         @OA\Property(property="status", type="boolean", example=true),
+     *         @OA\Property(property="message", type="string"),
+     *         @OA\Property(property="data", type="object",
+     *             @OA\Property(property="mode", type="string", enum={"password","code","password_or_code","password_then_code"}, example="code"),
+     *             @OA\Property(property="password_login", type="boolean", example=false),
+     *             @OA\Property(property="code_login", type="boolean", example=true),
+     *             @OA\Property(property="two_step", type="boolean", example=false),
+     *             @OA\Property(property="channels", type="array", @OA\Items(type="string", enum={"mail","sms"})),
+     *             @OA\Property(property="default_channel", type="string", nullable=true, example="sms"),
+     *             @OA\Property(property="channel_choice", type="boolean", example=false),
+     *             @OA\Property(property="code_length", type="integer", nullable=true, example=6)
+     *         )
+     *     )),
+     *
+     *     @OA\Response(response=422, description="Validation error"),
+     *     @OA\Response(response=429, description="Too many requests; data.retry_after says how many seconds to wait")
+     * )
+     */
+    public function identify(Request $request)
+    {
+        $request->validate([
+            'email' => ['required', 'string', 'email', 'max:255'],
+        ], [
+            'email.required' => __('The email is required.'),
+            'email.email' => __('Please enter a valid email address.'),
+        ]);
+
+        return $this->successResponse(
+            $this->otp->identify((string) $request->input('email'), LoginClient::MOBILE),
             __('Sign-in options retrieved successfully.'),
         );
     }

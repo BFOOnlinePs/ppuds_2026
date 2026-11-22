@@ -467,6 +467,7 @@ class Index extends Component implements HasForms
         return [
             'auth_web_login_mode' => $auth->web_login_mode->value,
             'auth_mobile_login_mode' => $auth->mobile_login_mode->value,
+            'auth_role_login_rules' => $auth->role_login_rules,
             'auth_qr_login_enabled' => $auth->qr_login_enabled,
             'auth_personal_qr_login_enabled' => $auth->personal_qr_login_enabled,
             'auth_qr_login_roles' => $auth->qr_login_roles,
@@ -525,6 +526,43 @@ class Index extends Component implements HasForms
                                 ->live()
                                 ->required(),
                         ]),
+                    ]),
+
+                Section::make(__('Sign-In Method By Role'))
+                    ->description(__('Give a role its own method and code channel, on the dashboard and in the app. Someone with several roles follows the first rule that matches — drag rules to order them. A person\'s own method, set on their user page, comes before these rules.'))
+                    ->icon('solar-users-group-rounded-bold-duotone')
+                    ->collapsible()
+                    ->schema([
+                        Repeater::make('auth_role_login_rules')
+                            ->hiddenLabel()
+                            ->addActionLabel(__('Add Rule'))
+                            ->reorderable()
+                            ->defaultItems(0)
+                            ->itemLabel(fn (array $state): ?string => filled($state['role'] ?? null)
+                                ? (UserRole::tryFrom($state['role'])?->getLabel() ?? __($state['role']))
+                                : null)
+                            ->schema([
+                                Grid::make(3)->schema([
+                                    Select::make('role')
+                                        ->label(__('Role'))
+                                        ->options(fn (): array => $this->roleOptions())
+                                        ->native(false)
+                                        ->distinct()
+                                        ->required(),
+
+                                    Select::make('mode')
+                                        ->label(__('Sign-In Method'))
+                                        ->options(InternalLoginMode::options())
+                                        ->placeholder(__('General setting'))
+                                        ->native(false),
+
+                                    Select::make('channel')
+                                        ->label(__('Send Codes By'))
+                                        ->options(OtpChannel::options())
+                                        ->placeholder(__('General setting'))
+                                        ->native(false),
+                                ]),
+                            ]),
                     ]),
 
                 Section::make(__('Company QR Sign In'))
@@ -697,8 +735,12 @@ class Index extends Component implements HasForms
      */
     protected function validateAuthenticationSettings(array $data): void
     {
+        $roleRulesUseCodes = collect($data['auth_role_login_rules'] ?? [])
+            ->contains(fn (array $rule): bool => (bool) InternalLoginMode::tryFrom((int) ($rule['mode'] ?? 0))?->usesCodes());
+
         $usesCodes = InternalLoginMode::from((int) $data['auth_web_login_mode'])->usesCodes()
             || InternalLoginMode::from((int) $data['auth_mobile_login_mode'])->usesCodes()
+            || $roleRulesUseCodes
             || ! empty($data['auth_qr_login_enabled']);
         $emailEnabled = ! empty($data['auth_otp_email_enabled']);
         $smsEnabled = ! empty($data['auth_otp_sms_enabled']);
@@ -735,6 +777,18 @@ class Index extends Component implements HasForms
 
         $auth->web_login_mode = InternalLoginMode::from((int) $data['auth_web_login_mode']);
         $auth->mobile_login_mode = InternalLoginMode::from((int) $data['auth_mobile_login_mode']);
+
+        // In the order the administrator arranged them: the first match wins.
+        $auth->role_login_rules = collect($data['auth_role_login_rules'] ?? [])
+            ->filter(fn (array $rule): bool => filled($rule['role'] ?? null))
+            ->map(fn (array $rule): array => [
+                'role' => (string) $rule['role'],
+                'mode' => InternalLoginMode::tryFrom((int) ($rule['mode'] ?? 0))?->value,
+                'channel' => OtpChannel::tryFrom((int) ($rule['channel'] ?? 0))?->value,
+            ])
+            ->values()
+            ->all();
+
         $auth->qr_login_enabled = (bool) ($data['auth_qr_login_enabled'] ?? false);
         $auth->personal_qr_login_enabled = (bool) ($data['auth_personal_qr_login_enabled'] ?? false);
 

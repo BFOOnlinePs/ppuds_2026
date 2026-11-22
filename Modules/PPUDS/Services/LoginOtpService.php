@@ -15,6 +15,7 @@ use Modules\Core\Listeners\AuthActivitySubscriber;
 use Modules\PPUDS\DTOs\OtpChallengeDTO;
 use Modules\PPUDS\Entities\Company;
 use Modules\PPUDS\Entities\LoginOtp;
+use Modules\PPUDS\Entities\UserLoginPreference;
 use Modules\PPUDS\Enums\InternalLoginMode;
 use Modules\PPUDS\Enums\LoginClient;
 use Modules\PPUDS\Enums\LoginMethod;
@@ -91,21 +92,87 @@ class LoginOtpService
         return $mode;
     }
 
+    /**
+     * One person's sign-in method — the most specific setting wins:
+     *  1. their own (Users → edit → Sign-in Method);
+     *  2. the first role rule that matches them (Settings, in order);
+     *  3. the general setting for the client (dashboard / mobile app).
+     * Same safety fallbacks to the password as mode().
+     */
+    public function modeForUser(User $user, LoginClient $client): InternalLoginMode
+    {
+        try {
+            if (! $this->internalLoginInUse()) {
+                return InternalLoginMode::PASSWORD;
+            }
+
+            $mode = $this->preferenceFor($user)?->login_mode
+                ?? InternalLoginMode::tryFrom((int) $this->roleRuleValueFor($user, 'mode'))
+                ?? $this->settings()->loginModeFor($client);
+
+            $noChannel = $mode->usesCodes() && $this->enabledChannels() === [];
+        } catch (Throwable $e) {
+            report($e);
+
+            return InternalLoginMode::PASSWORD;
+        }
+
+        return $noChannel ? InternalLoginMode::PASSWORD : $mode;
+    }
+
+    /**
+     * The channel one person's codes go out on: their own, else their role's,
+     * else the usual choice. A fixed channel that is switched off is ignored.
+     */
+    public function channelForUser(User $user, ?OtpChannel $requested = null): ?OtpChannel
+    {
+        $own = $this->ownChannelFor($user);
+
+        return $own ?? $this->resolveChannel($requested);
+    }
+
+    /** Whether any person or role has a sign-in method of their own. */
+    public function hasPersonalRules(): bool
+    {
+        try {
+            return collect($this->settings()->role_login_rules)
+                ->contains(fn (array $rule): bool => filled($rule['mode'] ?? null) || filled($rule['channel'] ?? null))
+                || UserLoginPreference::query()
+                    ->where(fn ($query) => $query->whereNotNull('login_mode')->orWhereNotNull('otp_channel'))
+                    ->exists();
+        } catch (Throwable $e) {
+            report($e);
+
+            return false;
+        }
+    }
+
+    /**
+     * Whether the password has to be checked before it is known how the
+     * person continues — their own or their role's method may differ from
+     * the general one, or the general one is two-step.
+     */
+    public function perUserRulesMatter(LoginClient $client): bool
+    {
+        return $this->hasPersonalRules() || $this->mode($client)->requiresCodeAfterPassword();
+    }
+
+    /** Someone may sign in with a password on this client. */
     public function passwordLoginAllowed(LoginClient $client): bool
     {
-        return $this->mode($client)->allowsPassword();
+        return $this->anyPossibleMode($client, fn (InternalLoginMode $mode): bool => $mode->allowsPassword());
     }
 
-    /** Email, then code — without any password. */
+    /** Someone may sign in with email, then code — without any password. */
     public function codeLoginAvailable(LoginClient $client): bool
     {
-        return $this->mode($client)->allowsCodeOnly();
+        return $this->anyPossibleMode($client, fn (InternalLoginMode $mode): bool => $mode->allowsCodeOnly());
     }
 
-    /** A correct password must be followed by a code (two-step). */
-    public function codeAfterPasswordRequired(LoginClient $client): bool
+    /** Someone's correct password is followed by a code (two-step). */
+    public function twoStepPossible(LoginClient $client): bool
     {
-        return $this->mode($client)->requiresCodeAfterPassword();
+        return $this->anyPossibleMode($client, fn (InternalLoginMode $mode): bool => $mode->requiresCodeAfterPassword());
     }
 
     /** The mobile app may start a code sign-in from a scanned company QR code. */
@@ -144,19 +211,26 @@ class LoginOtpService
      * config, which must keep working even before the settings migration
      * has run — then it simply reads as "password only".
      *
-     * @return array{mode: string, password_login: bool, code_login: bool, two_step: bool, company_qr_login: bool, personal_qr_login: bool, channels: array<int, string>, default_channel: ?string, channel_choice: bool, code_length: ?int}
+     * The flags tell what anyone may use (general setting, role rules and
+     * personal settings together); `mode` is the general setting, and
+     * `per_user` says the screen should ask for the email first and call
+     * identify() to learn that person's method.
+     *
+     * @return array{mode: string, per_user: bool, password_login: bool, code_login: bool, two_step: bool, company_qr_login: bool, personal_qr_login: bool, channels: array<int, string>, default_channel: ?string, channel_choice: bool, code_length: ?int}
      */
     public function availability(LoginClient $client): array
     {
         try {
             $mode = $this->mode($client);
-            $usesCodes = $mode->usesCodes() || ($client === LoginClient::MOBILE && $this->qrLoginAvailable());
+            $usesCodes = $this->anyPossibleMode($client, fn (InternalLoginMode $mode): bool => $mode->usesCodes())
+                || ($client === LoginClient::MOBILE && $this->qrLoginAvailable());
 
             return [
                 'mode' => $mode->key(),
-                'password_login' => $mode->allowsPassword(),
-                'code_login' => $mode->allowsCodeOnly(),
-                'two_step' => $mode->requiresCodeAfterPassword(),
+                'per_user' => $this->internalLoginInUse() && $this->hasPersonalRules(),
+                'password_login' => $this->passwordLoginAllowed($client),
+                'code_login' => $this->codeLoginAvailable($client),
+                'two_step' => $this->twoStepPossible($client),
                 'company_qr_login' => $client === LoginClient::MOBILE && $this->qrLoginAvailable(),
                 'personal_qr_login' => $client === LoginClient::MOBILE && $this->personalQrLoginAvailable(),
                 'channels' => $usesCodes ? array_map(fn (OtpChannel $channel): string => $channel->key(), $this->enabledChannels()) : [],
@@ -169,6 +243,7 @@ class LoginOtpService
 
             return [
                 'mode' => InternalLoginMode::PASSWORD->key(),
+                'per_user' => false,
                 'password_login' => true,
                 'code_login' => false,
                 'two_step' => false,
@@ -180,6 +255,36 @@ class LoginOtpService
                 'code_length' => null,
             ];
         }
+    }
+
+    /**
+     * How one account signs in — for a screen that asks for the email first.
+     *
+     * An unknown email answers with the general setting, exactly like an
+     * account that has no method of its own, so most accounts cannot be told
+     * apart from non-existent ones. Only an account whose own or role method
+     * differs from the general one stands out — the unavoidable cost of
+     * choosing the method per person.
+     *
+     * @return array{mode: string, password_login: bool, code_login: bool, two_step: bool, channels: array<int, string>, default_channel: ?string, channel_choice: bool, code_length: ?int}
+     */
+    public function identify(string $email, LoginClient $client): array
+    {
+        $user = $this->findEligibleUser($email);
+        $mode = $user ? $this->modeForUser($user, $client) : $this->mode($client);
+        $usesCodes = $mode->usesCodes();
+        $ownChannel = $user ? $this->ownChannelFor($user) : null;
+
+        return [
+            'mode' => $mode->key(),
+            'password_login' => $mode->allowsPassword(),
+            'code_login' => $mode->allowsCodeOnly(),
+            'two_step' => $mode->requiresCodeAfterPassword(),
+            'channels' => $usesCodes ? array_map(fn (OtpChannel $channel): string => $channel->key(), $ownChannel ? [$ownChannel] : $this->enabledChannels()) : [],
+            'default_channel' => $usesCodes ? ($ownChannel ?? $this->resolveChannel())?->key() : null,
+            'channel_choice' => $usesCodes && ! $ownChannel && $this->channelChoiceAllowed(),
+            'code_length' => $usesCodes ? $this->settings()->otp_length : null,
+        ];
     }
 
     /** @return array<int, OtpChannel> */
@@ -249,7 +354,14 @@ class LoginOtpService
 
         $user = $this->findEligibleUser($email, $company);
 
+        // A code-only sign-in is only for people whose own method allows it.
+        if ($user && ! $company && ! $this->modeForUser($user, $client)->allowsCodeOnly()) {
+            $user = null;
+        }
+
         if ($user) {
+            $channel = $this->channelForUser($user, $requested) ?? $channel;
+
             $this->issue($user, $channel, $company ? OtpPurpose::COMPANY_QR : OtpPurpose::CODE_LOGIN, $company, $ip);
         }
 
@@ -264,11 +376,11 @@ class LoginOtpService
      */
     public function requestAfterPassword(User $user, ?OtpChannel $requested, ?string $ip, LoginClient $client): OtpChallengeDTO
     {
-        if (! $this->codeAfterPasswordRequired($client)) {
+        if (! $this->modeForUser($user, $client)->requiresCodeAfterPassword()) {
             throw OtpLoginException::unavailable();
         }
 
-        $channel = $this->resolveChannel($requested) ?? throw OtpLoginException::unavailable();
+        $channel = $this->channelForUser($user, $requested) ?? throw OtpLoginException::unavailable();
 
         $this->throttleSending((string) $user->email);
         $this->issue($user, $channel, OtpPurpose::AFTER_PASSWORD, null, $ip);
@@ -295,9 +407,16 @@ class LoginOtpService
             throw OtpLoginException::unavailable();
         }
 
+        $user = $this->findEligibleUser($email, $company);
+
+        // Checked again on use: the person's method may have changed since.
+        if ($user && ! $company && ! $this->modeForUser($user, $client)->allowsCodeOnly()) {
+            $user = null;
+        }
+
         return $this->check(
             $email,
-            $this->findEligibleUser($email, $company),
+            $user,
             $code,
             $company ? OtpPurpose::COMPANY_QR : OtpPurpose::CODE_LOGIN,
             $company,
@@ -314,7 +433,7 @@ class LoginOtpService
      */
     public function verifyAfterPassword(User $user, string $code, string $guard, LoginClient $client): User
     {
-        if (! $this->codeAfterPasswordRequired($client)) {
+        if (! $this->modeForUser($user, $client)->requiresCodeAfterPassword()) {
             throw OtpLoginException::unavailable();
         }
 
@@ -362,6 +481,88 @@ class LoginOtpService
     // ---------------------------------------------------------------------
     // Internals
     // ---------------------------------------------------------------------
+
+    /** @var array<int|string, UserLoginPreference|null> */
+    private array $preferences = [];
+
+    protected function preferenceFor(User $user): ?UserLoginPreference
+    {
+        return $this->preferences[$user->getKey()] ??= UserLoginPreference::query()
+            ->where('user_id', $user->getKey())
+            ->first();
+    }
+
+    /**
+     * A field of the first role rule that matches the person and sets it.
+     * Rules are kept in the order the administrator arranged them.
+     */
+    protected function roleRuleValueFor(User $user, string $field): ?int
+    {
+        foreach ($this->settings()->role_login_rules as $rule) {
+            if (filled($rule['role'] ?? null) && filled($rule[$field] ?? null) && $user->hasRole($rule['role'])) {
+                return (int) $rule[$field];
+            }
+        }
+
+        return null;
+    }
+
+    /** The channel fixed for this person or their role, while it is switched on. */
+    protected function ownChannelFor(User $user): ?OtpChannel
+    {
+        $own = $this->preferenceFor($user)?->otp_channel
+            ?? OtpChannel::tryFrom((int) $this->roleRuleValueFor($user, 'channel'));
+
+        return $own && in_array($own, $this->enabledChannels(), true) ? $own : null;
+    }
+
+    /**
+     * Whether any mode someone could be under on this client — the general
+     * one, a role rule or a personal setting — passes the check.
+     */
+    protected function anyPossibleMode(LoginClient $client, \Closure $check): bool
+    {
+        foreach ($this->possibleModes($client) as $mode) {
+            if ($check($mode)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** @return array<int, InternalLoginMode> */
+    protected function possibleModes(LoginClient $client): array
+    {
+        $general = $this->mode($client);
+
+        try {
+            if (! $this->internalLoginInUse()) {
+                return [$general];
+            }
+
+            $values = collect($this->settings()->role_login_rules)
+                ->pluck('mode')
+                ->merge(UserLoginPreference::query()->whereNotNull('login_mode')->distinct()->pluck('login_mode'))
+                ->map(fn ($mode) => $mode instanceof InternalLoginMode ? $mode : InternalLoginMode::tryFrom((int) $mode))
+                ->filter();
+
+            $noChannel = $this->enabledChannels() === [];
+        } catch (Throwable $e) {
+            report($e);
+
+            return [$general];
+        }
+
+        // A personal mode that needs codes reads as the password when nothing
+        // can deliver them — the same fallback modeForUser() applies.
+        return $values
+            ->map(fn (InternalLoginMode $mode) => $mode->usesCodes() && $noChannel ? InternalLoginMode::PASSWORD : $mode)
+            ->push($general)
+            ->unique(fn (InternalLoginMode $mode) => $mode->value)
+            ->values()
+            ->all();
+    }
 
     /**
      * The account behind the email. Anyone may sign in with a code; for a

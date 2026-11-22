@@ -59,6 +59,7 @@ class ConfigController extends Controller
      * type="object",
      * description="How the app signs in, as chosen in the dashboard — the same object as GET /api/v1/auth/options. Reads as password only while the university SSO is the login method.",
      * @OA\Property(property="mode", type="string", enum={"password","code","password_or_code","password_then_code"}, example="password"),
+     * @OA\Property(property="per_user", type="boolean", example=false, description="People or roles have methods of their own: ask for the email first, then call /api/v1/auth/identify"),
      * @OA\Property(property="password_login", type="boolean", example=true),
      * @OA\Property(property="code_login", type="boolean", example=false),
      * @OA\Property(property="two_step", type="boolean", example=false),

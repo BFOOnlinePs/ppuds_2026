@@ -17,6 +17,9 @@ use Livewire\Component;
 use Modules\Core\Entities\User;
 use Modules\Core\Enums\UserRole;
 use Modules\PPUDS\Entities\Company;
+use Modules\PPUDS\Entities\UserLoginPreference;
+use Modules\PPUDS\Enums\InternalLoginMode;
+use Modules\PPUDS\Enums\OtpChannel;
 use Modules\PPUDS\Services\PpuApiService;
 use Spatie\Permission\Models\Role;
 use Throwable;
@@ -34,6 +37,10 @@ class Edit extends Component implements HasForms
 
         $this->data = $this->user->toArray();
         $this->data['roles'] = $this->user->roles->pluck('id')->toArray();
+
+        $preference = UserLoginPreference::query()->where('user_id', $this->user->id)->first();
+        $this->data['login_mode'] = $preference?->login_mode?->value;
+        $this->data['otp_channel'] = $preference?->otp_channel?->value;
 
         $this->form->fill($this->data);
     }
@@ -92,6 +99,29 @@ class Edit extends Component implements HasForms
                                     ->placeholder(__('Select Roles')),
                             ]),
 
+                        // How this person signs in — before any role rule or general setting.
+                        Section::make(__('Sign-In Method'))
+                            ->description(__('Leave as "General setting" to follow the role rules, then the general sign-in settings.'))
+                            ->columnSpan(2)
+                            ->schema([
+                                Grid::make(2)->schema([
+                                    Select::make('login_mode')
+                                        ->label(__('Sign-In Method'))
+                                        ->options(InternalLoginMode::options())
+                                        ->placeholder(__('General setting'))
+                                        ->helperText(fn (callable $get): ?string => InternalLoginMode::tryFrom((int) $get('login_mode'))?->getDescription())
+                                        ->live()
+                                        ->native(false),
+
+                                    Select::make('otp_channel')
+                                        ->label(__('Send Codes By'))
+                                        ->options(OtpChannel::options())
+                                        ->placeholder(__('General setting'))
+                                        ->helperText(__('SMS goes to the phone number above.'))
+                                        ->native(false),
+                                ]),
+                            ]),
+
                         // Section::make(__('Branches'))
                         //     ->columnSpan(1)
                         //     ->schema([
@@ -116,6 +146,11 @@ class Edit extends Component implements HasForms
         $roles = $data['roles'] ?? [];
         unset($data['roles']);
 
+        // طريقة الدخول الخاصة بالمستخدم تُحفظ في جدولها، لا في جدول المستخدمين.
+        $loginMode = InternalLoginMode::tryFrom((int) ($data['login_mode'] ?? 0));
+        $otpChannel = OtpChannel::tryFrom((int) ($data['otp_channel'] ?? 0));
+        unset($data['login_mode'], $data['otp_channel']);
+
         $this->user->update($data);
         $phoneChanged = $this->user->wasChanged('phone');
 
@@ -126,6 +161,8 @@ class Edit extends Component implements HasForms
         } else {
             $this->user->syncRoles([]);
         }
+
+        $this->saveLoginPreference($loginMode, $otpChannel);
 
         Notification::make()
             ->title(__('User updated successfully.'))
@@ -140,6 +177,28 @@ class Edit extends Component implements HasForms
         }
 
         return redirect()->route('users.index');
+    }
+
+    /**
+     * "General setting" on both fields removes the person's own method, so
+     * they follow the role rules and general settings again.
+     */
+    protected function saveLoginPreference(?InternalLoginMode $loginMode, ?OtpChannel $otpChannel): void
+    {
+        if (! $loginMode && ! $otpChannel) {
+            UserLoginPreference::query()->where('user_id', $this->user->id)->first()?->delete();
+
+            return;
+        }
+
+        UserLoginPreference::query()->updateOrCreate(
+            ['user_id' => $this->user->id],
+            [
+                'login_mode' => $loginMode,
+                'otp_channel' => $otpChannel,
+                'updated_by' => auth()->id(),
+            ],
+        );
     }
 
     /**

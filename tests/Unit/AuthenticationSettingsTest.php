@@ -37,6 +37,7 @@ class AuthenticationSettingsTest extends TestCase
         foreach ([
             ...glob(base_path('Modules/PPUDS/database/Settings/2026_11_19_*.php')),
             base_path('Modules/PPUDS/database/Settings/2026_11_21_000001_add_personal_qr_login_setting.php'),
+            base_path('Modules/PPUDS/database/Settings/2026_11_22_000001_add_role_login_rules_setting.php'),
         ] as $migration) {
             (require $migration)->up();
         }

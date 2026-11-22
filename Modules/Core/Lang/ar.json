@@ -489,5 +489,14 @@
     "Enable Personal QR Codes": "تفعيل رموز QR الشخصية",
     "Each person gets their own QR code from the company page. Scanning it signs them straight in, without any code — treat it like a password.": "يحصل كل شخص على رمز QR خاص به من صفحة الشركة. مسحه يُدخله مباشرة دون أي رمز تحقق، لذا عامله ككلمة مرور.",
     "Only roles that can be linked to a company are available. Applies to the company code and to personal codes.": "تتوفر فقط الأدوار التي يمكن ربطها بشركة. ينطبق على رمز الشركة وعلى الرموز الشخصية.",
-    "Personal QR code": "رمز QR شخصي"
+    "Personal QR code": "رمز QR شخصي",
+
+    "Your account signs in with a one-time code, not a password. Enter your email to receive one.": "حسابك يدخل برمز لمرة واحدة وليس بكلمة مرور. أدخل بريدك الإلكتروني ليصلك الرمز.",
+    "Sign-In Method By Role": "طريقة الدخول حسب الدور",
+    "Give a role its own method and code channel, on the dashboard and in the app. Someone with several roles follows the first rule that matches — drag rules to order them. A person's own method, set on their user page, comes before these rules.": "حدد لكل دور طريقة دخول وقناة إرسال خاصة به، في لوحة التحكم وفي التطبيق. من لديه أكثر من دور يتبع أول قاعدة تنطبق عليه، ويمكنك سحب القواعد لترتيبها. طريقة الدخول الخاصة بالمستخدم نفسه، المحددة في صفحته، تتقدّم على هذه القواعد.",
+    "Add Rule": "إضافة قاعدة",
+    "General setting": "حسب الإعداد العام",
+    "Send Codes By": "إرسال الرموز عبر",
+    "Leave as \"General setting\" to follow the role rules, then the general sign-in settings.": "اتركها على «حسب الإعداد العام» ليتبع قواعد دوره، ثم إعدادات الدخول العامة.",
+    "SMS goes to the phone number above.": "الرسالة النصية تُرسل إلى رقم الهاتف أعلاه."
 }

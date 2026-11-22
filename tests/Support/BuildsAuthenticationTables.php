@@ -192,6 +192,7 @@ trait BuildsAuthenticationTables
         $migrations = [
             ...glob(base_path('Modules/PPUDS/database/migrations/2026_11_19_*.php')),
             base_path('Modules/PPUDS/database/migrations/2026_11_21_000001_add_user_id_to_company_qr_codes_table.php'),
+            base_path('Modules/PPUDS/database/migrations/2026_11_22_000001_create_user_login_preferences_table.php'),
         ];
 
         foreach ($migrations as $migration) {
@@ -231,6 +232,7 @@ trait BuildsAuthenticationTables
         AuthenticationSettings::fake(array_merge([
             'web_login_mode' => InternalLoginMode::CODE,
             'mobile_login_mode' => InternalLoginMode::CODE,
+            'role_login_rules' => [],
             'qr_login_enabled' => true,
             'personal_qr_login_enabled' => true,
             'qr_login_roles' => ['Company Supervisor'],

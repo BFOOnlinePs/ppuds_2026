@@ -133,7 +133,7 @@ class OtpLoginController extends Controller
 
     /**
      * The sign-in waiting for its code, if any. A two-step one is dropped as
-     * soon as the dashboard no longer uses two-step sign-in.
+     * soon as that person no longer signs in with two steps.
      */
     private function pending(Request $request, LoginOtpService $otp): ?array
     {
@@ -143,9 +143,12 @@ class OtpLoginController extends Controller
             return null;
         }
 
-        $stillValid = ($pending['after_password'] ?? null)
-            ? $otp->codeAfterPasswordRequired(LoginClient::WEB)
-            : $otp->codeLoginAvailable(LoginClient::WEB);
+        if ($pending['after_password'] ?? null) {
+            $user = User::query()->find($pending['after_password']);
+            $stillValid = $user && $otp->modeForUser($user, LoginClient::WEB)->requiresCodeAfterPassword();
+        } else {
+            $stillValid = $otp->codeLoginAvailable(LoginClient::WEB);
+        }
 
         if (! $stillValid) {
             $request->session()->forget(self::SESSION_KEY);

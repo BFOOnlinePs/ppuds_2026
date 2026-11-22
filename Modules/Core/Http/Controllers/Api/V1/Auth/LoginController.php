@@ -62,10 +62,12 @@ class LoginController extends Controller
      *     @OA\Response(response=429, description="Two-step mode: too many codes requested; data.retry_after says how many seconds to wait")
      * )
      *
-     * In the "password, then code" mode (mobile_login_mode = password_then_code)
-     * a correct password does not return a token. It answers 200 with
-     * data.requires_code = true, the code details and a login_ticket, and the
-     * app finishes with POST /api/v1/auth/otp/verify {login_ticket, code}.
+     * When the account signs in with "password, then code" (its own method,
+     * its role's, or the general mobile one) a correct password does not
+     * return a token. It answers 200 with data.requires_code = true, the code
+     * details and a login_ticket, and the app finishes with
+     * POST /api/v1/auth/otp/verify {login_ticket, code}. An account that signs
+     * in with a code only gets 403 — but only once its password was right.
      */
     public function login(LoginRequest $request)
     {
@@ -83,8 +85,26 @@ class LoginController extends Controller
             'password'  => $request->password,
         ];
 
-        if ($otp->codeAfterPasswordRequired(LoginClient::MOBILE)) {
-            return $this->startTwoStepSignIn($request, $otp, $credentials, $loginField);
+        // A person or role may have a method of their own: check the password
+        // first, then follow that person's method.
+        if ($otp->perUserRulesMatter(LoginClient::MOBILE)) {
+            if (! Auth::validate($credentials)) {
+                // validate() raises no event of its own; keep failed sign-ins in the log.
+                event(new Failed(config('auth.guards.api.driver', 'api'), Auth::getLastAttempted(), [$loginField => $credentials[$loginField]]));
+
+                return $this->errorResponse(__('The provided credentials do not match our records.'), 401);
+            }
+
+            $user = Auth::getLastAttempted();
+            $mode = $otp->modeForUser($user, LoginClient::MOBILE);
+
+            if (! $mode->allowsPassword()) {
+                return $this->errorResponse(__('Your account signs in with a one-time code, not a password. Enter your email to receive one.'), 403);
+            }
+
+            if ($mode->requiresCodeAfterPassword()) {
+                return $this->startTwoStepSignIn($request, $otp, $user);
+            }
         }
 
         if (!Auth::attempt($credentials)) {
@@ -119,21 +139,12 @@ class LoginController extends Controller
     }
 
     /**
-     * The first step of a two-step sign-in: the password is checked without
-     * signing in, a code is sent, and the app gets a short-lived login ticket
-     * to finish with at /api/v1/auth/otp/verify.
+     * The first step of a two-step sign-in, once the password was found right
+     * without signing in: a code is sent, and the app gets a short-lived login
+     * ticket to finish with at /api/v1/auth/otp/verify.
      */
-    private function startTwoStepSignIn(LoginRequest $request, LoginOtpService $otp, array $credentials, string $loginField)
+    private function startTwoStepSignIn(LoginRequest $request, LoginOtpService $otp, User $user)
     {
-        if (! Auth::validate($credentials)) {
-            // validate() raises no event of its own; keep failed sign-ins in the log.
-            event(new Failed(config('auth.guards.api.driver', 'api'), Auth::getLastAttempted(), [$loginField => $credentials[$loginField]]));
-
-            return $this->errorResponse(__('The provided credentials do not match our records.'), 401);
-        }
-
-        $user = Auth::getLastAttempted();
-
         $challenge = $otp->requestAfterPassword($user, OtpChannel::fromKey($request->input('channel')), $request->ip(), LoginClient::MOBILE);
 
         return $this->successResponse([

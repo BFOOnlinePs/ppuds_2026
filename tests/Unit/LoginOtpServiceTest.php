@@ -353,11 +353,11 @@ class LoginOtpServiceTest extends TestCase
 
         $this->assertTrue($this->service()->passwordLoginAllowed(LoginClient::WEB));
         $this->assertFalse($this->service()->codeLoginAvailable(LoginClient::WEB));
-        $this->assertFalse($this->service()->codeAfterPasswordRequired(LoginClient::WEB));
+        $this->assertFalse($this->service()->twoStepPossible(LoginClient::WEB));
 
         $this->assertTrue($this->service()->passwordLoginAllowed(LoginClient::MOBILE));
         $this->assertFalse($this->service()->codeLoginAvailable(LoginClient::MOBILE));
-        $this->assertTrue($this->service()->codeAfterPasswordRequired(LoginClient::MOBILE));
+        $this->assertTrue($this->service()->twoStepPossible(LoginClient::MOBILE));
     }
 
     public function test_each_mode_allows_exactly_what_it_says(): void
