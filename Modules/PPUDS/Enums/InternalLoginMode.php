@@ -34,6 +34,17 @@ enum InternalLoginMode: int implements HasColor, HasDescription, HasLabel
         };
     }
 
+    /** A few words, for tables and badges. */
+    public function getShortLabel(): string
+    {
+        return match ($this) {
+            self::PASSWORD => __('Password'),
+            self::CODE => __('Code only'),
+            self::PASSWORD_OR_CODE => __('Password or code'),
+            self::PASSWORD_THEN_CODE => __('Password + code'),
+        };
+    }
+
     public function getDescription(): ?string
     {
         return match ($this) {

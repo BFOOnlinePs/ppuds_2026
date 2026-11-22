@@ -21,6 +21,7 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\HtmlString;
 use Illuminate\Validation\ValidationException;
 use Jantinnerezo\LivewireAlert\Facades\LivewireAlert;
 use Livewire\Component;
@@ -28,6 +29,7 @@ use Modules\Core\Entities\Settings;
 use Modules\Core\Enums\UserRole;
 use Modules\Core\Settings\GeneralSettings;
 use Modules\PPUDS\Entities\Major;
+use Modules\PPUDS\Entities\UserLoginPreference;
 use Modules\PPUDS\Enums\GigEvaluationStatus;
 use Modules\PPUDS\Enums\InternalLoginMode;
 use Modules\PPUDS\Enums\LoginMethod;
@@ -503,8 +505,10 @@ class Index extends Component implements HasForms
                     ->content(__('These options apply to the internal login only. They have no effect while the login method is set to University SSO (PPU).'))
                     ->visible(fn (callable $get): bool => (int) $get('login_method') === LoginMethod::PPU->value),
 
-                Section::make(__('Sign-In Method'))
-                    ->description(__('Chosen separately for the dashboard and the mobile app. Any method that uses a one-time code needs working email (or SMS) delivery — without it, the system falls back to the password so nobody is locked out.'))
+                // Read top to bottom: the general method, exceptions by role,
+                // QR codes, then the result — how each role will sign in.
+                Section::make(__('Step 1 — General Sign-In Method'))
+                    ->description(__('Applies to everyone who has no exception in step 2. Administrators and staff usually stay on the password.'))
                     ->icon('solar-password-minimalistic-input-bold-duotone')
                     ->schema([
                         Grid::make(2)->schema([
@@ -528,16 +532,16 @@ class Index extends Component implements HasForms
                         ]),
                     ]),
 
-                Section::make(__('Sign-In Method By Role'))
-                    ->description(__('Give a role its own method and code channel, on the dashboard and in the app. Someone with several roles follows the first rule that matches — drag rules to order them. A person\'s own method, set on their user page, comes before these rules.'))
+                Section::make(__('Step 2 — Exceptions By Role (optional)'))
+                    ->description(__('Give a role a different method than step 1 — for example: students sign in with a code sent by SMS. Leave empty if everyone follows step 1. A single user can also get their own method from their page in Users.'))
                     ->icon('solar-users-group-rounded-bold-duotone')
-                    ->collapsible()
                     ->schema([
                         Repeater::make('auth_role_login_rules')
                             ->hiddenLabel()
-                            ->addActionLabel(__('Add Rule'))
+                            ->addActionLabel(__('Add Exception'))
                             ->reorderable()
                             ->defaultItems(0)
+                            ->live()
                             ->itemLabel(fn (array $state): ?string => filled($state['role'] ?? null)
                                 ? (UserRole::tryFrom($state['role'])?->getLabel() ?? __($state['role']))
                                 : null)
@@ -548,42 +552,49 @@ class Index extends Component implements HasForms
                                         ->options(fn (): array => $this->roleOptions())
                                         ->native(false)
                                         ->distinct()
+                                        ->live()
                                         ->required(),
 
                                     Select::make('mode')
-                                        ->label(__('Sign-In Method'))
+                                        ->label(__('Signs In With'))
                                         ->options(InternalLoginMode::options())
-                                        ->placeholder(__('General setting'))
-                                        ->native(false),
+                                        ->placeholder(__('As in step 1'))
+                                        ->native(false)
+                                        ->live(),
 
                                     Select::make('channel')
                                         ->label(__('Send Codes By'))
                                         ->options(OtpChannel::options())
-                                        ->placeholder(__('General setting'))
-                                        ->native(false),
+                                        ->placeholder(__('As in "Sending Codes"'))
+                                        ->native(false)
+                                        ->live(),
                                 ]),
                             ]),
                     ]),
 
-                Section::make(__('Company QR Sign In'))
-                    ->description(__('The mobile app scans the company QR code, then the person confirms who they are with a one-time code. Only people who belong to that company can sign in this way.'))
+                Section::make(__('Step 3 — Sign In With A QR Code (Mobile App)'))
+                    ->description(__('Two separate kinds of QR codes. Both are generated and printed from the company page, under "Sign-in QR Code".'))
                     ->icon('solar-qr-code-bold-duotone')
                     ->schema([
-                        Toggle::make('auth_qr_login_enabled')
-                            ->label(__('Enable Company QR Sign In'))
-                            ->live(),
+                        Grid::make(2)->schema([
+                            Toggle::make('auth_personal_qr_login_enabled')
+                                ->label(__('Personal QR Code For Each Supervisor'))
+                                ->helperText(__('Scanning it signs the person straight in — no email, no code. Hand it to them privately, like a password.'))
+                                ->live(),
 
-                        Toggle::make('auth_personal_qr_login_enabled')
-                            ->label(__('Enable Personal QR Codes'))
-                            ->helperText(__('Each person gets their own QR code from the company page. Scanning it signs them straight in, without any code — treat it like a password.'))
-                            ->live(),
+                            Toggle::make('auth_qr_login_enabled')
+                                ->label(__('The Company\'s Printed QR Code'))
+                                ->helperText(__('One poster for the whole company. After scanning, the person enters their email and the code sent to them.'))
+                                ->live(),
+                        ]),
 
                         CheckboxList::make('auth_qr_login_roles')
-                            ->label(__('Roles Allowed To Sign In With A Company QR Code'))
-                            ->helperText(__('Only roles that can be linked to a company are available. Applies to the company code and to personal codes.'))
+                            ->label(__('Who Can Sign In With QR Codes'))
+                            ->helperText(__('Only roles that can be linked to a company can be chosen. Applies to both kinds of QR codes.'))
                             ->options(fn (): array => $this->roleOptions())
                             ->disableOptionWhen(fn (string $value): bool => ! in_array($value, CompanyMembershipService::supportedRoles(), true))
                             ->columns(2)
+                            ->live()
                             ->required(fn (callable $get): bool => $this->anyQrLoginEnabled($get))
                             ->visible(fn (callable $get): bool => $this->anyQrLoginEnabled($get)),
 
@@ -594,12 +605,23 @@ class Index extends Component implements HasForms
                             ->numeric()
                             ->minValue(0)
                             ->maxValue(3650)
-                            ->required(),
+                            ->required()
+                            ->visible(fn (callable $get): bool => $this->anyQrLoginEnabled($get)),
+                    ]),
+
+                Section::make(__('Result — How Each Role Will Sign In'))
+                    ->description(__('Updates as you change the options above. Nothing changes until you press Save.'))
+                    ->icon('solar-checklist-minimalistic-bold-duotone')
+                    ->schema([
+                        Placeholder::make('auth_login_summary')
+                            ->hiddenLabel()
+                            ->content(fn (callable $get): HtmlString => $this->loginSummary($get)),
                     ]),
 
                 Section::make(__('Code Rules'))
                     ->icon('solar-shield-check-bold-duotone')
                     ->collapsible()
+                    ->collapsed()
                     ->schema([
                         Grid::make(3)->schema([
                             TextInput::make('auth_otp_length')
@@ -629,8 +651,8 @@ class Index extends Component implements HasForms
                         ]),
                     ]),
 
-                Section::make(__('Delivery Channels'))
-                    ->description(__('How the one-time code reaches the person.'))
+                Section::make(__('Sending Codes'))
+                    ->description(__('How the one-time code reaches the person — used by every method that sends a code.'))
                     ->icon('solar-letter-bold-duotone')
                     ->collapsible()
                     ->schema([
@@ -647,6 +669,7 @@ class Index extends Component implements HasForms
                                 ->label(__('Default Channel'))
                                 ->prefixIcon('solar-plain-bold-duotone')
                                 ->options(OtpChannel::options())
+                                ->live()
                                 ->required(),
 
                             Toggle::make('auth_otp_allow_channel_choice')
@@ -726,6 +749,74 @@ class Index extends Component implements HasForms
     protected function anyQrLoginEnabled(callable $get): bool
     {
         return (bool) $get('auth_qr_login_enabled') || (bool) $get('auth_personal_qr_login_enabled');
+    }
+
+    /**
+     * How each role will sign in with the options as they stand in the form
+     * (not yet saved), following the same order LoginOtpService applies:
+     * the first matching exception, then the general method. A method that
+     * needs codes reads as the password while no channel is on.
+     */
+    protected function loginSummary(callable $get): HtmlString
+    {
+        $generalWeb = InternalLoginMode::tryFrom((int) $get('auth_web_login_mode')) ?? InternalLoginMode::PASSWORD;
+        $generalMobile = InternalLoginMode::tryFrom((int) $get('auth_mobile_login_mode')) ?? InternalLoginMode::PASSWORD;
+
+        $emailOn = (bool) $get('auth_otp_email_enabled');
+        $smsOn = (bool) $get('auth_otp_sms_enabled');
+        $codesPossible = $emailOn || $smsOn;
+
+        $enabledChannels = array_values(array_filter([
+            $emailOn ? OtpChannel::MAIL : null,
+            $smsOn ? OtpChannel::SMS : null,
+        ]));
+        $defaultChannel = OtpChannel::tryFrom((int) $get('auth_otp_default_channel'));
+        $defaultChannel = in_array($defaultChannel, $enabledChannels, true) ? $defaultChannel : ($enabledChannels[0] ?? null);
+
+        $rules = collect($get('auth_role_login_rules') ?? [])->values();
+        $qrRoles = (array) ($get('auth_qr_login_roles') ?? []);
+        $personalOn = (bool) $get('auth_personal_qr_login_enabled');
+        $companyOn = (bool) $get('auth_qr_login_enabled') && $codesPossible;
+
+        $effective = fn (InternalLoginMode $mode): InternalLoginMode => $mode->usesCodes() && ! $codesPossible
+            ? InternalLoginMode::PASSWORD
+            : $mode;
+
+        $rows = collect($this->roleOptions())->map(function (string $label, string $role) use ($rules, $generalWeb, $generalMobile, $effective, $enabledChannels, $defaultChannel, $qrRoles, $personalOn, $companyOn): array {
+            $modeRule = $rules->first(fn ($rule) => ($rule['role'] ?? null) === $role && filled($rule['mode'] ?? null));
+            $channelRule = $rules->first(fn ($rule) => ($rule['role'] ?? null) === $role && filled($rule['channel'] ?? null));
+
+            $ruleMode = InternalLoginMode::tryFrom((int) ($modeRule['mode'] ?? 0));
+            $web = $effective($ruleMode ?? $generalWeb);
+            $mobile = $effective($ruleMode ?? $generalMobile);
+
+            $ruleChannel = OtpChannel::tryFrom((int) ($channelRule['channel'] ?? 0));
+            $channel = in_array($ruleChannel, $enabledChannels, true) ? $ruleChannel : $defaultChannel;
+
+            return [
+                'label' => $label,
+                'fromRule' => $ruleMode !== null || $ruleChannel !== null,
+                'web' => $web,
+                'mobile' => $mobile,
+                'channel' => ($web->usesCodes() || $mobile->usesCodes()) ? $channel : null,
+                'personalQr' => $personalOn && in_array($role, $qrRoles, true),
+                'companyQr' => $companyOn && in_array($role, $qrRoles, true),
+            ];
+        })->values();
+
+        try {
+            $ownMethodCount = UserLoginPreference::query()
+                ->where(fn ($query) => $query->whereNotNull('login_mode')->orWhereNotNull('otp_channel'))
+                ->count();
+        } catch (\Throwable) {
+            $ownMethodCount = 0;
+        }
+
+        return new HtmlString(view('core::livewire.pages.settings.partials.login-summary', [
+            'rows' => $rows,
+            'codesPossible' => $codesPossible,
+            'ownMethodCount' => $ownMethodCount,
+        ])->render());
     }
 
     /**
