@@ -16,6 +16,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
+use Illuminate\Support\Arr;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\PPUDS\Entities\Note;
@@ -30,7 +31,7 @@ class Edit extends Component implements HasForms, HasActions
 
     public function mount($note)
     {
-        $this->record = Note::findOrFail($note);
+        $this->record = Note::query()->where('user_id', auth()->id())->findOrFail($note);
 
         $this->form->fill($this->record->toArray());
     }
@@ -110,7 +111,8 @@ class Edit extends Component implements HasForms, HasActions
 
         $this->validate();
 
-        $this->record->update($this->data);
+        // تُحصر القيم القادمة من المتصفح بحقول النموذج، فلا يمكن تغيير user_id أو created_by.
+        $this->record->update(Arr::only($this->data, ['name', 'content', 'note_date', 'is_pinned']));
 
         if ($this->data['note_image']) {
             $this->record->addImage($this->data['note_image']);

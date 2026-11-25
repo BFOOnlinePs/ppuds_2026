@@ -82,6 +82,10 @@ class RegistrationController extends Controller
         $perPage = min(request('per_page', $defaultPerPage), $maxPerPage);
 
         $registrations = QueryBuilder::for(Registration::class)
+            // Without the listing permission a user only sees registrations they belong to.
+            ->when(! auth()->user()->can('Registration View List'), fn ($query) => $query->where(
+                fn ($query) => $query->where('student_id', auth()->id())->orWhere('supervisor_id', auth()->id())
+            ))
             ->allowedFields(RegistrationResource::allowedFields())
             ->allowedFilters(RegistrationResource::allowedFilters())
             ->allowedSorts(RegistrationResource::allowedSorts())
@@ -157,6 +161,9 @@ class RegistrationController extends Controller
     {
         $registration = QueryBuilder::for(Registration::class)
             ->where('id', $registration->id)
+            ->when(! auth()->user()->can('Registration View List'), fn ($query) => $query->where(
+                fn ($query) => $query->where('student_id', auth()->id())->orWhere('supervisor_id', auth()->id())
+            ))
             ->allowedFields(RegistrationResource::allowedFields())
             ->allowedIncludes(RegistrationResource::allowedIncludes())
             ->firstOrFail();

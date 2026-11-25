@@ -5,6 +5,7 @@ namespace Modules\Core\Entities;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Str;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Modules\Core\Settings\GeneralSettings;
 use Spatie\MediaLibrary\HasMedia;
@@ -51,7 +52,7 @@ class Settings extends Model implements HasMedia
 
         $media = $this
             ->addMedia($file)
-            ->usingFileName($file->getClientOriginalName())
+            ->usingFileName((Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) ?: 'logo').'.'.($file->guessExtension() ?: 'bin'))
             ->toMediaCollection('logo', 'media');
 
         // اختياري: احفظ رابط الشعار في GeneralSettings

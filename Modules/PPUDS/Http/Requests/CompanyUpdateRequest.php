@@ -11,7 +11,7 @@ class CompanyUpdateRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('Company Update') ?? false;
     }
 
     public function rules(): array
@@ -34,7 +34,7 @@ class CompanyUpdateRequest extends FormRequest
             'description'           => ['nullable', 'string'],
             'company_category_id'   => ['sometimes', 'required', 'integer', 'exists:ppu_ds_company_categories,id'],
             'status'                => ['sometimes', 'required', 'integer', 'in:' . implode(',', array_column(CompanyStatus::cases(), 'value'))],
-            'logo'                  => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048'],
+            'logo'                  => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
 
             // الفروع (إذا تم إرسال مصفوفة الفروع، يجب التحقق منها)
             'branches'                => ['sometimes', 'required', 'array', 'min:1'],

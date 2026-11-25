@@ -22,6 +22,10 @@ trait ScopesStudentCompanyVisibility
             return $query;
         }
 
+        if ($this->currentUserHasNoInstitutionalRole()) {
+            return $query->whereRaw('1 = 0');
+        }
+
         if ($user->hasRole(UserRole::STUDENT->value)) {
             return $query->where('student_id', $user->id);
         }
@@ -68,6 +72,10 @@ trait ScopesStudentCompanyVisibility
             return $query;
         }
 
+        if ($this->currentUserHasNoInstitutionalRole()) {
+            return $query->whereRaw('1 = 0');
+        }
+
         if ($user->hasRole(UserRole::STUDENT->value)) {
             return $query->where('user_id', $user->id);
         }
@@ -99,6 +107,10 @@ trait ScopesStudentCompanyVisibility
 
         if ($this->currentUserIsAdmin()) {
             return $query;
+        }
+
+        if ($this->currentUserHasNoInstitutionalRole()) {
+            return $query->whereRaw('1 = 0');
         }
 
         if ($user->hasRole(UserRole::STUDENT->value)) {
@@ -135,6 +147,10 @@ trait ScopesStudentCompanyVisibility
             return true;
         }
 
+        if ($this->currentUserHasNoInstitutionalRole()) {
+            return false;
+        }
+
         $studentCompanyId = $studentCompany instanceof StudentCompany
             ? $studentCompany->getKey()
             : $studentCompany;
@@ -154,6 +170,10 @@ trait ScopesStudentCompanyVisibility
 
         if ($this->currentUserIsAdmin()) {
             return true;
+        }
+
+        if ($this->currentUserHasNoInstitutionalRole()) {
+            return false;
         }
 
         if ($user->hasRole(UserRole::STUDENT->value)) {
@@ -193,6 +213,23 @@ trait ScopesStudentCompanyVisibility
             UserRole::SUPER_ADMIN->value,
             UserRole::ADMIN->value,
         ]) ?? false;
+    }
+
+    /**
+     * Users holding no role, or only the permission-less generic roles, must
+     * never fall through to the unscoped (staff) visibility.
+     */
+    protected function currentUserHasNoInstitutionalRole(): bool
+    {
+        $user = auth()->user();
+
+        if (! $user) {
+            return true;
+        }
+
+        return $user->getRoleNames()
+            ->diff([UserRole::USER->value, UserRole::CUSTOMER->value])
+            ->isEmpty();
     }
 
     protected function universitySupervisorScopedRoles(): array

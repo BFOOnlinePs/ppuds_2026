@@ -4,6 +4,7 @@ namespace Modules\PPUDS\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
+use Modules\Core\Enums\UserRole;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\Survey;
 use Modules\PPUDS\Entities\SurveyAnswer;
@@ -47,7 +48,19 @@ class SurveyAnswerController extends Controller
         $defaultPerPage = config('core.pagination.per_page', 10);
         $perPage = min(request('per_page', $defaultPerPage), 100);
 
+        // Same roles that may view survey submissions on the web dashboard
+        // (Survey\Details\Details::canViewSurveyDetails); everyone else only
+        // sees the answers they submitted.
+        $canViewAllAnswers = auth()->user()?->hasAnyRole([
+            UserRole::SUPER_ADMIN->value,
+            UserRole::ADMIN->value,
+            UserRole::PRACTICAL_TRAINING_SUPERVISOR->value,
+            'Academic Supervisor',
+            'University Supervisor',
+        ]) ?? false;
+
         $answers = QueryBuilder::for(SurveyAnswer::class)
+            ->when(! $canViewAllAnswers, fn ($query) => $query->where('submitted_by', auth()->id()))
             ->allowedFields(SurveyAnswerResource::allowedFields())
             ->allowedFilters(SurveyAnswerResource::allowedFilters())
             ->allowedIncludes(SurveyAnswerResource::allowedIncludes())

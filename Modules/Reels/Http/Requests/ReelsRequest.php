@@ -13,7 +13,8 @@ class ReelsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => 'required|exists:users,id',
+            // Ignored: the owner is always the authenticated user.
+            'user_id' => 'nullable|exists:users,id',
             'status' => 'required|integer',
             'rejection_reason' => 'nullable|string',
             'views_count' => 'nullable|integer',

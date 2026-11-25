@@ -6,6 +6,7 @@ use Modules\PPUDS\Http\Controllers\CompanyQrCodeController;
 use Modules\PPUDS\Http\Controllers\KeycloakAuthController;
 use Modules\PPUDS\Http\Controllers\LoginGatewayController;
 use Modules\PPUDS\Http\Controllers\OtpLoginController;
+use Modules\PPUDS\Http\Controllers\SurveyAnswerFileController;
 
 // Route::get('/login', [KeycloakAuthController::class, 'redirect'])->name('login');
 
@@ -293,6 +294,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     Route::get('/add', Add::class)->name('add')->can('Survey Create');
                     Route::get('/{survey}/details', Details\Details::class)->name('details');
                     Route::get('/{survey}/submissions/{user}/{studentCompany?}', Details\SubmissionDetails::class)->name('submission-details');
+                    Route::get('/answers/{answer}/file', [SurveyAnswerFileController::class, '__invoke'])->name('answer-file');
                     Route::get('/{survey}/edit', Edit::class)->name('edit')->can('Survey Update');
                     Route::get('/{survey}/survey-form', SurveyForm::class)->name('survey-form');
                 });

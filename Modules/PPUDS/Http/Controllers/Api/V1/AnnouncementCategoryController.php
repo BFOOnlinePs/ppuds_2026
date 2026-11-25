@@ -132,6 +132,10 @@ class AnnouncementCategoryController extends Controller
      */
     public function store(AnnouncementCategoryRequest $request)
     {
+        if (! auth()->user()->can('Announcement Category Create')) {
+            return $this->errorResponse(__('You are not authorized to perform this action'), 403);
+        }
+
         $category = DB::transaction(function () use ($request) {
             $data = $request->validated();
             $data['created_by'] = auth()->id();

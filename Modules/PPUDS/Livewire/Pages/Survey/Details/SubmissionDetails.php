@@ -5,7 +5,7 @@ namespace Modules\PPUDS\Livewire\Pages\Survey\Details;
 use App\View\Components\AppLayout;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -14,6 +14,7 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Illuminate\Support\Collection;
+use Illuminate\Support\HtmlString;
 use Livewire\Component;
 use Modules\Core\Entities\User;
 use Modules\Core\Enums\UserRole;
@@ -75,7 +76,9 @@ class SubmissionDetails extends Component implements HasForms
                 SurveyQuestionType::SELECT->value => Select::make($fieldName)->options($options),
                 SurveyQuestionType::MULTI_SELECT->value => Select::make($fieldName)->options($options)->multiple(),
                 SurveyQuestionType::DATE->value => DatePicker::make($fieldName)->native(false),
-                SurveyQuestionType::FILE->value => FileUpload::make($fieldName)->directory('surveys'),
+                // حقل الرفع المعطَّل لا يسمح بفتح الملف، فتُعرض الملفات كروابط تُفتح عبر مسار محمي.
+                SurveyQuestionType::FILE->value => Placeholder::make($fieldName)
+                    ->content(fn (): HtmlString => $this->fileLinks($question->id)),
                 SurveyQuestionType::RATING->value => Radio::make($fieldName)->options(SurveyQuestionType::ratingScaleOptions())->inline(),
                 SurveyQuestionType::NUMBER->value => TextInput::make($fieldName)->numeric(),
                 default => TextInput::make($fieldName),
@@ -123,6 +126,30 @@ class SubmissionDetails extends Component implements HasForms
         }
 
         return $state;
+    }
+
+    protected function fileLinks(int $questionId): HtmlString
+    {
+        $links = SurveyAnswer::query()
+            ->where('survey_id', $this->survey->id)
+            ->where('survey_question_id', $questionId)
+            ->where('submitted_by', $this->user->id)
+            ->when($this->studentCompany, fn ($query) => $query->where('student_company_id', $this->studentCompany->id))
+            ->whereNotNull('text_answer')
+            ->where('text_answer', '!=', '')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (SurveyAnswer $answer): string => sprintf(
+                '<a href="%s" target="_blank" rel="noopener" class="inline-flex items-center gap-1 font-semibold text-primary-600 hover:underline dark:text-primary-400">%s</a>',
+                e(route('surveys.answer-file', $answer)),
+                e(basename((string) $answer->text_answer)),
+            ));
+
+        if ($links->isEmpty()) {
+            return new HtmlString('<span class="text-gray-500">'.e(__('No file uploaded')).'</span>');
+        }
+
+        return new HtmlString('<div class="flex flex-col gap-2">'.$links->implode('').'</div>');
     }
 
     protected function selectedOptions(Collection $answers): array

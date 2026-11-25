@@ -122,7 +122,7 @@ class Offer extends Model implements TranslatableContract , HasMedia
 
         try {
             $originalName = $file->getClientOriginalName();
-            $extension = $file->getClientOriginalExtension();
+            $extension = $file->guessExtension() ?: 'bin';
             $fileName = time() . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $extension;
 
             $media = $this

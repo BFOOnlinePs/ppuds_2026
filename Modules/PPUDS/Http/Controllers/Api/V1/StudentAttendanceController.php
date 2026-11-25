@@ -346,7 +346,14 @@ class StudentAttendanceController extends Controller
             abort_unless($this->canAccessStudentCompanyRecord((int) $request->student_company_id), 403);
         }
 
-        $studentAttendance->update($request->validated());
+        $data = $request->validated();
+
+        // Students may not set their own attendance status.
+        if (auth()->user()?->hasRole(UserRole::STUDENT->value)) {
+            unset($data['status'], $data['created_by']);
+        }
+
+        $studentAttendance->update($data);
 
         if ($request->has('status') && $studentAttendance->wasChanged('status') && ! auth()->user()?->hasRole(UserRole::STUDENT->value)) {
             app(PpudsNotificationService::class)->attendanceStatusUpdated($studentAttendance->refresh());

@@ -36,7 +36,7 @@
                     </div>
 
                     <div class="prose max-w-none text-gray-700 dark:prose-invert dark:text-gray-300">
-                        {!! $announcement->content !!}
+                        {!! str($announcement->content)->sanitizeHtml() !!}
                     </div>
                 </div>
             </div>

@@ -6,6 +6,7 @@ use App\View\Components\AppLayout;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
@@ -25,6 +26,7 @@ use Modules\PPUDS\Settings\GeneralSettings;
  */
 class Details extends Component
 {
+    #[Locked]
     public int $studentId;
 
     #[Url(as: 'tab', keep: true)]
@@ -190,6 +192,8 @@ class Details extends Component
      */
     public function printFinalReport(int $registrationId)
     {
+        abort_unless($this->accessiblePlacementsQuery($this->studentId)->exists(), 404);
+
         $report = $this->finalReports->firstWhere('id', $registrationId)?->finalReport;
 
         if (! $report) {

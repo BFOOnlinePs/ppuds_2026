@@ -18,6 +18,7 @@ use Filament\Infolists\Contracts\HasInfolists;
 use Filament\Infolists\Infolist;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Masmerise\Toaster\Toaster;
 use Modules\Core\Entities\User;
@@ -31,6 +32,7 @@ class Details extends Component implements HasForms, HasInfolists
 
     public ?array $data = [];
 
+    #[Locked]
     public int $userId;
 
     public function mount(User $user)

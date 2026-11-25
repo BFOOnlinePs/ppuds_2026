@@ -20,7 +20,7 @@ class CompanyRequest extends FormRequest
             'description'           => ['nullable', 'string'],
             'company_category_id'   => ['required', 'integer', 'exists:ppu_ds_company_categories,id'],
             'status'                => ['required', 'integer', 'in:' . implode(',', array_column(CompanyStatus::cases(), 'value'))],
-            'logo'                  => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048'],
+            'logo'                  => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
 
             // Branch Validation
             'branches'                => ['required', 'array', 'min:1'],
@@ -52,6 +52,6 @@ class CompanyRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('Company Create') ?? false;
     }
 }

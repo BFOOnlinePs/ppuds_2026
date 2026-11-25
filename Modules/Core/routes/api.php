@@ -14,8 +14,11 @@ use Modules\Core\Http\Controllers\Api\V1\ConfigController;
 Route::prefix('v1')->as('api.v1.')->group(function () {
 
     Route::prefix('auth')->as('auth.')->group(function () {
-        Route::post('login', [LoginController::class, 'login'])->name('login');
-        Route::post('register', [RegisterController::class, 'register'])->name('register');
+        Route::post('login', [LoginController::class, 'login'])
+            ->middleware('throttle:ppuds-login')
+            ->name('login');
+        // Public self-registration is disabled: accounts are created by admins or via university login.
+        // Route::post('register', [RegisterController::class, 'register'])->name('register');
     });
 
     Route::controller(ConfigController::class)->prefix('config')->as('config.')->group(function () {

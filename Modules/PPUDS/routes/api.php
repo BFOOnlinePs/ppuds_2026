@@ -39,11 +39,13 @@
         // recorded; the token it returns is the realm's own.
         Route::prefix('auth')->as('auth.')->group(function () {
             Route::post('university-login', [UniversityLoginController::class, 'login'])
+                ->middleware('throttle:ppuds-login')
                 ->name('university-login');
 
             // Unauthenticated: it is called when the access token has already
             // expired, and the refresh token is itself the credential.
             Route::post('university-refresh', [UniversityLoginController::class, 'refresh'])
+                ->middleware('throttle:30,1')
                 ->name('university-refresh');
 
             // Internal login only, as configured from the dashboard: one-time
@@ -72,7 +74,9 @@
                 ->as('settings.')
                 ->group(function () {
                     Route::get('/', 'index')->name('index');
-                    Route::patch('/', 'update')->name('update');
+                    Route::patch('/', 'update')
+                        ->middleware('auth:api,sanctum')
+                        ->name('update');
                 });
         });
 

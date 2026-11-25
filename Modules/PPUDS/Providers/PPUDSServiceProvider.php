@@ -140,6 +140,30 @@ class PPUDSServiceProvider extends ServiceProvider
                     return back()->withErrors([$request->routeIs('login.otp.verify') ? 'code' : 'email' => $message]);
                 });
         });
+
+        // Password logins: a tight limit per account+IP stops brute force on one
+        // account, while a looser per-IP limit leaves room for many students
+        // signing in from behind the same university NAT.
+        RateLimiter::for('ppuds-login', function (Request $request) {
+            $identifier = mb_strtolower(trim((string) (
+                $request->input('username') ?? $request->input('email') ?? $request->input('phone') ?? ''
+            )));
+
+            $response = function (Request $request, array $headers) {
+                $seconds = (int) ($headers['Retry-After'] ?? 60);
+
+                return response()->json([
+                    'status' => false,
+                    'message' => __('Too many requests. Please try again in :seconds seconds.', ['seconds' => $seconds]),
+                    'data' => ['retry_after' => $seconds],
+                ], 429, $headers, JSON_UNESCAPED_UNICODE);
+            };
+
+            return [
+                Limit::perMinute(5)->by('ppuds-login:'.$identifier.'|'.$request->ip())->response($response),
+                Limit::perMinute(100)->by('ppuds-login-ip:'.$request->ip())->response($response),
+            ];
+        });
     }
 
     /**

@@ -275,6 +275,14 @@ class Details extends Component implements HasForms, HasInfolists, HasActions
                                                                     ->required()
                                                                     ->storeFiles(false)
                                                                     ->preserveFilenames()
+                                                                    ->acceptedFileTypes([
+                                                                        'application/pdf',
+                                                                        'application/msword',
+                                                                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                                                        'image/jpeg',
+                                                                        'image/png',
+                                                                    ])
+                                                                    ->rules(['mimes:pdf,doc,docx,jpg,jpeg,png'])
                                                                     ->maxSize(10240),
                                                             ]),
                                                     ])
@@ -937,6 +945,8 @@ class Details extends Component implements HasForms, HasInfolists, HasActions
 
     public function deleteAttachment(int $mediaId): void
     {
+        abort_unless(auth()->user()?->can('Company Update'), 403);
+
         $media = $this->companyAttachment($mediaId);
 
         if (! $media) {

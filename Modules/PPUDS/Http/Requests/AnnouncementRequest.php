@@ -22,6 +22,7 @@ class AnnouncementRequest extends FormRequest
             'expires_at'     => ['nullable', 'date', 'after:published_at'],
             'is_pinned'      => ['boolean'],
             'image'          => ['nullable', 'image', 'max:2048'],
+            'media'          => ['nullable', 'file', 'mimes:jpeg,png,jpg,pdf', 'max:5120'],
         ];
     }
 

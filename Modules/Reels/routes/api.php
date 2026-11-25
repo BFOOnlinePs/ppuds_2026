@@ -7,7 +7,7 @@ use Modules\Reels\Http\Controllers\Api\V1\ReelsController;
 
 Route::prefix('v1')->as('api.v1.')->group(function () {
 
-    Route::middleware(['api.localize'])
+    Route::middleware(['auth:sanctum', 'api.localize'])
         ->prefix('reels')
         ->as('reel.')
         ->group(function () {
@@ -17,12 +17,7 @@ Route::prefix('v1')->as('api.v1.')->group(function () {
                 Route::get('/{reel}', 'show')->name('show');
                 Route::delete('/{reel}', 'destroy')->name('destroy');
             });
-        });
 
-    Route::middleware(['auth:sanctum', 'api.localize'])
-        ->prefix('reels')
-        ->as('reel.')
-        ->group(function () {
 //            Route::controller(OrderController::class)->prefix('orders')->as('order.')->group(function () {
 //                Route::get('/', 'index')->name('index');
 //                Route::get('/{order}', 'show')->name('show');

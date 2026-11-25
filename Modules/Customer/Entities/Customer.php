@@ -114,7 +114,7 @@ class Customer extends Model implements HasMedia
 
         try {
             $originalName = $file->getClientOriginalName();
-            $extension = $file->getClientOriginalExtension();
+            $extension = $file->guessExtension() ?: 'bin';
             $fileName = time() . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $extension;
 
             $media = $this

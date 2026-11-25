@@ -147,7 +147,7 @@ class Product extends Model implements TranslatableContract, HasMedia, Discounta
 
         try {
             $originalName = $file->getClientOriginalName();
-            $extension = $file->getClientOriginalExtension();
+            $extension = $file->guessExtension() ?: 'bin';
             $fileName = time() . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $extension;
 
             $media = $this
@@ -185,7 +185,7 @@ class Product extends Model implements TranslatableContract, HasMedia, Discounta
                 }
 
                 $originalName = $file->getClientOriginalName();
-                $extension = $file->getClientOriginalExtension();
+                $extension = $file->guessExtension() ?: 'bin';
                 $fileName = time() . '_' . uniqid() . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $extension;
 
                 $media = $this

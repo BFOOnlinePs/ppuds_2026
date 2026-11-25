@@ -115,6 +115,10 @@ class ActivityLogController extends Controller
      */
     public function index()
     {
+        if (! auth()->user()->can('Activity Log View List')) {
+            return $this->errorResponse(__('You are not authorized to perform this action'), 403);
+        }
+
         $defaultPerPage = config('core.pagination.per_page');
         $maxPerPage = config('core.pagination.max_per_page');
         $perPage = min(request('per_page', $defaultPerPage), $maxPerPage);
@@ -184,6 +188,10 @@ class ActivityLogController extends Controller
      */
     public function show($id)
     {
+        if (! auth()->user()->can('Activity Log View List')) {
+            return $this->errorResponse(__('You are not authorized to perform this action'), 403);
+        }
+
         $activity = QueryBuilder::for(Activity::class)
             ->allowedFields(ActivityResource::allowedFields())
             ->allowedIncludes(ActivityResource::allowedIncludes())

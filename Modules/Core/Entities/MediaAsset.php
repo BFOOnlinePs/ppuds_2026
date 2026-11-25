@@ -104,7 +104,7 @@ class MediaAsset extends Model implements HasMedia
 
         try {
             $originalName = $file->getClientOriginalName();
-            $extension = $file->getClientOriginalExtension();
+            $extension = $file->guessExtension() ?: 'bin';
             $baseName = pathinfo($originalName, PATHINFO_FILENAME);
             $fileName = time() . '_' . Str::slug($baseName) . '.' . $extension;
 

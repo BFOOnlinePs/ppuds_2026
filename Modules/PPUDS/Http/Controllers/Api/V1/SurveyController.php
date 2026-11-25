@@ -156,6 +156,10 @@ class SurveyController extends Controller
      */
     public function store(SurveyRequest $request)
     {
+        if (! auth()->user()->can('Survey Create')) {
+            return $this->errorResponse(__('You are not authorized to perform this action'), 403);
+        }
+
         $survey = DB::transaction(function () use ($request) {
 
             $surveyData = $request->safe()->except(['questions']);

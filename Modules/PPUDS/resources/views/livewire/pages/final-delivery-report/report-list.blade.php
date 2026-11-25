@@ -75,7 +75,7 @@
                 {{ __('Training Role Description') }}
             </div>
             <div class="prose max-w-none text-sm dark:prose-invert">
-                {!! filled($report->role_description) ? $report->role_description : '---' !!}
+                {!! filled($report->role_description) ? str($report->role_description)->sanitizeHtml() : '---' !!}
             </div>
         </div>
 
@@ -91,7 +91,7 @@
                 {{ __('Summary') }}
             </div>
             <div class="prose max-w-none text-sm dark:prose-invert">
-                {!! filled($report->summary) ? $report->summary : '---' !!}
+                {!! filled($report->summary) ? str($report->summary)->sanitizeHtml() : '---' !!}
             </div>
         </div>
     </div>

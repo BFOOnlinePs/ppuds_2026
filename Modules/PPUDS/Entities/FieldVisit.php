@@ -83,7 +83,7 @@ class FieldVisit extends Model implements HasMedia
 
         try {
             $originalName = $file->getClientOriginalName();
-            $extension = strtolower($file->getClientOriginalExtension());
+            $extension = $file->guessExtension() ?: 'bin';
             $baseName = Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) ?: 'attachment';
             $fileName = now()->format('YmdHis') . '_' . Str::random(8) . '_' . $baseName . '.' . $extension;
             $mediaName = blank($name) ? pathinfo($originalName, PATHINFO_FILENAME) : $name;

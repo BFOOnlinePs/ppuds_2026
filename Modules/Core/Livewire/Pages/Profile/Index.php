@@ -304,6 +304,14 @@ class Index extends Component implements HasForms, HasInfolists
                                                                     ->required()
                                                                     ->storeFiles(false)
                                                                     ->preserveFilenames()
+                                                                    ->acceptedFileTypes([
+                                                                        'application/pdf',
+                                                                        'application/msword',
+                                                                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                                                        'image/jpeg',
+                                                                        'image/png',
+                                                                    ])
+                                                                    ->rules(['mimes:pdf,doc,docx,jpg,jpeg,png'])
                                                                     ->maxSize(10240),
                                                             ]),
                                                     ])

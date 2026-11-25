@@ -145,7 +145,8 @@ return [
     */
 
     'features' => [
-        Features::registration(),
+        // Public self-registration is disabled: accounts are created by admins or via university login.
+        // Features::registration(),
         Features::resetPasswords(),
         // Features::emailVerification(),
         Features::updateProfileInformation(),

@@ -102,7 +102,7 @@ class StudentReport extends Model implements HasMedia
                 } else {
                     // إذا كان كائناً (UploadedFile)
                     $originalName = $file->getClientOriginalName();
-                    $extension = strtolower($file->getClientOriginalExtension());
+                    $extension = $file->guessExtension() ?: 'bin';
                     $fileName = time() . '_' . \Illuminate\Support\Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $extension;
                 }
 

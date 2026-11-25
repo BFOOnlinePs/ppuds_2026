@@ -5,6 +5,7 @@ namespace Modules\PPUDS\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Http\FormRequest;
+use Modules\Core\Enums\UserRole;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\LeaveRequest;
 use Modules\PPUDS\Enums\LeaveRequestStatus;
@@ -270,6 +271,21 @@ class LeaveRequestController extends Controller
             }
 
             abort_unless($this->canAccessStudentCompanyRecord((int) $data['student_company_id']), 403);
+        }
+
+        // Students may not approve, reject or comment on their own leave requests.
+        if (auth()->user()?->hasRole(UserRole::STUDENT->value)) {
+            unset(
+                $data['company_approval'],
+                $data['university_approval'],
+                $data['rejection_reason'],
+                $data['company_supervisor_id'],
+                $data['university_supervisor_id'],
+                $data['company_supervisor_comment'],
+                $data['university_supervisor_comment'],
+                $data['created_by'],
+                $data['status'],
+            );
         }
 
         $leaveRequest->update($data);

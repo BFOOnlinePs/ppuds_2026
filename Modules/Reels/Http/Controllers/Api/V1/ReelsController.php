@@ -265,6 +265,9 @@ class ReelsController extends Controller
     public function store(ReelsRequest $request)
     {
         $validated = $request->validated();
+        $validated['user_id'] = auth()->id();
+        // Moderation and counter fields are never taken from the uploader.
+        $validated = Arr::except($validated, ['rejection_reason', 'views_count']);
 
         $reel = Reel::create(Arr::except($validated, ['video']));
 
@@ -329,6 +332,10 @@ class ReelsController extends Controller
 
     public function destroy(Reel $reel)
     {
+        if ((int) $reel->user_id !== (int) auth()->id()) {
+            return $this->errorResponse(__('You are not authorized to perform this action'), 403);
+        }
+
         $reel->clearMediaCollection('reels_video');
 
         $reel->delete();

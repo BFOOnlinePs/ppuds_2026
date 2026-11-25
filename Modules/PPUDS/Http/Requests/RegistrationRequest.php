@@ -31,6 +31,6 @@ class RegistrationRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('Registration Create') ?? false;
     }
 }

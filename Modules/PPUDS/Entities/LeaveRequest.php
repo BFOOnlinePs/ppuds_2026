@@ -105,7 +105,7 @@ class LeaveRequest extends Model implements HasMedia
 
         try {
             $originalName = $file->getClientOriginalName();
-            $extension = $file->getClientOriginalExtension();
+            $extension = $file->guessExtension() ?: 'bin';
             $baseName = Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) ?: 'attachment';
             $fileName = time() . '_' . $baseName . '.' . $extension;
 

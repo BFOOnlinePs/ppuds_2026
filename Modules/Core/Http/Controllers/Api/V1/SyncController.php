@@ -47,7 +47,10 @@ class SyncController extends Controller
     {
         $since = $request->input('since', '1970-01-01 00:00:00');
 
-        $users = User::with('media', 'roles')->where('updated_at' , '>' , $since)->get();
+        $users = User::with('media', 'roles')
+            // Without the listing permission a user only ever syncs their own record.
+            ->when(! $request->user()->can('User View List'), fn ($query) => $query->whereKey($request->user()->id))
+            ->where('updated_at' , '>' , $since)->get();
 
         return UserResource::collection($users)
             ->additional([

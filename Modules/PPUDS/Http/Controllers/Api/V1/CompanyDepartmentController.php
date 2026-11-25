@@ -144,6 +144,10 @@ class CompanyDepartmentController extends Controller
      */
     public function store(CompanyDepartmentRequest $request)
     {
+        if (! auth()->user()->can('Company Department Create')) {
+            return $this->errorResponse(__('You are not authorized to perform this action'), 403);
+        }
+
         $department = DB::transaction(function () use ($request) {
 
             $data = $request->validated();

@@ -4,6 +4,7 @@ namespace Modules\Core\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Modules\Core\Entities\User;
 use Modules\Core\Http\Controllers\Api\V1\Auth\LoginController;
 use Modules\Core\Http\Requests\UserRequestUpdate;
@@ -84,6 +85,8 @@ class UserController extends Controller
         $perPage = min(request('per_page', $defaultPerPage), $maxPerPage);
 
         $users = QueryBuilder::for(User::class)
+            // Without the listing permission a user only ever sees their own record.
+            ->when(! auth()->user()->can('User View List'), fn ($query) => $query->whereKey(auth()->id()))
             ->with('media')
             ->allowedFields(UserResource::allowedFields())
             ->allowedSorts(UserResource::allowedSorts())
@@ -243,6 +246,11 @@ class UserController extends Controller
      */
     public function update(UserRequestUpdate $request, User $user)
     {
+        // A user may edit their own account; editing anyone else requires the permission.
+        if (! $request->user()->is($user) && ! $request->user()->can('User Update')) {
+            return $this->errorResponse(__('You are not authorized to perform this action'), 403);
+        }
+
         $data = $request->validated();
         $studentProfileData = $data['studentProfile'] ?? [];
         $userData = collect($data)
@@ -269,17 +277,20 @@ class UserController extends Controller
             }
 
             $studentProfile->addMediaFromRequest('cv')
+                ->usingFileName(Str::random(16).'.'.($request->file('cv')->guessExtension() ?: 'bin'))
                 ->toMediaCollection('cv', 'student_profiles');
         }
 
         if ($request->hasFile('cover_photo')) {
             $user->addMediaFromRequest('cover_photo')
+                ->usingFileName(Str::random(16).'.'.($request->file('cover_photo')->guessExtension() ?: 'bin'))
                 ->toMediaCollection('cover_photo', 'media');
         }
 
         if ($request->hasFile('avatar')) {
 
             $user->addMediaFromRequest('avatar')
+                ->usingFileName(Str::random(16).'.'.($request->file('avatar')->guessExtension() ?: 'bin'))
                 ->toMediaCollection('avatar', 'media');
         }
 
@@ -338,6 +349,10 @@ class UserController extends Controller
      */
     public function destroy($id)
     {
+        if (! auth()->user()->can('User Delete')) {
+            return $this->errorResponse(__('You are not authorized to perform this action'), 403);
+        }
+
         $user = User::findOrFail($id);
         $user->delete();
 

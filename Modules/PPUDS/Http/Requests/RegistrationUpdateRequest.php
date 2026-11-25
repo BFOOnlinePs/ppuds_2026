@@ -31,6 +31,6 @@ class RegistrationUpdateRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('Registration Update') ?? false;
     }
 }

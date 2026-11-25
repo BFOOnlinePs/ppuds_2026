@@ -37,7 +37,7 @@
 
             @if($survey->description)
                 <div class="text-lg leading-relaxed text-gray-600 dark:text-gray-400 border-r-4 border-primary-500 pr-4 prose dark:prose-invert [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg [&_img]:my-4 overflow-hidden break-words">
-                    {!! $survey->description !!}
+                    {!! str($survey->description)->sanitizeHtml() !!}
                 </div>
             @endif
         </div>

@@ -146,7 +146,7 @@ class Company extends Model implements HasMedia, TranslatableContract
 
         try {
             $originalName = $file->getClientOriginalName();
-            $extension = $file->getClientOriginalExtension();
+            $extension = $file->guessExtension() ?: 'bin';
             $fileName = time().'_'.Str::slug(pathinfo($originalName, PATHINFO_FILENAME)).'.'.$extension;
 
             $media = $this
@@ -182,7 +182,7 @@ class Company extends Model implements HasMedia, TranslatableContract
 
         try {
             $originalName = $file->getClientOriginalName();
-            $extension = $file->getClientOriginalExtension();
+            $extension = $file->guessExtension() ?: 'bin';
             $fileName = time().'_'.Str::slug(pathinfo($originalName, PATHINFO_FILENAME)).'.'.$extension;
             $mediaName = blank($name) ? pathinfo($originalName, PATHINFO_FILENAME) : $name;
 

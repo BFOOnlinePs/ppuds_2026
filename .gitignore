@@ -28,3 +28,10 @@ frankenphp
 frankenphp-worker.php
 
 /credentials/*.json
+
+# Never commit environment backups or random seed files
+.env.*
+!.env.example
+*.bak
+*.bak.*
+.rnd

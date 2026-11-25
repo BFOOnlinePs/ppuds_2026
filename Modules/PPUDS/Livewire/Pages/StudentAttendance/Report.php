@@ -143,6 +143,14 @@ class Report extends Component implements HasForms
 
     public function save()
     {
+        // يكتب التقرير الطالب صاحب الدوام، أو من يملك صلاحية تعديل الحضور؛
+        // صلاحية عرض القائمة وحدها لا تكفي للكتابة.
+        abort_unless(
+            (int) $this->attendance->studentCompany?->student_id === (int) auth()->id()
+                || auth()->user()?->can('StudentAttendance Update'),
+            403
+        );
+
         $data = $this->form->getState();
 
         DB::transaction(function () use ($data) {

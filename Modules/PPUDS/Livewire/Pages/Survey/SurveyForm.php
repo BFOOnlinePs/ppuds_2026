@@ -93,7 +93,7 @@ class SurveyForm extends Component implements HasActions, HasForms
                 SurveyQuestionType::SELECT->value => Select::make($fieldName)->options($options),
                 SurveyQuestionType::MULTI_SELECT->value => Select::make($fieldName)->options($options)->multiple(),
                 SurveyQuestionType::DATE->value => DatePicker::make($fieldName)->native(false),
-                SurveyQuestionType::FILE->value => FileUpload::make($fieldName)->directory('surveys'),
+                SurveyQuestionType::FILE->value => FileUpload::make($fieldName)->disk('public')->directory('surveys')->openable()->downloadable(),
                 SurveyQuestionType::RATING->value => Radio::make($fieldName)->options(SurveyQuestionType::ratingScaleOptions())->inline(),
                 SurveyQuestionType::NUMBER->value => TextInput::make($fieldName)->numeric()->minValue(0),
                 default => TextInput::make($fieldName),
@@ -120,6 +120,9 @@ class SurveyForm extends Component implements HasActions, HasForms
         if (! $user) {
             return;
         }
+
+        // زر التسليم في القائمة مشروط بهذه الصلاحية، فتُفرض هنا أيضاً لمن يفتح الرابط مباشرة.
+        $this->authorize('Survey Submit');
 
         $formData = $this->form->getState();
         $studentCompany = null;

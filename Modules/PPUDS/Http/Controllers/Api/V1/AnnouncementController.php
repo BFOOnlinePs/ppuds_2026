@@ -129,6 +129,10 @@ class AnnouncementController extends Controller
      */
     public function store(AnnouncementRequest $request)
     {
+        if (! auth()->user()->can('Announcement Create')) {
+            return $this->errorResponse(__('You are not authorized to perform this action'), 403);
+        }
+
         $announcment = DB::transaction(function () use ($request) {
             $data = $request->validated();
 

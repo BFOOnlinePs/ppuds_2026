@@ -151,6 +151,10 @@ class FieldVisitController extends Controller
      */
     public function store(FieldVisitRequest $request)
     {
+        if (! auth()->user()->can('FieldVisit Create')) {
+            return $this->errorResponse(__('You are not authorized to perform this action'), 403);
+        }
+
         $data = $request->validated();
         $attachments = $request->attachmentFiles();
         unset($data['attachment'], $data['image'], $data['attachments'], $data['attachemnts'], $data['images']);
@@ -271,6 +275,10 @@ class FieldVisitController extends Controller
      */
     public function bulkStore(BulkFieldVisitRequest $request)
     {
+        if (! auth()->user()->can('FieldVisit Create')) {
+            return $this->errorResponse(__('You are not authorized to perform this action'), 403);
+        }
+
         $data = $request->validated();
         $attachments = $request->attachmentFiles();
         $studentCompanyIds = $request->studentCompanyIds();
