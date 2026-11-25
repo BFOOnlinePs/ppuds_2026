@@ -3,7 +3,11 @@
 namespace Modules\PPUDS\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Modules\Core\Enums\UserRole;
 use Modules\Core\Traits\ApiResponse;
 use Modules\PPUDS\Entities\Survey;
@@ -12,6 +16,7 @@ use Modules\PPUDS\Enums\SurveyQuestionType;
 use Modules\PPUDS\Http\Requests\SurveyAnswerRequest;
 use Modules\PPUDS\Services\CompanyEvaluationGradeService;
 use Modules\PPUDS\Support\HandlesCompanySupervisorSurveyEvaluations;
+use Modules\PPUDS\Support\SurveyAnswerFiles;
 use Modules\PPUDS\Transformers\V1\SurveyAnswerResource;
 use Spatie\QueryBuilder\QueryBuilder;
 
@@ -98,7 +103,7 @@ class SurveyAnswerController extends Controller
      * @OA\Property(property="question_id", type="integer", example=10),
      * @OA\Property(
      * property="value",
-     * description="Depends on the question type: RATING -> integer 1 to 5. RADIO/SELECT -> the selected option id (integer). CHECKBOX/MULTI_SELECT -> array of option ids. TEXT/TEXTAREA/DATE -> string. NUMBER -> number (0 or more).",
+     * description="Depends on the question type: RATING -> integer 1 to 5. RADIO/SELECT -> the selected option id (integer). CHECKBOX/MULTI_SELECT -> array of option ids. TEXT/TEXTAREA/DATE -> string. NUMBER -> number (0 or more). FILE -> send the request as multipart/form-data with the file itself in answers[i][file] (or answers[i][value]); a device path string is rejected with 422. Max 20MB.",
      * example="3"
      * )
      * )
@@ -191,11 +196,136 @@ class SurveyAnswerController extends Controller
             }
         }
 
-        DB::transaction(function () use ($request, $survey, $surveyId, $userId, $studentCompany) {
+        $answers = $request->input('answers', []);
 
-            foreach ($request->answers as $answerData) {
+        // كل إجابة يجب أن تخص سؤالاً من هذا الاستبيان نفسه.
+        $foreignQuestion = collect($answers)
+            ->pluck('question_id')
+            ->contains(fn ($id) => ! $survey->questions->contains('id', (int) $id));
+
+        if ($foreignQuestion) {
+            return response()->json([
+                'status' => false,
+                'message' => __('Some answers do not belong to this survey.'),
+            ], 422);
+        }
+
+        [$fileError, $uploads] = $this->collectAnswerFiles($request, $survey, $answers);
+
+        if ($fileError !== null) {
+            return response()->json(['status' => false, 'message' => $fileError], 422);
+        }
+
+        $storedPaths = [];
+
+        try {
+            foreach ($uploads as $index => $file) {
+                $storedPaths[] = $answers[$index]['value'] = $this->storeAnswerFile($file);
+            }
+
+            $this->saveAnswers($answers, $survey, $surveyId, $userId, $studentCompany);
+        } catch (\Throwable $e) {
+            // لا نترك ملفات يتيمة على القرص إن فشل الحفظ.
+            Storage::disk(SurveyAnswerFiles::DISK)->delete(array_filter($storedPaths));
+
+            throw $e;
+        }
+
+        // علامة الشركة تُشتق من إجابات التقييم، فتُحدَّث فور تسليمها.
+        if ($studentCompany && $this->shouldEvaluateStudentsForSurvey($survey, auth()->user())) {
+            app(CompanyEvaluationGradeService::class)->refreshFor($studentCompany);
+        }
+
+        return $this->successResponse(
+            null,
+            __('Answers submitted successfully'),
+            201
+        );
+    }
+
+    /**
+     * يتحقق من ملفات أسئلة "رفع ملف": يجب أن يصل الملف نفسه (multipart) لا مساره
+     * على جهاز الطالب، ملف واحد لكل سؤال، بنوع وحجم مسموحين، والسؤال الإلزامي لا يُترك بلا ملف.
+     *
+     * @return array{0: ?string, 1: array<int|string, UploadedFile>} رسالة الخطأ (إن وُجد) والملفات حسب فهرس الإجابة
+     */
+    private function collectAnswerFiles(SurveyAnswerRequest $request, Survey $survey, array $answers): array
+    {
+        $uploads = [];
+        $answeredQuestionIds = [];
+
+        foreach ($answers as $index => $answerData) {
+            $question = $survey->questions->firstWhere('id', (int) ($answerData['question_id'] ?? 0));
+
+            if ((int) $question?->type !== SurveyQuestionType::FILE->value) {
+                continue;
+            }
+
+            $label = ['question' => $question->content];
+            $file = $request->file("answers.{$index}.file") ?? $request->file("answers.{$index}.value");
+
+            if (is_array($file) || isset($answeredQuestionIds[$question->id])) {
+                return [__('Only one file can be uploaded for: :question', $label), []];
+            }
+
+            if (! $file instanceof UploadedFile) {
+                // نص أو مسار بدل الملف: يُرفض حتى لا تُحفظ إجابة بلا ملف.
+                if (filled($answerData['value'] ?? null)) {
+                    return [__('Please attach the file itself for: :question', $label), []];
+                }
+
+                continue;
+            }
+
+            $validator = Validator::make(['file' => $file], ['file' => SurveyAnswerFiles::rules()]);
+
+            if ($validator->fails()) {
+                return [$question->content.': '.$validator->errors()->first('file'), []];
+            }
+
+            $uploads[$index] = $file;
+            $answeredQuestionIds[$question->id] = true;
+        }
+
+        $missingRequired = $survey->questions->first(fn ($question): bool => (int) $question->type === SurveyQuestionType::FILE->value
+            && $question->is_required
+            && ! isset($answeredQuestionIds[$question->id]));
+
+        if ($missingRequired) {
+            return [__('Please upload a file for: :question', ['question' => $missingRequired->content]), []];
+        }
+
+        return [null, $uploads];
+    }
+
+    /**
+     * يحفظ الملف على القرص الخاص باسمه الأصلي داخل مجلد فريد حتى لا تتصادم الأسماء.
+     */
+    private function storeAnswerFile(UploadedFile $file): string
+    {
+        $name = preg_replace('/[^\p{L}\p{N}._ -]+/u', '_', $file->getClientOriginalName());
+        $name = trim((string) $name, ' ._') ?: 'file';
+
+        if (! Str::contains($name, '.') && $file->guessExtension()) {
+            $name .= '.'.$file->guessExtension();
+        }
+
+        $path = $file->storeAs(SurveyAnswerFiles::DIRECTORY.'/'.Str::uuid(), Str::limit($name, 150, ''), SurveyAnswerFiles::DISK);
+
+        if ($path === false) {
+            throw new \RuntimeException('Failed to store survey answer file.');
+        }
+
+        return $path;
+    }
+
+    private function saveAnswers(array $answers, Survey $survey, int $surveyId, int $userId, $studentCompany): void
+    {
+        DB::transaction(function () use ($answers, $survey, $surveyId, $userId, $studentCompany) {
+
+            foreach ($answers as $answerData) {
                 $questionId = $answerData['question_id'];
-                $value = $answerData['value'];
+                $value = $answerData['value'] ?? null;
 
                 if (is_null($value) || $value === '') {
                     continue;
@@ -235,16 +365,5 @@ class SurveyAnswerController extends Controller
                 }
             }
         });
-
-        // علامة الشركة تُشتق من إجابات التقييم، فتُحدَّث فور تسليمها.
-        if ($studentCompany && $this->shouldEvaluateStudentsForSurvey($survey, auth()->user())) {
-            app(CompanyEvaluationGradeService::class)->refreshFor($studentCompany);
-        }
-
-        return $this->successResponse(
-            null,
-            __('Answers submitted successfully'),
-            201
-        );
     }
 }

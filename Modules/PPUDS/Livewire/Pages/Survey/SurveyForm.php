@@ -23,6 +23,7 @@ use Modules\PPUDS\Entities\SurveyAnswer;
 use Modules\PPUDS\Enums\SurveyQuestionType;
 use Modules\PPUDS\Services\CompanyEvaluationGradeService;
 use Modules\PPUDS\Support\HandlesCompanySupervisorSurveyEvaluations;
+use Modules\PPUDS\Support\SurveyAnswerFiles;
 
 class SurveyForm extends Component implements HasActions, HasForms
 {
@@ -93,7 +94,13 @@ class SurveyForm extends Component implements HasActions, HasForms
                 SurveyQuestionType::SELECT->value => Select::make($fieldName)->options($options),
                 SurveyQuestionType::MULTI_SELECT->value => Select::make($fieldName)->options($options)->multiple(),
                 SurveyQuestionType::DATE->value => DatePicker::make($fieldName)->native(false),
-                SurveyQuestionType::FILE->value => FileUpload::make($fieldName)->disk('public')->directory('surveys')->openable()->downloadable(),
+                SurveyQuestionType::FILE->value => FileUpload::make($fieldName)
+                    ->disk(SurveyAnswerFiles::DISK)
+                    ->visibility('private')
+                    ->directory(SurveyAnswerFiles::DIRECTORY)
+                    ->acceptedFileTypes(SurveyAnswerFiles::MIME_TYPES)
+                    ->maxSize(SurveyAnswerFiles::MAX_KB)
+                    ->rules(['mimes:'.implode(',', SurveyAnswerFiles::EXTENSIONS)]),
                 SurveyQuestionType::RATING->value => Radio::make($fieldName)->options(SurveyQuestionType::ratingScaleOptions())->inline(),
                 SurveyQuestionType::NUMBER->value => TextInput::make($fieldName)->numeric()->minValue(0),
                 default => TextInput::make($fieldName),

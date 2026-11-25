@@ -3,11 +3,13 @@
 namespace Modules\PPUDS\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Modules\Core\Enums\UserRole;
 use Modules\PPUDS\Entities\SurveyAnswer;
 use Modules\PPUDS\Enums\SurveyQuestionType;
+use Modules\PPUDS\Support\SurveyAnswerFiles;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -17,9 +19,6 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class SurveyAnswerFileController extends Controller
 {
-    /** الأقراص التي قد يكون الملف محفوظاً عليها، بالترتيب. */
-    private const DISKS = ['public', 'local'];
-
     public function __invoke(SurveyAnswer $answer): Response
     {
         abort_unless($this->canView($answer), 403);
@@ -27,24 +26,91 @@ class SurveyAnswerFileController extends Controller
         $answer->loadMissing('question');
         abort_unless((int) $answer->question?->type === SurveyQuestionType::FILE->value, 404);
 
-        $path = trim((string) $answer->text_answer);
-        abort_if($path === '', 404);
+        $location = self::locate($answer->text_answer);
 
-        // إجابات قديمة/من التطبيق قد تحفظ رابطاً كاملاً بدل مسار.
-        if (Str::startsWith($path, ['http://', 'https://'])) {
-            return redirect()->away($path);
+        if ($location === null) {
+            Log::warning('Survey answer file not found', [
+                'answer_id' => $answer->id,
+                'text_answer' => $answer->text_answer,
+            ]);
+
+            abort(404);
         }
 
-        $path = ltrim(Str::after($path, '/storage/'), '/');
-        abort_if(Str::contains($path, '..'), 404);
+        // nosniff: يُعرض الملف بنوعه الحقيقي فقط، فلا يُنفَّذ ملف مرفوع كصفحة HTML/سكربت.
+        return Storage::disk($location['disk'])->response(
+            $location['path'],
+            basename($location['path']),
+            ['X-Content-Type-Options' => 'nosniff'],
+            self::isInlineSafe($location['path']) ? 'inline' : 'attachment',
+        );
+    }
 
-        foreach (self::DISKS as $disk) {
+    /**
+     * يحدد مكان الملف من القيمة المحفوظة في الإجابة.
+     * لا يُفتح إلا ما هو داخل مجلد ملفات الاستبيانات، حتى لو حُفظ في الإجابة مسار آخر
+     * (إجابات قديمة كان الـ API يقبل فيها أي نص)، فلا يمكن الوصول عبرها لملفات أقسام أخرى.
+     *
+     * @return array{disk: string, path: string}|null
+     */
+    public static function locate(?string $value): ?array
+    {
+        $value = trim((string) $value);
+
+        if ($value === '' || self::isDevicePath($value) || Str::contains($value, ['://', "\0"])) {
+            return null;
+        }
+
+        $path = ltrim(str_replace('\\', '/', $value), '/');
+
+        if (Str::startsWith($path, 'storage/')) {
+            $path = Str::after($path, 'storage/');
+        }
+
+        // اسم ملف فقط (بلا مجلد) يُبحث عنه داخل مجلد الاستبيانات.
+        if (! Str::contains($path, '/')) {
+            $path = SurveyAnswerFiles::DIRECTORY.'/'.$path;
+        }
+
+        $segments = explode('/', $path);
+
+        if ($segments[0] !== SurveyAnswerFiles::DIRECTORY
+            || count($segments) < 2
+            || array_intersect($segments, ['', '.', '..']) !== []) {
+            return null;
+        }
+
+        // الخاص أولاً (رفع التطبيق ونموذج الويب حالياً)، ثم العام (تسليمات الويب القديمة).
+        foreach (array_unique([SurveyAnswerFiles::DISK, 'public']) as $disk) {
             if (Storage::disk($disk)->exists($path)) {
-                return Storage::disk($disk)->response($path, basename($path), [], 'inline');
+                return ['disk' => $disk, 'path' => $path];
             }
         }
 
-        abort(404);
+        return null;
+    }
+
+    /** الصور وPDF والنص تُعرض في المتصفح، وما عداها يُنزَّل. */
+    private static function isInlineSafe(string $path): bool
+    {
+        return in_array(Str::lower(pathinfo($path, PATHINFO_EXTENSION)), ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'txt'], true);
+    }
+
+    /**
+     * إجابات قديمة من تطبيق الموبايل حُفظ فيها مسار الملف على جهاز الطالب بدل رفعه،
+     * فلا يوجد ملف على الخادم أصلاً.
+     */
+    public static function isDevicePath(?string $value): bool
+    {
+        return Str::startsWith(trim((string) $value), [
+            'file://',
+            '/private/var/mobile/',
+            '/var/mobile/',
+            '/data/user/',
+            '/data/data/',
+            '/storage/emulated/',
+            'content://',
+        ]);
     }
 
     private function canView(SurveyAnswer $answer): bool

@@ -15,6 +15,8 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Illuminate\Support\Collection;
 use Illuminate\Support\HtmlString;
+use Illuminate\Support\Str;
+use Modules\PPUDS\Http\Controllers\SurveyAnswerFileController;
 use Livewire\Component;
 use Modules\Core\Entities\User;
 use Modules\Core\Enums\UserRole;
@@ -139,17 +141,41 @@ class SubmissionDetails extends Component implements HasForms
             ->where('text_answer', '!=', '')
             ->orderBy('id')
             ->get()
-            ->map(fn (SurveyAnswer $answer): string => sprintf(
-                '<a href="%s" target="_blank" rel="noopener" class="inline-flex items-center gap-1 font-semibold text-primary-600 hover:underline dark:text-primary-400">%s</a>',
-                e(route('surveys.answer-file', $answer)),
-                e(basename((string) $answer->text_answer)),
-            ));
+            ->map(fn (SurveyAnswer $answer): string => $this->fileLink($answer));
 
         if ($links->isEmpty()) {
             return new HtmlString('<span class="text-gray-500">'.e(__('No file uploaded')).'</span>');
         }
 
         return new HtmlString('<div class="flex flex-col gap-2">'.$links->implode('').'</div>');
+    }
+
+    protected function fileLink(SurveyAnswer $answer): string
+    {
+        $value = (string) $answer->text_answer;
+
+        if (SurveyAnswerFileController::locate($value) !== null) {
+            return sprintf(
+                '<a href="%s" target="_blank" rel="noopener" class="inline-flex items-center gap-1 font-semibold text-primary-600 hover:underline dark:text-primary-400">%s</a>',
+                e(route('surveys.answer-file', $answer)),
+                e(basename($value)),
+            );
+        }
+
+        // الملف غير موجود على الخادم: نعرض السبب بدل رابط يعطي 404.
+        if (SurveyAnswerFileController::isDevicePath($value)) {
+            return sprintf(
+                '<span class="text-danger-600 dark:text-danger-400">%s <span dir="ltr" class="font-mono text-xs">(%s)</span></span>',
+                e(__('The file was not uploaded from the mobile app; ask the student to send it again.')),
+                e(basename($value)),
+            );
+        }
+
+        return sprintf(
+            '<span class="text-danger-600 dark:text-danger-400">%s: <span dir="ltr" class="break-all font-mono text-xs">%s</span></span>',
+            e(__('File not found on server')),
+            e(Str::limit($value, 200)),
+        );
     }
 
     protected function selectedOptions(Collection $answers): array
