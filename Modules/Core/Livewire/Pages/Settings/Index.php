@@ -889,7 +889,12 @@ class Index extends Component implements HasForms
             $auth->qr_login_roles = array_values(array_map('strval', $data['auth_qr_login_roles'] ?? []));
         }
 
-        $auth->qr_code_validity_days = (int) $data['auth_qr_code_validity_days'];
+        // Hidden (and so missing from the state) while QR sign-in is off;
+        // keep the stored value in that case.
+        if (array_key_exists('auth_qr_code_validity_days', $data)) {
+            $auth->qr_code_validity_days = (int) $data['auth_qr_code_validity_days'];
+        }
+
         $auth->otp_length = (int) $data['auth_otp_length'];
         $auth->otp_ttl_minutes = (int) $data['auth_otp_ttl_minutes'];
         $auth->otp_max_attempts = (int) $data['auth_otp_max_attempts'];
