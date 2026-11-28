@@ -90,6 +90,10 @@ class User extends Authenticatable implements HasMedia, WirechatUser
     use SoftDeletes;
     use TwoFactorAuthenticatable;
 
+    // الأدوار والصلاحيات كلها مسجّلة على حارس web. بدون هذا، طلبات التطبيق
+    // (حارس api) تبحث عن الصلاحية على api فلا تجدها ويُرفض كل فحص can().
+    protected string $guard_name = 'web';
+
     /**
      * The attributes that are mass assignable.
      *
